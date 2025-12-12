@@ -210,3 +210,64 @@ export interface CharacterProfile {
     skills: Record<string, number>;
     notes?: string;
 }
+
+/**
+ * NPC Clue - Information that the NPC knows or can reveal
+ */
+export interface NPCClue {
+    id: string;
+    clueText: string;
+    category?: 'knowledge' | 'observation' | 'rumor' | 'secret';
+    difficulty?: Difficulty; // difficulty to extract this clue
+    revealed: boolean;
+    relatedTo?: string[]; // related character or location IDs
+}
+
+/**
+ * NPC Relationship - Connection between NPCs or PC and NPC
+ */
+export interface NPCRelationship {
+    targetId: string; // ID of the related character
+    targetName: string;
+    relationshipType: 'ally' | 'enemy' | 'neutral' | 'family' | 'friend' | 'rival' | 'employer' | 'employee' | 'stranger';
+    attitude: number; // -100 to 100, negative is hostile, positive is friendly
+    description?: string;
+    history?: string; // backstory of this relationship
+}
+
+/**
+ * NPC Profile - Extended character profile with NPC-specific data
+ */
+export interface NPCProfile extends CharacterProfile {
+    occupation?: string;
+    age?: number;
+    appearance?: string;
+    personality?: string;
+    background?: string;
+    goals?: string[];
+    secrets?: string[];
+    clues: NPCClue[];
+    relationships: NPCRelationship[];
+    isNPC: true; // flag to distinguish from player characters
+}
+
+/**
+ * Parsed NPC data from document
+ */
+export interface ParsedNPCData {
+    name: string;
+    occupation?: string;
+    age?: number;
+    appearance?: string;
+    personality?: string;
+    background?: string;
+    goals?: string[];
+    secrets?: string[];
+    attributes?: Partial<CharacterAttributes>;
+    status?: Partial<CharacterStatus>;
+    skills?: Record<string, number>;
+    inventory?: string[];
+    clues?: Omit<NPCClue, 'id' | 'revealed'>[];
+    relationships?: Omit<NPCRelationship, 'targetId'>[];
+    notes?: string;
+}

@@ -3,6 +3,7 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { buildGraph } from "./graph.js";
 import { initialGameState } from "./state.js";
 import { CoCDatabase, seedDatabase } from "./coc_multiagents_system/shared/database/index.js";
+import { NPCLoader } from "./coc_multiagents_system/shared/npc/index.js";
 import path from "path";
 import fs from "fs";
 
@@ -14,6 +15,18 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new CoCDatabase();
 seedDatabase(db);
+
+// Initialize NPC directory
+const npcDir = path.join(process.cwd(), 'data', 'npcs');
+if (!fs.existsSync(npcDir)) {
+  fs.mkdirSync(npcDir, { recursive: true });
+  console.log(`Created NPC directory: ${npcDir}`);
+  console.log(`Place your NPC .docx or .pdf files in this directory to load them automatically.\n`);
+}
+
+// Load NPCs from documents
+const npcLoader = new NPCLoader(db);
+await npcLoader.loadNPCsFromDirectory(npcDir);
 
 const parseArgs = (argv: string[]): string => {
   const promptFlagIndex = argv.findIndex((arg) => arg === "--prompt");

@@ -154,16 +154,74 @@ export class CoCDatabase {
                 inventory TEXT, -- JSON array of strings
                 skills TEXT, -- JSON map of skillName -> value
                 notes TEXT,
+                is_npc INTEGER DEFAULT 0, -- 0 for PC, 1 for NPC
+                occupation TEXT,
+                age INTEGER,
+                appearance TEXT,
+                personality TEXT,
+                background TEXT,
+                goals TEXT, -- JSON array
+                secrets TEXT, -- JSON array
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(name);
+            CREATE INDEX IF NOT EXISTS idx_characters_is_npc ON characters(is_npc);
         `);
-        // Backfill skills column for existing tables
-        try {
-            this.db.exec(`ALTER TABLE characters ADD COLUMN skills TEXT;`);
-        } catch {
-            // ignore if column already exists
+        // Backfill columns for existing tables
+        const columnsToAdd = [
+            'skills TEXT',
+            'is_npc INTEGER DEFAULT 0',
+            'occupation TEXT',
+            'age INTEGER',
+            'appearance TEXT',
+            'personality TEXT',
+            'background TEXT',
+            'goals TEXT',
+            'secrets TEXT'
+        ];
+        for (const column of columnsToAdd) {
+            try {
+                this.db.exec(`ALTER TABLE characters ADD COLUMN ${column};`);
+            } catch {
+                // ignore if column already exists
+            }
         }
+
+        // NPC Clues table
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS npc_clues (
+                id TEXT PRIMARY KEY,
+                npc_id TEXT NOT NULL,
+                clue_text TEXT NOT NULL,
+                category TEXT,
+                difficulty TEXT,
+                revealed INTEGER DEFAULT 0,
+                related_to TEXT, -- JSON array
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (npc_id) REFERENCES characters(character_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_npc_clues_npc ON npc_clues(npc_id);
+            CREATE INDEX IF NOT EXISTS idx_npc_clues_revealed ON npc_clues(revealed);
+        `);
+
+        // NPC Relationships table (extended version)
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS npc_relationships (
+                id TEXT PRIMARY KEY,
+                source_id TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                target_name TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                attitude INTEGER DEFAULT 0,
+                description TEXT,
+                history TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (source_id) REFERENCES characters(character_id),
+                UNIQUE(source_id, target_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_npc_relationships_source ON npc_relationships(source_id);
+            CREATE INDEX IF NOT EXISTS idx_npc_relationships_target ON npc_relationships(target_id);
+        `);
 
         // Full-text search for events
         this.db.exec(`
