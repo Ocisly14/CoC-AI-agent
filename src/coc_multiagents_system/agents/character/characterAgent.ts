@@ -1,11 +1,11 @@
 import type Database from "better-sqlite3";
 type DBInstance = InstanceType<typeof Database>;
-import type { CoCDatabase } from "../../shared/database/schema.js";
+import type { CoCDatabase } from "../memory/database/schema.js";
 import type {
   CharacterAttributes,
   CharacterProfile,
   CharacterStatus,
-} from "../../shared/models/gameTypes.js";
+} from "../models/gameTypes.js";
 
 type CharacterRow = {
   character_id: string;

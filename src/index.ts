@@ -5,8 +5,8 @@ import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import {
   CoCDatabase,
   seedDatabase,
-} from "./coc_multiagents_system/shared/database/index.js";
-import { NPCLoader } from "./coc_multiagents_system/shared/npc/index.js";
+} from "./coc_multiagents_system/agents/memory/database/index.js";
+import { NPCLoader } from "./coc_multiagents_system/agents/character/npc/index.js";
 import { buildGraph } from "./graph.js";
 import { initialGameState } from "./state.js";
 

@@ -6,7 +6,7 @@
 
 import type Database from "better-sqlite3";
 type DBInstance = InstanceType<typeof Database>;
-import type { CoCDatabase } from "../../shared/database/schema.js";
+import type { CoCDatabase } from "./database/schema.js";
 import type {
   DamageResult,
   Difficulty,
@@ -18,7 +18,7 @@ import type {
   Skill,
   SkillCheckResult,
   WeaponData,
-} from "../../shared/models/gameTypes.js";
+} from "../models/gameTypes.js";
 
 export type EventType =
   | "narration"

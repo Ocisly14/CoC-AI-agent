@@ -1,5 +1,5 @@
 import { Annotation, MessagesAnnotation } from "@langchain/langgraph";
-import type { CharacterProfile } from "./coc_multiagents_system/shared/models/gameTypes.js";
+import type { CharacterProfile } from "./coc_multiagents_system/agents/models/gameTypes.js";
 
 export type AgentId = "character" | "memory" | "action"; // keeper is no longer in queue, rule merged into memory
 

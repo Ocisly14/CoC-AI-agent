@@ -3,7 +3,7 @@
  * Describes capabilities and usage for the Character Agent
  */
 
-import type { AgentManifest } from "../../shared/models/agentTypes.js";
+import type { AgentManifest } from "../models/agentTypes.js";
 
 export const CHARACTER_AGENT_MANIFEST: AgentManifest = {
   agentId: "character",

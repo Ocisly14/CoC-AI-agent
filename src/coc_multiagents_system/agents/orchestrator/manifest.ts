@@ -3,7 +3,7 @@
  * Describes capabilities and usage for the Orchestrator Agent
  */
 
-import type { AgentManifest } from "../../shared/models/agentTypes.js";
+import type { AgentManifest } from "../models/agentTypes.js";
 
 export const ORCHESTRATOR_MANIFEST: AgentManifest = {
   agentId: "orchestrator",

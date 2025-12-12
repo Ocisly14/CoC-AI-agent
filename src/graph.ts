@@ -7,7 +7,7 @@ import {
   routeToAgent,
   shouldContinue,
 } from "./coc_multiagents_system/agents/orchestrator/orchestrator.js";
-import type { CoCDatabase } from "./coc_multiagents_system/shared/database/index.js";
+import type { CoCDatabase } from "./coc_multiagents_system/agents/memory/database/index.js";
 import {
   createCharacterNode,
   createKeeperNode,

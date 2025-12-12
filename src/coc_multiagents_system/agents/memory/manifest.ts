@@ -3,7 +3,7 @@
  * Describes capabilities and usage for the Memory Agent
  */
 
-import type { AgentManifest } from "../../shared/models/agentTypes.js";
+import type { AgentManifest } from "../models/agentTypes.js";
 
 export const MEMORY_AGENT_MANIFEST: AgentManifest = {
   agentId: "memory",

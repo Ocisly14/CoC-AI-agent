@@ -247,6 +247,122 @@ export class CoCDatabase {
                 VALUES (new.id, new.details);
             END;
         `);
+
+    // Scenarios table - for managing scenario/location data
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS scenarios (
+                scenario_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL, -- 'location', 'event', 'encounter', 'investigation'
+                description TEXT NOT NULL,
+                tags TEXT, -- JSON array
+                connections TEXT, -- JSON array of connections
+                metadata TEXT NOT NULL, -- JSON blob with created_at, updated_at, source, author, gameSystem
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_scenarios_name ON scenarios(name);
+            CREATE INDEX IF NOT EXISTS idx_scenarios_category ON scenarios(category);
+        `);
+
+    // Scenario snapshots table - for timeline data
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS scenario_snapshots (
+                snapshot_id TEXT PRIMARY KEY,
+                scenario_id TEXT NOT NULL,
+                time_timestamp TEXT NOT NULL,
+                time_order INTEGER NOT NULL,
+                time_notes TEXT,
+                snapshot_name TEXT,
+                location TEXT NOT NULL,
+                description TEXT NOT NULL,
+                events TEXT, -- JSON array
+                exits TEXT, -- JSON array
+                keeper_notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_snapshots_scenario ON scenario_snapshots(scenario_id);
+            CREATE INDEX IF NOT EXISTS idx_snapshots_time_order ON scenario_snapshots(scenario_id, time_order);
+        `);
+
+    // Scenario characters table - characters present in scenarios
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS scenario_characters (
+                id TEXT PRIMARY KEY,
+                snapshot_id TEXT NOT NULL,
+                character_name TEXT NOT NULL,
+                character_role TEXT NOT NULL,
+                character_status TEXT NOT NULL,
+                character_location TEXT,
+                character_notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (snapshot_id) REFERENCES scenario_snapshots(snapshot_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_scenario_characters_snapshot ON scenario_characters(snapshot_id);
+            CREATE INDEX IF NOT EXISTS idx_scenario_characters_name ON scenario_characters(character_name);
+        `);
+
+    // Scenario clues table - clues available in scenarios
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS scenario_clues (
+                clue_id TEXT PRIMARY KEY,
+                snapshot_id TEXT NOT NULL,
+                clue_text TEXT NOT NULL,
+                category TEXT NOT NULL, -- 'physical', 'witness', 'document', 'environment', 'knowledge', 'observation'
+                difficulty TEXT NOT NULL, -- 'automatic', 'regular', 'hard', 'extreme'
+                clue_location TEXT NOT NULL,
+                discovery_method TEXT,
+                reveals TEXT, -- JSON array
+                discovered INTEGER DEFAULT 0,
+                discovery_details TEXT, -- JSON blob with discoveredBy, discoveredAt, method
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (snapshot_id) REFERENCES scenario_snapshots(snapshot_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_scenario_clues_snapshot ON scenario_clues(snapshot_id);
+            CREATE INDEX IF NOT EXISTS idx_scenario_clues_location ON scenario_clues(clue_location);
+            CREATE INDEX IF NOT EXISTS idx_scenario_clues_discovered ON scenario_clues(discovered);
+        `);
+
+    // Scenario conditions table - environmental conditions
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS scenario_conditions (
+                condition_id TEXT PRIMARY KEY,
+                snapshot_id TEXT NOT NULL,
+                condition_type TEXT NOT NULL, -- 'weather', 'lighting', 'sound', 'smell', 'temperature', 'other'
+                description TEXT NOT NULL,
+                mechanical_effect TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (snapshot_id) REFERENCES scenario_snapshots(snapshot_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_scenario_conditions_snapshot ON scenario_conditions(snapshot_id);
+            CREATE INDEX IF NOT EXISTS idx_scenario_conditions_type ON scenario_conditions(condition_type);
+        `);
+
+    // Full-text search for scenarios
+    this.db.exec(`
+            CREATE VIRTUAL TABLE IF NOT EXISTS scenarios_fts USING fts5(
+                scenario_id UNINDEXED,
+                name,
+                description,
+                content='scenarios',
+                content_rowid='rowid'
+            );
+
+            CREATE TRIGGER IF NOT EXISTS scenarios_fts_insert AFTER INSERT ON scenarios BEGIN
+                INSERT INTO scenarios_fts(scenario_id, name, description)
+                VALUES (new.scenario_id, new.name, new.description);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS scenarios_fts_delete AFTER DELETE ON scenarios BEGIN
+                DELETE FROM scenarios_fts WHERE scenario_id = old.scenario_id;
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS scenarios_fts_update AFTER UPDATE ON scenarios BEGIN
+                DELETE FROM scenarios_fts WHERE scenario_id = old.scenario_id;
+                INSERT INTO scenarios_fts(scenario_id, name, description)
+                VALUES (new.scenario_id, new.name, new.description);
+            END;
+        `);
   }
 
   getDatabase(): DBInstance {

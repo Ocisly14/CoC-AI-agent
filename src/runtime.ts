@@ -7,7 +7,7 @@ import {
   extractAgentResults,
 } from "./coc_multiagents_system/agents/keeper/index.js";
 import { MemoryAgent } from "./coc_multiagents_system/agents/memory/index.js";
-import type { CoCDatabase } from "./coc_multiagents_system/shared/database/index.js";
+import type { CoCDatabase } from "./coc_multiagents_system/agents/memory/database/index.js";
 import { type AgentId, type CoCState, initialGameState } from "./state.js";
 import { composeTemplate } from "./template.js";
 import {
@@ -15,9 +15,34 @@ import {
   formatGameState,
   latestHumanMessage,
 } from "./utils.js";
+import {
+  ModelClass,
+  ModelProviderName,
+  generateText,
+  CoCModelSelectors,
+  createChatModel,
+} from "./models/index.js";
+import {
+  CoCTemplateFactory,
+  TemplateUtils,
+} from "./templates/index.js";
 
+// Create a runtime interface that includes model configuration
+interface CoCRuntime {
+  modelProvider: ModelProviderName;
+  database: CoCDatabase;
+  getSetting: (key: string) => string | undefined;
+}
+
+// Default runtime configuration
+const createRuntime = (database: CoCDatabase): CoCRuntime => ({
+  modelProvider: (process.env.MODEL_PROVIDER as ModelProviderName) || ModelProviderName.OPENAI,
+  database,
+  getSetting: (key: string) => process.env[key],
+});
+
+// Fallback model for compatibility
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-
 const fallbackModel = new ChatOpenAI({
   model: DEFAULT_MODEL,
   temperature: 0.6,
@@ -29,33 +54,39 @@ const buildAgentNode =
   (
     name: AgentId,
     systemInstruction: string,
-    model: ChatOpenAI = fallbackModel
+    database: CoCDatabase
   ) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
+    const runtime = createRuntime(database);
     const gameState = state.gameState ?? initialGameState;
-    const systemPrompt = new SystemMessage(
-      composeTemplate(
-        [
-          systemInstruction,
-          "Stay concise. If a dice roll is needed, propose the roll and expected target clearly.",
-          "Context:",
-          "- Latest player input: {{latestUserMessage}}",
-          "- Game state snapshot: {{gameStateSummary}}",
-          "- Routing notes: {{routingNotes}}",
-        ].join("\n"),
-        state,
-        {
-          latestUserMessage:
-            latestHumanMessage(state.messages) || "No recent player input.",
-          gameStateSummary: formatGameState(gameState),
-          routingNotes: state.routingNotes ?? "None",
-        }
-      )
+    
+    const context = composeTemplate(
+      `${systemInstruction}
+
+Stay concise. If a dice roll is needed, propose the roll and expected target clearly.
+
+Context:
+- Latest player input: {{latestUserMessage}}
+- Game state snapshot: {{gameStateSummary}}
+- Routing notes: {{routingNotes}}`,
+      state,
+      {
+        latestUserMessage:
+          latestHumanMessage(state.messages) || "No recent player input.",
+        gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
+        routingNotes: state.routingNotes ?? "None",
+      }
     );
 
-    const response = await model.invoke([systemPrompt, ...state.messages]);
+    const response = await generateText({
+      runtime,
+      context,
+      modelClass: CoCModelSelectors.quickResponse(), // SMALL model for simple agent responses
+      customSystemPrompt: `You are the ${name} agent in a Call of Cthulhu multi-agent system. Provide focused, factual analysis.`,
+    });
+
     const labeledResponse = new AIMessage({
-      content: contentToString(response.content),
+      content: response,
       name,
     });
 
@@ -63,57 +94,60 @@ const buildAgentNode =
   };
 
 // Simple action/planning node placeholder (optional use)
-export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
+export const createActionNode = (database: CoCDatabase) =>
   buildAgentNode(
     "action",
-    [
-      "You are the Action agent. Convert player intent into clear next steps or rolls.",
-      "Suggest concrete mechanical actions (e.g., skill checks, positioning) without narrative.",
-    ].join("\n"),
-    model
+    `You are the Action agent. Convert player intent into clear next steps or rolls.
+Suggest concrete mechanical actions (e.g., skill checks, positioning) without narrative.`,
+    database
   );
 
 export const createKeeperNode =
-  (model: ChatOpenAI = fallbackModel) =>
+  (database: CoCDatabase) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
+    const runtime = createRuntime(database);
     const gameState = state.gameState ?? initialGameState;
     const userMessage = latestHumanMessage(state.messages);
     const agentResults = state.agentResults || [];
 
-    // Use structured template
+    // Use unified template system for keeper responses
     let promptContent: string;
 
     if (agentResults.length === 0) {
       // No agents were consulted - use simple template
-      promptContent = buildKeeperPromptNoAgents(userMessage, gameState);
-    } else {
-      // Extract and organize agent results
-      const extractedResults = extractAgentResults(agentResults);
-
-      // Build comprehensive prompt using template
-      promptContent = buildKeeperPrompt({
-        userInput: userMessage,
-        gameState: {
-          phase: gameState.phase,
-          location: gameState.location,
-          timeOfDay: gameState.timeOfDay,
-          tension: gameState.tension,
-          openThreads: gameState.openThreads,
-          discoveredClues: gameState.discoveredClues,
-        },
-        agentResults: extractedResults,
+      promptContent = CoCTemplateFactory.getKeeperSimple(state, userMessage || "", {
+        gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
       });
+    } else {
+      // Build comprehensive prompt with agent results
+      const agentResultsFormatted = agentResults.map(result => ({
+        agentId: result.agentId as string,
+        content: result.content as string,
+      }));
+
+      promptContent = CoCTemplateFactory.getKeeperWithAgents(
+        state,
+        agentResultsFormatted,
+        {
+          userInput: userMessage || "",
+          gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
+        }
+      );
     }
 
-    const systemPrompt = new SystemMessage(promptContent);
-
-    const response = await model.invoke([systemPrompt, ...state.messages]);
+    // Use LARGE model for complex keeper analysis and narrative generation
+    const response = await generateText({
+      runtime,
+      context: promptContent,
+      modelClass: CoCModelSelectors.narrativeGeneration(), // LARGE model
+      customSystemPrompt: "You are the Keeper in a Call of Cthulhu game. Provide immersive, atmospheric responses that drive the narrative forward while maintaining game balance and mystery.",
+    });
 
     // Keeper's output is the final message to the user
     return {
       messages: [
         new AIMessage({
-          content: contentToString(response.content),
+          content: response,
           name: "keeper",
         }),
       ],
@@ -122,13 +156,11 @@ export const createKeeperNode =
     };
   };
 
-export const createCharacterNode = (
-  db: CoCDatabase,
-  model: ChatOpenAI = fallbackModel
-) => {
+export const createCharacterNode = (db: CoCDatabase) => {
   const characterAgent = new CharacterAgent(db);
 
   return async (state: CoCState): Promise<Partial<CoCState>> => {
+    const runtime = createRuntime(db);
     const gameState = state.gameState ?? initialGameState;
     const userMessage = latestHumanMessage(state.messages);
     const activeCharacter = characterAgent.getOrCreate(
@@ -140,36 +172,26 @@ export const createCharacterNode = (
     const storedCharacter = characterAgent.upsertCharacter(activeCharacter);
     const characterSummary = characterAgent.summarizeProfile(storedCharacter);
 
-    const systemPrompt = new SystemMessage(
-      composeTemplate(
-        [
-          "You are the Character agent. Track investigator capabilities and resources.",
-          "You can persist attribute and status changes; reflect concrete HP/Sanity/Luck impacts.",
-          "Provide factual information about skills, gear, and positioning without narrative.",
-          "Flag risks to HP/Sanity/Luck and suggest available resources.",
-          "Context:",
-          "- Latest player input: {{latestUserMessage}}",
-          "- Game state snapshot: {{gameStateSummary}}",
-          "- Active character sheet:\\n{{characterSummary}}",
-          "- Routing notes: {{routingNotes}}",
-        ].join("\n"),
-        state,
-        {
-          latestUserMessage: userMessage || "No recent player input.",
-          gameStateSummary: formatGameState(gameState),
-          routingNotes: state.routingNotes ?? "None",
-          characterSummary,
-        }
-      )
-    );
+    // Use unified template system for character agent
+    const context = CoCTemplateFactory.getCharacterAgent(state, characterSummary, {
+      latestUserMessage: userMessage || "No recent player input.",
+      gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
+      routingNotes: state.routingNotes ?? "None",
+    });
 
-    const response = await model.invoke([systemPrompt, ...state.messages]);
+    // Use MEDIUM model for character interactions
+    const response = await generateText({
+      runtime,
+      context,
+      modelClass: CoCModelSelectors.characterInteraction(), // MEDIUM model
+      customSystemPrompt: "You are a character management specialist for Call of Cthulhu. Provide precise, mechanical information about character capabilities and resources.",
+    });
 
     return {
       agentResults: [
         {
           agentId: "character",
-          content: contentToString(response.content),
+          content: response,
           timestamp: new Date(),
           metadata: {
             gameState,
@@ -185,13 +207,11 @@ export const createCharacterNode = (
   };
 };
 
-export const createMemoryNode = (
-  db: CoCDatabase,
-  model: ChatOpenAI = fallbackModel
-) => {
+export const createMemoryNode = (db: CoCDatabase) => {
   const memoryAgent = new MemoryAgent(db);
 
   return async (state: CoCState): Promise<Partial<CoCState>> => {
+    const runtime = createRuntime(db);
     const gameState = state.gameState ?? initialGameState;
     const sessionId = gameState.sessionId;
     const userMessage = latestHumanMessage(state.messages);
@@ -234,49 +254,32 @@ export const createMemoryNode = (
         .join("\n");
     }
 
-    const systemPrompt = new SystemMessage(
-      composeTemplate(
-        [
-          "You are the unified Memory agent with access to:",
-          "1. Complete game history database (events, discoveries, relationships)",
-          "2. Call of Cthulhu 7e rules database (skills, weapons, sanity triggers, game mechanics)",
-          "",
-          "Your responsibilities:",
-          "- Provide historical context from past events and discoveries",
-          "- Look up relevant CoC 7e rules, skills, and weapons when needed",
-          "- Identify which skill checks are required for player actions",
-          "- Suggest appropriate difficulty levels and mechanics",
-          "- Maintain continuity and surface relevant past information",
-          "",
-          "Provide factual information without narrative flourish.",
-          "Your output will be given to the Keeper who will weave it into the story.",
-          "",
-          "Database stats: {{dbStats}}",
-          "{{contextSummary}}",
-          "Context:",
-          "- Latest player input: {{latestUserMessage}}",
-          "- Game state snapshot: {{gameStateSummary}}",
-          "- Routing notes: {{routingNotes}}",
-        ].join("\n"),
-        state,
-        {
-          latestUserMessage: userMessage || "No recent player input.",
-          gameStateSummary: formatGameState(gameState),
-          routingNotes: state.routingNotes ?? "None",
-          dbStats: JSON.stringify(memoryAgent.getStats()),
-          contextSummary,
-        }
-      )
+    // Use unified template system for memory agent
+    const context = CoCTemplateFactory.getMemoryAgent(
+      state,
+      contextSummary,
+      JSON.stringify(memoryAgent.getStats()),
+      {
+        latestUserMessage: userMessage || "No recent player input.",
+        gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
+        routingNotes: state.routingNotes ?? "None",
+      }
     );
 
-    const response = await model.invoke([systemPrompt, ...state.messages]);
+    // Use MEDIUM model for memory queries
+    const response = await generateText({
+      runtime,
+      context,
+      modelClass: CoCModelSelectors.memoryQuery(), // MEDIUM model
+      customSystemPrompt: "You are a comprehensive memory and rules database for Call of Cthulhu. Provide accurate historical context and rule information.",
+    });
 
     // Return as agentResult instead of message
     return {
       agentResults: [
         {
           agentId: "memory",
-          content: contentToString(response.content),
+          content: response,
           timestamp: new Date(),
           metadata: {
             recentEventsCount: recentEvents.length,

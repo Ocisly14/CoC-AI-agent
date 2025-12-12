@@ -2,33 +2,34 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**"],
+      "inputs": ["src/**/*.ts", "src/**/*.js", "tsconfig.json"]
     },
     "build:swc": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "inputs": ["src/**/*.ts", "src/**/*.js"]
     },
     "build:tsc": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"], 
+      "inputs": ["src/**/*.ts", "src/**/*.js", "tsconfig.json"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "inputs": ["src/**/*.ts", "src/**/*.js", "biome.json"]
     },
     "format": {
+      "inputs": ["src/**/*.ts", "src/**/*.js", "client/**/*.ts", "biome.json"],
       "outputs": []
     },
     "check": {
-      "dependsOn": ["^build"]
+      "inputs": ["src/**/*.ts", "src/**/*.js", "client/**/*.ts", "biome.json"]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**/*.ts", "vitest.config.ts"]
     },
     "clean": {
       "cache": false

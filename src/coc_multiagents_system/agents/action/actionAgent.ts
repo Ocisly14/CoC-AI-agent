@@ -11,7 +11,7 @@ import {
   formatGameState,
   latestHumanMessage,
 } from "../../../utils.js";
-import type { CharacterProfile } from "../../shared/models/gameTypes.js";
+import type { CharacterProfile } from "../models/gameTypes.js";
 import { actionTools, executeActionTool } from "./tools.js";
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";

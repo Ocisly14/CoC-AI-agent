@@ -198,6 +198,18 @@ export interface CharacterStatus {
   mp?: number;
   conditions: string[];
   notes?: string;
+  /**
+   * Damage bonus (e.g., "0", "+1d4", "+1d6", "-1d4")
+   */
+  damageBonus?: string;
+  /**
+   * Build value derived from STR+SIZ (e.g., -2, -1, 0, 1, 2, ...)
+   */
+  build?: number;
+  /**
+   * Movement rate
+   */
+  mov?: number;
   [key: string]: number | string[] | string | undefined;
 }
 

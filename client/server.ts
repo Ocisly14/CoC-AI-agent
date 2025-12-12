@@ -8,7 +8,7 @@ import { MemoryAgent } from "../src/coc_multiagents_system/agents/memory/memoryA
 import {
   CoCDatabase,
   seedDatabase,
-} from "../src/coc_multiagents_system/shared/database/index.js";
+} from "../src/coc_multiagents_system/agents/memory/database/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

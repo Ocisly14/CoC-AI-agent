@@ -1,4 +1,3 @@
-packages:
-  - "src/*"
-  - "client"
-  - "packages/*"
+# pnpm workspace configuration
+# Currently using single package structure
+packages: []

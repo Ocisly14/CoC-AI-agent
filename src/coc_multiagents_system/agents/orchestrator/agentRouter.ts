@@ -4,7 +4,7 @@
  * Simplified: Only returns agent IDs, agents decide internally what to do
  */
 
-import type { AgentManifest } from "../../shared/models/agentTypes.js";
+import type { AgentManifest } from "../models/agentTypes.js";
 
 /**
  * Routing result - just agent IDs

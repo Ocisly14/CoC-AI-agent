@@ -21,6 +21,14 @@ import {
   isAgentId,
   latestHumanMessage,
 } from "../../../utils.js";
+import {
+  ModelClass,
+  ModelProviderName,
+  generateText,
+  CoCModelSelectors,
+} from "../../../models/index.js";
+import { CoCTemplateFactory, TemplateUtils } from "../../../templates/index.js";
+import type { CoCDatabase } from "../../memory/database/index.js";
 
 type RoutingDecision = {
   agents: AgentId[];
@@ -28,6 +36,13 @@ type RoutingDecision = {
   rationale?: string;
   isAction?: boolean;
 };
+
+// Create a runtime interface for the orchestrator
+const createOrchestratorRuntime = (database: CoCDatabase) => ({
+  modelProvider: (process.env.MODEL_PROVIDER as ModelProviderName) || ModelProviderName.OPENAI,
+  database,
+  getSetting: (key: string) => process.env[key],
+});
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
@@ -129,57 +144,30 @@ export const shouldContinue = (state: CoCState): string => {
  * Analyzes player input and determines which agents to consult
  */
 export const createOrchestratorNode =
-  (model: ChatOpenAI = routerModel) =>
+  (database: CoCDatabase) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
+    const runtime = createOrchestratorRuntime(database);
     const userInput = latestHumanMessage(state.messages);
     const gameState = state.gameState ?? initialGameState;
 
-    const orchestratorSystemPrompt = composeTemplate(
-      [
-        "You are the Orchestrator for a Call of Cthulhu multi-agent system.",
-        "Analyze the player input and decide which DATA AGENTS should be consulted.",
-        "Available agents:",
-        '- "memory": game history, rules reference, skills, weapons, sanity triggers',
-        '- "character": player character capabilities, inventory, character state',
-        '- "action": resolves player actions using memory/rule context; updates mechanics',
-        "",
-        "IMPORTANT:",
-        "- Memory agent has access to ALL game rules, skills, and weapons data",
-        "- Use memory agent for: rules lookups, skill checks, history, context, discoveries",
-        "- Use character agent for: character-specific capabilities and resources",
-        "- Use action agent when the player is attempting an in-world action. Always route memory BEFORE action so it has rule context.",
-        "- DO NOT include 'keeper' - the Keeper will automatically synthesize results",
-        "",
-        'Return a strict JSON object: {"agents": ["memory", "character", "action"], "intent": "...", "rationale": "...", "isAction": true|false}',
-        "Do not include commentary before or after the JSON.",
-        "Game snapshot:",
-        "- {{gameStateSummary}}",
-        "- Routing notes: {{routingNotes}}",
-      ].join("\n"),
+    // Use unified template system for orchestrator
+    const context = CoCTemplateFactory.getOrchestrator(
       state,
+      userInput || "",
       {
-        routingNotes: state.routingNotes ?? "None",
-        gameStateSummary: formatGameState(gameState),
+        gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
       }
     );
 
-    const orchestratorHumanPrompt = composeTemplate(
-      [
-        'Player input: "{{latestPlayerInput}}"',
-        "Pick only the agents that add value; prefer concise teams.",
-      ].join("\n"),
-      state,
-      {
-        latestPlayerInput: userInput || "No recent player input.",
-      }
-    );
+    // Use new model system for orchestrator decisions
+    const response = await generateText({
+      runtime,
+      context,
+      modelClass: CoCModelSelectors.orchestration(), // SMALL model for quick routing decisions
+      customSystemPrompt: "You are an efficient orchestrator for a Call of Cthulhu multi-agent system. Make quick, accurate routing decisions.",
+    });
 
-    const response = await model.invoke([
-      new SystemMessage(orchestratorSystemPrompt),
-      new HumanMessage(orchestratorHumanPrompt),
-    ]);
-
-    const decision = parseRoutingDecision(contentToString(response.content));
+    const decision = parseRoutingDecision(response);
     const normalizedQueue: AgentId[] = (() => {
       if (decision.isAction) {
         const ordered: AgentId[] = [
