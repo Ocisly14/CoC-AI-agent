@@ -1,2 +1,2 @@
-export * from './npcDocumentParser.js';
-export * from './npcLoader.js';
+export * from "./npcDocumentParser.js";
+export * from "./npcLoader.js";

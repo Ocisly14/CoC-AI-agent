@@ -1,1 +1,1 @@
-export { CharacterAgent } from './characterAgent.js';
+export { CharacterAgent } from "./characterAgent.js";

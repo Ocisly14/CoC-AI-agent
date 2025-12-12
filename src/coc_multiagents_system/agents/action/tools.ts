@@ -5,7 +5,8 @@ export const actionTools = [
     type: "function",
     function: {
       name: "roll_dice",
-      description: "Roll N dice with given sides, default d100. Returns array of integers.",
+      description:
+        "Roll N dice with given sides, default d100. Returns array of integers.",
       parameters: {
         type: "object",
         properties: {
@@ -65,7 +66,8 @@ export const actionTools = [
     type: "function",
     function: {
       name: "divide",
-      description: "Divide a by b (a / b). Handles divide-by-zero by returning null.",
+      description:
+        "Divide a by b (a / b). Handles divide-by-zero by returning null.",
       parameters: {
         type: "object",
         properties: {
@@ -87,9 +89,14 @@ export const executeActionTool = (call: any, log: string[]): ToolMessage => {
     case "roll_dice": {
       const sides = Math.max(2, Math.floor(args?.sides ?? 100));
       const count = Math.max(1, Math.floor(args?.count ?? 1));
-      const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+      const rolls = Array.from(
+        { length: count },
+        () => Math.floor(Math.random() * sides) + 1
+      );
       result = { rolls, sides, total: rolls.reduce((a, b) => a + b, 0) };
-      log.push(`roll_dice: d${sides} x${count} -> ${rolls.join(", ")} (total ${result.total})`);
+      log.push(
+        `roll_dice: d${sides} x${count} -> ${rolls.join(", ")} (total ${result.total})`
+      );
       break;
     }
     case "add": {

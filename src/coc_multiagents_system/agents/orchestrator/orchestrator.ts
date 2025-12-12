@@ -3,11 +3,24 @@
  * Analyzes player input and routes to appropriate agents
  */
 
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
+import {
+  type AgentId,
+  type CoCState,
+  initialGameState,
+} from "../../../state.js";
 import { composeTemplate } from "../../../template.js";
-import { CoCState, AgentId, initialGameState } from "../../../state.js";
-import { contentToString, latestHumanMessage, formatGameState, isAgentId } from "../../../utils.js";
+import {
+  contentToString,
+  formatGameState,
+  isAgentId,
+  latestHumanMessage,
+} from "../../../utils.js";
 
 type RoutingDecision = {
   agents: AgentId[];
@@ -29,7 +42,9 @@ const routerModel = new ChatOpenAI({
 const parseRoutingDecision = (raw: string): RoutingDecision => {
   try {
     const parsed = JSON.parse(raw) as RoutingDecision;
-    const uniqueAgents = Array.from(new Set(parsed.agents || [])).filter(isAgentId);
+    const uniqueAgents = Array.from(new Set(parsed.agents || [])).filter(
+      isAgentId
+    );
     return {
       agents: uniqueAgents.length ? uniqueAgents : [],
       intent: parsed.intent,
@@ -65,31 +80,33 @@ const parseRoutingDecision = (raw: string): RoutingDecision => {
 /**
  * Execute agents from queue
  */
-export const createExecuteAgentsNode = () =>
+export const createExecuteAgentsNode =
+  () =>
   (state: CoCState): Partial<CoCState> => {
     const queue = state.agentQueue || [];
     if (queue.length === 0) {
       return {
-        nextAgent: 'keeper',
-        allAgentsCompleted: true
+        nextAgent: "keeper",
+        allAgentsCompleted: true,
       };
     }
 
     const [next, ...rest] = queue;
     return {
       nextAgent: next,
-      agentQueue: rest
+      agentQueue: rest,
     };
   };
 
 /**
  * Check if all agents completed
  */
-export const createCheckCompletionNode = () =>
+export const createCheckCompletionNode =
+  () =>
   (state: CoCState): Partial<CoCState> => {
     const queue = state.agentQueue || [];
     return {
-      allAgentsCompleted: queue.length === 0
+      allAgentsCompleted: queue.length === 0,
     };
   };
 
@@ -97,14 +114,14 @@ export const createCheckCompletionNode = () =>
  * Route to the next agent
  */
 export const routeToAgent = (state: CoCState): string => {
-  return state.nextAgent || 'check';
+  return state.nextAgent || "check";
 };
 
 /**
  * Decide whether to continue or go to keeper
  */
 export const shouldContinue = (state: CoCState): string => {
-  return state.allAgentsCompleted ? 'keeper' : 'continue';
+  return state.allAgentsCompleted ? "keeper" : "continue";
 };
 
 /**
@@ -133,7 +150,7 @@ export const createOrchestratorNode =
         "- Use action agent when the player is attempting an in-world action. Always route memory BEFORE action so it has rule context.",
         "- DO NOT include 'keeper' - the Keeper will automatically synthesize results",
         "",
-        "Return a strict JSON object: {\"agents\": [\"memory\", \"character\", \"action\"], \"intent\": \"...\", \"rationale\": \"...\", \"isAction\": true|false}",
+        'Return a strict JSON object: {"agents": ["memory", "character", "action"], "intent": "...", "rationale": "...", "isAction": true|false}',
         "Do not include commentary before or after the JSON.",
         "Game snapshot:",
         "- {{gameStateSummary}}",
@@ -143,7 +160,7 @@ export const createOrchestratorNode =
       {
         routingNotes: state.routingNotes ?? "None",
         gameStateSummary: formatGameState(gameState),
-      },
+      }
     );
 
     const orchestratorHumanPrompt = composeTemplate(
@@ -154,7 +171,7 @@ export const createOrchestratorNode =
       state,
       {
         latestPlayerInput: userInput || "No recent player input.",
-      },
+      }
     );
 
     const response = await model.invoke([
@@ -165,11 +182,19 @@ export const createOrchestratorNode =
     const decision = parseRoutingDecision(contentToString(response.content));
     const normalizedQueue: AgentId[] = (() => {
       if (decision.isAction) {
-        const ordered: AgentId[] = ["memory", "action", ...(decision.agents || [])];
-        return ordered.filter((agent, idx) => isAgentId(agent) && ordered.indexOf(agent) === idx);
+        const ordered: AgentId[] = [
+          "memory",
+          "action",
+          ...(decision.agents || []),
+        ];
+        return ordered.filter(
+          (agent, idx) => isAgentId(agent) && ordered.indexOf(agent) === idx
+        );
       }
       const ordered = decision.agents || [];
-      return ordered.filter((agent, idx) => isAgentId(agent) && ordered.indexOf(agent) === idx);
+      return ordered.filter(
+        (agent, idx) => isAgentId(agent) && ordered.indexOf(agent) === idx
+      );
     })();
 
     const orchestratorSummary = new AIMessage({

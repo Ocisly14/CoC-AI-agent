@@ -1,12 +1,20 @@
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, SystemMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
-import { composeTemplate } from "./template.js";
-import { CoCState, AgentId, initialGameState } from "./state.js";
-import { CoCDatabase } from "./coc_multiagents_system/shared/database/index.js";
-import { MemoryAgent } from "./coc_multiagents_system/agents/memory/index.js";
 import { CharacterAgent } from "./coc_multiagents_system/agents/character/index.js";
-import { buildKeeperPrompt, buildKeeperPromptNoAgents, extractAgentResults } from "./coc_multiagents_system/agents/keeper/index.js";
-import { contentToString, latestHumanMessage, formatGameState } from "./utils.js";
+import {
+  buildKeeperPrompt,
+  buildKeeperPromptNoAgents,
+  extractAgentResults,
+} from "./coc_multiagents_system/agents/keeper/index.js";
+import { MemoryAgent } from "./coc_multiagents_system/agents/memory/index.js";
+import type { CoCDatabase } from "./coc_multiagents_system/shared/database/index.js";
+import { type AgentId, type CoCState, initialGameState } from "./state.js";
+import { composeTemplate } from "./template.js";
+import {
+  contentToString,
+  formatGameState,
+  latestHumanMessage,
+} from "./utils.js";
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
@@ -18,7 +26,11 @@ const fallbackModel = new ChatOpenAI({
 // Rule agent merged into Memory agent - see createMemoryNode
 
 const buildAgentNode =
-  (name: AgentId, systemInstruction: string, model: ChatOpenAI = fallbackModel) =>
+  (
+    name: AgentId,
+    systemInstruction: string,
+    model: ChatOpenAI = fallbackModel
+  ) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
     const gameState = state.gameState ?? initialGameState;
     const systemPrompt = new SystemMessage(
@@ -33,11 +45,12 @@ const buildAgentNode =
         ].join("\n"),
         state,
         {
-          latestUserMessage: latestHumanMessage(state.messages) || "No recent player input.",
+          latestUserMessage:
+            latestHumanMessage(state.messages) || "No recent player input.",
           gameStateSummary: formatGameState(gameState),
           routingNotes: state.routingNotes ?? "None",
-        },
-      ),
+        }
+      )
     );
 
     const response = await model.invoke([systemPrompt, ...state.messages]);
@@ -55,12 +68,13 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
     "action",
     [
       "You are the Action agent. Convert player intent into clear next steps or rolls.",
-      "Suggest concrete mechanical actions (e.g., skill checks, positioning) without narrative."
+      "Suggest concrete mechanical actions (e.g., skill checks, positioning) without narrative.",
     ].join("\n"),
     model
   );
 
-export const createKeeperNode = (model: ChatOpenAI = fallbackModel) =>
+export const createKeeperNode =
+  (model: ChatOpenAI = fallbackModel) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
     const gameState = state.gameState ?? initialGameState;
     const userMessage = latestHumanMessage(state.messages);
@@ -85,9 +99,9 @@ export const createKeeperNode = (model: ChatOpenAI = fallbackModel) =>
           timeOfDay: gameState.timeOfDay,
           tension: gameState.tension,
           openThreads: gameState.openThreads,
-          discoveredClues: gameState.discoveredClues
+          discoveredClues: gameState.discoveredClues,
         },
-        agentResults: extractedResults
+        agentResults: extractedResults,
       });
     }
 
@@ -97,16 +111,21 @@ export const createKeeperNode = (model: ChatOpenAI = fallbackModel) =>
 
     // Keeper's output is the final message to the user
     return {
-      messages: [new AIMessage({
-        content: contentToString(response.content),
-        name: "keeper"
-      })],
+      messages: [
+        new AIMessage({
+          content: contentToString(response.content),
+          name: "keeper",
+        }),
+      ],
       // Clear agent results for next round
-      agentResults: []
+      agentResults: [],
     };
   };
 
-export const createCharacterNode = (db: CoCDatabase, model: ChatOpenAI = fallbackModel) => {
+export const createCharacterNode = (
+  db: CoCDatabase,
+  model: ChatOpenAI = fallbackModel
+) => {
   const characterAgent = new CharacterAgent(db);
 
   return async (state: CoCState): Promise<Partial<CoCState>> => {
@@ -140,31 +159,36 @@ export const createCharacterNode = (db: CoCDatabase, model: ChatOpenAI = fallbac
           gameStateSummary: formatGameState(gameState),
           routingNotes: state.routingNotes ?? "None",
           characterSummary,
-        },
-      ),
+        }
+      )
     );
 
     const response = await model.invoke([systemPrompt, ...state.messages]);
 
     return {
-      agentResults: [{
-        agentId: 'character',
-        content: contentToString(response.content),
-        timestamp: new Date(),
-        metadata: {
-          gameState,
-          character: storedCharacter
-        }
-      }],
+      agentResults: [
+        {
+          agentId: "character",
+          content: contentToString(response.content),
+          timestamp: new Date(),
+          metadata: {
+            gameState,
+            character: storedCharacter,
+          },
+        },
+      ],
       gameState: {
         ...gameState,
-        playerCharacter: storedCharacter
-      }
+        playerCharacter: storedCharacter,
+      },
     };
   };
 };
 
-export const createMemoryNode = (db: CoCDatabase, model: ChatOpenAI = fallbackModel) => {
+export const createMemoryNode = (
+  db: CoCDatabase,
+  model: ChatOpenAI = fallbackModel
+) => {
   const memoryAgent = new MemoryAgent(db);
 
   return async (state: CoCState): Promise<Partial<CoCState>> => {
@@ -178,11 +202,11 @@ export const createMemoryNode = (db: CoCDatabase, model: ChatOpenAI = fallbackMo
     // Log the current interaction as an event
     if (userMessage) {
       memoryAgent.logEvent({
-        eventType: 'action',
+        eventType: "action",
         sessionId,
         timestamp: new Date(),
         details: { userInput: userMessage },
-        tags: ['user-action']
+        tags: ["user-action"],
       });
     }
 
@@ -193,18 +217,21 @@ export const createMemoryNode = (db: CoCDatabase, model: ChatOpenAI = fallbackMo
     // Build context summary
     let contextSummary = "Recent context:\n";
     if (recentEvents.length > 0) {
-      contextSummary += recentEvents.slice(0, 5).map(e =>
-        `- [${e.eventType}] ${JSON.stringify(e.details)}`
-      ).join("\n");
+      contextSummary += recentEvents
+        .slice(0, 5)
+        .map((e) => `- [${e.eventType}] ${JSON.stringify(e.details)}`)
+        .join("\n");
     } else {
       contextSummary += "- No previous events in this session";
     }
 
     if (discoveries.length > 0) {
       contextSummary += "\n\nDiscovered clues:\n";
-      contextSummary += discoveries.map(d =>
-        `- ${d.clueId} (discovered by ${d.discoverer} via ${d.method})`
-      ).join("\n");
+      contextSummary += discoveries
+        .map(
+          (d) => `- ${d.clueId} (discovered by ${d.discoverer} via ${d.method})`
+        )
+        .join("\n");
     }
 
     const systemPrompt = new SystemMessage(
@@ -237,25 +264,27 @@ export const createMemoryNode = (db: CoCDatabase, model: ChatOpenAI = fallbackMo
           gameStateSummary: formatGameState(gameState),
           routingNotes: state.routingNotes ?? "None",
           dbStats: JSON.stringify(memoryAgent.getStats()),
-          contextSummary
-        },
-      ),
+          contextSummary,
+        }
+      )
     );
 
     const response = await model.invoke([systemPrompt, ...state.messages]);
 
     // Return as agentResult instead of message
     return {
-      agentResults: [{
-        agentId: 'memory',
-        content: contentToString(response.content),
-        timestamp: new Date(),
-        metadata: {
-          recentEventsCount: recentEvents.length,
-          discoveriesCount: discoveries.length,
-          stats: memoryAgent.getStats()
-        }
-      }]
+      agentResults: [
+        {
+          agentId: "memory",
+          content: contentToString(response.content),
+          timestamp: new Date(),
+          metadata: {
+            recentEventsCount: recentEvents.length,
+            discoveriesCount: discoveries.length,
+            stats: memoryAgent.getStats(),
+          },
+        },
+      ],
     };
   };
 };

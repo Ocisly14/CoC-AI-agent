@@ -1,9 +1,17 @@
-import { AIMessage, SystemMessage } from "@langchain/core/messages";
+import { SystemMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
+import {
+  type CoCState,
+  type GameState,
+  initialGameState,
+} from "../../../state.js";
 import { composeTemplate } from "../../../template.js";
-import { CoCState, initialGameState, GameState } from "../../../state.js";
-import { CharacterProfile } from "../../shared/models/gameTypes.js";
-import { contentToString, latestHumanMessage, formatGameState } from "../../../utils.js";
+import {
+  contentToString,
+  formatGameState,
+  latestHumanMessage,
+} from "../../../utils.js";
+import type { CharacterProfile } from "../../shared/models/gameTypes.js";
 import { actionTools, executeActionTool } from "./tools.js";
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
@@ -26,7 +34,10 @@ type SkillCheckRequest = {
   note?: string;
 };
 
-const formatCharacterDelta = (before?: GameState["playerCharacter"], after?: GameState["playerCharacter"]): string | null => {
+const formatCharacterDelta = (
+  before?: GameState["playerCharacter"],
+  after?: GameState["playerCharacter"]
+): string | null => {
   if (!before || !after) return null;
   const prev = before.status;
   const next = after.status;
@@ -48,8 +59,12 @@ const formatCharacterDelta = (before?: GameState["playerCharacter"], after?: Gam
   }
 
   if (prev.conditions?.join(",") !== after.status.conditions?.join(",")) {
-    const prevConds = prev.conditions?.length ? prev.conditions.join(", ") : "none";
-    const nextConds = next.conditions?.length ? next.conditions.join(", ") : "none";
+    const prevConds = prev.conditions?.length
+      ? prev.conditions.join(", ")
+      : "none";
+    const nextConds = next.conditions?.length
+      ? next.conditions.join(", ")
+      : "none";
     lines.push(`Conditions: ${prevConds} -> ${nextConds}`);
   }
 
@@ -58,7 +73,9 @@ const formatCharacterDelta = (before?: GameState["playerCharacter"], after?: Gam
 
 const parseActionOutput = (raw: string): ActionAgentOutput => {
   try {
-    const parsed = JSON.parse(raw) as ActionAgentOutput & { checks?: SkillCheckRequest[] };
+    const parsed = JSON.parse(raw) as ActionAgentOutput & {
+      checks?: SkillCheckRequest[];
+    };
     return {
       summary: parsed.summary ?? raw,
       stateUpdate: parsed.stateUpdate,
@@ -72,21 +89,33 @@ const parseActionOutput = (raw: string): ActionAgentOutput => {
 };
 
 const buildMemoryContext = (agentResults: any[]): string => {
-  const memoryFindings = (agentResults || []).filter((r) => r.agentId === "memory");
+  const memoryFindings = (agentResults || []).filter(
+    (r) => r.agentId === "memory"
+  );
   if (memoryFindings.length === 0) return "No memory/rule context provided.";
 
   return memoryFindings
     .map((entry, idx) => {
-      const details = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content);
+      const details =
+        typeof entry.content === "string"
+          ? entry.content
+          : JSON.stringify(entry.content);
       return `Memory note ${idx + 1}: ${details}`;
     })
     .join("\n");
 };
 
-const mergeCharacter = (current: CharacterProfile, updates?: Partial<CharacterProfile>): CharacterProfile => {
+const mergeCharacter = (
+  current: CharacterProfile,
+  updates?: Partial<CharacterProfile>
+): CharacterProfile => {
   if (!updates) return current;
-  const mergedStatus = updates.status ? { ...current.status, ...updates.status } : current.status;
-  const mergedSkills = updates.skills ? { ...current.skills, ...updates.skills } : current.skills;
+  const mergedStatus = updates.status
+    ? { ...current.status, ...updates.status }
+    : current.status;
+  const mergedSkills = updates.skills
+    ? { ...current.skills, ...updates.skills }
+    : current.skills;
   return {
     ...current,
     ...updates,
@@ -95,7 +124,10 @@ const mergeCharacter = (current: CharacterProfile, updates?: Partial<CharacterPr
   };
 };
 
-const evaluateSkillCheck = (check: SkillCheckRequest, skills: Record<string, number>) => {
+const evaluateSkillCheck = (
+  check: SkillCheckRequest,
+  skills: Record<string, number>
+) => {
   const targetBase = skills?.[check.skill] ?? 0;
   const difficulty = check.difficulty ?? "regular";
   const difficultyTarget =
@@ -107,7 +139,8 @@ const evaluateSkillCheck = (check: SkillCheckRequest, skills: Record<string, num
 
   const roll = Math.floor(check.roll);
   const success = roll <= difficultyTarget;
-  let level: "critical" | "extreme" | "hard" | "regular" | "failure" = "failure";
+  let level: "critical" | "extreme" | "hard" | "regular" | "failure" =
+    "failure";
   if (success) {
     if (roll <= Math.max(1, Math.floor(targetBase / 20))) {
       level = "critical";
@@ -129,7 +162,8 @@ const evaluateSkillCheck = (check: SkillCheckRequest, skills: Record<string, num
   };
 };
 
-export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
+export const createActionNode =
+  (model: ChatOpenAI = fallbackModel) =>
   async (state: CoCState): Promise<Partial<CoCState>> => {
     const gameState = state.gameState ?? initialGameState;
     const userMessage = latestHumanMessage(state.messages);
@@ -165,8 +199,8 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
           routingNotes: state.routingNotes ?? "None",
           memoryContext,
           toolSpec,
-        },
-      ),
+        }
+      )
     );
 
     const toolEnabledModel = model.bindTools(actionTools);
@@ -177,24 +211,40 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
     const toolLogs: string[] = [];
 
     if (firstResponse.tool_calls && firstResponse.tool_calls.length > 0) {
-      const toolResults = firstResponse.tool_calls.map((call: any) => executeActionTool(call, toolLogs));
-      actionResponse = await toolEnabledModel.invoke([...messages, firstResponse, ...toolResults]);
+      const toolResults = firstResponse.tool_calls.map((call: any) =>
+        executeActionTool(call, toolLogs)
+      );
+      actionResponse = await toolEnabledModel.invoke([
+        ...messages,
+        firstResponse,
+        ...toolResults,
+      ]);
     }
 
-    const parsed = parseActionOutput(contentToString(actionResponse.content)) as ActionAgentOutput & { checks?: SkillCheckRequest[] };
+    const parsed = parseActionOutput(
+      contentToString(actionResponse.content)
+    ) as ActionAgentOutput & { checks?: SkillCheckRequest[] };
     const mergedLog = parsed.log ? [...parsed.log, ...toolLogs] : toolLogs;
 
     const stateUpdate = parsed.stateUpdate ?? {};
-    const mergedPlayerCharacter = mergeCharacter(gameState.playerCharacter, stateUpdate.playerCharacter);
+    const mergedPlayerCharacter = mergeCharacter(
+      gameState.playerCharacter,
+      stateUpdate.playerCharacter
+    );
 
     const updatedGameState: GameState = {
       ...gameState,
       ...stateUpdate,
       playerCharacter: mergedPlayerCharacter,
     };
-    const characterDelta = formatCharacterDelta(gameState.playerCharacter, updatedGameState.playerCharacter);
+    const characterDelta = formatCharacterDelta(
+      gameState.playerCharacter,
+      updatedGameState.playerCharacter
+    );
     const evaluatedChecks = parsed.checks
-      ? parsed.checks.map((c) => evaluateSkillCheck(c, mergedPlayerCharacter.skills || {}))
+      ? parsed.checks.map((c) =>
+          evaluateSkillCheck(c, mergedPlayerCharacter.skills || {})
+        )
       : [];
     const checkSummary = evaluatedChecks.length
       ? evaluatedChecks
@@ -202,7 +252,7 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
             (c) =>
               `${c.skill}: roll ${c.roll} vs ${c.target} (${c.difficulty ?? "regular"}) -> ${
                 c.success ? c.level : "failure"
-              }`,
+              }`
           )
           .join("\n")
       : null;
@@ -211,7 +261,10 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
       ? `${parsed.summary}\n\n# Character Update\n${characterDelta}`
       : parsed.summary;
 
-    const finalContent = [formattedSummary, checkSummary ? `\n# Checks\n${checkSummary}` : null]
+    const finalContent = [
+      formattedSummary,
+      checkSummary ? `\n# Checks\n${checkSummary}` : null,
+    ]
       .filter(Boolean)
       .join("\n");
 
@@ -227,7 +280,7 @@ export const createActionNode = (model: ChatOpenAI = fallbackModel) =>
             log: mergedLog,
             raw: contentToString(actionResponse.content),
             characterDelta,
-            checks: evaluatedChecks
+            checks: evaluatedChecks,
           },
         },
       ],

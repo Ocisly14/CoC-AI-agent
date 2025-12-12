@@ -3,27 +3,27 @@
  * Stores rules, skills, weapons, and memory data
  */
 
-import Database from 'better-sqlite3';
+import Database from "better-sqlite3";
 type DBInstance = InstanceType<typeof Database>;
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class CoCDatabase {
-    private db: DBInstance;
+  private db: DBInstance;
 
-    constructor(dbPath?: string) {
-        const defaultPath = path.join(process.cwd(), 'data', 'coc_game.db');
-        this.db = new Database(dbPath || defaultPath);
-        this.db.pragma('journal_mode = WAL');
-        this.initializeSchema();
-    }
+  constructor(dbPath?: string) {
+    const defaultPath = path.join(process.cwd(), "data", "coc_game.db");
+    this.db = new Database(dbPath || defaultPath);
+    this.db.pragma("journal_mode = WAL");
+    this.initializeSchema();
+  }
 
-    private initializeSchema(): void {
-        // Rules table
-        this.db.exec(`
+  private initializeSchema(): void {
+    // Rules table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS rules (
                 id TEXT PRIMARY KEY,
                 category TEXT NOT NULL,
@@ -39,8 +39,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_rules_title ON rules(title);
         `);
 
-        // Skills table
-        this.db.exec(`
+    // Skills table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS skills (
                 name TEXT PRIMARY KEY,
                 base_value INTEGER NOT NULL,
@@ -53,8 +53,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_skills_category ON skills(category);
         `);
 
-        // Weapons table
-        this.db.exec(`
+    // Weapons table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS weapons (
                 name TEXT PRIMARY KEY,
                 skill TEXT NOT NULL,
@@ -68,8 +68,8 @@ export class CoCDatabase {
             );
         `);
 
-        // Sanity triggers table
-        this.db.exec(`
+    // Sanity triggers table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS sanity_triggers (
                 trigger TEXT PRIMARY KEY,
                 sanity_loss TEXT NOT NULL,
@@ -78,8 +78,8 @@ export class CoCDatabase {
             );
         `);
 
-        // Sessions table
-        this.db.exec(`
+    // Sessions table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY,
                 start_time DATETIME NOT NULL,
@@ -89,8 +89,8 @@ export class CoCDatabase {
             );
         `);
 
-        // Game events table
-        this.db.exec(`
+    // Game events table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS game_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_type TEXT NOT NULL,
@@ -109,8 +109,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_events_character ON game_events(character_id);
         `);
 
-        // Discoveries table
-        this.db.exec(`
+    // Discoveries table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS discoveries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 clue_id TEXT NOT NULL,
@@ -126,8 +126,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_discoveries_clue ON discoveries(clue_id);
         `);
 
-        // Relationships table
-        this.db.exec(`
+    // Relationships table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS relationships (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 character_id TEXT NOT NULL,
@@ -144,8 +144,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_relationships_npc ON relationships(npc_id);
         `);
 
-        // Characters table
-        this.db.exec(`
+    // Characters table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS characters (
                 character_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -167,28 +167,28 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(name);
             CREATE INDEX IF NOT EXISTS idx_characters_is_npc ON characters(is_npc);
         `);
-        // Backfill columns for existing tables
-        const columnsToAdd = [
-            'skills TEXT',
-            'is_npc INTEGER DEFAULT 0',
-            'occupation TEXT',
-            'age INTEGER',
-            'appearance TEXT',
-            'personality TEXT',
-            'background TEXT',
-            'goals TEXT',
-            'secrets TEXT'
-        ];
-        for (const column of columnsToAdd) {
-            try {
-                this.db.exec(`ALTER TABLE characters ADD COLUMN ${column};`);
-            } catch {
-                // ignore if column already exists
-            }
-        }
+    // Backfill columns for existing tables
+    const columnsToAdd = [
+      "skills TEXT",
+      "is_npc INTEGER DEFAULT 0",
+      "occupation TEXT",
+      "age INTEGER",
+      "appearance TEXT",
+      "personality TEXT",
+      "background TEXT",
+      "goals TEXT",
+      "secrets TEXT",
+    ];
+    for (const column of columnsToAdd) {
+      try {
+        this.db.exec(`ALTER TABLE characters ADD COLUMN ${column};`);
+      } catch {
+        // ignore if column already exists
+      }
+    }
 
-        // NPC Clues table
-        this.db.exec(`
+    // NPC Clues table
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS npc_clues (
                 id TEXT PRIMARY KEY,
                 npc_id TEXT NOT NULL,
@@ -204,8 +204,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_npc_clues_revealed ON npc_clues(revealed);
         `);
 
-        // NPC Relationships table (extended version)
-        this.db.exec(`
+    // NPC Relationships table (extended version)
+    this.db.exec(`
             CREATE TABLE IF NOT EXISTS npc_relationships (
                 id TEXT PRIMARY KEY,
                 source_id TEXT NOT NULL,
@@ -223,8 +223,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_npc_relationships_target ON npc_relationships(target_id);
         `);
 
-        // Full-text search for events
-        this.db.exec(`
+    // Full-text search for events
+    this.db.exec(`
             CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
                 event_id UNINDEXED,
                 details,
@@ -247,19 +247,19 @@ export class CoCDatabase {
                 VALUES (new.id, new.details);
             END;
         `);
-    }
+  }
 
-    getDatabase(): DBInstance {
-        return this.db;
-    }
+  getDatabase(): DBInstance {
+    return this.db;
+  }
 
-    close(): void {
-        this.db.close();
-    }
+  close(): void {
+    this.db.close();
+  }
 
-    // Execute a transaction
-    transaction<T>(fn: () => T): T {
-        const txn = this.db.transaction(fn);
-        return txn();
-    }
+  // Execute a transaction
+  transaction<T>(fn: () => T): T {
+    const txn = this.db.transaction(fn);
+    return txn();
+  }
 }

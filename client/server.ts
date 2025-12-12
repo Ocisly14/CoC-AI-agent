@@ -1,17 +1,20 @@
 import "dotenv/config";
-import express from "express";
-import cors from "cors";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { CoCDatabase, seedDatabase } from "../src/coc_multiagents_system/shared/database/index.js";
+import cors from "cors";
+import express from "express";
 import { MemoryAgent } from "../src/coc_multiagents_system/agents/memory/memoryAgent.js";
-import fs from "fs";
+import {
+  CoCDatabase,
+  seedDatabase,
+} from "../src/coc_multiagents_system/shared/database/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize database
-const dataDir = path.join(process.cwd(), 'data');
+const dataDir = path.join(process.cwd(), "data");
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -24,7 +27,7 @@ seedDatabase(db);
 const memoryAgent = new MemoryAgent(db);
 
 // Create a default session
-const SESSION_ID = "chat-session-" + new Date().toISOString().split('T')[0];
+const SESSION_ID = "chat-session-" + new Date().toISOString().split("T")[0];
 memoryAgent.createSession(SESSION_ID, "Web chat session");
 
 const app = express();
@@ -40,27 +43,27 @@ app.post("/api/message", (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message || typeof message !== 'string') {
+    if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "Message is required" });
     }
 
     // Save message to memory using MemoryAgent
     const eventId = memoryAgent.logEvent({
-      eventType: 'dialogue',
+      eventType: "dialogue",
       sessionId: SESSION_ID,
       timestamp: new Date(),
       details: {
-        type: 'user_message',
-        content: message
+        type: "user_message",
+        content: message,
       },
-      tags: ['user', 'chat']
+      tags: ["user", "chat"],
     });
 
     res.json({
       success: true,
       eventId,
       timestamp: new Date().toISOString(),
-      message: "Message saved to memory"
+      message: "Message saved to memory",
     });
   } catch (error) {
     console.error("Error saving message:", error);
@@ -71,22 +74,22 @@ app.post("/api/message", (req, res) => {
 // API endpoint to get message history
 app.get("/api/messages", (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = Number.parseInt(req.query.limit as string) || 50;
 
     const events = memoryAgent.queryHistory({
       sessionId: SESSION_ID,
-      eventType: 'dialogue',
-      limit
+      eventType: "dialogue",
+      limit,
     });
 
     res.json({
       success: true,
-      messages: events.map(event => ({
+      messages: events.map((event) => ({
         id: event.id,
         content: event.details.content,
         timestamp: event.timestamp,
-        type: event.details.type
-      }))
+        type: event.details.type,
+      })),
     });
   } catch (error) {
     console.error("Error fetching messages:", error);
@@ -101,8 +104,8 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\nShutting down gracefully...');
+process.on("SIGINT", () => {
+  console.log("\nShutting down gracefully...");
   db.close();
   process.exit(0);
 });

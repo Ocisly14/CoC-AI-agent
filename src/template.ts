@@ -1,11 +1,12 @@
-import { CoCState, initialGameState } from "./state.js";
+import { type CoCState, initialGameState } from "./state.js";
 
 type TemplateContext = Record<string, unknown>;
 
 const renderValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
   if (Array.isArray(value)) return value.map(renderValue).join(", ");
   if (typeof value === "object") return JSON.stringify(value, null, 2);
   return String(value);
@@ -28,7 +29,7 @@ const getValueAtPath = (context: TemplateContext, rawPath: string): unknown => {
 export const composeTemplate = (
   template: string,
   state: CoCState,
-  extraContext: TemplateContext = {},
+  extraContext: TemplateContext = {}
 ): string => {
   const context: TemplateContext = {
     ...state,

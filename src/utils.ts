@@ -2,8 +2,8 @@
  * Shared utility functions for agents
  */
 
-import { BaseMessage } from "@langchain/core/messages";
-import { GameState, AgentId } from "./state.js";
+import type { BaseMessage } from "@langchain/core/messages";
+import type { AgentId, GameState } from "./state.js";
 
 /**
  * Convert various content types to string
@@ -24,7 +24,9 @@ export const contentToString = (content: unknown): string => {
 export const latestHumanMessage = (messages: BaseMessage[]): string => {
   const reversed = [...messages].reverse();
   const human = reversed.find(
-    (message) => (message as any)._getType?.() === "human" || (message as any).type === "human",
+    (message) =>
+      (message as any)._getType?.() === "human" ||
+      (message as any).type === "human"
   );
   return human ? contentToString(human.content) : "";
 };
@@ -56,7 +58,7 @@ export const formatGameState = (gameState: GameState): string => {
     `Threads: ${threads}`,
     `Clues: ${clues}`,
     characterStatus,
-    npcCharacters
+    npcCharacters,
   ].join(" | ");
 };
 

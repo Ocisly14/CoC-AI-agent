@@ -1,7 +1,7 @@
-import { MessagesAnnotation, Annotation } from "@langchain/langgraph";
-import { CharacterProfile } from "./coc_multiagents_system/shared/models/gameTypes.js";
+import { Annotation, MessagesAnnotation } from "@langchain/langgraph";
+import type { CharacterProfile } from "./coc_multiagents_system/shared/models/gameTypes.js";
 
-export type AgentId = "character" | "memory" | "action";  // keeper is no longer in queue, rule merged into memory
+export type AgentId = "character" | "memory" | "action"; // keeper is no longer in queue, rule merged into memory
 
 export type Phase = "intro" | "investigation" | "confrontation" | "downtime";
 
@@ -42,10 +42,10 @@ const defaultPlayerCharacter: CharacterProfile = {
   inventory: [],
   skills: {
     "Spot Hidden": 25,
-    "Listen": 20,
+    Listen: 20,
     "Library Use": 20,
     "Fighting (Brawl)": 25,
-    "Dodge": 25,
+    Dodge: 25,
     "Firearms (Handgun)": 20,
   },
   notes: "Auto-generated placeholder character",

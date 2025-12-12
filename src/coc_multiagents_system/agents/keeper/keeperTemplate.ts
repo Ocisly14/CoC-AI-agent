@@ -3,7 +3,7 @@
  * Structured template for generating narrative from agent results
  */
 
-import { AgentResult } from '../../../state.js';
+import type { AgentResult } from "../../../state.js";
 
 export interface KeeperTemplateData {
   userInput: string;
@@ -16,7 +16,7 @@ export interface KeeperTemplateData {
     discoveredClues: string[];
   };
   agentResults: {
-    memory?: string;  // Now includes rules, history, and context
+    memory?: string; // Now includes rules, history, and context
     character?: string;
   };
 }
@@ -27,8 +27,12 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
   // Header
   sections.push("# KEEPER AGENT - NARRATIVE GENERATION");
   sections.push("");
-  sections.push("You are the Keeper, the master storyteller for this Call of Cthulhu game.");
-  sections.push("Your role is to transform game mechanics and data into atmospheric, engaging narrative.");
+  sections.push(
+    "You are the Keeper, the master storyteller for this Call of Cthulhu game."
+  );
+  sections.push(
+    "Your role is to transform game mechanics and data into atmospheric, engaging narrative."
+  );
   sections.push("");
 
   // Current Context
@@ -54,7 +58,9 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
 
   // Agent Information
   sections.push("## AGENT INFORMATION");
-  sections.push("The following agents have provided factual information. Weave these into your narrative:");
+  sections.push(
+    "The following agents have provided factual information. Weave these into your narrative:"
+  );
   sections.push("");
 
   if (data.agentResults.memory) {
@@ -78,7 +84,9 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
   sections.push("");
   sections.push("Generate a narrative response that:");
   sections.push("");
-  sections.push("1. **ATMOSPHERE**: Set the mood appropriate to the tension level and phase");
+  sections.push(
+    "1. **ATMOSPHERE**: Set the mood appropriate to the tension level and phase"
+  );
   sections.push("   - Use sensory details (sight, sound, smell, touch)");
   sections.push("   - Create tension through pacing and word choice");
   sections.push("   - Reflect the time of day and location");
@@ -86,9 +94,15 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
   sections.push("2. **INCORPORATE AGENT DATA**:");
 
   if (data.agentResults.memory) {
-    sections.push("   - Weave in historical context, past discoveries, and game rules from Memory Agent");
-    sections.push("   - Present game mechanics naturally (e.g., 'You'll need sharp eyes for this' instead of 'Spot Hidden check')");
-    sections.push("   - If a dice roll is needed, describe it narratively first, then state the mechanical requirement");
+    sections.push(
+      "   - Weave in historical context, past discoveries, and game rules from Memory Agent"
+    );
+    sections.push(
+      "   - Present game mechanics naturally (e.g., 'You'll need sharp eyes for this' instead of 'Spot Hidden check')"
+    );
+    sections.push(
+      "   - If a dice roll is needed, describe it narratively first, then state the mechanical requirement"
+    );
   }
 
   if (data.agentResults.character) {
@@ -104,7 +118,9 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
   sections.push("   - Closing: 1-2 hooks for next actions or NPC reactions");
   sections.push("");
   sections.push("4. **TONE & STYLE**:");
-  sections.push("   - Second-person perspective ('You see...', 'You notice...')");
+  sections.push(
+    "   - Second-person perspective ('You see...', 'You notice...')"
+  );
   sections.push("   - Present tense for immediacy");
   sections.push("   - Concise but evocative (2-4 paragraphs)");
   sections.push("   - Match the game's current tension level");
@@ -120,13 +136,19 @@ export function buildKeeperPrompt(data: KeeperTemplateData): string {
   sections.push("## TONE GUIDANCE");
 
   if (data.gameState.tension <= 3) {
-    sections.push("**Low Tension (1-3)**: Investigative, curious, slightly unsettling");
+    sections.push(
+      "**Low Tension (1-3)**: Investigative, curious, slightly unsettling"
+    );
     sections.push("Focus on: Details, clues, building atmosphere");
   } else if (data.gameState.tension <= 6) {
-    sections.push("**Medium Tension (4-6)**: Growing unease, something is wrong");
+    sections.push(
+      "**Medium Tension (4-6)**: Growing unease, something is wrong"
+    );
     sections.push("Focus on: Contrasts, subtle threats, mounting dread");
   } else {
-    sections.push("**High Tension (7-10)**: Immediate danger, horror, survival");
+    sections.push(
+      "**High Tension (7-10)**: Immediate danger, horror, survival"
+    );
     sections.push("Focus on: Urgency, visceral details, stark choices");
   }
   sections.push("");
@@ -148,9 +170,9 @@ export function extractAgentResults(agentResults: AgentResult[]): {
   const results: { memory?: string; character?: string } = {};
 
   for (const result of agentResults) {
-    if (result.agentId === 'memory') {
+    if (result.agentId === "memory") {
       results.memory = result.content;
-    } else if (result.agentId === 'character') {
+    } else if (result.agentId === "character") {
       results.character = result.content;
     }
   }
@@ -161,7 +183,10 @@ export function extractAgentResults(agentResults: AgentResult[]): {
 /**
  * Template for when no agents were consulted
  */
-export function buildKeeperPromptNoAgents(userInput: string, gameState: any): string {
+export function buildKeeperPromptNoAgents(
+  userInput: string,
+  gameState: any
+): string {
   return `# KEEPER AGENT - NARRATIVE GENERATION
 
 You are the Keeper, the master storyteller for this Call of Cthulhu game.
