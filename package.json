@@ -1,0 +1,33 @@
+{
+  "name": "coc-multiagent",
+  "version": "0.1.0",
+  "description": "LangGraph-based multi-agent starter written in TypeScript.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "langgraph",
+    "langchain",
+    "multi-agent",
+    "typescript"
+  ],
+  "author": "CoC AI",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/langgraph": "^0.0.32",
+    "@langchain/openai": "^0.3.4",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.7",
+    "langchain": "^0.3.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.3"
+  }
+}
