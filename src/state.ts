@@ -5,6 +5,16 @@ export type AgentId = "keeper" | "memory" | "action";
 
 export type Phase = "intro" | "investigation" | "confrontation" | "downtime";
 
+export interface ActionAnalysis {
+  player: string;
+  action: string;
+  target: {
+    type: "npc" | "object" | "location" | "general";
+    name: string | null;
+    intent: string;
+  };
+}
+
 export interface GameState {
   sessionId: string;
   phase: Phase;
@@ -20,6 +30,8 @@ export interface GameState {
     rules: string[];
     ragResults: string[];
     contextualData: Record<string, any>;
+    actionResults: ActionResult[];
+    currentActionAnalysis: ActionAnalysis | null;
   };
 }
 
@@ -72,8 +84,19 @@ export const initialGameState: GameState = {
     rules: [],
     ragResults: [],
     contextualData: {},
+    actionResults: [],
+    currentActionAnalysis: null,
   },
 };
+
+export interface ActionResult {
+  timestamp: Date;
+  gameTime: string;
+  location: string;
+  character: string;
+  result: string;
+  diceRolls: string[];
+}
 
 export interface AgentResult {
   agentId: AgentId;
@@ -185,50 +208,99 @@ export class GameStateManager {
 
     // Update player character
     if (stateUpdate.playerCharacter) {
-      const playerUpdate = stateUpdate.playerCharacter;
-      
-      // Update character name if provided
-      if (playerUpdate.name) {
-        this.gameState.playerCharacter.name = playerUpdate.name;
-      }
-      
-      // Update status values (hp, sanity, mp, etc.)
-      if (playerUpdate.status) {
-        for (const [key, value] of Object.entries(playerUpdate.status)) {
-          if (typeof value === 'number' && key in this.gameState.playerCharacter.status) {
-            // Apply differential update (e.g., hp: -2 means subtract 2)
-            (this.gameState.playerCharacter.status as any)[key] += value;
-            
-            // Ensure values don't go below 0
-            if ((this.gameState.playerCharacter.status as any)[key] < 0) {
-              (this.gameState.playerCharacter.status as any)[key] = 0;
-            }
-          }
+      this.updateCharacter(this.gameState.playerCharacter, stateUpdate.playerCharacter);
+    }
+
+    // Update NPC characters
+    if (stateUpdate.npcCharacters && Array.isArray(stateUpdate.npcCharacters)) {
+      for (const npcUpdate of stateUpdate.npcCharacters) {
+        const existingNpc = this.gameState.npcCharacters.find(npc => npc.id === npcUpdate.id);
+        if (existingNpc) {
+          this.updateCharacter(existingNpc, npcUpdate);
         }
       }
-      
-      // Update attributes if provided
-      if (playerUpdate.attributes) {
-        for (const [key, value] of Object.entries(playerUpdate.attributes)) {
-          if (typeof value === 'number' && key in this.gameState.playerCharacter.attributes) {
-            (this.gameState.playerCharacter.attributes as any)[key] += value;
-          }
-        }
-      }
-      
-      // Update skills if provided
-      if (playerUpdate.skills) {
-        for (const [skillName, value] of Object.entries(playerUpdate.skills)) {
-          if (typeof value === 'number') {
-            if (skillName in this.gameState.playerCharacter.skills) {
-              this.gameState.playerCharacter.skills[skillName] += value;
-            } else {
-              this.gameState.playerCharacter.skills[skillName] = value;
-            }
+    }
+  }
+
+  /**
+   * Update individual character data
+   */
+  private updateCharacter(character: any, updates: any): void {
+    // Update character name if provided
+    if (updates.name) {
+      character.name = updates.name;
+    }
+    
+    // Update status values (hp, sanity, mp, etc.)
+    if (updates.status) {
+      for (const [key, value] of Object.entries(updates.status)) {
+        if (typeof value === 'number' && key in character.status) {
+          // Apply differential update (e.g., hp: -2 means subtract 2)
+          character.status[key] += value;
+          
+          // Ensure values don't go below 0
+          if (character.status[key] < 0) {
+            character.status[key] = 0;
           }
         }
       }
     }
+    
+    // Update attributes if provided
+    if (updates.attributes) {
+      for (const [key, value] of Object.entries(updates.attributes)) {
+        if (typeof value === 'number' && key in character.attributes) {
+          character.attributes[key] += value;
+        }
+      }
+    }
+    
+    // Update skills if provided
+    if (updates.skills) {
+      for (const [skillName, value] of Object.entries(updates.skills)) {
+        if (typeof value === 'number') {
+          if (skillName in character.skills) {
+            character.skills[skillName] += value;
+          } else {
+            character.skills[skillName] = value;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Add action result to temporary storage
+   */
+  addActionResult(actionResult: ActionResult): void {
+    if (!actionResult) return;
+    this.gameState.temporaryInfo.actionResults.push(actionResult);
+    
+    // Keep only the most recent 10 action results to avoid memory bloat
+    if (this.gameState.temporaryInfo.actionResults.length > 10) {
+      this.gameState.temporaryInfo.actionResults = this.gameState.temporaryInfo.actionResults.slice(-10);
+    }
+  }
+
+  /**
+   * Clear all action results
+   */
+  clearActionResults(): void {
+    this.gameState.temporaryInfo.actionResults = [];
+  }
+
+  /**
+   * Set current action analysis from orchestrator
+   */
+  setActionAnalysis(actionAnalysis: ActionAnalysis | null): void {
+    this.gameState.temporaryInfo.currentActionAnalysis = actionAnalysis;
+  }
+
+  /**
+   * Clear current action analysis
+   */
+  clearActionAnalysis(): void {
+    this.gameState.temporaryInfo.currentActionAnalysis = null;
   }
 
   /**

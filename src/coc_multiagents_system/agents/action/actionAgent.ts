@@ -1,6 +1,8 @@
 import { ModelClass } from "../../../models/types.js";
+import { generateText } from "../../../models/index.js";
 import { actionTools } from "./tools.js";
-import { GameStateManager, GameState } from "../../../state.js";
+import { GameStateManager, GameState, ActionResult, ActionAnalysis } from "../../../state.js";
+import type { CharacterProfile } from "../models/gameTypes.js";
 
 
 /**
@@ -8,22 +10,61 @@ import { GameStateManager, GameState } from "../../../state.js";
  */
 export class ActionAgent {
 
+  /**
+   * Process player action and resolve with dice rolls and state updates
+   */
+  async processAction(runtime: any, gameState: GameState, userMessage: string): Promise<GameState> {
     const systemPrompt = `You are an action resolution specialist for Call of Cthulhu.
 
-Your job is to analyze player actions and resolve them step by step.
+Your job is to analyze player actions and resolve them step by step. You MUST respond with JSON in one of these formats:
+
+FOR TOOL CALLS (when you need to roll dice):
+{
+  "type": "tool_call",
+  "tool": "roll_dice",
+  "parameters": {
+    "expression": "1d100"
+  }
+}
 
 FOR FINAL RESULTS (when you have everything needed):
 {
   "type": "result",
-  "summary": "The character attempts to climb the wall but fails, taking 2 damage",
+  "summary": "Detective Smith successfully punches the cultist, dealing significant damage",
   "stateUpdate": {
     "playerCharacter": {
       "name": "Detective Smith",
-      "status": { "hp": -2 }
-    }
+      "status": { "hp": 0 }
+    },
+    "npcCharacters": [
+      {
+        "id": "cultist-1",
+        "name": "Hooded Cultist",
+        "status": { "hp": -4 }
+      }
+    ]
   },
-  "log": ["Climb skill 45% vs roll 73 = failure", "Fall damage 1d3 = 2", "HP: -2"]
-}`;
+  "log": ["Fighting (Brawl) 50% vs roll 32 = success", "Damage 1d3+1 = 4", "Cultist HP: -4"]
+}
+
+DICE ROLLING GUIDELINES:
+1. Use character skills from the provided character data to determine appropriate skill checks
+2. Apply environmental conditions and temporary rules as modifiers when calculating success thresholds
+3. For skill checks: Always use 1d100, compare against modified skill value
+4. For damage: Use weapon damage dice (1d3 for fist, 1d6 for knife, 2d6 for gun, etc.)
+5. For attribute checks: Use 1d100, compare against attribute value
+6. For luck rolls: Use 1d100, compare against Luck value
+7. Consider situational modifiers from scenario conditions and temporary rules
+
+EXAMPLES:
+- Fighting (Brawl) skill 50% in darkness (-20%): Roll 1d100, succeed if ≤30
+- Damage from successful punch: Roll 1d3+STR bonus
+- Sanity loss from horror: Roll 1d4, 1d8, etc. based on threat level
+- Dodge in difficult terrain: Roll 1d100, compare against modified Dodge skill
+
+Always analyze the current situation, character capabilities, environmental conditions, and applicable rules before determining what dice to roll.
+
+IMPORTANT: You MUST respond with valid JSON format only. Do not include any text outside the JSON structure.`;
 
     // Tool call loop
     const toolLogs: string[] = [];
@@ -31,42 +72,38 @@ FOR FINAL RESULTS (when you have everything needed):
     let maxIterations = 10;
     
     for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const contextWithHistory = systemPrompt + "\n\nConversation so far:\n" + conversation.join("\n");
+      const characterContext = this.buildCharacterContext(gameState);
+      const contextWithHistory = systemPrompt + characterContext + "\n\nConversation so far:\n" + conversation.join("\n");
       
       const response = await generateText({
         runtime,
         context: contextWithHistory,
         modelClass: ModelClass.SMALL,
-        tools: actionTools,
       });
 
-      // Check if response contains tool calls
-      if (response.tool_calls && response.tool_calls.length > 0) {
-        // Handle tool calls
-        for (const toolCall of response.tool_calls) {
-          if (toolCall.function.name === "roll_dice") {
-            const args = JSON.parse(toolCall.function.arguments);
-            const rollResult = this.executeDiceRoll(args.expression);
-            conversation.push(`AI: Called roll_dice with ${args.expression}`);
-            conversation.push(`Tool result: ${rollResult.breakdown}`);
-            toolLogs.push(`${args.expression} -> ${rollResult.breakdown}`);
-          }
-        }
-      } else {
-        // Try to parse as JSON for final result
-        let parsed;
-        try {
-          parsed = JSON.parse(response);
-        } catch (error) {
-          return this.buildErrorResult("Invalid JSON response from model");
-        }
+      // Parse JSON response
+      let parsed;
+      try {
+        parsed = JSON.parse(response);
+      } catch (error) {
+        return this.buildErrorResult("Invalid JSON response from model");
+      }
 
-        if (parsed.type === "result") {
-          // Final result
-          return this.buildFinalResult(gameState, parsed, toolLogs);
+      if (parsed.type === "tool_call") {
+        // Execute tool call
+        if (parsed.tool === "roll_dice" && parsed.parameters?.expression) {
+          const rollResult = this.executeDiceRoll(parsed.parameters.expression);
+          conversation.push(`AI: ${JSON.stringify(parsed)}`);
+          conversation.push(`Tool result: ${JSON.stringify(rollResult)}`);
+          toolLogs.push(`${parsed.parameters.expression} -> ${rollResult.breakdown}`);
         } else {
-          return this.buildErrorResult("Invalid response type");
+          return this.buildErrorResult("Invalid tool call format");
         }
+      } else if (parsed.type === "result") {
+        // Final result
+        return this.buildFinalResult(gameState, parsed, toolLogs);
+      } else {
+        return this.buildErrorResult("Invalid response type");
       }
     }
     
@@ -115,6 +152,47 @@ FOR FINAL RESULTS (when you have everything needed):
     return { count, sides, modifier };
   }
 
+  private buildCharacterContext(gameState: GameState): string {
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    
+    let context = "\n\nCurrent Scenario:\n";
+    if (gameState.currentScenario) {
+      const scenarioInfo = {
+        name: gameState.currentScenario.name,
+        location: gameState.currentScenario.location,
+        description: gameState.currentScenario.description,
+        conditions: gameState.currentScenario.conditions
+      };
+      context += JSON.stringify(scenarioInfo, null, 2);
+    } else {
+      context += "No current scenario";
+    }
+    
+    // Add temporary rules if any
+    if (gameState.temporaryInfo.rules.length > 0) {
+      context += "\n\nTemporary Rules:\n";
+      gameState.temporaryInfo.rules.forEach((rule, index) => {
+        context += `${index + 1}. ${rule}\n`;
+      });
+    }
+    
+    context += "\n\nPlayer Character:\n" + JSON.stringify(gameState.playerCharacter, null, 2);
+    
+    // Add target NPC if applicable
+    if (actionAnalysis?.target.type === "npc" && actionAnalysis.target.name) {
+      const targetNpc = gameState.npcCharacters.find(npc => 
+        npc.name.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase()) ||
+        npc.id.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase())
+      );
+      
+      if (targetNpc) {
+        context += "\n\nTarget NPC:\n" + JSON.stringify(targetNpc, null, 2);
+      }
+    }
+    
+    return context;
+  }
+
   private buildFinalResult(gameState: GameState, parsed: any, toolLogs: string[]): GameState {
     const stateManager = new GameStateManager(gameState);
     
@@ -123,9 +201,23 @@ FOR FINAL RESULTS (when you have everything needed):
       stateManager.applyActionUpdate(parsed.stateUpdate);
     }
     
+    // Create structured action result
+    const actionResult: ActionResult = {
+      timestamp: new Date(),
+      gameTime: gameState.timeOfDay || "Unknown time",
+      location: gameState.currentScenario?.location || "Unknown location", 
+      character: parsed.stateUpdate?.playerCharacter?.name || gameState.playerCharacter.name,
+      result: parsed.summary || "performed an action",
+      diceRolls: toolLogs.map(log => log) // toolLogs already contain "expression -> result" format
+    };
+    
+    // Add to action results
+    stateManager.addActionResult(actionResult);
+    
     // Return the updated game state
     return stateManager.getGameState() as GameState;
   }
+
 
   private buildErrorResult(errorMessage: string): any {
     return {

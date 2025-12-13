@@ -1,5 +1,6 @@
 import { getOrchestratorTemplate } from "./orchestratorTemplate.js";
 import { composeTemplate } from "../../../template.js";
+import type { GameState, ActionAnalysis, GameStateManager } from "../../../state.js";
 import {
   ModelProviderName,
   ModelClass,
@@ -24,8 +25,9 @@ export class OrchestratorAgent {
   /**
    * Process input (user query, agent result, or instruction) and determine which agent to route to
    */
-  async processInput(input: string, gameState: GameState): Promise<string> {
+  async processInput(input: string, gameStateManager: GameStateManager): Promise<string> {
     const runtime = createRuntime();
+    const gameState = gameStateManager.getGameState();
     
     // Get the template
     const template = getOrchestratorTemplate();
@@ -49,6 +51,16 @@ export class OrchestratorAgent {
       context: prompt,
       modelClass: ModelClass.MEDIUM,
     });
+
+    // Parse the response and store action analysis
+    try {
+      const parsedResponse = JSON.parse(response);
+      if (parsedResponse.actionAnalysis) {
+        gameStateManager.setActionAnalysis(parsedResponse.actionAnalysis as ActionAnalysis);
+      }
+    } catch (error) {
+      console.warn("Failed to parse orchestrator response for action analysis:", error);
+    }
 
     return response;
   }
