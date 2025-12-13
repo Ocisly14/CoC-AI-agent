@@ -74,30 +74,30 @@ export const CoCGraphState = Annotation.Root({
   ...MessagesAnnotation.spec,
   agentQueue: Annotation<AgentId[]>({
     default: () => [] as AgentId[],
-    reducer: (_current, update) => update ?? [],
+    reducer: (_current: any, update: any) => update ?? [],
   }),
   nextAgent: Annotation<string | undefined>({
     default: () => undefined,
-    reducer: (_current, update) => update,
+    reducer: (_current: any, update: any) => update,
   }),
   routingNotes: Annotation<string | undefined>({
     default: () => undefined,
-    reducer: (_current, update) => update,
+    reducer: (_current: any, update: any) => update,
   }),
   gameState: Annotation<GameState>({
     default: () => initialGameState,
-    reducer: (_current, update) => update ?? initialGameState,
+    reducer: (_current: any, update: any) => update ?? initialGameState,
   }),
   agentResults: Annotation<AgentResult[]>({
     default: () => [] as AgentResult[],
-    reducer: (current, update) => {
+    reducer: (current: any, update: any) => {
       if (!update) return current;
       return [...current, ...update];
     },
   }),
   allAgentsCompleted: Annotation<boolean>({
     default: () => false,
-    reducer: (_current, update) => update ?? false,
+    reducer: (_current: any, update: any) => update ?? false,
   }),
 });
 

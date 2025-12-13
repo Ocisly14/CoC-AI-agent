@@ -3,7 +3,7 @@
  * Loads default rules, skills, weapons, and sanity triggers
  */
 
-import { RuleCategory } from "../models/gameTypes.js";
+import { RuleCategory } from "../../models/gameTypes.js";
 import type { CoCDatabase } from "./schema.js";
 
 export function seedDatabase(db: CoCDatabase): void {

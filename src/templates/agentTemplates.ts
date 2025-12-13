@@ -330,14 +330,13 @@ Select the minimum effective agent team that can provide comprehensive coverage 
 
 ## Decision Output Format
 
-```json
+Use a JSON object:
 {
   "selectedAgents": ["character", "memory", "action"],
   "reasoning": "Brief explanation of why these agents were selected",
   "priority": "high|medium|low",
   "expectedOutcome": "What information these agents should provide"
 }
-```
 
 **Selection Guidelines**:
 - Choose the minimum number of agents needed for comprehensive response

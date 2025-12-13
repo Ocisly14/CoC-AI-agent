@@ -81,7 +81,7 @@ export const models: Models = {
     endpoint: "https://generativelanguage.googleapis.com",
     model: {
       [ModelClass.SMALL]: {
-        name: process.env.SMALL_GOOGLE_MODEL || "gemini-2.0-flash-exp",
+        name: process.env.SMALL_GOOGLE_MODEL || "gemini-2.0-flash",
         stop: [],
         maxInputTokens: 128000,
         maxOutputTokens: 8192,
@@ -90,7 +90,7 @@ export const models: Models = {
         temperature: 0.7,
       },
       [ModelClass.MEDIUM]: {
-        name: process.env.MEDIUM_GOOGLE_MODEL || "gemini-2.0-flash-exp",
+        name: process.env.MEDIUM_GOOGLE_MODEL || "gemini-2.5-flash",
         stop: [],
         maxInputTokens: 128000,
         maxOutputTokens: 8192,
@@ -99,7 +99,7 @@ export const models: Models = {
         temperature: 0.7,
       },
       [ModelClass.LARGE]: {
-        name: process.env.LARGE_GOOGLE_MODEL || "gemini-1.5-pro-latest",
+        name: process.env.LARGE_GOOGLE_MODEL || "gemini-2.5-pro",
         stop: [],
         maxInputTokens: 128000,
         maxOutputTokens: 8192,

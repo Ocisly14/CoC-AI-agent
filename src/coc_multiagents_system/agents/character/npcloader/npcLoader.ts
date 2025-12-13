@@ -5,6 +5,7 @@
 
 import { randomUUID } from "crypto";
 import fs from "fs";
+import path from "path";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatOpenAI } from "@langchain/openai";
 import type { CoCDatabase } from "../../memory/database/schema.js";
@@ -145,10 +146,165 @@ export class NPCLoader {
   }
 
   /**
-   * Load NPCs from a directory
+   * Ask LLM to suggest potential duplicate names, merge those groups, and rewrite DB.
+   * Useful for catching cross-language/variant names missed by heuristic clustering.
    */
-  async loadNPCsFromDirectory(dirPath: string): Promise<NPCProfile[]> {
-    console.log(`\n=== Loading NPCs from directory: ${dirPath} ===`);
+  async mergeWithLLMSuggestedGroups(): Promise<NPCProfile[]> {
+    const existing = this.getAllNPCs();
+    if (existing.length === 0) {
+      console.log("No existing NPCs found to merge.");
+      return [];
+    }
+
+    const suggestedGroups = await this.suggestDuplicateGroups(existing);
+    if (suggestedGroups.length === 0) {
+      console.log("No duplicate suggestions from LLM. Keeping existing NPCs.");
+      return existing;
+    }
+
+    // Build lookup by normalized name
+    const normalize = (n: string) => n.toLowerCase().trim();
+    const nameMap = new Map<string, NPCProfile>();
+    for (const npc of existing) {
+      if (!nameMap.has(normalize(npc.name))) {
+        nameMap.set(normalize(npc.name), npc);
+      }
+    }
+
+    // Track which names are consumed by suggested groups
+    const consumed = new Set<string>();
+    const mergedParsed: ParsedNPCData[] = [];
+
+    for (const group of suggestedGroups) {
+      const groupNPCs: NPCProfile[] = [];
+      for (const rawName of group) {
+        const key = normalize(rawName);
+        const found = nameMap.get(key);
+        if (!found) {
+          console.warn(`LLM suggested name not found in DB: "${rawName}"`);
+          continue;
+        }
+        groupNPCs.push(found);
+        consumed.add(found.name);
+      }
+
+      if (groupNPCs.length < 2) {
+        // Not enough to merge, keep originals
+        mergedParsed.push(...groupNPCs.map((npc) => this.profileToParsed(npc)));
+        continue;
+      }
+
+      try {
+        const merged = await this.mergeClusterWithLLM(
+          groupNPCs.map((npc) => this.profileToParsed(npc))
+        );
+        mergedParsed.push(...merged);
+        console.log(
+          `LLM-suggested merge: ${groupNPCs.length} -> ${merged.length} for [${groupNPCs
+            .map((n) => n.name)
+            .join(", ")}]`
+        );
+      } catch (error) {
+        console.warn(
+          `Failed to merge LLM-suggested group [${groupNPCs
+            .map((n) => n.name)
+            .join(", ")}], keeping originals. Error: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        mergedParsed.push(...groupNPCs.map((npc) => this.profileToParsed(npc)));
+      }
+    }
+
+    // Add untouched NPCs
+    for (const npc of existing) {
+      if (!consumed.has(npc.name)) {
+        mergedParsed.push(this.profileToParsed(npc));
+      }
+    }
+
+    // Rewrite DB
+    const database = this.db.getDatabase();
+    this.db.transaction(() => {
+      database.prepare("DELETE FROM npc_clues").run();
+      database.prepare("DELETE FROM npc_relationships").run();
+      database.prepare("DELETE FROM characters WHERE is_npc = 1").run();
+    });
+    console.log("Rewrote DB with LLM-suggested merges.");
+
+    const profiles: NPCProfile[] = [];
+    for (const parsed of mergedParsed) {
+      const profile = this.convertToNPCProfile(parsed);
+      this.saveNPCToDatabase(profile);
+      profiles.push(profile);
+    }
+
+    console.log(`Saved ${profiles.length} NPC(s) after LLM suggestion merge.`);
+    return profiles;
+  }
+
+  /**
+   * Check if any files in directory have changed since last load
+   */
+  private checkForChanges(dirPath: string): { hasChanges: boolean; currentFiles: Map<string, number> } {
+    if (!fs.existsSync(dirPath)) {
+      return { hasChanges: false, currentFiles: new Map() };
+    }
+
+    const currentFiles = new Map<string, number>();
+    const files = fs.readdirSync(dirPath).filter(file => 
+      file.endsWith('.docx') || file.endsWith('.pdf')
+    );
+
+    // Get modification times for all relevant files
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const stats = fs.statSync(filePath);
+      currentFiles.set(file, stats.mtime.getTime());
+    }
+
+    // Check if we have cached file info
+    const existingNPCs = this.getAllNPCs();
+    
+    // If no NPCs exist, we need to load
+    if (existingNPCs.length === 0) {
+      return { hasChanges: true, currentFiles };
+    }
+
+    // For now, we'll use a simple approach - check if any file timestamps changed
+    // In a production system, you might want to store this in the database
+    const lastLoadFile = path.join(dirPath, '.last_load_timestamp');
+    let lastLoadTime = 0;
+    
+    if (fs.existsSync(lastLoadFile)) {
+      try {
+        lastLoadTime = parseInt(fs.readFileSync(lastLoadFile, 'utf8'));
+      } catch {
+        // If we can't read the timestamp, assume changes
+        return { hasChanges: true, currentFiles };
+      }
+    }
+
+    // Check if any file is newer than last load
+    const hasChanges = Array.from(currentFiles.values()).some(mtime => mtime > lastLoadTime);
+    
+    return { hasChanges, currentFiles };
+  }
+
+  /**
+   * Update the last load timestamp
+   */
+  private updateLastLoadTimestamp(dirPath: string): void {
+    const lastLoadFile = path.join(dirPath, '.last_load_timestamp');
+    const currentTime = Date.now().toString();
+    fs.writeFileSync(lastLoadFile, currentTime, 'utf8');
+  }
+
+  /**
+   * Load NPCs from a directory (only if files have changed)
+   */
+  async loadNPCsFromDirectory(dirPath: string, forceReload = false): Promise<NPCProfile[]> {
+    console.log(`\n=== Checking NPCs in directory: ${dirPath} ===`);
 
     if (!fs.existsSync(dirPath)) {
       console.log(`Directory does not exist, creating: ${dirPath}`);
@@ -156,12 +312,25 @@ export class NPCLoader {
       return [];
     }
 
+    // Check for file changes unless forced reload
+    if (!forceReload) {
+      const { hasChanges } = this.checkForChanges(dirPath);
+      if (!hasChanges) {
+        const existingNPCs = this.getAllNPCs();
+        console.log(`No changes detected. Using ${existingNPCs.length} existing NPCs from database.`);
+        return existingNPCs;
+      }
+    }
+
+    console.log(`Loading NPCs from directory: ${dirPath}`);
+
     // Parse all documents in the directory
     const parsedNPCs = await this.parser.parseDirectory(dirPath);
     const dedupedNPCs = await this.mergeSimilarNPCs(parsedNPCs);
 
     if (dedupedNPCs.length === 0) {
       console.log("No NPC documents found in directory.");
+      this.updateLastLoadTimestamp(dirPath);
       return [];
     }
 
@@ -178,6 +347,9 @@ export class NPCLoader {
       }
     }
 
+    // Update timestamp after successful load
+    this.updateLastLoadTimestamp(dirPath);
+    
     console.log(`\n=== Successfully loaded ${npcProfiles.length} NPCs ===\n`);
     return npcProfiles;
   }
@@ -498,6 +670,61 @@ Return ONLY JSON (object or array), no extra text.`;
           `Retry ${attempt}/3 for NPC merge cluster (${cluster
             .map((c) => c.name)
             .join(", ")}) due to error: ${detail}`
+        );
+        if (attempt === 3) {
+          throw err;
+        }
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  /**
+   * Ask LLM to suggest potential duplicate name groups from existing NPC list.
+   */
+  private async suggestDuplicateGroups(
+    npcs: NPCProfile[]
+  ): Promise<string[][]> {
+    const names = npcs.map((n) => n.name);
+    const prompt = `You are reviewing a list of NPC names. Some may be duplicates referring to the same person (e.g., language variants, nicknames). It is also possible that none are duplicates.
+- Task: propose groups of names that are likely the same person.
+- Be conservative: if unsure, do NOT group.
+- Return a JSON array of groups. Each group is an array of strings (the names). Return [] if no likely duplicates.
+Example output:
+[ ["Ben", "Ben Cleo"], ["Simon", "Simon Laplace"] ]
+Names:
+${names.map((n) => `- ${n}`).join("\n")}
+
+Return ONLY JSON array, no extra text.`;
+
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await this.mergeModel.invoke(prompt);
+        const content = response.content as string;
+        const jsonText =
+          content.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
+          content.match(/\[[\s\S]*\]/)?.[0];
+
+        if (!jsonText) {
+          throw new Error(`Failed to extract JSON from LLM response: ${content}`);
+        }
+
+        const parsed = JSON.parse(jsonText);
+        if (!Array.isArray(parsed)) {
+          throw new Error("LLM response is not an array");
+        }
+        const groups: string[][] = parsed
+          .filter((g: any) => Array.isArray(g))
+          .map((g: any[]) => g.map((s) => String(s)));
+        return groups;
+      } catch (err) {
+        lastError = err;
+        const detail =
+          err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
+        console.warn(
+          `Retry ${attempt}/3 for duplicate suggestion due to error: ${detail}`
         );
         if (attempt === 3) {
           throw err;

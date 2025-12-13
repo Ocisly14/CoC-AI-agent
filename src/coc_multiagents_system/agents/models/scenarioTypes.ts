@@ -9,8 +9,6 @@
 export interface ScenarioTimePoint {
   /** ISO date string or descriptive time (e.g., "1925-03-15", "Dawn", "Night 3") */
   timestamp: string;
-  /** Order index for sorting timeline events */
-  order: number;
   /** Additional notes about this time point */
   notes?: string;
 }
@@ -112,8 +110,6 @@ export interface ScenarioProfile {
   id: string;
   /** Overall scenario name */
   name: string;
-  /** Scenario type or category */
-  category: "location" | "event" | "encounter" | "investigation";
   /** Overall description */
   description: string;
   /** All timeline snapshots */
@@ -141,12 +137,10 @@ export interface ScenarioProfile {
  */
 export interface ParsedScenarioData {
   name: string;
-  category?: "location" | "event" | "encounter" | "investigation";
   description: string;
   timeline: {
     timePoint: {
       timestamp: string;
-      order?: number;
       notes?: string;
     };
     name?: string;
@@ -194,7 +188,6 @@ export interface ParsedScenarioData {
  */
 export interface ScenarioQuery {
   name?: string;
-  category?: string;
   timeRange?: {
     start: string;
     end: string;

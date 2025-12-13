@@ -1,37 +1,43 @@
-import { SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import {
   type CoCState,
   type GameState,
   initialGameState,
 } from "../../../state.js";
-import { composeTemplate } from "../../../template.js";
 import {
-  contentToString,
-  formatGameState,
   latestHumanMessage,
 } from "../../../utils.js";
 import type { CharacterProfile } from "../models/gameTypes.js";
 import { actionTools, executeActionTool } from "./tools.js";
+import {
+  ModelClass,
+  ModelProviderName,
+  generateText,
+  CoCModelSelectors,
+  createChatModel,
+} from "../../../models/index.js";
+import {
+  CoCTemplateFactory,
+  TemplateUtils,
+} from "../../../templates/index.js";
+import type { CoCDatabase } from "../memory/database/index.js";
 
-const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+// Runtime interface
+interface CoCRuntime {
+  modelProvider: ModelProviderName;
+  database: CoCDatabase;
+  getSetting: (key: string) => string | undefined;
+}
 
-const fallbackModel = new ChatOpenAI({
-  model: DEFAULT_MODEL,
-  temperature: 0.4,
+const createRuntime = (database: CoCDatabase): CoCRuntime => ({
+  modelProvider: (process.env.MODEL_PROVIDER as ModelProviderName) || ModelProviderName.OPENAI,
+  database,
+  getSetting: (key: string) => process.env[key],
 });
 
 type ActionAgentOutput = {
   summary: string;
   stateUpdate?: Partial<GameState>;
   log?: string[];
-};
-
-type SkillCheckRequest = {
-  skill: string;
-  roll: number;
-  difficulty?: "regular" | "hard" | "extreme";
-  note?: string;
 };
 
 const formatCharacterDelta = (
@@ -124,108 +130,142 @@ const mergeCharacter = (
   };
 };
 
-const evaluateSkillCheck = (
-  check: SkillCheckRequest,
-  skills: Record<string, number>
-) => {
-  const targetBase = skills?.[check.skill] ?? 0;
-  const difficulty = check.difficulty ?? "regular";
-  const difficultyTarget =
-    difficulty === "hard"
-      ? Math.floor(targetBase / 2)
-      : difficulty === "extreme"
-        ? Math.floor(targetBase / 5)
-        : targetBase;
+/**
+ * Action Agent class - handles action resolution and skill checks
+ */
+export class ActionAgent {
+  private db: CoCDatabase;
 
-  const roll = Math.floor(check.roll);
-  const success = roll <= difficultyTarget;
-  let level: "critical" | "extreme" | "hard" | "regular" | "failure" =
-    "failure";
-  if (success) {
-    if (roll <= Math.max(1, Math.floor(targetBase / 20))) {
-      level = "critical";
-    } else if (roll <= Math.floor(targetBase / 5)) {
-      level = "extreme";
-    } else if (roll <= Math.floor(targetBase / 2)) {
-      level = "hard";
-    } else {
-      level = "regular";
-    }
+  constructor(db: CoCDatabase) {
+    this.db = db;
   }
 
-  return {
-    ...check,
-    target: difficultyTarget,
-    targetBase,
-    success,
-    level,
-  };
-};
-
-export const createActionNode =
-  (model: ChatOpenAI = fallbackModel) =>
-  async (state: CoCState): Promise<Partial<CoCState>> => {
+  async processAction(state: CoCState): Promise<Partial<CoCState>> {
+    const runtime = createRuntime(this.db);
     const gameState = state.gameState ?? initialGameState;
     const userMessage = latestHumanMessage(state.messages);
     const memoryContext = buildMemoryContext(state.agentResults || []);
-    const toolSpec = JSON.stringify(actionTools, null, 2);
 
-    const systemPrompt = new SystemMessage(
-      composeTemplate(
-        [
-          "You are the Action Resolution agent for Call of Cthulhu.",
-          "Given the player's instruction and memory/rule context, identify the specific action, required rolls, and outcomes.",
-          "Use the memory context to ground rules and recent events. Do not invent rules.",
-          "You MUST respond with strict JSON, no prose. Shape:",
-          '{"summary":"short result","checks":[{"skill":"Spot Hidden","roll":42,"difficulty":"regular","note":"searching the study"}],"stateUpdate":{"tension":2,"playerCharacter":{"status":{"hp":9}}},"log":["Spot Hidden vs 50 (Regular) roll 42"]}',
-          "Guidelines:",
-          "- Only update state fields you are certain about.",
-          "- If a roll is needed, call the dice tool, then include the rolled value in `checks`.",
-          "- For each check, provide skill name, roll result, and difficulty (regular|hard|extreme).",
-          "- Keep `summary` concise and factual; add short log entries if helpful.",
-          "- Avoid narrative; keep to mechanics/results.",
-          "Memory/Rules context:\n{{memoryContext}}",
-          "Context:",
-          "- Latest player input: {{latestUserMessage}}",
-          "- Game state snapshot: {{gameStateSummary}}",
-          "- Routing notes: {{routingNotes}}",
-          "- You may call tools for dice rolling or basic math as needed.",
-          "- Available tools (JSON): {{toolSpec}}",
-        ].join("\n"),
-        state,
-        {
-          latestUserMessage: userMessage || "No recent player input.",
-          gameStateSummary: formatGameState(gameState),
-          routingNotes: state.routingNotes ?? "None",
-          memoryContext,
-          toolSpec,
-        }
-      )
-    );
+    // Build system prompt for JSON-based tool calling
+    const systemPrompt = `You are an action resolution specialist for Call of Cthulhu.
 
-    const toolEnabledModel = model.bindTools(actionTools);
-    const messages = [systemPrompt, ...state.messages];
-    const firstResponse = await toolEnabledModel.invoke(messages);
+Your job is to analyze player actions and resolve them step by step. You MUST respond with JSON in one of these formats:
 
-    let actionResponse = firstResponse;
-    const toolLogs: string[] = [];
+FOR TOOL CALLS (when you need dice rolls):
+{
+  "type": "tool_call",
+  "tool": "roll_dice",
+  "parameters": {
+    "expression": "1d100"
+  },
+  "reason": "Need to roll for Spot Hidden skill check"
+}
 
-    if (firstResponse.tool_calls && firstResponse.tool_calls.length > 0) {
-      const toolResults = firstResponse.tool_calls.map((call: any) =>
-        executeActionTool(call, toolLogs)
-      );
-      actionResponse = await toolEnabledModel.invoke([
-        ...messages,
-        firstResponse,
-        ...toolResults,
-      ]);
+FOR FINAL RESULTS (when you have everything needed):
+{
+  "type": "result",
+  "summary": "The character attempts to climb the wall but fails, taking 2 damage",
+  "stateUpdate": {
+    "playerCharacter": {
+      "status": { "hp": 8 }
     }
+  },
+  "log": ["Climb skill 45% vs roll 73 = failure", "Fall damage 1d3 = 2", "HP: 10 -> 8"]
+}
 
-    const parsed = parseActionOutput(
-      contentToString(actionResponse.content)
-    ) as ActionAgentOutput & { checks?: SkillCheckRequest[] };
-    const mergedLog = parsed.log ? [...parsed.log, ...toolLogs] : toolLogs;
+Context:
+- Player input: ${userMessage || "No recent input"}
+- Game state: ${TemplateUtils.formatGameStateForTemplate(gameState)}
+- Memory context: ${memoryContext}
 
+Available dice expressions: "1d100", "3d6", "1d4+1", "2d6-1", etc.`;
+
+    // Tool call loop
+    const toolLogs: string[] = [];
+    let conversation = [`Player action: ${userMessage}`];
+    let maxIterations = 10;
+    
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      const contextWithHistory = systemPrompt + "\n\nConversation so far:\n" + conversation.join("\n");
+      
+      const response = await generateText({
+        runtime,
+        context: contextWithHistory,
+        modelClass: CoCModelSelectors.actionResolution(),
+        customSystemPrompt: "Return only valid JSON in the specified format.",
+      });
+
+      let parsed;
+      try {
+        parsed = JSON.parse(response);
+      } catch (error) {
+        return this.buildErrorResult("Invalid JSON response from model");
+      }
+
+      if (parsed.type === "tool_call") {
+        // Execute tool call
+        if (parsed.tool === "roll_dice" && parsed.parameters?.expression) {
+          const rollResult = this.executeDiceRoll(parsed.parameters.expression);
+          conversation.push(`AI: ${JSON.stringify(parsed)}`);
+          conversation.push(`Tool result: ${JSON.stringify(rollResult)}`);
+          toolLogs.push(`${parsed.parameters.expression} -> ${rollResult.breakdown}`);
+        } else {
+          return this.buildErrorResult("Invalid tool call format");
+        }
+      } else if (parsed.type === "result") {
+        // Final result
+        return this.buildFinalResult(gameState, parsed, toolLogs);
+      } else {
+        return this.buildErrorResult("Invalid response type");
+      }
+    }
+    
+    return this.buildErrorResult("Maximum iterations reached");
+  }
+
+  private executeDiceRoll(expression: string) {
+    try {
+      const { count, sides, modifier } = this.parseDiceExpression(expression);
+      
+      const rolls = Array.from(
+        { length: count },
+        () => Math.floor(Math.random() * sides) + 1
+      );
+      
+      const rollTotal = rolls.reduce((a, b) => a + b, 0);
+      const finalTotal = rollTotal + modifier;
+      
+      return {
+        expression,
+        rolls,
+        rollTotal,
+        modifier,
+        total: finalTotal,
+        breakdown: `${rolls.join('+')}${modifier !== 0 ? `${modifier >= 0 ? '+' : ''}${modifier}` : ''} = ${finalTotal}`
+      };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  private parseDiceExpression(expression: string): { count: number; sides: number; modifier: number } {
+    const cleaned = expression.toLowerCase().replace(/\s/g, '');
+    const match = cleaned.match(/^(\d*)d(\d+)(([+-])(\d+))?$/);
+    
+    if (!match) {
+      throw new Error(`Invalid dice expression: ${expression}`);
+    }
+    
+    const count = parseInt(match[1] || '1');
+    const sides = parseInt(match[2]);
+    const modifierSign = match[4] || '+';
+    const modifierValue = parseInt(match[5] || '0');
+    const modifier = modifierSign === '+' ? modifierValue : -modifierValue;
+    
+    return { count, sides, modifier };
+  }
+
+  private buildFinalResult(gameState: GameState, parsed: any, toolLogs: string[]): Partial<CoCState> {
     const stateUpdate = parsed.stateUpdate ?? {};
     const mergedPlayerCharacter = mergeCharacter(
       gameState.playerCharacter,
@@ -237,36 +277,21 @@ export const createActionNode =
       ...stateUpdate,
       playerCharacter: mergedPlayerCharacter,
     };
+
     const characterDelta = formatCharacterDelta(
       gameState.playerCharacter,
       updatedGameState.playerCharacter
     );
-    const evaluatedChecks = parsed.checks
-      ? parsed.checks.map((c) =>
-          evaluateSkillCheck(c, mergedPlayerCharacter.skills || {})
-        )
-      : [];
-    const checkSummary = evaluatedChecks.length
-      ? evaluatedChecks
-          .map(
-            (c) =>
-              `${c.skill}: roll ${c.roll} vs ${c.target} (${c.difficulty ?? "regular"}) -> ${
-                c.success ? c.level : "failure"
-              }`
-          )
-          .join("\n")
-      : null;
 
     const formattedSummary = characterDelta
       ? `${parsed.summary}\n\n# Character Update\n${characterDelta}`
       : parsed.summary;
 
-    const finalContent = [
-      formattedSummary,
-      checkSummary ? `\n# Checks\n${checkSummary}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const logSection = (parsed.log || []).concat(toolLogs).length > 0
+      ? `\n\n# Action Log\n${(parsed.log || []).concat(toolLogs).join('\n')}`
+      : '';
+
+    const finalContent = formattedSummary + logSection;
 
     return {
       gameState: updatedGameState,
@@ -277,12 +302,34 @@ export const createActionNode =
           timestamp: new Date(),
           metadata: {
             stateUpdate: parsed.stateUpdate,
-            log: mergedLog,
-            raw: contentToString(actionResponse.content),
+            log: (parsed.log || []).concat(toolLogs),
             characterDelta,
-            checks: evaluatedChecks,
+            toolCalls: toolLogs.length,
           },
         },
       ],
     };
+  }
+
+  private buildErrorResult(errorMessage: string): Partial<CoCState> {
+    return {
+      agentResults: [
+        {
+          agentId: "action",
+          content: `Action processing error: ${errorMessage}`,
+          timestamp: new Date(),
+          metadata: { error: errorMessage },
+        },
+      ],
+    };
+  }
+}
+
+// Factory function to create action node that uses the ActionAgent
+export const createActionNode = (database: CoCDatabase) => {
+  const actionAgent = new ActionAgent(database);
+  
+  return async (state: CoCState): Promise<Partial<CoCState>> => {
+    return actionAgent.processAction(state);
   };
+};

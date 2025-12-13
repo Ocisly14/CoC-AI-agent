@@ -8,6 +8,9 @@ import type Database from "better-sqlite3";
 type DBInstance = InstanceType<typeof Database>;
 import type { CoCDatabase } from "./database/schema.js";
 import type {
+  CharacterAttributes,
+  CharacterProfile,
+  CharacterStatus,
   DamageResult,
   Difficulty,
   RuleEntry,
@@ -19,6 +22,8 @@ import type {
   SkillCheckResult,
   WeaponData,
 } from "../models/gameTypes.js";
+import type { ModuleBackground } from "../models/moduleTypes.js";
+import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
 
 export type EventType =
   | "narration"
@@ -432,6 +437,78 @@ export class MemoryAgent {
   }
 
   /**
+   * Get module background briefings ordered by recency
+   */
+  public getModuleBackgrounds(limit = 5): ModuleBackground[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM module_backgrounds ORDER BY datetime(created_at) DESC LIMIT ?`
+      )
+      .all(limit) as any[];
+
+    return rows.map((row) => this.rowToModuleBackground(row));
+  }
+
+  /**
+   * Get the latest module briefing (if any)
+   */
+  public getLatestModuleBackground(): ModuleBackground | null {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM module_backgrounds ORDER BY datetime(created_at) DESC LIMIT 1`
+      )
+      .get() as any;
+
+    if (!row) return null;
+    return this.rowToModuleBackground(row);
+  }
+
+  /**
+   * List known NPC names from the characters table
+   */
+  public listNpcNames(options: { includePlayers?: boolean } = {}): string[] {
+    const hasNpcFlag = this.hasColumn("characters", "is_npc");
+    let sql = "SELECT name FROM characters";
+    const params: any[] = [];
+
+    if (hasNpcFlag && !options.includePlayers) {
+      sql += " WHERE is_npc = 1";
+    }
+
+    const rows = this.db.prepare(sql).all(...params) as any[];
+    return rows.map((r) => r.name as string);
+  }
+
+  /**
+   * List known scenario locations/names for routing suggestions
+   */
+  public listScenarioLocations(): {
+    scenarioId: string;
+    scenarioName: string;
+    snapshotId: string;
+    snapshotName: string;
+    location: string;
+  }[] {
+    const rows = this.db
+      .prepare(
+        `
+            SELECT ss.snapshot_id, ss.snapshot_name, ss.location, ss.scenario_id, s.name as scenario_name
+            FROM scenario_snapshots ss
+            JOIN scenarios s ON ss.scenario_id = s.scenario_id
+        `
+      )
+      .all() as any[];
+
+    return rows.map((r) => ({
+      scenarioId: r.scenario_id,
+      scenarioName: r.scenario_name,
+      snapshotId: r.snapshot_id,
+      snapshotName: r.snapshot_name,
+      location: r.location,
+    }));
+  }
+
+  /**
    * Convert database row to GameEvent
    */
   private rowToGameEvent(row: any): GameEvent {
@@ -447,6 +524,22 @@ export class MemoryAgent {
     };
   }
 
+  private rowToModuleBackground(row: any): ModuleBackground {
+    return {
+      id: row.module_id,
+      title: row.title,
+      background: row.background || undefined,
+      storyOutline: row.story_outline || undefined,
+      moduleNotes: row.module_notes || undefined,
+      keeperGuidance: row.keeper_guidance || undefined,
+      storyHook: row.story_hook || undefined,
+      moduleLimitations: row.module_limitations || undefined,
+      tags: row.tags ? JSON.parse(row.tags) : [],
+      source: row.source || undefined,
+      createdAt: row.created_at,
+    };
+  }
+
   /**
    * Get statistics about the database
    */
@@ -455,6 +548,7 @@ export class MemoryAgent {
     totalSessions: number;
     totalDiscoveries: number;
     totalRelationships: number;
+    totalModules: number;
   } {
     const events = this.db
       .prepare("SELECT COUNT(*) as count FROM game_events")
@@ -468,12 +562,16 @@ export class MemoryAgent {
     const relationships = this.db
       .prepare("SELECT COUNT(*) as count FROM relationships")
       .get() as { count: number };
+    const modules = this.db
+      .prepare("SELECT COUNT(*) as count FROM module_backgrounds")
+      .get() as { count: number };
 
     return {
       totalEvents: events.count,
       totalSessions: sessions.count,
       totalDiscoveries: discoveries.count,
       totalRelationships: relationships.count,
+      totalModules: modules.count,
     };
   }
 
@@ -620,6 +718,70 @@ export class MemoryAgent {
     return {
       rules,
       count: rules.length,
+    };
+  }
+
+  /**
+   * Find characters by name (case-insensitive, fuzzy match)
+   */
+  public findCharactersByNames(
+    names: string[],
+    options: { includePCs?: boolean } = {}
+  ): CharacterProfile[] {
+    if (!names.length) return [];
+
+    const conditions = names
+      .map(() => "(LOWER(name) LIKE ?)")
+      .join(" OR ");
+    const params = names.map((n) => `%${n.toLowerCase()}%`);
+
+    let sql = `SELECT * FROM characters WHERE ${conditions}`;
+    const hasNpcFlag = this.hasColumn("characters", "is_npc");
+
+    if (!options.includePCs && hasNpcFlag) {
+      sql += " AND is_npc = 1";
+    }
+
+    const rows = this.db.prepare(sql).all(...params) as any[];
+
+    const profiles = rows.map((row) => this.rowToCharacterProfile(row));
+
+    // Deduplicate by id to avoid returning multiple fuzzy matches of same row
+    const seen = new Set<string>();
+    return profiles.filter((p) => {
+      const key = p.id.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  /**
+   * Find a scenario snapshot by location keywords (location or scenario name)
+   */
+  public findScenarioSnapshotByLocation(
+    location: string
+  ): { snapshot: ScenarioSnapshot; scenarioName: string } | null {
+    const searchTerm = `%${location.toLowerCase()}%`;
+    const row = this.db
+      .prepare(
+        `
+            SELECT ss.*, s.name as scenario_name, s.description as scenario_description 
+            FROM scenario_snapshots ss
+            JOIN scenarios s ON ss.scenario_id = s.scenario_id
+            WHERE LOWER(ss.location) LIKE ? OR LOWER(s.name) LIKE ?
+            ORDER BY ss.rowid ASC
+            LIMIT 1
+        `
+      )
+      .get(searchTerm, searchTerm) as any;
+
+    if (!row) return null;
+
+    const snapshot = this.buildSnapshot(row);
+    return {
+      snapshot,
+      scenarioName: row.scenario_name,
     };
   }
 
@@ -922,5 +1084,137 @@ export class MemoryAgent {
     }
 
     return total + modifier;
+  }
+
+  private hasColumn(tableName: string, columnName: string): boolean {
+    const safeTable = tableName.replace(/[^\w]/g, "");
+    const safeColumn = columnName.replace(/[^\w]/g, "");
+    const rows = this.db
+      .prepare(`PRAGMA table_info(${safeTable});`)
+      .all() as { name: string }[];
+    return rows.some((row) => row.name === safeColumn);
+  }
+
+  private rowToCharacterProfile(row: any): CharacterProfile {
+    return {
+      id: row.character_id,
+      name: row.name,
+      attributes: this.safeParse<CharacterAttributes>(
+        row.attributes,
+        this.buildDefaultAttributes()
+      ),
+      status: this.safeParse<CharacterStatus>(
+        row.status,
+        this.buildDefaultStatus()
+      ),
+      inventory: this.safeParse<string[]>(row.inventory, []),
+      skills: this.safeParse<Record<string, number>>(row.skills, {}),
+      notes: row.notes ?? this.buildNpcNotes(row),
+    };
+  }
+
+  private buildSnapshot(row: any): ScenarioSnapshot {
+    const characters =
+      (this.db
+        .prepare(`SELECT * FROM scenario_characters WHERE snapshot_id = ?`)
+        .all(row.snapshot_id) as any[]) || [];
+    const clues =
+      (this.db
+        .prepare(`SELECT * FROM scenario_clues WHERE snapshot_id = ?`)
+        .all(row.snapshot_id) as any[]) || [];
+    const conditions =
+      (this.db
+        .prepare(`SELECT * FROM scenario_conditions WHERE snapshot_id = ?`)
+        .all(row.snapshot_id) as any[]) || [];
+
+    return {
+      id: row.snapshot_id,
+      scenarioId: row.scenario_id,
+      timePoint: {
+        timestamp: row.time_timestamp,
+        notes: row.time_notes ?? undefined,
+      },
+      name: row.snapshot_name,
+      location: row.location,
+      description: row.description,
+      characters: characters.map((c) => ({
+        id: c.id,
+        name: c.character_name,
+        role: c.character_role,
+        status: c.character_status,
+        location: c.character_location ?? undefined,
+        notes: c.character_notes ?? undefined,
+      })),
+      clues: clues.map((c) => ({
+        id: c.clue_id,
+        clueText: c.clue_text,
+        category: c.category,
+        difficulty: c.difficulty,
+        location: c.clue_location,
+        discoveryMethod: c.discovery_method ?? undefined,
+        reveals: c.reveals ? JSON.parse(c.reveals) : [],
+        discovered: c.discovered === 1,
+        discoveryDetails: c.discovery_details
+          ? JSON.parse(c.discovery_details)
+          : undefined,
+      })),
+      conditions: conditions.map((cond) => ({
+        type: cond.condition_type,
+        description: cond.description,
+        mechanicalEffect: cond.mechanical_effect ?? undefined,
+      })),
+      events: this.safeParse<string[]>(row.events, []),
+      exits: this.safeParse(row.exits, []),
+      keeperNotes: row.keeper_notes ?? undefined,
+    };
+  }
+
+  private buildDefaultAttributes(): CharacterAttributes {
+    return {
+      STR: 50,
+      CON: 50,
+      DEX: 50,
+      APP: 50,
+      POW: 50,
+      SIZ: 50,
+      INT: 50,
+      EDU: 50,
+    };
+  }
+
+  private buildDefaultStatus(): CharacterStatus {
+    return {
+      hp: 10,
+      maxHp: 10,
+      sanity: 60,
+      maxSanity: 99,
+      luck: 50,
+      mp: 10,
+      conditions: [],
+    };
+  }
+
+  private buildNpcNotes(row: any): string | undefined {
+    const extras = [
+      row.occupation ? `Occupation: ${row.occupation}` : null,
+      row.age ? `Age: ${row.age}` : null,
+      row.personality ? `Personality: ${row.personality}` : null,
+      row.background ? `Background: ${row.background}` : null,
+      row.goals ? `Goals: ${row.goals}` : null,
+      row.secrets ? `Secrets: ${row.secrets}` : null,
+    ].filter(Boolean);
+
+    if (!extras.length) return undefined;
+    return extras.join(" | ");
+  }
+
+  private safeParse<T>(value: any, fallback: T): T {
+    if (!value) return fallback;
+    try {
+      const parsed = typeof value === "string" ? JSON.parse(value) : value;
+      return parsed as T;
+    } catch {
+      return fallback;
+    }
   }
 }

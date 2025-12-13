@@ -5,6 +5,7 @@
 
 import { randomUUID } from "crypto";
 import fs from "fs";
+import path from "path";
 import type { CoCDatabase } from "../database/schema.js";
 import type {
   ScenarioProfile,
@@ -31,10 +32,65 @@ export class ScenarioLoader {
   }
 
   /**
-   * Load scenarios from a directory
+   * Check if any files in directory have changed since last load
    */
-  async loadScenariosFromDirectory(dirPath: string): Promise<ScenarioProfile[]> {
-    console.log(`\n=== Loading Scenarios from directory: ${dirPath} ===`);
+  private checkForChanges(dirPath: string): { hasChanges: boolean; currentFiles: Map<string, number> } {
+    if (!fs.existsSync(dirPath)) {
+      return { hasChanges: false, currentFiles: new Map() };
+    }
+
+    const currentFiles = new Map<string, number>();
+    const files = fs.readdirSync(dirPath).filter(file => 
+      file.endsWith('.docx') || file.endsWith('.pdf')
+    );
+
+    // Get modification times for all relevant files
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const stats = fs.statSync(filePath);
+      currentFiles.set(file, stats.mtime.getTime());
+    }
+
+    // Check if we have existing scenarios
+    const existingScenarios = this.getAllScenarios();
+    
+    // If no scenarios exist, we need to load
+    if (existingScenarios.length === 0) {
+      return { hasChanges: true, currentFiles };
+    }
+
+    // Check timestamp file
+    const lastLoadFile = path.join(dirPath, '.last_scenario_load_timestamp');
+    let lastLoadTime = 0;
+    
+    if (fs.existsSync(lastLoadFile)) {
+      try {
+        lastLoadTime = parseInt(fs.readFileSync(lastLoadFile, 'utf8'));
+      } catch {
+        return { hasChanges: true, currentFiles };
+      }
+    }
+
+    // Check if any file is newer than last load
+    const hasChanges = Array.from(currentFiles.values()).some(mtime => mtime > lastLoadTime);
+    
+    return { hasChanges, currentFiles };
+  }
+
+  /**
+   * Update the last load timestamp
+   */
+  private updateLastLoadTimestamp(dirPath: string): void {
+    const lastLoadFile = path.join(dirPath, '.last_scenario_load_timestamp');
+    const currentTime = Date.now().toString();
+    fs.writeFileSync(lastLoadFile, currentTime, 'utf8');
+  }
+
+  /**
+   * Load scenarios from a directory (only if files have changed)
+   */
+  async loadScenariosFromDirectory(dirPath: string, forceReload = false): Promise<ScenarioProfile[]> {
+    console.log(`\n=== Checking Scenarios in directory: ${dirPath} ===`);
 
     if (!fs.existsSync(dirPath)) {
       console.log(`Directory does not exist, creating: ${dirPath}`);
@@ -42,11 +98,24 @@ export class ScenarioLoader {
       return [];
     }
 
+    // Check for file changes unless forced reload
+    if (!forceReload) {
+      const { hasChanges } = this.checkForChanges(dirPath);
+      if (!hasChanges) {
+        const existingScenarios = this.getAllScenarios();
+        console.log(`No changes detected. Using ${existingScenarios.length} existing scenarios from database.`);
+        return existingScenarios;
+      }
+    }
+
+    console.log(`Loading Scenarios from directory: ${dirPath}`);
+
     // Parse all documents in the directory
     const parsedScenarios = await this.parser.parseDirectory(dirPath);
 
     if (parsedScenarios.length === 0) {
       console.log("No scenario documents found in directory.");
+      this.updateLastLoadTimestamp(dirPath);
       return [];
     }
 
@@ -62,6 +131,9 @@ export class ScenarioLoader {
         console.error(`✗ Failed to load scenario ${parsedData.name}:`, error);
       }
     }
+
+    // Update timestamp after successful load
+    this.updateLastLoadTimestamp(dirPath);
 
     console.log(`\n=== Successfully loaded ${scenarioProfiles.length} scenarios ===\n`);
     return scenarioProfiles;
@@ -111,7 +183,6 @@ export class ScenarioLoader {
         scenarioId,
         timePoint: {
           timestamp: timelineEntry.timePoint.timestamp,
-          order: timelineEntry.timePoint.order || index,
           notes: timelineEntry.timePoint.notes,
         },
         name: timelineEntry.name || parsedData.name,
@@ -128,13 +199,9 @@ export class ScenarioLoader {
       return snapshot;
     });
 
-    // Sort timeline by order
-    timeline.sort((a, b) => a.timePoint.order - b.timePoint.order);
-
     const scenarioProfile: ScenarioProfile = {
       id: scenarioId,
       name: parsedData.name,
-      category: parsedData.category || "location",
       description: parsedData.description,
       timeline,
       tags: parsedData.tags || [],
@@ -165,52 +232,79 @@ export class ScenarioLoader {
    */
   private saveScenarioToDatabase(scenario: ScenarioProfile): void {
     const database = this.db.getDatabase();
+    const hasCategoryColumn = this.db.hasColumn("scenarios", "category");
+    const hasTimeOrderColumn = this.db.hasColumn("scenario_snapshots", "time_order");
 
     this.db.transaction(() => {
       // Insert or update scenario
-      const scenarioStmt = database.prepare(`
-                INSERT OR REPLACE INTO scenarios (
-                    scenario_id, name, category, description, tags, connections, metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            `);
-
-      scenarioStmt.run(
+      const scenarioColumns = ["scenario_id", "name", "description", "tags", "connections", "metadata"];
+      const scenarioValues: any[] = [
         scenario.id,
         scenario.name,
-        scenario.category,
         scenario.description,
         JSON.stringify(scenario.tags),
         JSON.stringify(scenario.connections),
-        JSON.stringify(scenario.metadata)
+        JSON.stringify(scenario.metadata),
+      ];
+
+      if (hasCategoryColumn) {
+        // Backward compatibility: older DBs may have category
+        scenarioColumns.splice(2, 0, "category");
+        scenarioValues.splice(2, 0, "location");
+      }
+
+      const scenarioStmt = database.prepare(
+        `INSERT OR REPLACE INTO scenarios (${scenarioColumns.join(", ")}) VALUES (${scenarioColumns
+          .map(() => "?")
+          .join(", ")})`
       );
+
+      scenarioStmt.run(...scenarioValues);
 
       // Delete existing related data
       database.prepare("DELETE FROM scenario_snapshots WHERE scenario_id = ?").run(scenario.id);
       // Note: Foreign key constraints will cascade delete related characters, clues, and conditions
 
       // Insert timeline snapshots
-      for (const snapshot of scenario.timeline) {
+      scenario.timeline.forEach((snapshot, idx) => {
         // Insert snapshot
-        const snapshotStmt = database.prepare(`
-                    INSERT INTO scenario_snapshots (
-                        snapshot_id, scenario_id, time_timestamp, time_order, time_notes,
-                        snapshot_name, location, description, events, exits, keeper_notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `);
-
-        snapshotStmt.run(
+        const snapshotColumns = [
+          "snapshot_id",
+          "scenario_id",
+          "time_timestamp",
+          "time_notes",
+          "snapshot_name",
+          "location",
+          "description",
+          "events",
+          "exits",
+          "keeper_notes",
+        ];
+        const snapshotValues: any[] = [
           snapshot.id,
           scenario.id,
           snapshot.timePoint.timestamp,
-          snapshot.timePoint.order,
           snapshot.timePoint.notes || null,
           snapshot.name,
           snapshot.location,
           snapshot.description,
           JSON.stringify(snapshot.events),
           JSON.stringify(snapshot.exits),
-          snapshot.keeperNotes || null
+          snapshot.keeperNotes || null,
+        ];
+
+        if (hasTimeOrderColumn) {
+          snapshotColumns.splice(3, 0, "time_order");
+          snapshotValues.splice(3, 0, idx);
+        }
+
+        const snapshotStmt = database.prepare(
+          `INSERT INTO scenario_snapshots (${snapshotColumns.join(", ")}) VALUES (${snapshotColumns
+            .map(() => "?")
+            .join(", ")})`
         );
+
+        snapshotStmt.run(...snapshotValues);
 
         // Insert characters for this snapshot
         if (snapshot.characters.length > 0) {
@@ -278,7 +372,7 @@ export class ScenarioLoader {
             );
           }
         }
-      }
+      });
     });
   }
 
@@ -298,11 +392,13 @@ export class ScenarioLoader {
     }
 
     // Get timeline snapshots
+    const hasTimeOrder = this.db.hasColumn("scenario_snapshots", "time_order");
+    const orderColumn = hasTimeOrder ? "time_order" : "rowid";
     const snapshots = database
       .prepare(`
             SELECT * FROM scenario_snapshots 
             WHERE scenario_id = ? 
-            ORDER BY time_order ASC
+            ORDER BY ${orderColumn} ASC
         `)
       .all(scenarioId) as any[];
 
@@ -329,7 +425,6 @@ export class ScenarioLoader {
         scenarioId,
         timePoint: {
           timestamp: snap.time_timestamp,
-          order: snap.time_order,
           notes: snap.time_notes,
         },
         name: snap.snapshot_name,
@@ -370,7 +465,6 @@ export class ScenarioLoader {
     const scenarioProfile: ScenarioProfile = {
       id: scenario.scenario_id,
       name: scenario.name,
-      category: scenario.category,
       description: scenario.description,
       timeline,
       tags: JSON.parse(scenario.tags || "[]"),
@@ -407,11 +501,6 @@ export class ScenarioLoader {
     if (query.name) {
       sqlQuery += ` AND name LIKE ?`;
       params.push(`%${query.name}%`);
-    }
-
-    if (query.category) {
-      sqlQuery += ` AND category = ?`;
-      params.push(query.category);
     }
 
     if (query.tags && query.tags.length > 0) {

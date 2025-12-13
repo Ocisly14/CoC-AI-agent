@@ -21,6 +21,18 @@ export class CoCDatabase {
     this.initializeSchema();
   }
 
+  /**
+   * Check if a column exists in a table (defensive for schema drift)
+   */
+  public hasColumn(tableName: string, columnName: string): boolean {
+    const safeTable = tableName.replace(/[^\w]/g, "");
+    const safeColumn = columnName.replace(/[^\w]/g, "");
+    const rows = this.db
+      .prepare(`PRAGMA table_info(${safeTable});`)
+      .all() as { name: string }[];
+    return rows.some((row) => row.name === safeColumn);
+  }
+
   private initializeSchema(): void {
     // Rules table
     this.db.exec(`
@@ -253,7 +265,6 @@ export class CoCDatabase {
             CREATE TABLE IF NOT EXISTS scenarios (
                 scenario_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
-                category TEXT NOT NULL, -- 'location', 'event', 'encounter', 'investigation'
                 description TEXT NOT NULL,
                 tags TEXT, -- JSON array
                 connections TEXT, -- JSON array of connections
@@ -261,7 +272,6 @@ export class CoCDatabase {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_scenarios_name ON scenarios(name);
-            CREATE INDEX IF NOT EXISTS idx_scenarios_category ON scenarios(category);
         `);
 
     // Scenario snapshots table - for timeline data
@@ -270,7 +280,6 @@ export class CoCDatabase {
                 snapshot_id TEXT PRIMARY KEY,
                 scenario_id TEXT NOT NULL,
                 time_timestamp TEXT NOT NULL,
-                time_order INTEGER NOT NULL,
                 time_notes TEXT,
                 snapshot_name TEXT,
                 location TEXT NOT NULL,
@@ -282,7 +291,6 @@ export class CoCDatabase {
                 FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
             );
             CREATE INDEX IF NOT EXISTS idx_snapshots_scenario ON scenario_snapshots(scenario_id);
-            CREATE INDEX IF NOT EXISTS idx_snapshots_time_order ON scenario_snapshots(scenario_id, time_order);
         `);
 
     // Scenario characters table - characters present in scenarios
@@ -361,6 +369,64 @@ export class CoCDatabase {
                 DELETE FROM scenarios_fts WHERE scenario_id = old.scenario_id;
                 INSERT INTO scenarios_fts(scenario_id, name, description)
                 VALUES (new.scenario_id, new.name, new.description);
+            END;
+        `);
+
+    // Module backgrounds table - for module/briefing level information
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS module_backgrounds (
+                module_id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                background TEXT,
+                story_outline TEXT,
+                module_notes TEXT,
+                keeper_guidance TEXT,
+                story_hook TEXT,
+                module_limitations TEXT,
+                tags TEXT, -- JSON array
+                source TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+    // Backfill for module_limitations if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "module_limitations")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN module_limitations TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
+
+    // Full-text search for module backgrounds
+    this.db.exec(`
+            CREATE VIRTUAL TABLE IF NOT EXISTS module_backgrounds_fts USING fts5(
+                module_id UNINDEXED,
+                title,
+                background,
+                story_outline,
+                module_notes,
+                keeper_guidance,
+                story_hook,
+                module_limitations,
+                content='module_backgrounds',
+                content_rowid='rowid'
+            );
+
+            CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_insert AFTER INSERT ON module_backgrounds BEGIN
+                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, story_hook, module_limitations)
+                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.story_hook, new.module_limitations);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_delete AFTER DELETE ON module_backgrounds BEGIN
+                DELETE FROM module_backgrounds_fts WHERE module_id = old.module_id;
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_update AFTER UPDATE ON module_backgrounds BEGIN
+                DELETE FROM module_backgrounds_fts WHERE module_id = old.module_id;
+                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, story_hook, module_limitations)
+                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.story_hook, new.module_limitations);
             END;
         `);
   }

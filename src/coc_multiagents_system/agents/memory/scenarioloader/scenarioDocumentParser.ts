@@ -116,16 +116,6 @@ export class ScenarioDocumentParser {
         throw new Error(`Failed to parse any scenario data for ${fileName}`);
       }
 
-      // Ensure final ordering
-      merged.timeline.forEach((entry, index) => {
-        if (entry.timePoint.order === undefined || entry.timePoint.order === null) {
-          entry.timePoint.order = index;
-        }
-      });
-      merged.timeline.sort(
-        (a, b) => (a.timePoint.order ?? 0) - (b.timePoint.order ?? 0)
-      );
-
       return merged;
     }
 
@@ -143,21 +133,19 @@ export class ScenarioDocumentParser {
 
 Extract scenario information from the following document and return it as a JSON object.
 
-The JSON should follow this structure:
+The JSON should follow this structure (no category field; the scenario name/description is the location anchor):
 {
-  "name": "Scenario name",
-  "category": "location" | "event" | "encounter" | "investigation",
-  "description": "Overall scenario description",
+  "name": "AAA Hospital / BBB Factory / CCC Plaza ...",
+  "description": "Overall scenario description (the environment as a whole)",
   "timeline": [
     {
       "timePoint": {
         "timestamp": "Time description (e.g., '1925-03-15', 'Dawn', 'Day 3')",
-        "order": number (0, 1, 2... for chronological ordering),
         "notes": "Additional time notes"
       },
       "name": "Scene name at this time (optional)",
-      "location": "Primary location",
-      "description": "Detailed scene description",
+      "location": "Primary location (same site; use description for sub-areas, not separate rooms)",
+      "description": "Detailed scene description for this time",
       "characters": [
         {
           "name": "Character name",
@@ -216,6 +204,7 @@ Important extraction guidelines:
 7. **Clue Scope**: Only include clues that can be discovered in the scene/location/timeline entry itself. Do NOT include clues that belong solely to an NPC's private knowledge.
 8. **Partial Inputs**: The text you see may be only a fragment of the full scenario. If information is missing or incomplete, leave the field blank or omit it—do NOT fabricate details.
 9. **Scene Granularity**: Treat a scene as a whole area/building (e.g., a hotel, a plaza, a home, a hospital, a lumberyard). Do NOT split into individual rooms; fold room-level details into the description/clues of the parent location. Story background or meta setup is not itself a scene—only concrete places/areas that investigators can visit.
+10. **Location-First Modeling**: Each scenario maps to a single location/environment (e.g., “医院”, “工厂”, “广场”). Do NOT create separate scenarios for events. Use the timeline to capture different time states of the same location (what time, which people, what events/clues), not to jump across different places. Do not add a category field—only the name/description identify the place.
 
 Pay special attention to:
 - Time markers and chronological sequence
@@ -270,18 +259,6 @@ Return ONLY the JSON object, no additional text.`;
             `At least one timeline entry is required but not found in document: ${fileName}`
           );
         }
-
-        // Ensure timeline order
-        scenarioData.timeline.forEach((entry, index) => {
-          if (entry.timePoint.order === undefined) {
-            entry.timePoint.order = index;
-          }
-        });
-
-        // Sort timeline by order
-        scenarioData.timeline.sort(
-          (a, b) => (a.timePoint.order ?? 0) - (b.timePoint.order ?? 0)
-        );
 
         return scenarioData;
       } catch (err) {
@@ -384,7 +361,6 @@ Return ONLY the JSON object, no additional text.`;
 
     const merged: ParsedScenarioData = {
       name: base.name || incoming.name,
-      category: base.category || incoming.category,
       description: this.pickLonger(base.description, incoming.description) || "",
       timeline: [],
       tags: this.mergeStringArrays(base.tags, incoming.tags) || [],
@@ -410,16 +386,6 @@ Return ONLY the JSON object, no additional text.`;
     incoming.timeline.forEach(addTimeline);
 
     merged.timeline = Array.from(timelineMap.values());
-    merged.timeline.forEach((entry, index) => {
-      if (entry.timePoint.order === undefined || entry.timePoint.order === null) {
-        entry.timePoint.order = index;
-      }
-    });
-
-    merged.timeline.sort(
-      (a, b) => (a.timePoint.order ?? 0) - (b.timePoint.order ?? 0)
-    );
-
     return merged;
   }
 
@@ -431,7 +397,6 @@ Return ONLY the JSON object, no additional text.`;
       ...a,
       timePoint: {
         timestamp: a.timePoint.timestamp || b.timePoint.timestamp || "",
-        order: a.timePoint.order ?? b.timePoint.order ?? 0,
         notes: this.pickLonger(a.timePoint.notes, b.timePoint.notes),
       },
       name: a.name || b.name,

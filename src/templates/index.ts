@@ -81,7 +81,7 @@ export class CoCTemplateFactory {
         };
 
         // Process agent results
-        agentResults.forEach(result => {
+        agentResults.forEach((result: { agentId: string; content: string }) => {
             switch (result.agentId) {
                 case 'character':
                     context.characterAnalysis = result.content;

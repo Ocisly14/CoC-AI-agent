@@ -4,11 +4,14 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import express from "express";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { MemoryAgent } from "../src/coc_multiagents_system/agents/memory/memoryAgent.js";
 import {
   CoCDatabase,
   seedDatabase,
 } from "../src/coc_multiagents_system/agents/memory/database/index.js";
+import { processUserQuery } from "../src/runtime.js";
+import { initialGameState } from "../src/state.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +33,9 @@ const memoryAgent = new MemoryAgent(db);
 const SESSION_ID = "chat-session-" + new Date().toISOString().split("T")[0];
 memoryAgent.createSession(SESSION_ID, "Web chat session");
 
+// Game state to maintain conversation context
+let currentGameState = initialGameState;
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -38,8 +44,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// API endpoint to save user message
-app.post("/api/message", (req, res) => {
+// API endpoint to process user query
+app.post("/api/message", async (req, res) => {
   try {
     const { message } = req.body;
 
@@ -47,7 +53,9 @@ app.post("/api/message", (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Save message to memory using MemoryAgent
+    console.log(`User query: ${message}`);
+
+    // Save user query to database
     const eventId = memoryAgent.logEvent({
       eventType: "dialogue",
       sessionId: SESSION_ID,
@@ -59,15 +67,20 @@ app.post("/api/message", (req, res) => {
       tags: ["user", "chat"],
     });
 
+    // TODO: Process through multi-agent system
+    // For now, return a simple response
+    const response = `Keeper: You said "${message}". The multi-agent system will process this...`;
+
     res.json({
       success: true,
       eventId,
       timestamp: new Date().toISOString(),
-      message: "Message saved to memory",
+      userMessage: message,
+      response: response,
     });
   } catch (error) {
-    console.error("Error saving message:", error);
-    res.status(500).json({ error: "Failed to save message" });
+    console.error("Error processing message:", error);
+    res.status(500).json({ error: "Failed to process message: " + error.message });
   }
 });
 

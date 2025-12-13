@@ -1,4 +1,4 @@
-import { AIMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatOpenAI } from "@langchain/openai";
 import { CharacterAgent } from "./coc_multiagents_system/agents/character/index.js";
 import {
@@ -8,7 +8,12 @@ import {
 } from "./coc_multiagents_system/agents/keeper/index.js";
 import { MemoryAgent } from "./coc_multiagents_system/agents/memory/index.js";
 import type { CoCDatabase } from "./coc_multiagents_system/agents/memory/database/index.js";
-import { type AgentId, type CoCState, initialGameState } from "./state.js";
+import {
+  type AgentId,
+  type CoCState,
+  type Phase,
+  initialGameState,
+} from "./state.js";
 import { composeTemplate } from "./template.js";
 import {
   contentToString,
@@ -26,6 +31,7 @@ import {
   CoCTemplateFactory,
   TemplateUtils,
 } from "./templates/index.js";
+import type { RAGEngine } from "./rag/engine.js";
 
 // Create a runtime interface that includes model configuration
 interface CoCRuntime {
@@ -93,14 +99,11 @@ Context:
     return { messages: [labeledResponse] };
   };
 
-// Simple action/planning node placeholder (optional use)
-export const createActionNode = (database: CoCDatabase) =>
-  buildAgentNode(
-    "action",
-    `You are the Action agent. Convert player intent into clear next steps or rolls.
-Suggest concrete mechanical actions (e.g., skill checks, positioning) without narrative.`,
-    database
-  );
+// Import ActionAgent
+import { createActionNode as createActionNodeFromAgent } from "./coc_multiagents_system/agents/action/actionAgent.js";
+
+// Action node using proper ActionAgent
+export const createActionNode = createActionNodeFromAgent;
 
 export const createKeeperNode =
   (database: CoCDatabase) =>
@@ -120,7 +123,7 @@ export const createKeeperNode =
       });
     } else {
       // Build comprehensive prompt with agent results
-      const agentResultsFormatted = agentResults.map(result => ({
+      const agentResultsFormatted = agentResults.map((result: any) => ({
         agentId: result.agentId as string,
         content: result.content as string,
       }));
@@ -207,7 +210,52 @@ export const createCharacterNode = (db: CoCDatabase) => {
   };
 };
 
-export const createMemoryNode = (db: CoCDatabase) => {
+// Web API interface for processing user queries through the multi-agent graph
+export const processUserQuery = async (
+  query: string,
+  database: CoCDatabase,
+  currentGameState?: CoCState['gameState'],
+  ragEngine?: RAGEngine
+): Promise<{
+  response: string;
+  updatedGameState: CoCState['gameState'];
+  agentTrace: Array<{ agentId: string; content: string; timestamp: Date }>;
+}> => {
+  // Import buildGraph here to avoid circular dependency
+  const { buildGraph } = await import("./graph.js");
+  
+  const graph = buildGraph(database, ragEngine);
+  const gameState = currentGameState || initialGameState;
+  
+  // Process the query through the multi-agent graph
+  const result = await graph.invoke({
+    messages: [new HumanMessage(query)],
+    agentQueue: [],
+    gameState,
+  });
+  
+  // Extract the keeper's response (final response to user)
+  const keeperMessage = result.messages?.find(
+    (msg: any) => msg.name === 'keeper'
+  );
+  
+  const response = keeperMessage?.content || "No response generated";
+  
+  // Extract agent trace for debugging/transparency
+  const agentTrace = (result.agentResults || []).map((r: any) => ({
+    agentId: r.agentId,
+    content: r.content,
+    timestamp: r.timestamp || new Date(),
+  }));
+  
+  return {
+    response,
+    updatedGameState: result.gameState || gameState,
+    agentTrace,
+  };
+};
+
+export const createMemoryNode = (db: CoCDatabase, rag?: RAGEngine) => {
   const memoryAgent = new MemoryAgent(db);
 
   return async (state: CoCState): Promise<Partial<CoCState>> => {
@@ -233,9 +281,15 @@ export const createMemoryNode = (db: CoCDatabase) => {
     // Get recent context
     const recentEvents = memoryAgent.getRecentEvents(sessionId, 10);
     const discoveries = memoryAgent.getDiscoveries(sessionId);
+    const latestModule = memoryAgent.getLatestModuleBackground();
 
     // Build context summary
     let contextSummary = "Recent context:\n";
+    const summarize = (value?: string) => {
+      if (!value) return "N/A";
+      return value.length > 320 ? `${value.slice(0, 320)}...` : value;
+    };
+
     if (recentEvents.length > 0) {
       contextSummary += recentEvents
         .slice(0, 5)

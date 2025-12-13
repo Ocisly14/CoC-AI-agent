@@ -24,7 +24,8 @@ export const contentToString = (content: unknown): string => {
 export const latestHumanMessage = (messages: BaseMessage[]): string => {
   const reversed = [...messages].reverse();
   const human = reversed.find(
-    (message) =>
+    (message: BaseMessage) =>
+      // LangChain BaseMessage exposes _getType(); fall back to .type for compatibility
       (message as any)._getType?.() === "human" ||
       (message as any).type === "human"
   );

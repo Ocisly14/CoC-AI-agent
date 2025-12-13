@@ -188,13 +188,11 @@ This is designed as an introductory investigation to introduce players to the un
       // Create a mock scenario for testing
       const mockScenarioData = {
         name: "The Old Library Investigation",
-        category: "investigation" as const,
         description: "The investigators are called to investigate mysterious disappearances at the Miskatonic University Library.",
         timeline: [
           {
             timePoint: {
               timestamp: "Day 1 - Morning (9:00 AM)",
-              order: 0,
               notes: "Normal library operations"
             },
             location: "Miskatonic University Library - Main Reading Room",
@@ -265,7 +263,6 @@ This is designed as an introductory investigation to introduce players to the un
           {
             timePoint: {
               timestamp: "Day 1 - Evening (10:00 PM)",
-              order: 1,
               notes: "After hours - supernatural activity increases"
             },
             location: "Miskatonic University Library - After Hours", 
@@ -338,14 +335,13 @@ This is designed as an introductory investigation to introduce players to the un
       logger.success(`Successfully processed mock scenario: ${scenarioProfile.name}`);
       logger.info(`📜 Scenario: ${scenarioProfile.name}`);
       logger.info(`🆔 ID: ${scenarioProfile.id}`);
-      logger.info(`📂 Category: ${scenarioProfile.category}`);
       logger.info(`📝 Description: ${scenarioProfile.description.substring(0, 100)}...`);
       logger.info(`⏰ Timeline: ${scenarioProfile.timeline.length} time points`);
 
       // Display timeline information
       logger.section("Timeline Analysis");
       for (const snapshot of scenarioProfile.timeline) {
-        logger.info(`🕒 ${snapshot.timePoint.timestamp} (Order: ${snapshot.timePoint.order})`);
+        logger.info(`🕒 ${snapshot.timePoint.timestamp}`);
         logger.debug(`   📍 Location: ${snapshot.location}`);
         logger.debug(`   👥 Characters: ${snapshot.characters.length}`);
         logger.debug(`   🔍 Clues: ${snapshot.clues.length}`);
@@ -403,7 +399,6 @@ This is designed as an introductory investigation to introduce players to the un
       logger.section("Testing Search Functionality");
       
       const searchResult = scenarioLoader.searchScenarios({
-        category: "investigation",
         tags: ["library"]
       });
       

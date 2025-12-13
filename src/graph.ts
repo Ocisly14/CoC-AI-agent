@@ -14,16 +14,17 @@ import {
   createMemoryNode,
 } from "./runtime.js";
 import { CoCGraphState } from "./state.js";
+import type { RAGEngine } from "./rag/engine.js";
 
-export const buildGraph = (db: CoCDatabase) => {
+export const buildGraph = (db: CoCDatabase, rag?: RAGEngine) => {
   const graph = new StateGraph(CoCGraphState)
-    .addNode("orchestrator", createOrchestratorNode())
+    .addNode("orchestrator", createOrchestratorNode(db))
     .addNode("executeAgents", createExecuteAgentsNode())
     .addNode("character", createCharacterNode(db))
-    .addNode("memory", createMemoryNode(db)) // Memory now includes rules database
+    .addNode("memory", createMemoryNode(db, rag)) // Memory now includes rules database
     .addNode("action", createActionNode())
     .addNode("checkCompletion", createCheckCompletionNode())
-    .addNode("keeper", createKeeperNode());
+    .addNode("keeper", createKeeperNode(db));
 
   // Workflow: Orchestrator → ExecuteAgents → [Memory/Character] → CheckCompletion → Keeper → END
   graph.addEdge(START, "orchestrator");

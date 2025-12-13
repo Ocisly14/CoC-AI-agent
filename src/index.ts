@@ -1,14 +1,18 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { AIMessage } from "@langchain/core/messages";
+import type { Messages } from "@langchain/core/messages";
 import {
   CoCDatabase,
   seedDatabase,
 } from "./coc_multiagents_system/agents/memory/database/index.js";
-import { NPCLoader } from "./coc_multiagents_system/agents/character/npc/index.js";
+import { NPCLoader } from "./coc_multiagents_system/agents/character/npcloader/index.js";
+import { ModuleLoader } from "./coc_multiagents_system/agents/memory/moduleloader/index.js";
+import { ScenarioLoader } from "./coc_multiagents_system/agents/memory/scenarioloader/index.js";
 import { buildGraph } from "./graph.js";
 import { initialGameState } from "./state.js";
+import { RAGEngine } from "./rag/engine.js";
 
 // Initialize database
 const dataDir = path.join(process.cwd(), "data");
@@ -33,6 +37,43 @@ if (!fs.existsSync(npcDir)) {
 const npcLoader = new NPCLoader(db);
 await npcLoader.loadNPCsFromDirectory(npcDir);
 
+// Initialize module background directory
+const moduleDir = path.join(process.cwd(), "data", "background");
+if (!fs.existsSync(moduleDir)) {
+  fs.mkdirSync(moduleDir, { recursive: true });
+  console.log(`Created module background directory: ${moduleDir}`);
+  console.log(
+    `Place your module .docx or .pdf files in this directory to load background/outlines automatically.\n`
+  );
+}
+
+// Load module briefings from documents
+const moduleLoader = new ModuleLoader(db);
+await moduleLoader.loadModulesFromDirectory(moduleDir);
+
+// Initialize scenario directory
+const scenarioDir = path.join(process.cwd(), "data", "scenarios");
+if (!fs.existsSync(scenarioDir)) {
+  fs.mkdirSync(scenarioDir, { recursive: true });
+  console.log(`Created scenario directory: ${scenarioDir}`);
+  console.log(
+    `Place your scenario .docx or .pdf files in this directory to load them automatically.\n`
+  );
+}
+
+// Load scenarios from documents
+const scenarioLoader = new ScenarioLoader(db);
+await scenarioLoader.loadScenariosFromDirectory(scenarioDir);
+
+// Initialize RAG knowledge directory
+const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
+if (!fs.existsSync(knowledgeDir)) {
+  fs.mkdirSync(knowledgeDir, { recursive: true });
+  console.log(`Created knowledge directory: ${knowledgeDir}`);
+}
+const ragEngine = new RAGEngine(db, knowledgeDir);
+await ragEngine.ingestFromDirectory();
+
 const parseArgs = (argv: string[]): string => {
   const promptFlagIndex = argv.findIndex((arg) => arg === "--prompt");
   if (promptFlagIndex !== -1 && argv[promptFlagIndex + 1]) {
@@ -56,16 +97,18 @@ const printTranscript = (messages: AIMessage[]) => {
 
 const main = async () => {
   const userPrompt = parseArgs(process.argv);
-  const app = buildGraph(db);
+  const app = buildGraph(db, ragEngine);
+
+  const initialMessages: Messages = [{ type: "human", content: userPrompt }];
 
   const result = await app.invoke({
-    messages: [new HumanMessage(userPrompt)],
+    messages: initialMessages,
     agentQueue: [],
     gameState: initialGameState,
   });
 
   const agentMessages = result.messages.filter(
-    (message): message is AIMessage => message instanceof AIMessage
+    (message: any): message is AIMessage => message instanceof AIMessage
   );
 
   printTranscript(agentMessages);
