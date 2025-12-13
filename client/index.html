@@ -219,7 +219,7 @@
 
                 if (data.success) {
                     addMessage(message, 'user', data.timestamp);
-                    addMessage('Message saved to memory', 'system', data.timestamp);
+                    addMessage(data.response, 'system', data.timestamp);
                 } else {
                     addMessage('Send failed: ' + (data.error || 'Unknown error'), 'system');
                 }

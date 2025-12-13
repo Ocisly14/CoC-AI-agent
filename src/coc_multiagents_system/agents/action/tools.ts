@@ -25,7 +25,7 @@ export const actionTools = [
     type: "function",
     function: {
       name: "roll_dice",
-      description: "Roll dice using standard notation like '1d100', '3d6', '2d4+1', etc. Returns the individual rolls and total.",
+      description: "Roll dice using standard notation like '1d100', '3d6', '2d4+1', etc. Returns format: 'XdY+Z = result'",
       parameters: {
         type: "object",
         properties: {
@@ -36,6 +36,9 @@ export const actionTools = [
         },
         required: ["expression"],
       },
+      returns: {
+        description: "Returns simple format like '3d6+2 = 14' or '1d100 = 73'"
+      }
     },
   },
 ];
