@@ -99,6 +99,8 @@ export interface ScenarioSnapshot {
     description?: string;
     condition?: string; // e.g., "locked", "hidden"
   }[];
+  /** Reference to permanent changes from the parent scenario */
+  permanentChanges?: string[];
   /** Keeper notes for this snapshot */
   keeperNotes?: string;
 }
@@ -122,6 +124,8 @@ export interface ScenarioProfile {
     relationshipType: "leads_to" | "concurrent" | "prerequisite" | "alternate";
     description?: string;
   }[];
+  /** Permanent changes made to the scenario */
+  permanentChanges?: string[];
   /** Scenario metadata */
   metadata: {
     createdAt: string;

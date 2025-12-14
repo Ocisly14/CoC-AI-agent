@@ -3,6 +3,7 @@ import { generateText } from "../../../models/index.js";
 import { actionTools } from "./tools.js";
 import { GameStateManager, GameState, ActionResult, ActionAnalysis } from "../../../state.js";
 import type { CharacterProfile } from "../models/gameTypes.js";
+import { actionTypeTemplates } from "./example.js";
 
 
 /**
@@ -14,7 +15,7 @@ export class ActionAgent {
    * Process player action and resolve with dice rolls and state updates
    */
   async processAction(runtime: any, gameState: GameState, userMessage: string): Promise<GameState> {
-    const systemPrompt = `You are an action resolution specialist for Call of Cthulhu.
+    const baseSystemPrompt = `You are an action resolution specialist for Call of Cthulhu.
 
 Your job is to analyze player actions and resolve them step by step. You MUST respond with JSON in one of these formats:
 
@@ -28,24 +29,11 @@ FOR TOOL CALLS (when you need to roll dice):
 }
 
 FOR FINAL RESULTS (when you have everything needed):
-{
-  "type": "result",
-  "summary": "Detective Smith successfully punches the cultist, dealing significant damage",
-  "stateUpdate": {
-    "playerCharacter": {
-      "name": "Detective Smith",
-      "status": { "hp": 0 }
-    },
-    "npcCharacters": [
-      {
-        "id": "cultist-1",
-        "name": "Hooded Cultist",
-        "status": { "hp": -4 }
-      }
-    ]
-  },
-  "log": ["Fighting (Brawl) 50% vs roll 32 = success", "Damage 1d3+1 = 4", "Cultist HP: -4"]
-}
+Include "scenarioUpdate" if the action permanently changes the environment:`;
+
+    const actionTypeTemplate = this.getActionTypeTemplate(gameState);
+
+    const diceGuidelines = `
 
 DICE ROLLING GUIDELINES:
 1. Use character skills from the provided character data to determine appropriate skill checks
@@ -65,6 +53,8 @@ EXAMPLES:
 Always analyze the current situation, character capabilities, environmental conditions, and applicable rules before determining what dice to roll.
 
 IMPORTANT: You MUST respond with valid JSON format only. Do not include any text outside the JSON structure.`;
+
+    const systemPrompt = baseSystemPrompt + actionTypeTemplate + diceGuidelines;
 
     // Tool call loop
     const toolLogs: string[] = [];
@@ -152,6 +142,28 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     return { count, sides, modifier };
   }
 
+  private getActionTypeTemplate(gameState: GameState): string {
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    
+    if (!actionAnalysis || !actionAnalysis.actionType || actionAnalysis.actionType === "narrative") {
+      return `
+{
+  "type": "result",
+  "summary": "Action completed",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Character Name",
+      "status": { "hp": 0 }
+    }
+  },
+  "log": ["Action log entry"]
+}`;
+    }
+
+    const template = actionTypeTemplates[actionAnalysis.actionType as keyof typeof actionTypeTemplates];
+    return template || actionTypeTemplates.exploration; // fallback to exploration
+  }
+
   private buildCharacterContext(gameState: GameState): string {
     const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
     
@@ -179,7 +191,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     context += "\n\nPlayer Character:\n" + JSON.stringify(gameState.playerCharacter, null, 2);
     
     // Add target NPC if applicable
-    if (actionAnalysis?.target.type === "npc" && actionAnalysis.target.name) {
+    if (actionAnalysis?.target.name) {
       const targetNpc = gameState.npcCharacters.find(npc => 
         npc.name.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase()) ||
         npc.id.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase())
@@ -200,6 +212,49 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     if (parsed.stateUpdate) {
       stateManager.applyActionUpdate(parsed.stateUpdate);
     }
+
+    // Apply scenario updates if provided
+    const scenarioChanges: string[] = [];
+    if (parsed.scenarioUpdate) {
+      stateManager.updateScenarioState(parsed.scenarioUpdate);
+      
+      // Generate scenario change descriptions for action results
+      if (parsed.scenarioUpdate.description) {
+        scenarioChanges.push("Environment description updated");
+      }
+      
+      if (parsed.scenarioUpdate.conditions && parsed.scenarioUpdate.conditions.length > 0) {
+        scenarioChanges.push(`Environmental conditions changed: ${parsed.scenarioUpdate.conditions.map((c: any) => c.description).join(', ')}`);
+      }
+      
+      if (parsed.scenarioUpdate.events && parsed.scenarioUpdate.events.length > 0) {
+        scenarioChanges.push(`New events recorded: ${parsed.scenarioUpdate.events.join(', ')}`);
+      }
+      
+      if (parsed.scenarioUpdate.exits && parsed.scenarioUpdate.exits.length > 0) {
+        parsed.scenarioUpdate.exits.forEach((exit: any) => {
+          const changeDesc = `Exit ${exit.direction} to ${exit.destination}: ${exit.condition || 'modified'}`;
+          scenarioChanges.push(changeDesc);
+          // Record structural changes as permanent
+          stateManager.addPermanentScenarioChange(`${parsed.stateUpdate?.playerCharacter?.name || 'Character'} modified ${exit.direction} exit - ${changeDesc}`);
+        });
+      }
+      
+      if (parsed.scenarioUpdate.clues && parsed.scenarioUpdate.clues.length > 0) {
+        parsed.scenarioUpdate.clues.forEach((clue: any) => {
+          if (clue.discovered) {
+            scenarioChanges.push(`Clue discovered: ${clue.id}`);
+          } else {
+            scenarioChanges.push(`Clue modified: ${clue.id}`);
+          }
+        });
+      }
+
+      // Record significant environmental changes as permanent
+      if (parsed.scenarioUpdate.description) {
+        stateManager.addPermanentScenarioChange(`${parsed.stateUpdate?.playerCharacter?.name || 'Character'} permanently altered the environment: ${parsed.summary || 'Unknown change'}`);
+      }
+    }
     
     // Create structured action result
     const actionResult: ActionResult = {
@@ -208,7 +263,9 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       location: gameState.currentScenario?.location || "Unknown location", 
       character: parsed.stateUpdate?.playerCharacter?.name || gameState.playerCharacter.name,
       result: parsed.summary || "performed an action",
-      diceRolls: toolLogs.map(log => log) // toolLogs already contain "expression -> result" format
+      diceRolls: toolLogs.map(log => log), // toolLogs already contain "expression -> result" format
+      timeConsumption: parsed.timeConsumption || "instant", // Default to instant if not specified
+      scenarioChanges: scenarioChanges.length > 0 ? scenarioChanges : undefined
     };
     
     // Add to action results

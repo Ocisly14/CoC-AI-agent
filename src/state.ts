@@ -5,13 +5,35 @@ export type AgentId = "keeper" | "memory" | "action";
 
 export type Phase = "intro" | "investigation" | "confrontation" | "downtime";
 
+export type ActionType = 
+  | "exploration"      // Discovering clues, understanding environment, gathering information
+  | "social"          // Influencing NPCs, gathering intelligence, reaching consensus
+  | "stealth"         // Acting without being detected
+  | "combat"          // Causing damage, subduing or stopping opponents
+  | "chase"           // Extending or closing distance
+  | "mental"          // Withstanding or resisting psychological shock
+  | "environmental"   // Confronting environment and physiological limits
+  | "narrative";      // Making key choices
+
 export interface ActionAnalysis {
   player: string;
   action: string;
+  actionType: ActionType;
   target: {
-    type: "npc" | "object" | "location" | "general";
     name: string | null;
     intent: string;
+  };
+  requiresDice: boolean;  // Whether dice roll is required
+}
+
+export interface VisitedScenarioBasic {
+  id: string;
+  scenarioId: string;
+  name: string;
+  location: string;
+  timePoint: {
+    timestamp: string;
+    notes?: string;
   };
 }
 
@@ -19,19 +41,27 @@ export interface GameState {
   sessionId: string;
   phase: Phase;
   currentScenario: ScenarioSnapshot | null;
-  visitedScenarios: ScenarioSnapshot[];
+  visitedScenarios: VisitedScenarioBasic[];
   timeOfDay: string;
   tension: number;
   openThreads: string[];
   discoveredClues: string[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
+  scenarioTimeState: {
+    sceneStartTime: string;     // 场景开始时的游戏时间
+    playerTimeConsumption: Record<string, {  // 各玩家的时间消耗记录
+      totalShortActions: number;             // 该玩家在当前场景的短期行动次数
+      lastActionTime: string;                // 该玩家最后一次行动的时间消耗类型
+    }>;
+  };
   temporaryInfo: {
     rules: string[];
     ragResults: string[];
     contextualData: Record<string, any>;
     actionResults: ActionResult[];
     currentActionAnalysis: ActionAnalysis | null;
+    directorDecision: DirectorDecision | null;
   };
 }
 
@@ -80,14 +110,28 @@ export const initialGameState: GameState = {
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
+  scenarioTimeState: {
+    sceneStartTime: "Evening",
+    playerTimeConsumption: {},
+  },
   temporaryInfo: {
     rules: [],
     ragResults: [],
     contextualData: {},
     actionResults: [],
     currentActionAnalysis: null,
+    directorDecision: null,
   },
 };
+
+export type TimeConsumption = "instant" | "short" | "scene";
+
+export interface DirectorDecision {
+  shouldProgress: boolean;
+  targetSnapshotId?: string;  // 要推进到的具体场景快照ID
+  reasoning: string;          // 推进的原因说明
+  timestamp: Date;            // 决策时间
+}
 
 export interface ActionResult {
   timestamp: Date;
@@ -96,6 +140,8 @@ export interface ActionResult {
   character: string;
   result: string;
   diceRolls: string[];
+  timeConsumption: TimeConsumption;  // 该行动消耗的时间类型
+  scenarioChanges?: string[]; // List of permanent changes made to the scenario
 }
 
 export interface AgentResult {
@@ -166,24 +212,43 @@ export class GameStateManager {
     
     // If we already have a current scenario, move it to visited scenarios
     if (this.gameState.currentScenario) {
-      // Check if this scenario is already in visited list
-      const existingIndex = this.gameState.visitedScenarios.findIndex(
-        scenario => scenario.id === this.gameState.currentScenario!.id
-      );
-      
-      if (existingIndex === -1) {
-        // Add current scenario to visited list
-        this.gameState.visitedScenarios.unshift(this.gameState.currentScenario);
-        
-        // Keep only the most recent 3 visited scenarios
-        if (this.gameState.visitedScenarios.length > 3) {
-          this.gameState.visitedScenarios = this.gameState.visitedScenarios.slice(0, 3);
-        }
-      }
+      this.addVisitedScenario(this.gameState.currentScenario);
     }
 
     // Set new current scenario
     this.gameState.currentScenario = newScenario;
+    
+    // Reset time consumption state for any scenario update (location change OR time progression)
+    this.resetScenarioTimeState();
+  }
+
+  /**
+   * Add a scenario snapshot to the visited list while keeping the list bounded
+   */
+  addVisitedScenario(scenario: ScenarioSnapshot): void {
+    // Check if this scenario is already in visited list
+    const existingIndex = this.gameState.visitedScenarios.findIndex(
+      visited => visited.id === scenario.id
+    );
+    
+    if (existingIndex === -1) {
+      // Extract only basic information for visited scenarios
+      const basicScenario: VisitedScenarioBasic = {
+        id: scenario.id,
+        scenarioId: scenario.scenarioId,
+        name: scenario.name,
+        location: scenario.location,
+        timePoint: scenario.timePoint
+      };
+      
+      // Add scenario to visited list
+      this.gameState.visitedScenarios.unshift(basicScenario);
+      
+      // Keep only the most recent 3 visited scenarios
+      if (this.gameState.visitedScenarios.length > 3) {
+        this.gameState.visitedScenarios = this.gameState.visitedScenarios.slice(0, 3);
+      }
+    }
   }
 
   /**
@@ -270,16 +335,78 @@ export class GameStateManager {
   }
 
   /**
-   * Add action result to temporary storage
+   * Add action result to temporary storage and update player time consumption
    */
   addActionResult(actionResult: ActionResult): void {
     if (!actionResult) return;
+    
+    // Update player time consumption
+    this.updatePlayerTimeConsumption(actionResult.character, actionResult.timeConsumption);
+    
     this.gameState.temporaryInfo.actionResults.push(actionResult);
     
     // Keep only the most recent 10 action results to avoid memory bloat
     if (this.gameState.temporaryInfo.actionResults.length > 10) {
       this.gameState.temporaryInfo.actionResults = this.gameState.temporaryInfo.actionResults.slice(-10);
     }
+  }
+
+  /**
+   * Update player time consumption tracking
+   */
+  private updatePlayerTimeConsumption(playerName: string, timeConsumption: TimeConsumption): void {
+    // Initialize player record if doesn't exist
+    if (!this.gameState.scenarioTimeState.playerTimeConsumption[playerName]) {
+      this.gameState.scenarioTimeState.playerTimeConsumption[playerName] = {
+        totalShortActions: 0,
+        lastActionTime: timeConsumption
+      };
+    }
+
+    const playerTime = this.gameState.scenarioTimeState.playerTimeConsumption[playerName];
+    
+    // Update based on time consumption type
+    switch (timeConsumption) {
+      case "instant":
+        // Instant actions don't affect time tracking
+        playerTime.lastActionTime = timeConsumption;
+        break;
+        
+      case "short":
+        // Track short actions count
+        playerTime.totalShortActions += 1;
+        playerTime.lastActionTime = timeConsumption;
+        break;
+        
+      case "scene":
+        // Scene actions are significant time consumers
+        playerTime.lastActionTime = timeConsumption;
+        break;
+    }
+  }
+
+  /**
+   * Get player's short action count in current scenario
+   */
+  getPlayerShortActions(playerName: string): number {
+    const playerTime = this.gameState.scenarioTimeState.playerTimeConsumption[playerName];
+    return playerTime ? playerTime.totalShortActions : 0;
+  }
+
+  /**
+   * Get player's last action time consumption
+   */
+  getPlayerLastActionTime(playerName: string): TimeConsumption | null {
+    const playerTime = this.gameState.scenarioTimeState.playerTimeConsumption[playerName];
+    return playerTime ? playerTime.lastActionTime as TimeConsumption : null;
+  }
+
+  /**
+   * Reset time consumption for new scenario (called when scenario changes)
+   */
+  resetScenarioTimeState(): void {
+    this.gameState.scenarioTimeState.playerTimeConsumption = {};
+    this.gameState.scenarioTimeState.sceneStartTime = this.gameState.timeOfDay;
   }
 
   /**
@@ -301,6 +428,110 @@ export class GameStateManager {
    */
   clearActionAnalysis(): void {
     this.gameState.temporaryInfo.currentActionAnalysis = null;
+  }
+
+  /**
+   * Set director decision from director agent
+   */
+  setDirectorDecision(decision: DirectorDecision): void {
+    this.gameState.temporaryInfo.directorDecision = decision;
+  }
+
+  /**
+   * Clear director decision
+   */
+  clearDirectorDecision(): void {
+    this.gameState.temporaryInfo.directorDecision = null;
+  }
+
+  /**
+   * Update current scenario based on player actions
+   */
+  updateScenarioState(scenarioUpdates: any): void {
+    if (!scenarioUpdates || !this.gameState.currentScenario) return;
+
+    // Update scenario description if provided
+    if (scenarioUpdates.description) {
+      this.gameState.currentScenario.description = scenarioUpdates.description;
+    }
+
+    // Update environmental conditions
+    if (scenarioUpdates.conditions && Array.isArray(scenarioUpdates.conditions)) {
+      for (const newCondition of scenarioUpdates.conditions) {
+        const existingIndex = this.gameState.currentScenario.conditions.findIndex(
+          condition => condition.type === newCondition.type
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing condition
+          this.gameState.currentScenario.conditions[existingIndex] = newCondition;
+        } else {
+          // Add new condition
+          this.gameState.currentScenario.conditions.push(newCondition);
+        }
+      }
+    }
+
+    // Add new events
+    if (scenarioUpdates.events && Array.isArray(scenarioUpdates.events)) {
+      this.gameState.currentScenario.events.push(...scenarioUpdates.events);
+    }
+
+    // Update exits/entrances
+    if (scenarioUpdates.exits && Array.isArray(scenarioUpdates.exits)) {
+      for (const exitUpdate of scenarioUpdates.exits) {
+        if (!this.gameState.currentScenario.exits) {
+          this.gameState.currentScenario.exits = [];
+        }
+        
+        const existingIndex = this.gameState.currentScenario.exits.findIndex(
+          exit => exit.direction === exitUpdate.direction
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing exit
+          this.gameState.currentScenario.exits[existingIndex] = exitUpdate;
+        } else {
+          // Add new exit
+          this.gameState.currentScenario.exits.push(exitUpdate);
+        }
+      }
+    }
+
+    // Update clue states
+    if (scenarioUpdates.clues && Array.isArray(scenarioUpdates.clues)) {
+      for (const clueUpdate of scenarioUpdates.clues) {
+        const existingIndex = this.gameState.currentScenario.clues.findIndex(
+          clue => clue.id === clueUpdate.id
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing clue
+          this.gameState.currentScenario.clues[existingIndex] = {
+            ...this.gameState.currentScenario.clues[existingIndex],
+            ...clueUpdate
+          };
+        } else if (clueUpdate.id) {
+          // Add new clue
+          this.gameState.currentScenario.clues.push(clueUpdate);
+        }
+      }
+    }
+  }
+
+  /**
+   * Add permanent change to the scenario
+   */
+  addPermanentScenarioChange(changeDescription: string): void {
+    if (!this.gameState.currentScenario || !changeDescription) return;
+    
+    // Initialize permanentChanges array if it doesn't exist
+    if (!this.gameState.currentScenario.permanentChanges) {
+      this.gameState.currentScenario.permanentChanges = [];
+    }
+    
+    // Add the permanent change to current snapshot (which references the scenario-level changes)
+    this.gameState.currentScenario.permanentChanges.push(changeDescription);
   }
 
   /**

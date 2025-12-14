@@ -1,11 +1,4 @@
-/**
- * Keeper Agent
- * Exports
- */
-
-export {
-  buildKeeperPrompt,
-  buildKeeperPromptNoAgents,
-  extractAgentResults,
-} from "./keeperTemplate.js";
-export type { KeeperTemplateData } from "./keeperTemplate.js";
+export { KeeperAgent } from './keeperAgent.js';
+export { getKeeperTemplate } from './keeperTemplate.js';
+export { NarrativeKeeperAgent } from './narrativeKeeperAgent.js';
+export { getNarrativeKeeperTemplate } from './narrativeKeeperTemplate.js';

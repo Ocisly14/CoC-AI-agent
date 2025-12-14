@@ -63,22 +63,33 @@ Select the single most appropriate agent that can handle the current input.
 - Input can be user queries, agent results, or system instructions
 
 ### Action Analysis Requirements
-Analyze the input to extract:
-- **Player**: Identify who is taking the action
-- **Action**: What specific action is being attempted
-- **Target Type**: 
-  - "npc" - targeting a non-player character
-  - "object" - interacting with an item or object
-  - "location" - moving to or examining a location
-  - "general" - general actions not targeting specific entities
+Analyze the input to classify the action type and extract relevant information:
+
+#### Action Types:
+1. **"exploration"** - Discovering clues, understanding environment, gathering information
+   - Examples: "I search the room", "I examine the book", "I investigate the noise"
+2. **"social"** - Influencing NPCs, gathering intelligence, reaching consensus  
+   - Examples: "I talk to Sarah", "I persuade the guard", "I intimidate the suspect"
+3. **"stealth"** - Acting without being detected
+   - Examples: "I sneak past the guard", "I pick the lock quietly", "I hide behind the door"
+4. **"combat"** - Causing damage, subduing or stopping opponents
+   - Examples: "I attack the cultist", "I shoot at the monster", "I tackle him"
+5. **"chase"** - Extending or closing distance
+   - Examples: "I run after him", "I try to escape", "I chase the car"
+6. **"mental"** - Withstanding or resisting psychological shock
+   - Examples: "I steel myself", "I try to resist the horror", "I maintain composure"
+7. **"environmental"** - Confronting environment and physiological limits
+   - Examples: "I climb the wall", "I swim across", "I endure the cold"
+8. **"narrative"** - Making key choices (usually no dice required)
+   - Examples: "I decide to trust him", "I choose the left path", "I reveal the truth"
+
+#### Analysis Requirements:
+- **Player**: Character taking the action
+- **Action**: Specific action being attempted  
+- **Action Type**: One of the 8 categories above
 - **Target Name**: The specific name of the target (if applicable)
 - **Intent**: What the player hopes to accomplish
-
-**Examples**:
-- "I want to ask Sarah about the missing book" → target: {type: "npc", name: "Sarah", intent: "get information about missing book"}
-- "I search the desk" → target: {type: "object", name: "desk", intent: "find items or clues"}
-- "I go to the library" → target: {type: "location", name: "library", intent: "move to new location"}
-- "I listen carefully" → target: {type: "general", name: null, intent: "detect sounds or conversations"}
+- **Requires Dice**: Whether this action needs dice roll resolution
 
 ## Decision Output Format
 
@@ -90,11 +101,12 @@ Return ONLY a JSON object with this exact structure:
   "actionAnalysis": {
     "player": "player character name or 'unknown'",
     "action": "what action the player wants to perform",
+    "actionType": "exploration|social|stealth|combat|chase|mental|environmental|narrative",
     "target": {
-      "type": "npc|object|location|general",
       "name": "target name if applicable",
-      "intent": "what the player wants to achieve with this target"
-    }
+      "intent": "what the player wants to achieve"
+    },
+    "requiresDice": true
   }
 }
 

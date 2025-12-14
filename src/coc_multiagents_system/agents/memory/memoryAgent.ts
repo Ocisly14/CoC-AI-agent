@@ -205,10 +205,17 @@ export class MemoryAgent {
           break;
 
         case "Scenario Data":
+          const previousScenario = this.gameStateManager.getGameState().currentScenario;
           const locationQuery = parameters.timePoint 
             ? `${parameters.location} ${parameters.timePoint}`
             : parameters.location;
           const scenarioData = await this.memoryUtils.findScenarioSnapshotByLocation(locationQuery);
+
+          // Track the previously active scenario as visited before switching
+          if (scenarioData && previousScenario) {
+            this.gameStateManager.addVisitedScenario(previousScenario);
+          }
+
           this.gameStateManager.updateCurrentScenario(scenarioData);
           break;
 
