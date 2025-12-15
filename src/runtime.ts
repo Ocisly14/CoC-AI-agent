@@ -263,6 +263,41 @@ export const createMemoryNode = (db: CoCDatabase, rag?: RAGEngine) => {
     const gameState = state.gameState ?? initialGameState;
     const sessionId = gameState.sessionId;
     const userMessage = latestHumanMessage(state.messages);
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+
+    // Use RAG to fetch top 3 slices relevant to the current action (if any)
+    let ragResults = gameState.temporaryInfo.ragResults ?? [];
+    if (rag && actionAnalysis) {
+      const queryParts = [
+        actionAnalysis.character,
+        actionAnalysis.actionType,
+        actionAnalysis.action,
+        actionAnalysis.target.intent,
+        actionAnalysis.target.name ?? undefined,
+      ].filter(Boolean);
+      const query = queryParts.join(" ");
+      const context = gameState.currentScenario
+        ? `${gameState.currentScenario.name} ${gameState.currentScenario.location} ${gameState.currentScenario.description ?? ""}`
+        : undefined;
+
+      try {
+        const hits = await rag.search(query, context, 3);
+        ragResults = hits.map(
+          (hit) =>
+            `(${hit.source} #${hit.chunkIndex ?? 0}) ${hit.text.slice(0, 320)}`
+        );
+      } catch (error) {
+        console.warn("Memory agent RAG search failed:", error);
+      }
+    }
+
+    const updatedGameState: CoCState["gameState"] = {
+      ...gameState,
+      temporaryInfo: {
+        ...gameState.temporaryInfo,
+        ragResults,
+      },
+    };
 
     // Ensure session exists
     memoryAgent.createSession(sessionId);
@@ -308,14 +343,21 @@ export const createMemoryNode = (db: CoCDatabase, rag?: RAGEngine) => {
         .join("\n");
     }
 
+    if (ragResults.length > 0) {
+      contextSummary += "\n\nRelevant knowledge hits (top 3):\n";
+      contextSummary += ragResults.map((r) => `- ${r}`).join("\n");
+    }
+
     // Use unified template system for memory agent
     const context = CoCTemplateFactory.getMemoryAgent(
-      state,
+      { ...state, gameState: updatedGameState },
       contextSummary,
       JSON.stringify(memoryAgent.getStats()),
       {
         latestUserMessage: userMessage || "No recent player input.",
-        gameStateSummary: TemplateUtils.formatGameStateForTemplate(gameState),
+        gameStateSummary: TemplateUtils.formatGameStateForTemplate(
+          updatedGameState
+        ),
         routingNotes: state.routingNotes ?? "None",
       }
     );
@@ -339,9 +381,11 @@ export const createMemoryNode = (db: CoCDatabase, rag?: RAGEngine) => {
             recentEventsCount: recentEvents.length,
             discoveriesCount: discoveries.length,
             stats: memoryAgent.getStats(),
+            ragResultsCount: ragResults.length,
           },
         },
       ],
+      gameState: updatedGameState,
     };
   };
 };

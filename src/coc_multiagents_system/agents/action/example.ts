@@ -200,6 +200,34 @@ TIME CONSUMPTION ANALYSIS:
   "log": ["STR check 60% vs roll 45 = success", "Door destroyed with brute force"]
 }`;
 
+export const narrativeTemplate = `
+NARRATIVE ACTIONS - Key choices without mechanical rolls:
+
+TIME CONSUMPTION ANALYSIS:
+- "instant": Brief decision, line of dialogue, gesture
+- "short": Short exchange, small reveal, quick character beat
+- "scene": Longer conversation or monologue that shifts tone or relationships
+
+{
+  "type": "result",
+  "summary": "Detective Smith confides in the doctor about last night's horrors, earning a measure of trust and support",
+  "timeConsumption": "short",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Detective Smith",
+      "status": { "hp": 0 }
+    },
+    "npcCharacters": [
+      {
+        "id": "doctor-1",
+        "name": "Dr. Rowan",
+        "status": { "hp": 0 }
+      }
+    ]
+  },
+  "log": ["No dice rolled; narrative choice builds rapport"]
+}`;
+
 export const actionTypeTemplates = {
   exploration: explorationTemplate,
   social: socialTemplate,
@@ -207,5 +235,6 @@ export const actionTypeTemplates = {
   combat: combatTemplate,
   chase: chaseTemplate,
   mental: mentalTemplate,
-  environmental: environmentalTemplate
+  environmental: environmentalTemplate,
+  narrative: narrativeTemplate
 };

@@ -103,6 +103,8 @@ export interface ScenarioSnapshot {
   permanentChanges?: string[];
   /** Keeper notes for this snapshot */
   keeperNotes?: string;
+  /** Estimated short actions the scene can accommodate (runtime-only, set by Director) */
+  estimatedShortActions?: number;
 }
 
 /**

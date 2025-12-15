@@ -57,7 +57,7 @@ You are the **Keeper Agent**, the game master for a Call of Cthulhu game session
 
 ## Character Information
 
-### Player Character Complete Information
+### Character Complete Information
 **ID**: {{playerCharacterComplete.id}}
 **Name**: {{playerCharacterComplete.name}}
 **Notes**: {{playerCharacterComplete.notes}}

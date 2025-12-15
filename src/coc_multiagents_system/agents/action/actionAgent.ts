@@ -2,7 +2,7 @@ import { ModelClass } from "../../../models/types.js";
 import { generateText } from "../../../models/index.js";
 import { actionTools } from "./tools.js";
 import { GameStateManager, GameState, ActionResult, ActionAnalysis } from "../../../state.js";
-import type { CharacterProfile } from "../models/gameTypes.js";
+import type { CharacterProfile, ActionLogEntry } from "../models/gameTypes.js";
 import { actionTypeTemplates } from "./example.js";
 
 
@@ -12,12 +12,12 @@ import { actionTypeTemplates } from "./example.js";
 export class ActionAgent {
 
   /**
-   * Process player action and resolve with dice rolls and state updates
+   * Process character action and resolve with dice rolls and state updates
    */
   async processAction(runtime: any, gameState: GameState, userMessage: string): Promise<GameState> {
     const baseSystemPrompt = `You are an action resolution specialist for Call of Cthulhu.
 
-Your job is to analyze player actions and resolve them step by step. You MUST respond with JSON in one of these formats:
+Your job is to analyze character actions and resolve them step by step. You MUST respond with JSON in one of these formats:
 
 FOR TOOL CALLS (when you need to roll dice):
 {
@@ -58,7 +58,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
 
     // Tool call loop
     const toolLogs: string[] = [];
-    let conversation = [`Player action: ${userMessage}`];
+    let conversation = [`Character action: ${userMessage}`];
     let maxIterations = 10;
     
     for (let iteration = 0; iteration < maxIterations; iteration++) {
@@ -145,7 +145,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
   private getActionTypeTemplate(gameState: GameState): string {
     const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
     
-    if (!actionAnalysis || !actionAnalysis.actionType || actionAnalysis.actionType === "narrative") {
+    if (!actionAnalysis || !actionAnalysis.actionType) {
       return `
 {
   "type": "result",
@@ -160,7 +160,8 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
 }`;
     }
 
-    const template = actionTypeTemplates[actionAnalysis.actionType as keyof typeof actionTypeTemplates];
+    const template =
+      actionTypeTemplates[actionAnalysis.actionType as keyof typeof actionTypeTemplates];
     return template || actionTypeTemplates.exploration; // fallback to exploration
   }
 
@@ -173,7 +174,8 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
         name: gameState.currentScenario.name,
         location: gameState.currentScenario.location,
         description: gameState.currentScenario.description,
-        conditions: gameState.currentScenario.conditions
+        conditions: gameState.currentScenario.conditions,
+        permanentChanges: gameState.currentScenario.permanentChanges
       };
       context += JSON.stringify(scenarioInfo, null, 2);
     } else {
@@ -188,7 +190,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       });
     }
     
-    context += "\n\nPlayer Character:\n" + JSON.stringify(gameState.playerCharacter, null, 2);
+    context += "\n\nCharacter:\n" + JSON.stringify(gameState.playerCharacter, null, 2);
     
     // Add target NPC if applicable
     if (actionAnalysis?.target.name) {
@@ -270,6 +272,47 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     
     // Add to action results
     stateManager.addActionResult(actionResult);
+
+    // Append summary to action logs for actor and target (if any)
+    const logEntry: ActionLogEntry = {
+      time: actionResult.gameTime,
+      summary: actionResult.result,
+    };
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    const targetName = actionAnalysis?.target?.name;
+    const updatedState = stateManager.getGameState() as GameState;
+
+    const appendLog = (character: CharacterProfile | undefined) => {
+      if (!character) return;
+      if (!character.actionLog) {
+        character.actionLog = [];
+      }
+      character.actionLog.push(logEntry);
+    };
+
+    // Acting character (player or NPC)
+    const actorNameLower = actionResult.character.toLowerCase();
+    if (updatedState.playerCharacter.name.toLowerCase() === actorNameLower) {
+      appendLog(updatedState.playerCharacter);
+    } else {
+      const actorNpc = updatedState.npcCharacters.find(
+        (npc) => npc.name.toLowerCase() === actorNameLower
+      );
+      appendLog(actorNpc);
+    }
+
+    // Target character (if present)
+    if (targetName) {
+      const targetLower = targetName.toLowerCase();
+      if (updatedState.playerCharacter.name.toLowerCase().includes(targetLower)) {
+        appendLog(updatedState.playerCharacter);
+      } else {
+        const targetNpc = updatedState.npcCharacters.find((npc) =>
+          npc.name.toLowerCase().includes(targetLower)
+        );
+        appendLog(targetNpc);
+      }
+    }
     
     // Return the updated game state
     return stateManager.getGameState() as GameState;

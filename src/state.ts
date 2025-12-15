@@ -1,5 +1,6 @@
 import type { CharacterProfile } from "./coc_multiagents_system/agents/models/gameTypes.js";
 import type { ScenarioSnapshot } from "./coc_multiagents_system/agents/models/scenarioTypes.js";
+import { actionRules } from "./coc_multiagents_system/rules/index.js";
 
 export type AgentId = "keeper" | "memory" | "action";
 
@@ -16,7 +17,7 @@ export type ActionType =
   | "narrative";      // Making key choices
 
 export interface ActionAnalysis {
-  player: string;
+  character: string;
   action: string;
   actionType: ActionType;
   target: {
@@ -48,6 +49,7 @@ export interface GameState {
   discoveredClues: string[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
+  actionRules: Record<ActionType, string>;
   scenarioTimeState: {
     sceneStartTime: string;     // 场景开始时的游戏时间
     playerTimeConsumption: Record<string, {  // 各玩家的时间消耗记录
@@ -97,7 +99,10 @@ const defaultPlayerCharacter: CharacterProfile = {
     "Firearms (Handgun)": 20,
   },
   notes: "Auto-generated placeholder character",
+  actionLog: [],
 };
+
+const defaultActionRules: Record<ActionType, string> = actionRules;
 
 export const initialGameState: GameState = {
   sessionId: "session-local",
@@ -110,6 +115,7 @@ export const initialGameState: GameState = {
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
+  actionRules: defaultActionRules,
   scenarioTimeState: {
     sceneStartTime: "Evening",
     playerTimeConsumption: {},
@@ -129,6 +135,8 @@ export type TimeConsumption = "instant" | "short" | "scene";
 export interface DirectorDecision {
   shouldProgress: boolean;
   targetSnapshotId?: string;  // 要推进到的具体场景快照ID
+  estimatedShortActions?: number | null; // 估计在目标场景可执行的短行动数量
+  increaseShortActionCapBy?: number | null; // 当不推进时，增加当前场景短行动上限
   reasoning: string;          // 推进的原因说明
   timestamp: Date;            // 决策时间
 }
@@ -220,6 +228,11 @@ export class GameStateManager {
     
     // Reset time consumption state for any scenario update (location change OR time progression)
     this.resetScenarioTimeState();
+    
+    // Reset progression monitor on scenario change
+    if (this.progressionMonitor) {
+      this.progressionMonitor.resetOnScenarioChange();
+    }
   }
 
   /**
@@ -349,6 +362,41 @@ export class GameStateManager {
     if (this.gameState.temporaryInfo.actionResults.length > 10) {
       this.gameState.temporaryInfo.actionResults = this.gameState.temporaryInfo.actionResults.slice(-10);
     }
+
+    // Trigger progression monitoring check after adding action
+    this.checkProgressionTriggers(actionResult);
+  }
+
+  /**
+   * Check if progression monitoring should trigger Director Agent
+   */
+  private checkProgressionTriggers(actionResult: ActionResult): void {
+    // This will be implemented by the system using this GameStateManager
+    // The actual monitoring logic is in ProgressionMonitor class
+    if (this.progressionMonitor) {
+      this.progressionMonitor.updateAfterAction(actionResult);
+      
+      if (this.progressionMonitor.shouldTriggerDirector()) {
+        this.triggerDirectorAgent();
+      }
+    }
+  }
+
+  private progressionMonitor: any = null; // Will be set externally
+
+  /**
+   * Set the progression monitor instance
+   */
+  setProgressionMonitor(monitor: any): void {
+    this.progressionMonitor = monitor;
+  }
+
+  /**
+   * Trigger Director Agent (to be implemented by system)
+   */
+  private triggerDirectorAgent(): void {
+    // This method will be overridden or handled by the main system
+    console.log("GameStateManager: Director Agent trigger conditions met - should activate Director Agent");
   }
 
   /**
@@ -364,6 +412,7 @@ export class GameStateManager {
     }
 
     const playerTime = this.gameState.scenarioTimeState.playerTimeConsumption[playerName];
+    const shortActionCap = this.getScenarioShortActionCap();
     
     // Update based on time consumption type
     switch (timeConsumption) {
@@ -380,9 +429,18 @@ export class GameStateManager {
         
       case "scene":
         // Scene actions are significant time consumers
+        // Scene action counts as reaching the short-action cap for this scenario
+        playerTime.totalShortActions = Math.max(playerTime.totalShortActions, shortActionCap);
         playerTime.lastActionTime = timeConsumption;
         break;
     }
+  }
+
+  /**
+   * Short action cap for the current scenario; default to 3 if undefined
+   */
+  private getScenarioShortActionCap(): number {
+    return this.gameState.currentScenario?.estimatedShortActions || 3;
   }
 
   /**
@@ -452,7 +510,9 @@ export class GameStateManager {
 
     // Update scenario description if provided
     if (scenarioUpdates.description) {
-      this.gameState.currentScenario.description = scenarioUpdates.description;
+      // Record description change as a permanent scenario change so it persists across snapshots
+      const descriptionChange = `Scene description updated: ${scenarioUpdates.description}`;
+      this.addPermanentScenarioChange(descriptionChange);
     }
 
     // Update environmental conditions

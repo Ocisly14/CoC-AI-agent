@@ -24,17 +24,3 @@ export interface AgentParameter {
   required: boolean;
 }
 
-/**
- * Complete agent manifest
- */
-export interface AgentManifest {
-  agentId: string;
-  agentName: string;
-  version: string;
-  description: string;
-  purpose: string;
-  capabilities: AgentCapability[];
-  dependencies?: string[];
-  whenToUse: string[];
-  whenNotToUse?: string[];
-}

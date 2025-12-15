@@ -1,6 +1,6 @@
 import { getOrchestratorTemplate } from "./orchestratorTemplate.js";
 import { composeTemplate } from "../../../template.js";
-import type { GameState, ActionAnalysis, GameStateManager } from "../../../state.js";
+import type { ActionAnalysis, GameStateManager, ActionType } from "../../../state.js";
 import {
   ModelProviderName,
   ModelClass,
@@ -33,14 +33,14 @@ export class OrchestratorAgent {
     const template = getOrchestratorTemplate();
     
     // Extract context from game state
-    const playerName = gameState.playerCharacter?.name || "Unknown";
+    const characterName = gameState.playerCharacter?.name || "Unknown";
     const scenarioLocation = gameState.currentScenario?.location || "Unknown location";
     const npcNames = gameState.npcCharacters?.map(npc => npc.name).join(", ") || "None";
     
     // Compose the prompt with input and game context
     const prompt = composeTemplate(template, {}, {
       input,
-      playerName,
+      characterName,
       scenarioLocation,
       npcNames
     });
@@ -56,13 +56,31 @@ export class OrchestratorAgent {
     try {
       const parsedResponse = JSON.parse(response);
       if (parsedResponse.actionAnalysis) {
-        gameStateManager.setActionAnalysis(parsedResponse.actionAnalysis as ActionAnalysis);
+        const normalizedActionAnalysis = this.normalizeActionAnalysis(
+          parsedResponse.actionAnalysis,
+          characterName
+        );
+        gameStateManager.setActionAnalysis(normalizedActionAnalysis);
       }
     } catch (error) {
       console.warn("Failed to parse orchestrator response for action analysis:", error);
     }
 
     return response;
+  }
+
+  private normalizeActionAnalysis(rawAnalysis: any, fallbackCharacterName: string): ActionAnalysis {
+    const actionType = rawAnalysis.actionType as ActionType | undefined;
+    return {
+      character: rawAnalysis.character || rawAnalysis.player || fallbackCharacterName,
+      action: rawAnalysis.action || "",
+      actionType: actionType || "narrative",
+      target: {
+        name: rawAnalysis.target?.name ?? null,
+        intent: rawAnalysis.target?.intent || ""
+      },
+      requiresDice: Boolean(rawAnalysis.requiresDice)
+    };
   }
 
 }

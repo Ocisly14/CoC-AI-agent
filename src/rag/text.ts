@@ -35,7 +35,7 @@ export function preprocessText(content: string): string {
 
 export function splitText(
   content: string,
-  chunkSize = 512,
+  chunkSize = 200,
   bleed = 20
 ): string[] {
   if (!content) return [];

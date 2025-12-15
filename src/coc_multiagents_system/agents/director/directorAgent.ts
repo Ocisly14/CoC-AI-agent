@@ -121,10 +121,21 @@ export class DirectorAgent {
       };
     }
 
+    const estimatedShortActions = 
+      typeof parsedResponse.estimatedShortActions === "number" && parsedResponse.estimatedShortActions > 0
+        ? parsedResponse.estimatedShortActions
+        : null;
+    const increaseShortActionCapBy =
+      typeof parsedResponse.increaseShortActionCapBy === "number" && parsedResponse.increaseShortActionCapBy > 0
+        ? parsedResponse.increaseShortActionCapBy
+        : null;
+
     // 构建 Director Decision
     const decision: DirectorDecision = {
       shouldProgress: parsedResponse.shouldProgress || false,
       targetSnapshotId: parsedResponse.targetSnapshotId,
+      estimatedShortActions,
+      increaseShortActionCapBy,
       reasoning: parsedResponse.reasoning || parsedResponse.recommendation || "No reasoning provided",
       timestamp: new Date()
     };
@@ -134,7 +145,9 @@ export class DirectorAgent {
 
     // 如果需要推进且有目标场景ID，直接执行场景更新
     if (decision.shouldProgress && decision.targetSnapshotId) {
-      await this.executeScenarioProgression(decision.targetSnapshotId, gameStateManager);
+      await this.executeScenarioProgression(decision.targetSnapshotId, gameStateManager, estimatedShortActions);
+    } else if (!decision.shouldProgress && increaseShortActionCapBy) {
+      this.extendCurrentScenarioActionCap(gameStateManager, increaseShortActionCapBy);
     }
 
     return decision;
@@ -296,7 +309,11 @@ export class DirectorAgent {
   /**
    * 执行场景推进 - 根据目标场景ID更新当前场景
    */
-  private async executeScenarioProgression(targetSnapshotId: string, gameStateManager: GameStateManager): Promise<void> {
+  private async executeScenarioProgression(
+    targetSnapshotId: string, 
+    gameStateManager: GameStateManager,
+    estimatedShortActions: number | null = null
+  ): Promise<void> {
     try {
       // 从场景加载器中查找目标场景快照
       const allScenarios = this.scenarioLoader.getAllScenarios();
@@ -314,6 +331,13 @@ export class DirectorAgent {
       }
 
       if (targetSnapshot) {
+        // 将短行动估算附加到目标场景快照，方便后续状态追踪
+        if (estimatedShortActions && estimatedShortActions > 0) {
+          targetSnapshot.estimatedShortActions = estimatedShortActions;
+        } else {
+          targetSnapshot.estimatedShortActions = undefined;
+        }
+
         // 执行场景更新
         gameStateManager.updateCurrentScenario({
           snapshot: targetSnapshot,
@@ -341,11 +365,28 @@ export class DirectorAgent {
       const errorDecision: DirectorDecision = {
         shouldProgress: false,
         targetSnapshotId: undefined,
+        estimatedShortActions: null,
         reasoning: "Director Agent encountered an error analyzing progression needs",
         timestamp: new Date()
       };
       gameStateManager.setDirectorDecision(errorDecision);
       return errorDecision;
     }
+  }
+
+  /**
+   * 扩充当前场景的短行动上限（在不推进场景时使用）
+   */
+  private extendCurrentScenarioActionCap(gameStateManager: GameStateManager, increaseBy: number): void {
+    const gameState = gameStateManager.getGameState();
+    if (!gameState.currentScenario) {
+      console.warn("Director Agent: No current scenario to extend short action cap");
+      return;
+    }
+
+    const currentCap = gameState.currentScenario.estimatedShortActions || 3;
+    const newCap = currentCap + increaseBy;
+    gameState.currentScenario.estimatedShortActions = newCap;
+    console.log(`Director Agent: Extended current scenario short action cap from ${currentCap} to ${newCap}`);
   }
 }

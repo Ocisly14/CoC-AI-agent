@@ -62,7 +62,8 @@ export class RAGEngine {
   private async processFile(filePath: string) {
     const raw = await this.readFile(filePath);
     const preprocessed = preprocessText(raw);
-    const chunks = splitText(preprocessed, 512, 20);
+    // Use tighter slices for CoC knowledge: ~200 tokens with ~20-token overlap
+    const chunks = splitText(preprocessed, 200, 20);
 
     const relative = path.relative(this.knowledgeDir, filePath);
     this.store.removeBySource(relative);
