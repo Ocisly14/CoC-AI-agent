@@ -162,15 +162,18 @@ export const createScenarioCheckpoint = async (
     // 2. Save/Update the scenario snapshot (without permanent_changes - those are at scenario level)
     const snapshotStmt = database.prepare(`
       INSERT OR REPLACE INTO scenario_snapshots (
-        snapshot_id, scenario_id, time_timestamp, time_notes, snapshot_name,
-        location, description, events, exits, keeper_notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        snapshot_id, scenario_id, time_timestamp, absolute_time, game_day, time_of_day,
+        time_notes, snapshot_name, location, description, events, exits, keeper_notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     snapshotStmt.run(
       currentScenario.id,
       currentScenario.scenarioId,
-      currentScenario.timePoint.timestamp,
+      currentScenario.timePoint.absoluteTime, // Use as legacy timestamp
+      currentScenario.timePoint.absoluteTime,
+      currentScenario.timePoint.gameDay,
+      currentScenario.timePoint.timeOfDay,
       currentScenario.timePoint.notes || null,
       currentScenario.name,
       currentScenario.location,
@@ -419,4 +422,7 @@ export const updateCurrentScenarioWithCheckpoint = async (
 
   // Now update the scenario in memory
   manager.updateCurrentScenario(scenarioData);
+  
+  // 设置场景转换标志，让 Keeper Agent 知道发生了场景变化
+  manager.setTransitionFlag(true);
 };

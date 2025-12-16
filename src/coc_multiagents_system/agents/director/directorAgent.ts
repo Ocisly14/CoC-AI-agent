@@ -3,6 +3,8 @@ import { composeTemplate } from "../../../template.js";
 import type { GameState, GameStateManager, VisitedScenarioBasic, DirectorDecision } from "../../../state.js";
 import type { ScenarioProfile, ScenarioSnapshot } from "../models/scenarioTypes.js";
 import { ScenarioLoader } from "../memory/scenarioloader/scenarioLoader.js";
+import { updateCurrentScenarioWithCheckpoint } from "../memory/index.js";
+import type { CoCDatabase } from "../memory/database/index.js";
 import {
   ModelProviderName,
   ModelClass,
@@ -25,10 +27,12 @@ const createRuntime = (): DirectorRuntime => ({
  */
 export class DirectorAgent {
   private scenarioLoader: ScenarioLoader;
+  private db: CoCDatabase;
   private userQueryHistory: string[] = [];
 
-  constructor(scenarioLoader: ScenarioLoader) {
+  constructor(scenarioLoader: ScenarioLoader, db: CoCDatabase) {
     this.scenarioLoader = scenarioLoader;
+    this.db = db;
   }
 
   /**
@@ -231,41 +235,44 @@ export class DirectorAgent {
   }
 
   /**
-   * 获取未访问的场景
+   * 获取未访问的场景（仅返回24小时内且有连接的场景）
    */
   private async getUnvisitedScenarios(gameState: GameState): Promise<any[]> {
-    // 获取所有可用场景
-    const allScenarios = this.scenarioLoader.getAllScenarios();
+    if (!gameState.currentScenario) {
+      return [];
+    }
+
+    // 获取24小时内的连接场景
+    const connectedScenes = await this.getConnectedScenesWithin24Hours(gameState.currentScenario);
     
-    // 获取已访问的场景ID集合
+    // 获取已访问的场景ID集合（注意这里是 scenarioId，不是 snapshot id）
     const visitedScenarioIds = new Set<string>();
     
-    // 添加当前场景
-    if (gameState.currentScenario) {
-      visitedScenarioIds.add(gameState.currentScenario.scenarioId);
-    }
+    // 添加当前场景的 scenarioId
+    visitedScenarioIds.add(gameState.currentScenario.scenarioId);
     
-    // 添加已访问的场景
+    // 添加已访问场景的 scenarioId
     gameState.visitedScenarios.forEach(scenario => {
       visitedScenarioIds.add(scenario.scenarioId);
     });
 
-    // 过滤出未访问的场景，并只返回基础信息
-    const unvisitedScenarios = allScenarios
-      .filter(scenario => !visitedScenarioIds.has(scenario.id))
-      .map(scenario => {
-        // 对于每个未访问的场景，返回其第一个时间点的基础信息
-        const firstSnapshot = scenario.timeline[0];
-        return {
-          id: firstSnapshot?.id || scenario.id,
-          scenarioId: scenario.id,
-          name: firstSnapshot?.name || scenario.name,
-          location: firstSnapshot?.location || "Unknown location",
-          timePoint: firstSnapshot?.timePoint || { timestamp: "Unknown time" },
-          description: firstSnapshot?.description || scenario.description,
-          keeperNotes: firstSnapshot?.keeperNotes || ""
-        };
-      });
+    // 过滤出未访问的连接场景
+    const unvisitedScenarios = connectedScenes
+      .filter(snapshot => !visitedScenarioIds.has(snapshot.scenarioId))
+      .map(snapshot => ({
+        id: snapshot.id,
+        scenarioId: snapshot.scenarioId,
+        name: snapshot.name,
+        location: snapshot.location,
+        timePoint: snapshot.timePoint,
+        description: snapshot.description.length > 200 ? snapshot.description.slice(0, 200) + "..." : snapshot.description,
+        keeperNotes: snapshot.keeperNotes || "",
+        hoursFromNow: snapshot.timeDifferenceHours,
+        connectionType: snapshot.connectionType,
+        connectionDescription: snapshot.connectionDescription,
+        clueCount: snapshot.clues.length,
+        characterCount: snapshot.characters.length
+      }));
 
     return unvisitedScenarios;
   }
@@ -338,13 +345,17 @@ export class DirectorAgent {
           targetSnapshot.estimatedShortActions = undefined;
         }
 
-        // 执行场景更新
-        gameStateManager.updateCurrentScenario({
-          snapshot: targetSnapshot,
-          scenarioName: scenarioName
-        });
+        // 执行场景更新（带 checkpoint 保存）
+        await updateCurrentScenarioWithCheckpoint(
+          gameStateManager,
+          {
+            snapshot: targetSnapshot,
+            scenarioName: scenarioName
+          },
+          this.db
+        );
         
-        console.log(`Director Agent: Progressed to scenario "${scenarioName}" snapshot "${targetSnapshotId}"`);
+        console.log(`Director Agent: Progressed to scenario "${scenarioName}" snapshot "${targetSnapshotId}" (checkpoint created)`);
       } else {
         console.warn(`Director Agent: Could not find target snapshot "${targetSnapshotId}"`);
       }
@@ -389,4 +400,347 @@ export class DirectorAgent {
     gameState.currentScenario.estimatedShortActions = newCap;
     console.log(`Director Agent: Extended current scenario short action cap from ${currentCap} to ${newCap}`);
   }
+
+  /**
+   * 处理 Action Agent 发起的场景切换请求
+   * 直接执行场景切换，不需要判断进度条件
+   */
+  async handleActionDrivenSceneChange(
+    gameStateManager: GameStateManager,
+    targetSceneName: string,
+    reason: string
+  ): Promise<void> {
+    console.log(`\n=== Director Agent: Handling action-driven scene change ===`);
+    console.log(`Target: ${targetSceneName}`);
+    console.log(`Reason: ${reason}`);
+  }
+
+  /**
+   * 获取与当前场景连接的、时间在24小时内的场景
+   */
+  async getConnectedScenesWithin24Hours(currentScenario: ScenarioSnapshot): Promise<ConnectedSceneInfo[]> {
+    try {
+      // 获取当前场景所属的 scenario profile
+      const currentScenarioProfile = this.scenarioLoader.getScenarioById(currentScenario.scenarioId);
+      if (!currentScenarioProfile || !currentScenarioProfile.connections) {
+        console.log("No scenario profile or connections found");
+        return [];
+      }
+
+      // 获取所有连接的 scenario IDs
+      const connectedScenarioIds = currentScenarioProfile.connections.map(conn => conn.scenarioId);
+      
+      if (connectedScenarioIds.length === 0) {
+        console.log("No connected scenarios");
+        return [];
+      }
+
+      // 解析当前场景的时间
+      const currentTime = new Date(currentScenario.timePoint.absoluteTime);
+      const currentTimeMs = currentTime.getTime();
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+      const connectedScenes: ConnectedSceneInfo[] = [];
+
+      // 遍历每个连接的 scenario
+      for (const connectedScenarioId of connectedScenarioIds) {
+        const scenarioProfile = this.scenarioLoader.getScenarioById(connectedScenarioId);
+        if (!scenarioProfile) continue;
+
+        // 找到对应的 connection 信息
+        const connectionInfo = currentScenarioProfile.connections!.find(
+          conn => conn.scenarioId === connectedScenarioId
+        );
+
+        // 遍历该 scenario 的所有 timeline snapshots
+        for (const snapshot of scenarioProfile.timeline) {
+          try {
+            const snapshotTime = new Date(snapshot.timePoint.absoluteTime);
+            const snapshotTimeMs = snapshotTime.getTime();
+            
+            // 检查时间是否在当前场景之后的24小时内
+            const timeDiffMs = snapshotTimeMs - currentTimeMs;
+            if (timeDiffMs > 0 && timeDiffMs <= twentyFourHoursMs) {
+              const timeDifferenceHours = Math.round(timeDiffMs / (60 * 60 * 1000) * 10) / 10;
+              
+              connectedScenes.push({
+                ...snapshot,
+                connectionType: connectionInfo?.relationshipType || "unknown",
+                connectionDescription: connectionInfo?.description || "",
+                timeDifferenceHours,
+              });
+            }
+          } catch (error) {
+            console.warn(`Failed to parse time for snapshot ${snapshot.id}:`, error);
+            continue;
+          }
+        }
+      }
+
+      // 按时间差排序（最近的优先）
+      connectedScenes.sort((a, b) => a.timeDifferenceHours - b.timeDifferenceHours);
+
+      console.log(`Found ${connectedScenes.length} connected scenes within 24 hours`);
+      return connectedScenes;
+    } catch (error) {
+      console.error("Error getting connected scenes:", error);
+      return [];
+    }
+  }
+
+  /**
+   * 使用场景切换模板进行决策
+   */
+  async decideSceneTransition(gameStateManager: GameStateManager): Promise<SceneTransitionDecision> {
+    const runtime = createRuntime();
+    const gameState = gameStateManager.getGameState();
+    const { getSceneTransitionTemplate } = await import("./directorTemplate.js");
+    
+    if (!gameState.currentScenario) {
+      throw new Error("No current scenario to transition from");
+    }
+
+    // 获取连接的场景
+    const connectedScenes = await this.getConnectedScenesWithin24Hours(gameState.currentScenario);
+
+    // 打包当前场景信息
+    const discoveredCount = gameState.currentScenario.clues.filter(c => c.discovered).length;
+    const totalCount = gameState.currentScenario.clues.length;
+    const actionCount = Object.values(gameState.scenarioTimeState.playerTimeConsumption)
+      .reduce((sum, p: any) => sum + (p.totalShortActions || 0), 0);
+
+    const currentScene = {
+      name: gameState.currentScenario.name,
+      location: gameState.currentScenario.location,
+      gameDay: gameState.currentScenario.timePoint.gameDay,
+      timeOfDay: gameState.currentScenario.timePoint.timeOfDay,
+      description: gameState.currentScenario.description,
+      cluesDiscovered: discoveredCount,
+      cluesTotal: totalCount,
+      characterCount: gameState.currentScenario.characters.length,
+      actionCount,
+      keeperNotes: gameState.currentScenario.keeperNotes,
+    };
+
+    // 打包可用场景信息
+    const availableScenes = connectedScenes.map(scene => ({
+      id: scene.id,
+      name: scene.name,
+      location: scene.location,
+      gameDay: scene.timePoint.gameDay,
+      timeOfDay: scene.timePoint.timeOfDay,
+      hoursFromNow: scene.timeDifferenceHours,
+      connectionType: scene.connectionType,
+      connectionDesc: scene.connectionDescription,
+      description: scene.description.length > 200 ? scene.description.slice(0, 200) + "..." : scene.description,
+      clueCount: scene.clues.length,
+      characterCount: scene.characters.length,
+      keeperNotes: scene.keeperNotes,
+    }));
+
+    // 打包活动摘要
+    const recentActions = gameState.temporaryInfo.actionResults.slice(-5);
+    const discoveredClues = gameState.currentScenario.clues.filter(c => c.discovered);
+    
+    const activityParts = [];
+    if (recentActions.length > 0) {
+      activityParts.push(`**Recent**: ${recentActions.map((a, i) => `${i+1}.${a.character}:${a.result}`).join("; ")}`);
+    }
+    if (discoveredClues.length > 0) {
+      activityParts.push(`**Clues**: ${discoveredClues.map(c => c.clueText.slice(0, 40)).join("; ")}`);
+    }
+    const timeConsumption = Object.entries(gameState.scenarioTimeState.playerTimeConsumption)
+      .map(([name, data]: [string, any]) => `${name}:${data.totalShortActions}acts`).join(", ");
+    if (timeConsumption) {
+      activityParts.push(`**Time**: ${timeConsumption}`);
+    }
+
+    const activitySummary = activityParts.length > 0 ? activityParts.join("\n") : "*No activity yet*";
+
+    // 构建模板数据
+    const templateData = {
+      currentScene,
+      availableScenes,
+      activitySummary,
+    };
+
+    const template = getSceneTransitionTemplate();
+    const prompt = composeTemplate(template, templateData);
+
+    console.log("\n=== Director: Scene Transition Analysis ===");
+    console.log(`Current Scene: ${gameState.currentScenario.name}`);
+    console.log(`Connected Scenes Available: ${connectedScenes.length}`);
+
+    const response = await generateText({
+      runtime,
+      context: prompt,
+      modelClass: ModelClass.LARGE,
+    });
+
+    console.log("\n=== Director Response ===");
+    console.log(response);
+
+    // 解析 JSON 响应
+    const decision = this.parseSceneTransitionDecision(response);
+    
+    // 验证目标场景 ID
+    if (decision.shouldTransition && decision.targetSceneId) {
+      const targetScene = connectedScenes.find(s => s.id === decision.targetSceneId);
+      if (!targetScene) {
+        console.warn(`Target scene ${decision.targetSceneId} not found in connected scenes`);
+        decision.shouldTransition = false;
+        decision.targetSceneId = null;
+      }
+    }
+
+    return decision;
+  }
+
+  /**
+   * 解析场景切换决策 JSON
+   */
+  private parseSceneTransitionDecision(response: string): SceneTransitionDecision {
+    try {
+      // 尝试提取 JSON
+      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || 
+                       response.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
+      }
+
+      const jsonStr = jsonMatch[1] || jsonMatch[0];
+      const parsed = JSON.parse(jsonStr);
+
+      return {
+        shouldTransition: parsed.shouldTransition || false,
+        targetSceneId: parsed.targetSceneId || null,
+        reasoning: parsed.reasoning || "No reasoning provided",
+        urgency: parsed.urgency || "low",
+        transitionType: parsed.transitionType || "player-initiated",
+        suggestedTransitionNarrative: parsed.suggestedTransitionNarrative || "",
+      };
+    } catch (error) {
+      console.error("Failed to parse scene transition decision:", error);
+      return {
+        shouldTransition: false,
+        targetSceneId: null,
+        reasoning: "Failed to parse director response",
+        urgency: "low",
+        transitionType: "player-initiated",
+        suggestedTransitionNarrative: "",
+      };
+    }
+  }
+
+  /**
+   * 决策并自动执行场景切换（如果决策为 true）
+   */
+  async decideAndTransition(gameStateManager: GameStateManager): Promise<SceneTransitionResult> {
+    // 第一步：做决策
+    const decision = await this.decideSceneTransition(gameStateManager);
+
+    console.log("\n=== Director: Transition Decision ===");
+    console.log(`Should Transition: ${decision.shouldTransition}`);
+    console.log(`Reasoning: ${decision.reasoning}`);
+
+    // 如果不需要切换，保存拒绝信息并返回
+    if (!decision.shouldTransition || !decision.targetSceneId) {
+      // 保存场景转换拒绝信息，让 Keeper 可以生成合理的叙述
+      gameStateManager.setSceneTransitionRejection(decision.reasoning);
+      
+      return {
+        decision,
+        transitioned: false,
+        message: "No transition needed"
+      };
+    }
+
+    // 第二步：执行切换
+    try {
+      const targetScenarioId = decision.targetSceneId;
+      
+      // 从 scenarioLoader 获取完整的 scenario
+      const targetScenario = this.scenarioLoader.getScenarioById(targetScenarioId);
+      if (!targetScenario) {
+        console.error(`Target scenario not found for snapshot ID: ${targetScenarioId}`);
+        return {
+          decision,
+          transitioned: false,
+          message: `Target scenario not found: ${targetScenarioId}`
+        };
+      }
+
+      // 在 timeline 中找到对应的 snapshot
+      const targetSnapshot = targetScenario.timeline.find(snap => snap.id === targetScenarioId);
+      if (!targetSnapshot) {
+        console.error(`Snapshot ${targetScenarioId} not found in scenario timeline`);
+        return {
+          decision,
+          transitioned: false,
+          message: `Snapshot not found: ${targetScenarioId}`
+        };
+      }
+
+      // 更新场景（这会自动将旧场景加入 visited）
+      gameStateManager.updateCurrentScenario({
+        snapshot: targetSnapshot,
+        scenarioName: targetScenario.name
+      });
+
+      // 设置场景转换标志，让 Keeper Agent 知道发生了场景变化
+      gameStateManager.setTransitionFlag(true);
+
+      console.log(`\n✓ Scene Transition Executed`);
+      console.log(`  From: ${gameStateManager.getGameState().visitedScenarios[0]?.name || "Unknown"}`);
+      console.log(`  To: ${targetSnapshot.name}`);
+      console.log(`  Narrative: ${decision.suggestedTransitionNarrative}`);
+
+      return {
+        decision,
+        transitioned: true,
+        message: `Transitioned to: ${targetSnapshot.name}`,
+        newScenario: targetSnapshot
+      };
+
+    } catch (error) {
+      console.error("Failed to execute scene transition:", error);
+      return {
+        decision,
+        transitioned: false,
+        message: `Transition failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      };
+    }
+  }
+}
+
+/**
+ * 场景切换结果
+ */
+export interface SceneTransitionResult {
+  decision: SceneTransitionDecision;
+  transitioned: boolean;
+  message: string;
+  newScenario?: ScenarioSnapshot;
+}
+
+/**
+ * 连接场景信息（扩展了 ScenarioSnapshot）
+ */
+export interface ConnectedSceneInfo extends ScenarioSnapshot {
+  connectionType: string;
+  connectionDescription: string;
+  timeDifferenceHours: number;
+}
+
+/**
+ * 场景切换决策
+ */
+export interface SceneTransitionDecision {
+  shouldTransition: boolean;
+  targetSceneId: string | null;
+  reasoning: string;
+  urgency: "low" | "medium" | "high";
+  transitionType: "immediate" | "gradual" | "player-initiated";
+  suggestedTransitionNarrative: string;
 }

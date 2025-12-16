@@ -27,13 +27,28 @@ export interface ActionAnalysis {
   requiresDice: boolean;  // Whether dice roll is required
 }
 
+export interface SceneChangeRequest {
+  shouldChange: boolean;        // 是否需要切换场景
+  targetSceneName: string | null;  // 目标场景名称（LLM生成）
+  reason: string;               // 切换原因说明
+  timestamp: Date;              // 请求时间
+}
+
+export interface SceneTransitionRejection {
+  wasRequested: boolean;        // 是否有场景转换请求被拒绝
+  reasoning: string;            // Director 拒绝的理由
+  timestamp: Date;              // 拒绝时间
+}
+
 export interface VisitedScenarioBasic {
   id: string;
   scenarioId: string;
   name: string;
   location: string;
   timePoint: {
-    timestamp: string;
+    absoluteTime: string;
+    gameDay: number;
+    timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
     notes?: string;
   };
 }
@@ -63,6 +78,9 @@ export interface GameState {
     actionResults: ActionResult[];
     currentActionAnalysis: ActionAnalysis | null;
     directorDecision: DirectorDecision | null;
+    sceneChangeRequest: SceneChangeRequest | null;
+    transition: boolean;  // Indicates if a scene change just occurred
+    sceneTransitionRejection: SceneTransitionRejection | null;  // Director rejected scene transition
   };
 }
 
@@ -124,6 +142,9 @@ export const initialGameState: GameState = {
     actionResults: [],
     currentActionAnalysis: null,
     directorDecision: null,
+    sceneChangeRequest: null,
+    transition: false,
+    sceneTransitionRejection: null,
   },
 };
 
@@ -497,6 +518,52 @@ export class GameStateManager {
    */
   clearDirectorDecision(): void {
     this.gameState.temporaryInfo.directorDecision = null;
+  }
+
+  /**
+   * Set scene change request from action agent
+   */
+  setSceneChangeRequest(request: SceneChangeRequest | null): void {
+    this.gameState.temporaryInfo.sceneChangeRequest = request;
+  }
+
+  /**
+   * Clear scene change request
+   */
+  clearSceneChangeRequest(): void {
+    this.gameState.temporaryInfo.sceneChangeRequest = null;
+  }
+
+  /**
+   * Set transition flag to indicate a scene change has occurred
+   */
+  setTransitionFlag(isTransition: boolean): void {
+    this.gameState.temporaryInfo.transition = isTransition;
+  }
+
+  /**
+   * Clear transition flag
+   */
+  clearTransitionFlag(): void {
+    this.gameState.temporaryInfo.transition = false;
+  }
+
+  /**
+   * Set scene transition rejection info (when Director denies player's transition request)
+   */
+  setSceneTransitionRejection(reasoning: string): void {
+    this.gameState.temporaryInfo.sceneTransitionRejection = {
+      wasRequested: true,
+      reasoning,
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * Clear scene transition rejection
+   */
+  clearSceneTransitionRejection(): void {
+    this.gameState.temporaryInfo.sceneTransitionRejection = null;
   }
 
   /**

@@ -1,7 +1,6 @@
 import { ModelClass } from "../../../models/types.js";
 import { generateText } from "../../../models/index.js";
-import { actionTools } from "./tools.js";
-import { GameStateManager, GameState, ActionResult, ActionAnalysis } from "../../../state.js";
+import { GameStateManager, GameState, ActionResult, ActionAnalysis, SceneChangeRequest } from "../../../state.js";
 import type { CharacterProfile, ActionLogEntry } from "../models/gameTypes.js";
 import { actionTypeTemplates } from "./example.js";
 
@@ -36,6 +35,12 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 - exits: array of exit objects
 - clues: array of clue objects
 - permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
+
+SCENE CHANGE DETECTION:
+1. Determine if player intends to move to a new location (entering/exiting rooms, moving between areas, climbing/crossing obstacles)
+2. If movement requires a skill check (locked door, difficult terrain, stealth entry), call roll_dice first and base scene change on the result
+3. If movement is unobstructed (open door, clear path), directly return sceneChange with shouldChange: true
+4. If no movement intent, return sceneChange with shouldChange: false
 `;
 
     const actionTypeTemplate = this.getActionTypeTemplate(gameState);
@@ -220,6 +225,19 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     // Apply the state update from LLM result
     if (parsed.stateUpdate) {
       stateManager.applyActionUpdate(parsed.stateUpdate);
+    }
+
+    // Handle scene change request
+    if (parsed.sceneChange) {
+      const sceneChangeRequest: SceneChangeRequest = {
+        shouldChange: parsed.sceneChange.shouldChange || false,
+        targetSceneName: parsed.sceneChange.targetSceneName || null,
+        reason: parsed.sceneChange.reason || "Action-driven scene change",
+        timestamp: new Date()
+      };
+      stateManager.setSceneChangeRequest(sceneChangeRequest);
+      
+      console.log(`Action Agent: Scene change request - `, sceneChangeRequest);
     }
 
     // Apply scenario updates if provided

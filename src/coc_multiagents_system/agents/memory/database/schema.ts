@@ -336,6 +336,28 @@ export class CoCDatabase {
             );
             CREATE INDEX IF NOT EXISTS idx_snapshots_scenario ON scenario_snapshots(scenario_id);
         `);
+    
+    // Add new quantifiable time fields
+    try {
+      if (!this.hasColumn("scenario_snapshots", "absolute_time")) {
+        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN absolute_time TEXT;");
+      }
+      if (!this.hasColumn("scenario_snapshots", "game_day")) {
+        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN game_day INTEGER;");
+      }
+      if (!this.hasColumn("scenario_snapshots", "time_of_day")) {
+        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN time_of_day TEXT;");
+      }
+    } catch {
+      // ignore if columns already exist or cannot be added
+    }
+    
+    // Create indexes for new time fields for efficient querying
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_snapshots_absolute_time ON scenario_snapshots(absolute_time);
+      CREATE INDEX IF NOT EXISTS idx_snapshots_game_day ON scenario_snapshots(game_day);
+      CREATE INDEX IF NOT EXISTS idx_snapshots_time_of_day ON scenario_snapshots(time_of_day);
+    `);
 
     // Scenario characters table - characters present in scenarios
     this.db.exec(`

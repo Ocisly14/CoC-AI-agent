@@ -36,6 +36,11 @@ TIME CONSUMPTION ANALYSIS:
       }
     ]
   },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Action performed within current location"
+  },
   "log": ["Spot Hidden 45% vs roll 23 = success", "Hidden compartment discovered"]
 }`;
 
@@ -64,6 +69,11 @@ TIME CONSUMPTION ANALYSIS:
       }
     ]
   },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Conversation occurs in current location"
+  },
   "log": ["Persuade 60% vs roll 45 = success", "Librarian becomes helpful"]
 }`;
 
@@ -84,6 +94,11 @@ TIME CONSUMPTION ANALYSIS:
       "name": "Detective Smith",
       "status": { "hp": 0 }
     }
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Stealth movement within current area"
   },
   "log": ["Stealth 35% vs roll 67 = failure", "Noise alerts enemies"]
 }`;
@@ -128,6 +143,11 @@ TIME CONSUMPTION ANALYSIS:
       "Library now bears visible signs of combat: overturned furniture and blood stains"
     ]
   },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Combat occurs in current location"
+  },
   "log": ["Fighting (Brawl) 50% vs roll 32 = success", "Damage 1d3+1 = 4", "Cultist HP: -4"]
 }`;
 
@@ -149,6 +169,11 @@ TIME CONSUMPTION ANALYSIS:
       "status": { "hp": -1 }
     }
   },
+  "sceneChange": {
+    "shouldChange": true,
+    "targetSceneName": "dark-alley",
+    "reason": "Chase moves to a new location"
+  },
   "log": ["Athletics 40% vs roll 78 = failure", "Fall damage 1 point", "Target escapes"]
 }`;
 
@@ -169,6 +194,11 @@ TIME CONSUMPTION ANALYSIS:
       "name": "Detective Smith",
       "status": { "sanity": -3 }
     }
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Mental state change does not trigger scene change"
   },
   "log": ["Sanity 65% vs roll 82 = failure", "Sanity loss 1d4 = 3", "Current sanity: 62"]
 }`;
@@ -206,6 +236,11 @@ TIME CONSUMPTION ANALYSIS:
       "Wooden door destroyed; passage to the next room is now open"
     ]
   },
+  "sceneChange": {
+    "shouldChange": true,
+    "targetSceneName": "secret-chamber",
+    "reason": "Breaking through the door opens access to a new room"
+  },
   "log": ["STR check 60% vs roll 45 = success", "Door destroyed with brute force"]
 }`;
 
@@ -233,6 +268,11 @@ TIME CONSUMPTION ANALYSIS:
         "status": { "hp": 0 }
       }
     ]
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Narrative interaction occurs in current location"
   },
   "log": ["No dice rolled; narrative choice builds rapport"]
 }`;

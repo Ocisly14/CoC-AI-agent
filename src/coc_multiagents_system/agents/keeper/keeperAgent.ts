@@ -47,6 +47,13 @@ export class KeeperAgent {
       allSceneCharacters
     );
     
+    // 5. 检测场景变化，如果有变化则获取前一个场景的信息
+    const isTransition = gameState.temporaryInfo.transition;
+    const previousScenarioInfo = isTransition ? this.extractPreviousScenarioInfo(gameState) : null;
+    
+    // 6. 检测场景转换被拒绝的情况
+    const sceneTransitionRejection = gameState.temporaryInfo.sceneTransitionRejection;
+    
     // 获取模板
     const template = getKeeperTemplate();
     
@@ -62,6 +69,9 @@ export class KeeperAgent {
       timeOfDay: gameState.timeOfDay,
       tension: gameState.tension,
       phase: gameState.phase,
+      isTransition,
+      previousScenarioInfo,
+      sceneTransitionRejection,
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
       latestActionResultJson: latestCompleteActionResult
         ? this.safeStringify(latestCompleteActionResult)
@@ -69,6 +79,9 @@ export class KeeperAgent {
       playerCharacterJson: this.safeStringify(playerCharacterComplete),
       sceneCharactersJson: this.safeStringify(allSceneCharacters),
       actionRelatedNpcsJson: this.safeStringify(actionRelatedNpcs),
+      previousScenarioJson: previousScenarioInfo 
+        ? this.safeStringify(previousScenarioInfo)
+        : "null",
     };
 
     // 使用模板和LLM生成叙事和线索揭示
@@ -96,6 +109,16 @@ export class KeeperAgent {
     // 更新游戏状态中的线索状态
     const updatedGameState = this.updateClueStates(gameState, parsedResponse.clueRevelations, gameStateManager);
 
+    // 清除 transition 标志（已经在叙事中处理过了）
+    if (gameState.temporaryInfo.transition) {
+      gameStateManager.clearTransitionFlag();
+    }
+
+    // 清除场景转换拒绝标志（已经在叙事中处理过了）
+    if (gameState.temporaryInfo.sceneTransitionRejection) {
+      gameStateManager.clearSceneTransitionRejection();
+    }
+
     return {
       narrative: parsedResponse.narrative || response,
       clueRevelations: parsedResponse.clueRevelations || { scenarioClues: [], npcClues: [], npcSecrets: [] },
@@ -118,14 +141,44 @@ export class KeeperAgent {
 
     return {
       hasScenario: true,
-      ...currentScenario,
+      id: currentScenario.id,
+      scenarioId: currentScenario.scenarioId,
+      name: currentScenario.name,
+      location: currentScenario.location,
+      description: currentScenario.description,
       timePoint: currentScenario.timePoint || { timestamp: "Unknown", notes: "" },
       characters: currentScenario.characters || [],
       clues: currentScenario.clues || [],
       conditions: currentScenario.conditions || [],
       events: currentScenario.events || [],
-      exits: currentScenario.exits || [],
-      keeperNotes: currentScenario.keeperNotes || ""
+      keeperNotes: currentScenario.keeperNotes || "",
+      permanentChanges: currentScenario.permanentChanges
+    };
+  }
+
+  /**
+   * 提取前一个场景的信息（用于场景转换时）
+   */
+  private extractPreviousScenarioInfo(gameState: GameState) {
+    const visitedScenarios = gameState.visitedScenarios;
+    
+    if (!visitedScenarios || visitedScenarios.length === 0) {
+      return {
+        hasPreviousScenario: false,
+        message: "No previous scenario available"
+      };
+    }
+
+    // 获取最近访问的场景（第一个元素是最新的）
+    const previousScenario = visitedScenarios[0];
+
+    return {
+      hasPreviousScenario: true,
+      id: previousScenario.id,
+      scenarioId: previousScenario.scenarioId,
+      name: previousScenario.name,
+      location: previousScenario.location,
+      timePoint: previousScenario.timePoint
     };
   }
 
@@ -271,9 +324,6 @@ export class KeeperAgent {
         build: character.status.build || 0,
         mov: character.status.mov || 7
       },
-      
-      // 技能
-      skills: character.skills || {},
       
       // 物品
       inventory: character.inventory || [],

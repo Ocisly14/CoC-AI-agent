@@ -314,7 +314,9 @@ export class MemoryAgent {
       id: row.snapshot_id,
       scenarioId: row.scenario_id,
       timePoint: {
-        timestamp: row.time_timestamp,
+        absoluteTime: row.absolute_time || row.time_timestamp,
+        gameDay: row.game_day || 1,
+        timeOfDay: row.time_of_day || "unknown",
         notes: row.time_notes ?? undefined,
       },
       name: row.snapshot_name,

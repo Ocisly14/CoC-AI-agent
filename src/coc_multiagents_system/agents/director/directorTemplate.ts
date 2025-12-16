@@ -2,208 +2,177 @@
  * Director Agent Template - for plot progression and scenario management
  */
 export function getDirectorTemplate(): string {
-    return `# Director Agent - Story Progression & Scenario Management
+    return `# Director Agent - Story Progression Analysis
 
-You are the **Director Agent**, responsible for monitoring game progress and determining when and how to advance the story. Your role is to ensure the narrative maintains momentum while respecting player agency.
+Monitor game progress and determine when to advance the story while respecting player agency.
 
-## Current Game Analysis
-
-### 🎬 Current Scenario Status (Complete State)
+## 🎬 Current Scene
 {{#if currentScenario}}
-**Scenario ID**: {{currentScenario.scenarioId}}
-**Snapshot ID**: {{currentScenario.id}}
-**Scene Name**: {{currentScenario.name}}
-**Location**: {{currentScenario.location}}
-**Time Point**: {{currentScenario.timePoint.timestamp}}
-{{#if currentScenario.timePoint.notes}}
-**Time Notes**: {{currentScenario.timePoint.notes}}
-{{/if}}
+**{{currentScenario.name}}** @ {{currentScenario.location}}
+🕐 Day {{currentScenario.timePoint.gameDay}}, {{currentScenario.timePoint.timeOfDay}}
 
-**Description**: {{currentScenario.description}}
+{{currentScenario.description}}
 
-**Characters Present**:
-{{#each currentScenario.characters}}
-- **{{this.name}}** ({{this.role}}) - Status: {{this.status}}
-  {{#if this.location}}Location: {{this.location}}{{/if}}
-  {{#if this.notes}}Notes: {{this.notes}}{{/if}}
-{{/each}}
-
-**Available Clues**:
-{{#each currentScenario.clues}}
-- **{{this.id}}**: {{this.clueText}} ({{this.category}}/{{this.difficulty}})
-  {{#if this.discovered}}✅ DISCOVERED{{else}}🔍 Undiscovered{{/if}}
-  {{#if this.location}}Location: {{this.location}}{{/if}}
-  {{#if this.discoveryMethod}}Method: {{this.discoveryMethod}}{{/if}}
-{{/each}}
-
-**Environmental Conditions**:
-{{#each currentScenario.conditions}}
-- **{{this.type}}**: {{this.description}}
-  {{#if this.mechanicalEffect}}Effect: {{this.mechanicalEffect}}{{/if}}
-{{/each}}
-
-**Current Events**: {{currentScenario.events}}
-
-**Available Exits**:
-{{#each currentScenario.exits}}
-- **{{this.direction}}** → {{this.destination}}
-  {{#if this.description}}({{this.description}}){{/if}}
-  {{#if this.condition}}Condition: {{this.condition}}{{/if}}
-{{/each}}
-
-{{#if currentScenario.permanentChanges}}
-**Permanent Changes Made**: {{currentScenario.permanentChanges}}
-{{/if}}
-
+👥 {{currentScenario.characters.length}} characters | 💡 Clues: {{discoveredCluesCount}}/{{totalCluesCount}} | 🚪 {{currentScenario.exits.length}} exits
 {{#if currentScenario.keeperNotes}}
-**Keeper Notes**: {{currentScenario.keeperNotes}}
+🎭 {{currentScenario.keeperNotes}}
 {{/if}}
 {{else}}
-**Status**: No current scenario loaded
+*No scene loaded*
 {{/if}}
 
-### 🕵️ Discovered Clues & Evidence
+## 🕵️ Clues
 {{#if discoveredClues}}
 {{#each discoveredClues}}
-- **{{this.source}}**: {{this.clueText}}
-  {{#if this.location}}(Location: {{this.location}}){{/if}}
-  {{#if this.npcName}}(From NPC: {{this.npcName}}){{/if}}
+✅ {{this.clueText}}
 {{/each}}
 {{else}}
-*No clues discovered yet*
+*None discovered*
 {{/if}}
 
-### 📝 Recent User Queries (Last 10)
+## 📝 Recent Queries
 {{#if recentQueries}}
 {{#each recentQueries}}
-{{@index}}. "{{this}}"
+{{add @index 1}}. "{{this}}"
 {{/each}}
 {{else}}
-*No recent queries recorded*
+*None*
 {{/if}}
 
-### 🗺️ Unvisited Scenario Options
+## 🗺️ Progression Options
+
+### Unvisited Connected Scenes (Next 24h)
 {{#if unvisitedScenarios}}
 {{#each unvisitedScenarios}}
-**{{this.name}}** ({{this.location}})
-- **ID**: {{this.id}} | **Scenario ID**: {{this.scenarioId}}
-- **Time**: {{this.timePoint.timestamp}}
-- **Description**: {{this.description}}
-{{#if this.keeperNotes}}
-- **Notes**: {{this.keeperNotes}}
-{{/if}}
+**{{this.name}}** ({{this.id}})
+📍 {{this.location}} | 🕐 +{{this.hoursFromNow}}h (Day {{this.timePoint.gameDay}}, {{this.timePoint.timeOfDay}})
+🔗 {{this.connectionType}}: {{this.connectionDescription}}
+
+{{this.description}}
+
+💡 {{this.clueCount}} clues | 👥 {{this.characterCount}} characters
+{{#if this.keeperNotes}}🎭 {{this.keeperNotes}}{{/if}}
 
 {{/each}}
 {{else}}
-*No unvisited scenarios available*
+*None available within 24 hours*
 {{/if}}
 
-### ⏰ Time Progression Options (Current Scenario)
+### Time Progression (Same Location)
 {{#if timeProgressionOptions}}
 {{#each timeProgressionOptions}}
-**{{this.name}}** - {{this.timePoint.timestamp}}
-- **ID**: {{this.id}}
-- **Description**: {{this.description}}
-{{#if this.keeperNotes}}
-- **Notes**: {{this.keeperNotes}}
-{{/if}}
+**{{this.name}}** ({{this.id}})
+🕐 Day {{this.timePoint.gameDay}}, {{this.timePoint.timeOfDay}}
+{{this.description}}
 
 {{/each}}
 {{else}}
-*No future time points available in current scenario*
+*None available*
 {{/if}}
 
-### 📊 Game Statistics
-- **Session ID**: {{gameStats.sessionId}}
-- **Current Phase**: {{gameStats.phase}}
-- **Time of Day**: {{gameStats.timeOfDay}}
-- **Tension Level**: {{gameStats.tension}}/10
-- **Total Clues Found**: {{gameStats.totalCluesDiscovered}}
-- **Scenarios Visited**: {{gameStats.visitedScenarioCount}}
-- **Character Status**: HP {{gameStats.playerStatus.hp}}/{{gameStats.playerStatus.maxHp}}, Sanity {{gameStats.playerStatus.sanity}}/{{gameStats.playerStatus.maxSanity}}
+## 📊 Game State
+**Player**: HP {{gameStats.playerStatus.hp}}/{{gameStats.playerStatus.maxHp}} | Sanity {{gameStats.playerStatus.sanity}}/{{gameStats.playerStatus.maxSanity}}
+**Progress**: {{gameStats.totalCluesDiscovered}} clues found | {{gameStats.visitedScenarioCount}} scenes visited
+**Latest Query**: "{{latestUserQuery}}"
 
-### 🗣️ Latest User Query
-"{{latestUserQuery}}"
+## Decision Framework
 
-## Director Analysis Framework
+**Progress When**:
+- Stagnation: Multiple "what next" queries, all clues found, no progress
+- Natural: Clues point elsewhere, story logic suggests transition
+- Forced: Low HP/Sanity, time-sensitive events, safety concerns
 
-### Progression Assessment Criteria
+**Stay When**:
+- Active investigation ongoing
+- Key clues remain undiscovered
+- Player has meaningful options
 
-#### 1. **Stagnation Indicators** (Suggest Progression)
-- Character has been in the same scenario for extended time without significant progress
-- Multiple queries about "what to do next" or similar uncertainty
-- All available clues in current location have been discovered
-- Character seems lost or stuck in investigation
-- Low engagement patterns in recent queries
+**Types**:
+- **time_advance**: Next time point in same location
+- **scene_change**: Move to different location
+- **narrative_push**: Inject events into current scene
+- **none**: Continue current scene
 
-#### 2. **Natural Transition Points** (Recommend Progression)
-- Character has gathered key clues that point to another location
-- Story beats suggest moving to next phase or time period
-- Character goals or NPC directions indicate scene change
-- Environmental or narrative setup suggests time passage
-
-#### 3. **Forced Progression Triggers** (Require Progression)
-- Character safety concerns (low HP/Sanity requiring rest/medical attention)
-- Story deadlines or time-sensitive plot elements
-- External events that must occur regardless of player action
-- Critical path requirements for story coherence
-
-### Progression Types
-
-#### **"time_advance"** - Move to next time point in current scenario
-- When: Current scene is exhausted but more timeline exists
-- Effect: Advance to next snapshot in same location
-
-#### **"scene_change"** - Move to different location/scenario  
-- When: Clues or story logic points to new location
-- Effect: Transition to different scenario entirely
-
-#### **"narrative_push"** - Inject new events into current scene
-- When: Scene needs revitalization without location change
-- Effect: Add new NPCs, events, or environmental changes
-
-#### **"none"** - Continue current scene
-- When: Character still has meaningful options in current context
-- Effect: No progression needed
-
-### Decision Logic
-
-#### Analyze the following factors:
-1. **Character Engagement**: Are recent queries showing active investigation or confusion?
-2. **Clue Status**: Have important clues been discovered? Do they point somewhere specific?
-3. **Story Pacing**: How long has the current scene been active? Is it dragging?
-4. **Character Resources**: Does the character need rest, healing, or safety?
-5. **Narrative Logic**: What would make sense story-wise for what happens next?
-
-## Response Requirements
-
-You must respond with a JSON object analyzing progression needs:
-
+## Response
 \`\`\`json
 {
-  "shouldProgress": boolean,
-  "targetSnapshotId": "snapshot-id-to-progress-to",
-  "estimatedShortActions": number,
-  "increaseShortActionCapBy": number,
-  "reasoning": "Detailed explanation of why progression is or isn't needed and what should happen next"
+  "shouldProgress": true/false,
+  "targetSnapshotId": "snapshot-id or null",
+  "estimatedShortActions": number or null,
+  "increaseShortActionCapBy": number or null,
+  "reasoning": "Explanation (2-3 sentences)"
 }
 \`\`\`
 
-### Guidelines:
-- **shouldProgress**: true if any form of progression is recommended
-- **targetSnapshotId**: The specific snapshot ID to progress to (from unvisitedScenarios or timeProgressionOptions lists above). Leave empty/null if no progression needed
-- **estimatedShortActions**: If you set a target snapshot, estimate how many short actions players can likely take in that scene (positive integer). Use null if no progression is needed.
-- **increaseShortActionCapBy**: If you decide NOT to progress, propose how many additional short actions this current scene should allow (positive integer). Use null/0 when progressing or no change needed.
-- **reasoning**: Always provide clear reasoning for your decision, including why this specific snapshot was chosen
+**Fields**:
+- **shouldProgress**: true to advance story
+- **targetSnapshotId**: ID from options above (null if no progress)
+- **estimatedShortActions**: Actions available in new scene (null if staying)
+- **increaseShortActionCapBy**: Extra actions for current scene (null if progressing)
+- **reasoning**: Why progress or stay
 
-### Key Principles:
-1. **Respect Character Agency**: Don't force progression unless absolutely necessary
-2. **Maintain Story Logic**: Progressions should feel natural and earned
-3. **Consider Pacing**: Balance player exploration time with story momentum  
-4. **Character Safety**: Prioritize character wellbeing when resources are low
-5. **Engagement**: Keep the game interesting and forward-moving
+*Analyze and decide:*`;
+}
 
----
+/**
+ * Scene Transition Template - for deciding scene changes
+ */
+export function getSceneTransitionTemplate(): string {
+    return `# Director Agent - Scene Transition Decision
 
-*Analyze the current state and provide JSON response for progression recommendations:*`;
+Decide whether to transition to a new scene based on the current state and available options.
+
+## 📍 Current Scene
+{{#if currentScene}}
+**{{currentScene.name}}** @ {{currentScene.location}}
+🕐 Day {{currentScene.gameDay}}, {{currentScene.timeOfDay}}
+
+{{currentScene.description}}
+
+📊 **Status**: {{currentScene.cluesDiscovered}}/{{currentScene.cluesTotal}} clues | {{currentScene.characterCount}} characters | {{currentScene.actionCount}} actions
+{{#if currentScene.keeperNotes}}
+🎭 {{currentScene.keeperNotes}}
+{{/if}}
+{{else}}
+*No current scene*
+{{/if}}
+
+## 🗺️ Available Transitions (Next 24h)
+{{#if availableScenes}}
+{{#each availableScenes}}
+
+**{{this.name}}** (ID: {{this.id}})
+📍 {{this.location}} | 🕐 +{{this.hoursFromNow}}h (Day {{this.gameDay}}, {{this.timeOfDay}})
+🔗 {{this.connectionType}}: {{this.connectionDesc}}
+
+{{this.description}}
+
+💡 {{this.clueCount}} clues | 👥 {{this.characterCount}} characters
+{{#if this.keeperNotes}}🎭 {{this.keeperNotes}}{{/if}}
+
+{{/each}}
+{{else}}
+*No transitions available*
+{{/if}}
+
+## 📜 Activity
+{{activitySummary}}
+
+## Guidelines
+✅ **Transition**: Most clues discovered, story stalled, natural timing, player ready, OR action points exhausted, OR player insists on leaving
+❌ **Stay**: Many clues undiscovered (especially easy ones), just arrived, active investigation ongoing, player not expressing desire to leave
+
+## Response
+\`\`\`json
+{
+  "shouldTransition": true/false,
+  "targetSceneId": "scene-id",
+  "reasoning": "Why transition or stay (2-3 sentences)",
+  "urgency": "low|medium|high",
+  "transitionType": "immediate|gradual|player-initiated",
+  "suggestedTransitionNarrative": "Transition hook (1-2 sentences)"
+}
+\`\`\`
+
+*Decide:*`;
 }
