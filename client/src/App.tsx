@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from "react";
 import Homes from "./views/Homes";
+import { GameChat } from "./components/GameChat";
+import { CharacterSelector } from "./components/CharacterSelector";
 
 type SkillEntry = { name: string; base: string; category: string };
+type AppPage = "home" | "sheet" | "game" | "character-select";
 
 const SKILLS: SkillEntry[] = [
   // Interpersonal & Social Skills
@@ -92,15 +95,52 @@ const SKILLS: SkillEntry[] = [
 ];
 
 const App: React.FC = () => {
-  const [page, setPage] = useState<"home" | "sheet">("home");
+  const [page, setPage] = useState<AppPage>("home");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
+  const [characterName, setCharacterName] = useState<string>("Investigator");
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
-  const handleStartGame = (characterId?: string) => {
-    console.log("Game started with character:", characterId);
-    // You can add additional logic here when game starts
+  // Show character selector
+  const handleShowCharacterSelector = () => {
+    setPage("character-select");
+  };
+
+  // Handle character selection and start game
+  const handleSelectCharacter = async (characterId: string, charName: string) => {
+    console.log("Selected character:", characterId, charName);
+    setSelectedCharacterId(characterId);
+    setCharacterName(charName);
+    
+    // Start game with selected character
+    try {
+      const response = await fetch("http://localhost:3000/api/game/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ characterId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSessionId(data.sessionId || `session-${Date.now()}`);
+        setPage("game");
+      } else {
+        alert("启动游戏失败: " + (data.error || "Unknown error"));
+        setPage("home");
+      }
+    } catch (error) {
+      console.error("Error starting game:", error);
+      alert("网络错误，无法连接到服务器");
+      setPage("home");
+    }
+  };
+
+  const handleBackToHome = () => {
+    setPage("home");
   };
 
   const onChange = (key: string, value: string) => {
@@ -578,8 +618,37 @@ const App: React.FC = () => {
   );
 
   if (page === "home") {
-    return <Homes onCreate={() => setPage("sheet")} onStartGame={handleStartGame} />;
+    return <Homes onCreate={() => setPage("sheet")} onStartGame={handleShowCharacterSelector} />;
   }
+
+  if (page === "character-select") {
+    return (
+      <CharacterSelector
+        onSelectCharacter={handleSelectCharacter}
+        onCancel={handleBackToHome}
+        onCreateNew={() => setPage("sheet")}
+      />
+    );
+  }
+  
+  if (page === "game") {
+    return (
+      <div className="game-container">
+        <div className="game-header">
+          <h1>Call of Cthulhu - Game Session</h1>
+          <button className="back-button" onClick={handleBackToHome}>
+            ← 返回首页
+          </button>
+        </div>
+        <GameChat 
+          sessionId={sessionId} 
+          apiBaseUrl="http://localhost:3000/api"
+          characterName={characterName}
+        />
+      </div>
+    );
+  }
+  
   return sheet;
 };
 

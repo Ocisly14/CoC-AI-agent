@@ -129,8 +129,9 @@ export async function generateText(options: GenerationOptions): Promise<string> 
     maxRetries = 3
   } = options;
 
-  // Get provider from runtime (default to OpenAI if not specified)
-  const provider = runtime.modelProvider || ModelProviderName.OPENAI;
+  // Get provider from environment variable, runtime, or default to OpenAI
+  const envProvider = process.env.MODEL_PROVIDER as ModelProviderName;
+  const provider = envProvider || runtime.modelProvider || ModelProviderName.OPENAI;
   
   // Resolve effective model class
   const effectiveModelClass = resolveModelClass(runtime, modelClass);

@@ -72,43 +72,14 @@ app.post("/api/game/start", async (req, res) => {
 
     // Lazy-load multi-agent system components (only when game starts)
     if (!graph || !ragEngine) {
-      // Initialize NPC directory
-      const npcDir = path.join(process.cwd(), "data", "npcs");
-      if (!fs.existsSync(npcDir)) {
-        fs.mkdirSync(npcDir, { recursive: true });
-      }
+      console.log(`[${new Date().toISOString()}] Initializing multi-agent system (skipping resource loading)...`);
 
-      // Load NPCs from documents
-      const npcLoader = new NPCLoader(db);
-      await npcLoader.loadNPCsFromDirectory(npcDir);
-
-      // Initialize module background directory
-      const moduleDir = path.join(process.cwd(), "data", "background");
-      if (!fs.existsSync(moduleDir)) {
-        fs.mkdirSync(moduleDir, { recursive: true });
-      }
-
-      // Load module briefings from documents
-      const moduleLoader = new ModuleLoader(db);
-      await moduleLoader.loadModulesFromDirectory(moduleDir);
-
-      // Initialize scenario directory
-      const scenarioDir = path.join(process.cwd(), "data", "scenarios");
-      if (!fs.existsSync(scenarioDir)) {
-        fs.mkdirSync(scenarioDir, { recursive: true });
-      }
-
-      // Load scenarios from documents
+      // Skip all resource loading for now
+      // Create minimal scenario loader
       const scenarioLoader = new ScenarioLoader(db);
-      await scenarioLoader.loadScenariosFromDirectory(scenarioDir);
-
-      // Initialize RAG knowledge directory
-      const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
-      if (!fs.existsSync(knowledgeDir)) {
-        fs.mkdirSync(knowledgeDir, { recursive: true });
-      }
-      ragEngine = new RAGEngine(db, knowledgeDir);
-      await ragEngine.ingestFromDirectory();
+      
+      // Skip RAG engine initialization for now
+      ragEngine = null as any; // Placeholder
 
       // Build the multi-agent graph
       graph = buildGraph(db, scenarioLoader, ragEngine);
@@ -116,7 +87,7 @@ app.post("/api/game/start", async (req, res) => {
       // Initialize TurnManager
       turnManager = new TurnManager(db);
 
-      console.log(`[${new Date().toISOString()}] Multi-agent system loaded successfully`);
+      console.log(`[${new Date().toISOString()}] Multi-agent system loaded successfully (no resources loaded)`);
     }
 
     // Check if character exists
@@ -169,6 +140,9 @@ app.post("/api/game/start", async (req, res) => {
       res.json({
         success: true,
         message: `游戏已开始！欢迎，${character.name}！`,
+        sessionId: persistentGameState.sessionId,
+        characterId: character.character_id,
+        characterName: character.name,
         gameState: {
           phase: persistentGameState.phase,
           playerCharacter: persistentGameState.playerCharacter,
@@ -190,6 +164,9 @@ app.post("/api/game/start", async (req, res) => {
       res.json({
         success: true,
         message: "游戏已开始！使用默认角色。",
+        sessionId: persistentGameState.sessionId,
+        characterId: persistentGameState.playerCharacter.id,
+        characterName: persistentGameState.playerCharacter.name,
         gameState: {
           phase: persistentGameState.phase,
           playerCharacter: persistentGameState.playerCharacter,
