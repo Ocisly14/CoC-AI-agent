@@ -140,8 +140,10 @@ The JSON should follow this structure (no category field; the scenario name/desc
   "timeline": [
     {
       "timePoint": {
-        "timestamp": "Time description (e.g., '1925-03-15', 'Dawn', 'Day 3')",
-        "notes": "Additional time notes"
+        "absoluteTime": "ISO 8601 datetime (e.g., '1925-03-15T08:00:00Z', '1925-04-03T06:00:00Z')",
+        "gameDay": 1,  // Integer: which day of the investigation (1, 2, 3, ...)
+        "timeOfDay": "dawn|morning|noon|afternoon|evening|night|midnight|unknown",
+        "notes": "Additional time notes (optional)"
       },
       "name": "Scene name at this time (optional)",
       "location": "Primary location (same site; use description for sub-areas, not separate rooms)",
@@ -195,14 +197,17 @@ The JSON should follow this structure (no category field; the scenario name/desc
 }
 
 Important extraction guidelines:
-1. **Timeline Ordering**: Look for temporal indicators (time of day, dates, "later", "meanwhile", "the next day", etc.)
-2. **Character Tracking**: Note how characters move between locations and change status over time
+1. **Timeline Ordering**: Convert time descriptions to structured format:
+   - **absoluteTime**: Parse dates/times into ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ). Estimate reasonable times based on context (e.g., "dawn" → 06:00:00, "noon" → 12:00:00, "evening" → 18:00:00, "night" → 22:00:00, "midnight" → 00:00:00)
+   - **gameDay**: Extract or infer the investigation day number (1 for first day, 2 for second day, etc.). If vague like "later", use context from previous entries
+   - **timeOfDay**: Classify into one of: dawn (4-7am), morning (7-11am), noon (11am-1pm), afternoon (1-5pm), evening (5-8pm), night (8pm-12am), midnight (12-4am), or unknown
+2. **Character Tracking**: Note how characters move between small locations and change status over time
 3. **Clue Evolution**: Some clues may only be available at certain times or after certain events
 4. **Environmental Changes**: Weather, lighting, sounds that change over time
 5. **Multiple Time Points**: If the document describes the same location at different times, create separate timeline entries
 6. **Keeper Information**: Separate player-visible information from Keeper-only notes
 7. **Clue Scope**: Only include clues that can be discovered in the scene/location/timeline entry itself. Do NOT include clues that belong solely to an NPC's private knowledge.
-8. **Partial Inputs**: The text you see may be only a fragment of the full scenario. If information is missing or incomplete, leave the field blank or omit it—do NOT fabricate details.
+8. **Partial Inputs**: The text you see may be only a fragment of the full scenario. If information is missing or incomplete, leave the field blank or omit it—do NOT fabricate details, but keep the json format of response complete.
 9. **Scene Granularity**: Treat a scene as a whole area/building (e.g., a hotel, a plaza, a home, a hospital, a lumberyard). Do NOT split into individual rooms; fold room-level details into the description/clues of the parent location. Story background or meta setup is not itself a scene—only concrete places/areas that investigators can visit.
 10. **Location-First Modeling**: Each scenario maps to a single location/environment (e.g., “医院”, “工厂”, “广场”). Do NOT create separate scenarios for events. Use the timeline to capture different time states of the same location (what time, which people, what events/clues), not to jump across different places. Do not add a category field—only the name/description identify the place.
 
@@ -219,7 +224,7 @@ Extract ALL time points mentioned in the document, even if subtle. Look for phra
 - "Meanwhile, in the library..."
 - "After the investigators leave..."
 - "During the night..."
-
+But remember: you should make it specific based on the related information, always include the date or timeline like "day 1""day 2"
 Document content:
 ---
 ${text}
@@ -346,15 +351,17 @@ Return ONLY the JSON object, no additional text.`;
     base: ParsedScenarioData,
     incoming: ParsedScenarioData
   ): ParsedScenarioData {
-    const norm = (v?: string) => (v ? v.toLowerCase().trim() : "");
+    const norm = (v?: string | number) => (v ? String(v).toLowerCase().trim() : "");
     const makeTimelineKey = (entry: ParsedScenarioData["timeline"][number]) => {
-      const ts = norm(entry.timePoint.timestamp);
+      const absTime = norm(entry.timePoint.absoluteTime);
+      const gameDay = norm(entry.timePoint.gameDay);
+      const timeOfDay = norm(entry.timePoint.timeOfDay);
       const loc = norm(entry.location);
       const name = norm(entry.name);
       const desc = norm(entry.description?.slice(0, 32));
 
-      if (ts || loc || name) {
-        return `ts:${ts}|loc:${loc}|name:${name}`;
+      if (absTime || gameDay || loc || name) {
+        return `time:${absTime}|day:${gameDay}|tod:${timeOfDay}|loc:${loc}|name:${name}`;
       }
       return `desc:${desc}`;
     };
@@ -396,7 +403,9 @@ Return ONLY the JSON object, no additional text.`;
     return {
       ...a,
       timePoint: {
-        timestamp: a.timePoint.timestamp || b.timePoint.timestamp || "",
+        absoluteTime: a.timePoint.absoluteTime || b.timePoint.absoluteTime,
+        gameDay: a.timePoint.gameDay || b.timePoint.gameDay,
+        timeOfDay: a.timePoint.timeOfDay || b.timePoint.timeOfDay,
         notes: this.pickLonger(a.timePoint.notes, b.timePoint.notes),
       },
       name: a.name || b.name,

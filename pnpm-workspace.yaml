@@ -1,3 +1,4 @@
 # pnpm workspace configuration
-# Currently using single package structure
-packages: []
+# Include frontend client so root `pnpm install` installs its deps too.
+packages:
+  - client

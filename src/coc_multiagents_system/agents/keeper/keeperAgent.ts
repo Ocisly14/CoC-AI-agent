@@ -27,7 +27,7 @@ export class KeeperAgent {
   /**
    * Generate narrative description with clue revelation based on current game state and user query
    */
-  async generateNarrative(userQuery: string, gameStateManager: GameStateManager): Promise<{narrative: string, clueRevelations: any, updatedGameState: GameState}> {
+  async generateNarrative(characterInput: string, gameStateManager: GameStateManager): Promise<{narrative: string, clueRevelations: any, updatedGameState: GameState}> {
     const runtime = createRuntime();
     const gameState = gameStateManager.getGameState();
     
@@ -50,30 +50,25 @@ export class KeeperAgent {
     // 获取模板
     const template = getKeeperTemplate();
     
-    // 准备模板上下文
+    // Prepare template context (JSON-packed to keep template concise)
+    const playerCharacterComplete = this.extractCompletePlayerCharacter(gameState.playerCharacter);
     const templateContext = {
-      // 用户query
-      userQuery,
-      
-      // 完整场景信息
+      characterInput,
       completeScenarioInfo,
-      
-      // 最新完整action result
       latestCompleteActionResult,
-      
-      // 玩家角色完整信息
-      playerCharacterComplete: this.extractCompletePlayerCharacter(gameState.playerCharacter),
-      
-      // 场景中所有角色的完整属性
+      playerCharacterComplete,
       allSceneCharacters,
-      
-      // action result中涉及的NPC完整属性（已去重）
       actionRelatedNpcs,
-      
-      // 其他游戏状态
       timeOfDay: gameState.timeOfDay,
       tension: gameState.tension,
-      phase: gameState.phase
+      phase: gameState.phase,
+      scenarioContextJson: this.safeStringify(completeScenarioInfo),
+      latestActionResultJson: latestCompleteActionResult
+        ? this.safeStringify(latestCompleteActionResult)
+        : "null",
+      playerCharacterJson: this.safeStringify(playerCharacterComplete),
+      sceneCharactersJson: this.safeStringify(allSceneCharacters),
+      actionRelatedNpcsJson: this.safeStringify(actionRelatedNpcs),
     };
 
     // 使用模板和LLM生成叙事和线索揭示
@@ -376,6 +371,14 @@ export class KeeperAgent {
         clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },
         updatedGameState: gameStateManager.getGameState()
       };
+    }
+  }
+
+  private safeStringify(obj: any): string {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (error) {
+      return typeof obj === "string" ? obj : "";
     }
   }
 }

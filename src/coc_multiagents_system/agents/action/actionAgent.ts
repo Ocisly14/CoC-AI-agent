@@ -29,7 +29,14 @@ FOR TOOL CALLS (when you need to roll dice):
 }
 
 FOR FINAL RESULTS (when you have everything needed):
-Include "scenarioUpdate" if the action permanently changes the environment:`;
+Include "scenarioUpdate" if the action permanently changes the environment. "scenarioUpdate" can include:
+- description: updated scene flavor text
+- conditions: array of environmental condition objects
+- events: array of event strings
+- exits: array of exit objects
+- clues: array of clue objects
+- permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
+`;
 
     const actionTypeTemplate = this.getActionTypeTemplate(gameState);
 
@@ -233,6 +240,13 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
         scenarioChanges.push(`New events recorded: ${parsed.scenarioUpdate.events.join(', ')}`);
       }
       
+      if (parsed.scenarioUpdate.permanentChanges && parsed.scenarioUpdate.permanentChanges.length > 0) {
+        parsed.scenarioUpdate.permanentChanges.forEach((change: string) => {
+          scenarioChanges.push(`Permanent change: ${change}`);
+          stateManager.addPermanentScenarioChange(change);
+        });
+      }
+
       if (parsed.scenarioUpdate.exits && parsed.scenarioUpdate.exits.length > 0) {
         parsed.scenarioUpdate.exits.forEach((exit: any) => {
           const changeDesc = `Exit ${exit.direction} to ${exit.destination}: ${exit.condition || 'modified'}`;
@@ -250,11 +264,6 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
             scenarioChanges.push(`Clue modified: ${clue.id}`);
           }
         });
-      }
-
-      // Record significant environmental changes as permanent
-      if (parsed.scenarioUpdate.description) {
-        stateManager.addPermanentScenarioChange(`${parsed.stateUpdate?.playerCharacter?.name || 'Character'} permanently altered the environment: ${parsed.summary || 'Unknown change'}`);
       }
     }
     

@@ -7,8 +7,12 @@
  * Time point for scenario events
  */
 export interface ScenarioTimePoint {
-  /** ISO date string or descriptive time (e.g., "1925-03-15", "Dawn", "Night 3") */
-  timestamp: string;
+  /** Absolute time in ISO 8601 format (e.g., "1925-03-15T08:00:00Z") */
+  absoluteTime: string;
+  /** Game day number (1 for first day, 2 for second day, etc.) */
+  gameDay: number;
+  /** Time of day classification for quick filtering and atmospheric queries */
+  timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
   /** Additional notes about this time point */
   notes?: string;
 }
@@ -146,7 +150,9 @@ export interface ParsedScenarioData {
   description: string;
   timeline: {
     timePoint: {
-      timestamp: string;
+      absoluteTime: string;
+      gameDay: number;
+      timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
       notes?: string;
     };
     name?: string;

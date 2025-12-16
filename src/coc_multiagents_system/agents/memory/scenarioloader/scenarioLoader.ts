@@ -182,7 +182,9 @@ export class ScenarioLoader {
         id: snapshotId,
         scenarioId,
         timePoint: {
-          timestamp: timelineEntry.timePoint.timestamp,
+          absoluteTime: timelineEntry.timePoint.absoluteTime,
+          gameDay: timelineEntry.timePoint.gameDay,
+          timeOfDay: timelineEntry.timePoint.timeOfDay,
           notes: timelineEntry.timePoint.notes,
         },
         name: timelineEntry.name || parsedData.name,
@@ -236,14 +238,15 @@ export class ScenarioLoader {
     const hasTimeOrderColumn = this.db.hasColumn("scenario_snapshots", "time_order");
 
     this.db.transaction(() => {
-      // Insert or update scenario
-      const scenarioColumns = ["scenario_id", "name", "description", "tags", "connections", "metadata"];
+      // Insert or update scenario (including scenario-level permanent_changes)
+      const scenarioColumns = ["scenario_id", "name", "description", "tags", "connections", "permanent_changes", "metadata"];
       const scenarioValues: any[] = [
         scenario.id,
         scenario.name,
         scenario.description,
         JSON.stringify(scenario.tags),
         JSON.stringify(scenario.connections),
+        scenario.permanentChanges ? JSON.stringify(scenario.permanentChanges) : null,
         JSON.stringify(scenario.metadata),
       ];
 
@@ -265,13 +268,16 @@ export class ScenarioLoader {
       database.prepare("DELETE FROM scenario_snapshots WHERE scenario_id = ?").run(scenario.id);
       // Note: Foreign key constraints will cascade delete related characters, clues, and conditions
 
-      // Insert timeline snapshots
+      // Insert timeline snapshots (permanent_changes are at scenario level, not snapshot level)
       scenario.timeline.forEach((snapshot, idx) => {
         // Insert snapshot
         const snapshotColumns = [
           "snapshot_id",
           "scenario_id",
           "time_timestamp",
+          "absolute_time",
+          "game_day",
+          "time_of_day",
           "time_notes",
           "snapshot_name",
           "location",
@@ -283,7 +289,10 @@ export class ScenarioLoader {
         const snapshotValues: any[] = [
           snapshot.id,
           scenario.id,
-          snapshot.timePoint.timestamp,
+          snapshot.timePoint.absoluteTime, // Use as primary timestamp for backward compatibility
+          snapshot.timePoint.absoluteTime,
+          snapshot.timePoint.gameDay,
+          snapshot.timePoint.timeOfDay,
           snapshot.timePoint.notes || null,
           snapshot.name,
           snapshot.location,
@@ -424,7 +433,9 @@ export class ScenarioLoader {
         id: snap.snapshot_id,
         scenarioId,
         timePoint: {
-          timestamp: snap.time_timestamp,
+          absoluteTime: snap.absolute_time || snap.time_timestamp, // Fallback to old field for backward compatibility
+          gameDay: snap.game_day || 1, // Default to day 1 if not set
+          timeOfDay: snap.time_of_day || "unknown", // Default to unknown if not set
           notes: snap.time_notes,
         },
         name: snap.snapshot_name,
@@ -457,10 +468,21 @@ export class ScenarioLoader {
         events: snap.events ? JSON.parse(snap.events) : [],
         exits: snap.exits ? JSON.parse(snap.exits) : [],
         keeperNotes: snap.keeper_notes,
+        // permanentChanges will be assigned from scenario level after all snapshots are loaded
       };
 
       timeline.push(timelineSnapshot);
     }
+
+    // Parse scenario-level permanent changes (shared by all snapshots)
+    const scenarioPermanentChanges = scenario.permanent_changes 
+      ? JSON.parse(scenario.permanent_changes) 
+      : [];
+
+    // Assign scenario-level permanent changes to all snapshots
+    timeline.forEach(snapshot => {
+      snapshot.permanentChanges = scenarioPermanentChanges;
+    });
 
     const scenarioProfile: ScenarioProfile = {
       id: scenario.scenario_id,
@@ -469,6 +491,7 @@ export class ScenarioLoader {
       timeline,
       tags: JSON.parse(scenario.tags || "[]"),
       connections: JSON.parse(scenario.connections || "[]"),
+      permanentChanges: scenarioPermanentChanges,
       metadata: JSON.parse(scenario.metadata),
     };
 

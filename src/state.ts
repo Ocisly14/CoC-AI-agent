@@ -49,7 +49,6 @@ export interface GameState {
   discoveredClues: string[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
-  actionRules: Record<ActionType, string>;
   scenarioTimeState: {
     sceneStartTime: string;     // 场景开始时的游戏时间
     playerTimeConsumption: Record<string, {  // 各玩家的时间消耗记录
@@ -102,7 +101,6 @@ const defaultPlayerCharacter: CharacterProfile = {
   actionLog: [],
 };
 
-const defaultActionRules: Record<ActionType, string> = actionRules;
 
 export const initialGameState: GameState = {
   sessionId: "session-local",
@@ -115,7 +113,6 @@ export const initialGameState: GameState = {
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
-  actionRules: defaultActionRules,
   scenarioTimeState: {
     sceneStartTime: "Evening",
     playerTimeConsumption: {},
@@ -580,7 +577,12 @@ export class GameStateManager {
   }
 
   /**
-   * Add permanent change to the scenario
+   * Add permanent change to the scenario (scenario-level, shared across all timeline snapshots)
+   * 
+   * Note: Permanent changes are stored at the scenario level (not snapshot level).
+   * - In memory: temporarily stored in currentScenario.permanentChanges
+   * - On checkpoint: saved to the scenarios table and shared by all timeline snapshots
+   * - On load: all snapshots of the same scenario will receive the same permanent changes
    */
   addPermanentScenarioChange(changeDescription: string): void {
     if (!this.gameState.currentScenario || !changeDescription) return;
@@ -590,7 +592,8 @@ export class GameStateManager {
       this.gameState.currentScenario.permanentChanges = [];
     }
     
-    // Add the permanent change to current snapshot (which references the scenario-level changes)
+    // Add the permanent change to current snapshot's array (which represents scenario-level changes)
+    // These changes will be persisted to the scenario level when checkpoint is created
     this.gameState.currentScenario.permanentChanges.push(changeDescription);
   }
 

@@ -24,6 +24,9 @@ TIME CONSUMPTION ANALYSIS:
   "scenarioUpdate": {
     "description": "The library now shows signs of thorough searching, with books displaced and the hidden compartment revealed",
     "events": ["Hidden compartment discovered behind the bookshelf"],
+    "permanentChanges": [
+      "Hidden compartment in the library bookshelf is now revealed and accessible"
+    ],
     "clues": [
       {
         "id": "ancient-tome",
@@ -120,6 +123,9 @@ TIME CONSUMPTION ANALYSIS:
         "description": "Signs of struggle",
         "mechanicalEffect": "Investigation checks in this area get +10% bonus"
       }
+    ],
+    "permanentChanges": [
+      "Library now bears visible signs of combat: overturned furniture and blood stains"
     ]
   },
   "log": ["Fighting (Brawl) 50% vs roll 32 = success", "Damage 1d3+1 = 4", "Cultist HP: -4"]
@@ -195,6 +201,9 @@ TIME CONSUMPTION ANALYSIS:
         "description": "Through the broken doorway",
         "condition": "open"
       }
+    ],
+    "permanentChanges": [
+      "Wooden door destroyed; passage to the next room is now open"
     ]
   },
   "log": ["STR check 60% vs roll 45 = success", "Door destroyed with brute force"]

@@ -121,6 +121,38 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_events_character ON game_events(character_id);
         `);
 
+    // Memory logs table - chronological play history for characters and keeper
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS memory_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                speaker_type TEXT NOT NULL, -- 'character' | 'keeper'
+                character_id TEXT, -- optional link to characters table when speaker is a PC/NPC
+                character_name TEXT NOT NULL,
+                content TEXT NOT NULL,
+                action_type TEXT, -- e.g. declared move/skill use
+                action_result TEXT, -- outcome or resolution narrative (JSON/text)
+                timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+                FOREIGN KEY (character_id) REFERENCES characters(character_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_memory_logs_session ON memory_logs(session_id);
+            CREATE INDEX IF NOT EXISTS idx_memory_logs_speaker ON memory_logs(speaker_type);
+            CREATE INDEX IF NOT EXISTS idx_memory_logs_time ON memory_logs(timestamp);
+        `);
+    // Backfill action columns if memory_logs already existed
+    try {
+      this.db.exec("ALTER TABLE memory_logs ADD COLUMN action_type TEXT;");
+    } catch {
+      // ignore if column already exists
+    }
+    try {
+      this.db.exec("ALTER TABLE memory_logs ADD COLUMN action_result TEXT;");
+    } catch {
+      // ignore if column already exists
+    }
+
     // Discoveries table
     this.db.exec(`
             CREATE TABLE IF NOT EXISTS discoveries (
@@ -268,11 +300,23 @@ export class CoCDatabase {
                 description TEXT NOT NULL,
                 tags TEXT, -- JSON array
                 connections TEXT, -- JSON array of connections
+                permanent_changes TEXT, -- JSON array of permanent changes (scenario-level, shared by all snapshots)
                 metadata TEXT NOT NULL, -- JSON blob with created_at, updated_at, source, author, gameSystem
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_scenarios_name ON scenarios(name);
         `);
+    
+    // Backfill permanent_changes column if table already existed
+    try {
+      if (!this.hasColumn("scenarios", "permanent_changes")) {
+        this.db.exec(
+          "ALTER TABLE scenarios ADD COLUMN permanent_changes TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
 
     // Scenario snapshots table - for timeline data
     this.db.exec(`
