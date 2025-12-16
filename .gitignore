@@ -39,16 +39,6 @@ logs
 *.db-shm
 *.db-wal
 
-# Exception: allow specific data subdirectories
-!data/scenarios/
-!data/scenarios/Cassandra's_Scenarios/
-!data/scenarios/Cassandra's_Scenarios/**
-!data/npcs/
-!data/npcs/Cassandra's_npc/
-!data/npcs/Cassandra's_npc/**
-!data/background/
-!data/background/**
-
 # Cache directories
 .cache/
 .turbo/
