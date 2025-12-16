@@ -104,6 +104,8 @@ export const enrichMemoryContext = async (
 /**
  * Create a checkpoint: Save current scenario state to database when scenario switches.
  * This includes: scenario snapshot, all NPCs, player character, and permanent changes.
+ * 
+ * New: Also saves a unified checkpoint to game_checkpoints table for easy save/load.
  */
 export const createScenarioCheckpoint = async (
   gameState: GameState,
@@ -115,6 +117,21 @@ export const createScenarioCheckpoint = async (
   const currentScenario = gameState.currentScenario;
 
   db.transaction(() => {
+    // UNIFIED CHECKPOINT: Save complete game state to single checkpoint table
+    const checkpointId = `checkpoint-${currentScenario.id}-${Date.now()}`;
+    const checkpointName = `${currentScenario.name} - Day ${currentScenario.timePoint.gameDay} ${currentScenario.timePoint.timeOfDay}`;
+    const description = `Auto-saved at ${currentScenario.location}`;
+    
+    db.saveCheckpoint(
+      checkpointId,
+      gameState.sessionId,
+      checkpointName,
+      gameState,
+      'scene_transition',
+      description
+    );
+
+    // LEGACY: Still save to normalized tables for backwards compatibility and queries
     // 1. Save/Update permanent changes at scenario level (shared by all timeline snapshots)
     if (currentScenario.permanentChanges && currentScenario.permanentChanges.length > 0) {
       // Check if scenario exists in scenarios table
@@ -425,4 +442,57 @@ export const updateCurrentScenarioWithCheckpoint = async (
   
   // 设置场景转换标志，让 Keeper Agent 知道发生了场景变化
   manager.setTransitionFlag(true);
+};
+
+/**
+ * Manually save a checkpoint with custom name
+ */
+export const saveManualCheckpoint = (
+  gameState: GameState,
+  db: CoCDatabase,
+  checkpointName: string,
+  description?: string
+): string => {
+  const checkpointId = `manual-${Date.now()}`;
+  
+  db.saveCheckpoint(
+    checkpointId,
+    gameState.sessionId,
+    checkpointName,
+    gameState,
+    'manual',
+    description
+  );
+
+  console.log(`✓ Manual checkpoint saved: "${checkpointName}" (ID: ${checkpointId})`);
+  return checkpointId;
+};
+
+/**
+ * Load a checkpoint and restore game state
+ */
+export const loadCheckpoint = (
+  checkpointId: string,
+  db: CoCDatabase
+): GameState | null => {
+  const checkpoint = db.loadCheckpoint(checkpointId);
+  
+  if (!checkpoint) {
+    console.error(`Checkpoint not found: ${checkpointId}`);
+    return null;
+  }
+
+  console.log(`✓ Loaded checkpoint: "${checkpoint.checkpointName}" from ${checkpoint.metadata.createdAt}`);
+  return checkpoint.gameState as GameState;
+};
+
+/**
+ * List all available checkpoints for current session
+ */
+export const listAvailableCheckpoints = (
+  sessionId: string,
+  db: CoCDatabase,
+  limit = 20
+): any[] => {
+  return db.listCheckpoints(sessionId, limit);
 };

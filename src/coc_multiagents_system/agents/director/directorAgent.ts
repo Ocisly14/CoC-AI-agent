@@ -682,16 +682,17 @@ export class DirectorAgent {
         };
       }
 
-      // 更新场景（这会自动将旧场景加入 visited）
-      gameStateManager.updateCurrentScenario({
-        snapshot: targetSnapshot,
-        scenarioName: targetScenario.name
-      });
+      // 更新场景（带 checkpoint 保存）
+      await updateCurrentScenarioWithCheckpoint(
+        gameStateManager,
+        {
+          snapshot: targetSnapshot,
+          scenarioName: targetScenario.name
+        },
+        this.db
+      );
 
-      // 设置场景转换标志，让 Keeper Agent 知道发生了场景变化
-      gameStateManager.setTransitionFlag(true);
-
-      console.log(`\n✓ Scene Transition Executed`);
+      console.log(`\n✓ Scene Transition Executed (checkpoint saved)`);
       console.log(`  From: ${gameStateManager.getGameState().visitedScenarios[0]?.name || "Unknown"}`);
       console.log(`  To: ${targetSnapshot.name}`);
       console.log(`  Narrative: ${decision.suggestedTransitionNarrative}`);

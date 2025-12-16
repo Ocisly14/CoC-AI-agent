@@ -12,6 +12,7 @@ import { RAGEngine } from "../src/rag/engine.js";
 import { buildGraph, type GraphState } from "../src/graph.js";
 import { initialGameState, type GameState } from "../src/state.js";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
+import { TurnManager } from "../src/coc_multiagents_system/agents/memory/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,7 @@ const __dirname = path.dirname(__filename);
 let db: CoCDatabase | null = null;
 let graph: any = null;
 let ragEngine: any = null;
+let turnManager: TurnManager | null = null;
 
 // **PERSISTENT GAME STATE** - will be initialized when user starts the game
 let persistentGameState: GameState | null = null;
@@ -109,7 +111,10 @@ app.post("/api/game/start", async (req, res) => {
       await ragEngine.ingestFromDirectory();
 
       // Build the multi-agent graph
-      graph = buildGraph(db, ragEngine);
+      graph = buildGraph(db, scenarioLoader, ragEngine);
+      
+      // Initialize TurnManager
+      turnManager = new TurnManager(db);
 
       console.log(`[${new Date().toISOString()}] Multi-agent system loaded successfully`);
     }
@@ -442,6 +447,159 @@ app.get("/api/characters", (req, res) => {
     res.status(500).json({ error: "Failed to fetch characters" });
   }
 });
+
+// ==================== TURN API ENDPOINTS ====================
+
+// POST /api/turns - Create a new turn and start processing
+app.post("/api/turns", async (req, res) => {
+  try {
+    if (!persistentGameState || !turnManager || !graph) {
+      return res.status(400).json({ 
+        error: "Game not started. Please start the game first by calling /api/game/start" 
+      });
+    }
+
+    const { message } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    // Create turn record in database
+    const turnId = turnManager.createTurnFromGameState(
+      persistentGameState.sessionId,
+      message,
+      persistentGameState
+    );
+
+    console.log(`[${new Date().toISOString()}] Turn created: ${turnId} for message: ${message}`);
+
+    // Start async processing (don't wait for it)
+    processGameTurn(turnId, message, persistentGameState)
+      .catch((error) => {
+        console.error(`Error processing turn ${turnId}:`, error);
+        if (turnManager) {
+          turnManager.markError(turnId, error);
+        }
+      });
+
+    // Immediately return the turnId
+    res.json({
+      success: true,
+      turnId: turnId,
+      status: 'processing',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error creating turn:", error);
+    res.status(500).json({ error: "Failed to create turn: " + (error as Error).message });
+  }
+});
+
+// GET /api/turns/:turnId - Get turn status and result
+app.get("/api/turns/:turnId", (req, res) => {
+  try {
+    if (!turnManager) {
+      return res.status(400).json({ error: "Game not initialized" });
+    }
+
+    const { turnId } = req.params;
+    const turn = turnManager.getTurn(turnId);
+
+    if (!turn) {
+      return res.status(404).json({ error: "Turn not found" });
+    }
+
+    res.json({
+      success: true,
+      turn: {
+        turnId: turn.turnId,
+        turnNumber: turn.turnNumber,
+        characterInput: turn.characterInput,
+        keeperNarrative: turn.keeperNarrative,
+        status: turn.status,
+        errorMessage: turn.errorMessage,
+        startedAt: turn.startedAt,
+        completedAt: turn.completedAt,
+        sceneId: turn.sceneId,
+        sceneName: turn.sceneName,
+        location: turn.location,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching turn:", error);
+    res.status(500).json({ error: "Failed to fetch turn" });
+  }
+});
+
+// GET /api/sessions/:sessionId/conversation - Get conversation history
+app.get("/api/sessions/:sessionId/conversation", (req, res) => {
+  try {
+    if (!turnManager) {
+      return res.status(400).json({ error: "Game not initialized" });
+    }
+
+    const { sessionId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const conversation = turnManager.getConversation(sessionId, limit);
+
+    res.json({
+      success: true,
+      conversation: conversation,
+    });
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    res.status(500).json({ error: "Failed to fetch conversation" });
+  }
+});
+
+// GET /api/sessions/:sessionId/turns - Get turn history
+app.get("/api/sessions/:sessionId/turns", (req, res) => {
+  try {
+    if (!turnManager) {
+      return res.status(400).json({ error: "Game not initialized" });
+    }
+
+    const { sessionId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const turns = turnManager.getHistory(sessionId, limit);
+
+    res.json({
+      success: true,
+      turns: turns,
+    });
+  } catch (error) {
+    console.error("Error fetching turns:", error);
+    res.status(500).json({ error: "Failed to fetch turns" });
+  }
+});
+
+// Helper function to process a game turn asynchronously
+async function processGameTurn(turnId: string, userInput: string, gameState: GameState) {
+  try {
+    console.log(`[${new Date().toISOString()}] Processing turn ${turnId}...`);
+
+    // Create initial messages for the graph
+    const initialMessages = [new HumanMessage(userInput)];
+
+    // Invoke the graph with turnId in state
+    const result = (await graph.invoke({
+      messages: initialMessages,
+      gameState: gameState,
+      turnId: turnId,  // Pass turnId to graph
+    })) as unknown as GraphState;
+
+    // Update the persistent state
+    persistentGameState = result.gameState as GameState;
+
+    console.log(`[${new Date().toISOString()}] Turn ${turnId} completed successfully`);
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Turn ${turnId} failed:`, error);
+    throw error;
+  }
+}
 
 // API endpoint to get message history (stub for now)
 app.get("/api/messages", (req, res) => {

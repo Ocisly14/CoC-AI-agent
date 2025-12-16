@@ -97,7 +97,7 @@ const printTranscript = (messages: AIMessage[]) => {
 
 const main = async () => {
   const userPrompt = parseArgs(process.argv);
-  const app = buildGraph(db, ragEngine);
+  const app = buildGraph(db, scenarioLoader, ragEngine);
 
   const initialMessages: Messages = [{ type: "human", content: userPrompt }];
 

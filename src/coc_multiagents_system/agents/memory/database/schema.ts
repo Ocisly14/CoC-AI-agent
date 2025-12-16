@@ -90,15 +90,44 @@ export class CoCDatabase {
             );
         `);
 
-    // Sessions table
+
+    // Game Turns table - records each complete game interaction round
     this.db.exec(`
-            CREATE TABLE IF NOT EXISTS sessions (
-                session_id TEXT PRIMARY KEY,
-                start_time DATETIME NOT NULL,
-                end_time DATETIME,
-                notes TEXT,
+            CREATE TABLE IF NOT EXISTS game_turns (
+                turn_id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                turn_number INTEGER NOT NULL,
+                
+                -- Input from character
+                character_input TEXT NOT NULL,
+                character_id TEXT,
+                character_name TEXT,
+                
+                -- Processing results from agents
+                action_analysis TEXT,        -- Orchestrator analysis (JSON)
+                action_results TEXT,         -- Action Agent results (JSON array)
+                director_decision TEXT,      -- Director decision (JSON)
+                
+                -- Output from Keeper
+                keeper_narrative TEXT,
+                clue_revelations TEXT,       -- Revealed clues (JSON)
+                
+                -- Scene context
+                scene_id TEXT,
+                scene_name TEXT,
+                location TEXT,
+                
+                -- Status and timing
+                status TEXT NOT NULL DEFAULT 'processing', -- 'processing' | 'completed' | 'error'
+                error_message TEXT,
+                started_at DATETIME NOT NULL,
+                completed_at DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE INDEX IF NOT EXISTS idx_turns_session ON game_turns(session_id);
+            CREATE INDEX IF NOT EXISTS idx_turns_status ON game_turns(status);
+            CREATE INDEX IF NOT EXISTS idx_turns_number ON game_turns(session_id, turn_number);
+            CREATE INDEX IF NOT EXISTS idx_turns_started ON game_turns(started_at);
         `);
 
     // Game events table
@@ -112,8 +141,7 @@ export class CoCDatabase {
                 character_id TEXT,
                 location TEXT,
                 tags TEXT, -- JSON array
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_events_session ON game_events(session_id);
             CREATE INDEX IF NOT EXISTS idx_events_type ON game_events(event_type);
@@ -121,37 +149,7 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_events_character ON game_events(character_id);
         `);
 
-    // Memory logs table - chronological play history for characters and keeper
-    this.db.exec(`
-            CREATE TABLE IF NOT EXISTS memory_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT NOT NULL,
-                speaker_type TEXT NOT NULL, -- 'character' | 'keeper'
-                character_id TEXT, -- optional link to characters table when speaker is a PC/NPC
-                character_name TEXT NOT NULL,
-                content TEXT NOT NULL,
-                action_type TEXT, -- e.g. declared move/skill use
-                action_result TEXT, -- outcome or resolution narrative (JSON/text)
-                timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES sessions(session_id),
-                FOREIGN KEY (character_id) REFERENCES characters(character_id)
-            );
-            CREATE INDEX IF NOT EXISTS idx_memory_logs_session ON memory_logs(session_id);
-            CREATE INDEX IF NOT EXISTS idx_memory_logs_speaker ON memory_logs(speaker_type);
-            CREATE INDEX IF NOT EXISTS idx_memory_logs_time ON memory_logs(timestamp);
-        `);
-    // Backfill action columns if memory_logs already existed
-    try {
-      this.db.exec("ALTER TABLE memory_logs ADD COLUMN action_type TEXT;");
-    } catch {
-      // ignore if column already exists
-    }
-    try {
-      this.db.exec("ALTER TABLE memory_logs ADD COLUMN action_result TEXT;");
-    } catch {
-      // ignore if column already exists
-    }
+
 
     // Discoveries table
     this.db.exec(`
@@ -163,8 +161,7 @@ export class CoCDatabase {
                 method TEXT NOT NULL,
                 timestamp DATETIME NOT NULL,
                 description TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_discoveries_session ON discoveries(session_id);
             CREATE INDEX IF NOT EXISTS idx_discoveries_clue ON discoveries(clue_id);
@@ -181,7 +178,6 @@ export class CoCDatabase {
                 last_updated DATETIME NOT NULL,
                 notes TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES sessions(session_id),
                 UNIQUE(character_id, npc_id, session_id)
             );
             CREATE INDEX IF NOT EXISTS idx_relationships_character ON relationships(character_id);
@@ -495,6 +491,31 @@ export class CoCDatabase {
                 VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.story_hook, new.module_limitations);
             END;
         `);
+
+    // Game Checkpoints table - unified checkpoint storage for save/load functionality
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS game_checkpoints (
+                checkpoint_id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                checkpoint_name TEXT NOT NULL,
+                checkpoint_type TEXT NOT NULL DEFAULT 'auto', -- 'auto' | 'manual' | 'scene_transition'
+                description TEXT,
+                game_state TEXT NOT NULL, -- Complete GameState as JSON
+                screenshot_data TEXT, -- Optional: base64 encoded screenshot or scene description
+                game_day INTEGER,
+                game_time TEXT, -- Time of day in game
+                current_scene_name TEXT,
+                current_location TEXT,
+                player_hp INTEGER,
+                player_sanity INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_session ON game_checkpoints(session_id);
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_type ON game_checkpoints(checkpoint_type);
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON game_checkpoints(created_at);
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_game_day ON game_checkpoints(game_day);
+        `);
   }
 
   getDatabase(): DBInstance {
@@ -509,5 +530,328 @@ export class CoCDatabase {
   transaction<T>(fn: () => T): T {
     const txn = this.db.transaction(fn);
     return txn();
+  }
+
+  /**
+   * Save a game checkpoint (complete game state snapshot)
+   */
+  saveCheckpoint(
+    checkpointId: string,
+    sessionId: string,
+    checkpointName: string,
+    gameState: any, // GameState object
+    checkpointType: 'auto' | 'manual' | 'scene_transition' = 'auto',
+    description?: string
+  ): void {
+    const database = this.db;
+    
+    // Extract metadata for quick queries
+    const gameDay = gameState.currentScenario?.timePoint?.gameDay || null;
+    const gameTime = gameState.currentScenario?.timePoint?.timeOfDay || gameState.timeOfDay || null;
+    const currentSceneName = gameState.currentScenario?.name || null;
+    const currentLocation = gameState.currentScenario?.location || null;
+    const playerHp = gameState.playerCharacter?.status?.hp || null;
+    const playerSanity = gameState.playerCharacter?.status?.sanity || null;
+
+    const stmt = database.prepare(`
+      INSERT INTO game_checkpoints (
+        checkpoint_id, session_id, checkpoint_name, checkpoint_type, description,
+        game_state, game_day, game_time, current_scene_name, current_location,
+        player_hp, player_sanity
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      checkpointId,
+      sessionId,
+      checkpointName,
+      checkpointType,
+      description || null,
+      JSON.stringify(gameState),
+      gameDay,
+      gameTime,
+      currentSceneName,
+      currentLocation,
+      playerHp,
+      playerSanity
+    );
+  }
+
+  /**
+   * Load a game checkpoint by ID
+   */
+  loadCheckpoint(checkpointId: string): any | null {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT * FROM game_checkpoints WHERE checkpoint_id = ?
+    `);
+    
+    const row = stmt.get(checkpointId) as any;
+    if (!row) return null;
+
+    return {
+      checkpointId: row.checkpoint_id,
+      sessionId: row.session_id,
+      checkpointName: row.checkpoint_name,
+      checkpointType: row.checkpoint_type,
+      description: row.description,
+      gameState: JSON.parse(row.game_state),
+      metadata: {
+        gameDay: row.game_day,
+        gameTime: row.game_time,
+        currentSceneName: row.current_scene_name,
+        currentLocation: row.current_location,
+        playerHp: row.player_hp,
+        playerSanity: row.player_sanity,
+        createdAt: row.created_at,
+      }
+    };
+  }
+
+  /**
+   * List all checkpoints for a session
+   */
+  listCheckpoints(sessionId: string, limit = 50): any[] {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT 
+        checkpoint_id, checkpoint_name, checkpoint_type, description,
+        game_day, game_time, current_scene_name, current_location,
+        player_hp, player_sanity, created_at
+      FROM game_checkpoints 
+      WHERE session_id = ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    
+    return stmt.all(sessionId, limit) as any[];
+  }
+
+  /**
+   * Delete a checkpoint
+   */
+  deleteCheckpoint(checkpointId: string): void {
+    const database = this.db;
+    database.prepare("DELETE FROM game_checkpoints WHERE checkpoint_id = ?").run(checkpointId);
+  }
+
+  /**
+   * Delete old auto-save checkpoints (keep only the most recent N)
+   */
+  cleanupAutoCheckpoints(sessionId: string, keepCount = 10): void {
+    const database = this.db;
+    database.prepare(`
+      DELETE FROM game_checkpoints 
+      WHERE session_id = ? 
+        AND checkpoint_type = 'auto'
+        AND checkpoint_id NOT IN (
+          SELECT checkpoint_id 
+          FROM game_checkpoints 
+          WHERE session_id = ? AND checkpoint_type = 'auto'
+          ORDER BY created_at DESC 
+          LIMIT ?
+        )
+    `).run(sessionId, sessionId, keepCount);
+  }
+
+  /**
+   * Create a new game turn (when character sends input)
+   */
+  createTurn(
+    turnId: string,
+    sessionId: string,
+    turnNumber: number,
+    characterInput: string,
+    characterId?: string,
+    characterName?: string,
+    sceneId?: string,
+    sceneName?: string,
+    location?: string
+  ): void {
+    const database = this.db;
+    const stmt = database.prepare(`
+      INSERT INTO game_turns (
+        turn_id, session_id, turn_number, character_input, character_id, character_name,
+        scene_id, scene_name, location, status, started_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', CURRENT_TIMESTAMP)
+    `);
+    
+    stmt.run(
+      turnId,
+      sessionId,
+      turnNumber,
+      characterInput,
+      characterId || null,
+      characterName || null,
+      sceneId || null,
+      sceneName || null,
+      location || null
+    );
+  }
+
+  /**
+   * Update turn with processing results
+   */
+  updateTurnProcessing(
+    turnId: string,
+    actionAnalysis?: any,
+    actionResults?: any[],
+    directorDecision?: any
+  ): void {
+    const database = this.db;
+    const stmt = database.prepare(`
+      UPDATE game_turns 
+      SET action_analysis = ?,
+          action_results = ?,
+          director_decision = ?
+      WHERE turn_id = ?
+    `);
+    
+    stmt.run(
+      actionAnalysis ? JSON.stringify(actionAnalysis) : null,
+      actionResults ? JSON.stringify(actionResults) : null,
+      directorDecision ? JSON.stringify(directorDecision) : null,
+      turnId
+    );
+  }
+
+  /**
+   * Complete a turn with Keeper's narrative
+   */
+  completeTurn(
+    turnId: string,
+    keeperNarrative: string,
+    clueRevelations?: any
+  ): void {
+    const database = this.db;
+    const stmt = database.prepare(`
+      UPDATE game_turns 
+      SET keeper_narrative = ?,
+          clue_revelations = ?,
+          status = 'completed',
+          completed_at = CURRENT_TIMESTAMP
+      WHERE turn_id = ?
+    `);
+    
+    stmt.run(
+      keeperNarrative,
+      clueRevelations ? JSON.stringify(clueRevelations) : null,
+      turnId
+    );
+  }
+
+  /**
+   * Mark a turn as error
+   */
+  markTurnError(turnId: string, errorMessage: string): void {
+    const database = this.db;
+    database.prepare(`
+      UPDATE game_turns 
+      SET status = 'error',
+          error_message = ?,
+          completed_at = CURRENT_TIMESTAMP
+      WHERE turn_id = ?
+    `).run(errorMessage, turnId);
+  }
+
+  /**
+   * Get a turn by ID
+   */
+  getTurn(turnId: string): any | null {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT * FROM game_turns WHERE turn_id = ?
+    `);
+    
+    const row = stmt.get(turnId) as any;
+    if (!row) return null;
+
+    return {
+      ...row,
+      actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
+      actionResults: row.action_results ? JSON.parse(row.action_results) : null,
+      directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
+      clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+    };
+  }
+
+  /**
+   * Get turn history for a session
+   */
+  getTurnHistory(sessionId: string, limit = 50): any[] {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT * FROM game_turns 
+      WHERE session_id = ?
+      ORDER BY turn_number DESC
+      LIMIT ?
+    `);
+    
+    const rows = stmt.all(sessionId, limit) as any[];
+    return rows.map(row => ({
+      ...row,
+      actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
+      actionResults: row.action_results ? JSON.parse(row.action_results) : null,
+      directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
+      clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+    }));
+  }
+
+  /**
+   * Get the latest turn for a session
+   */
+  getLatestTurn(sessionId: string): any | null {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT * FROM game_turns 
+      WHERE session_id = ?
+      ORDER BY turn_number DESC
+      LIMIT 1
+    `);
+    
+    const row = stmt.get(sessionId) as any;
+    if (!row) return null;
+
+    return {
+      ...row,
+      actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
+      actionResults: row.action_results ? JSON.parse(row.action_results) : null,
+      directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
+      clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+    };
+  }
+
+  /**
+   * Get next turn number for a session
+   */
+  getNextTurnNumber(sessionId: string): number {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT MAX(turn_number) as max_turn FROM game_turns WHERE session_id = ?
+    `);
+    
+    const row = stmt.get(sessionId) as any;
+    return (row?.max_turn || 0) + 1;
+  }
+
+  /**
+   * Get pending (processing) turns for a session
+   */
+  getPendingTurns(sessionId: string): any[] {
+    const database = this.db;
+    const stmt = database.prepare(`
+      SELECT * FROM game_turns 
+      WHERE session_id = ? AND status = 'processing'
+      ORDER BY turn_number ASC
+    `);
+    
+    const rows = stmt.all(sessionId) as any[];
+    return rows.map(row => ({
+      ...row,
+      actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
+      actionResults: row.action_results ? JSON.parse(row.action_results) : null,
+      directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
+      clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+    }));
   }
 }

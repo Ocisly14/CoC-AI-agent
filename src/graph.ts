@@ -17,10 +17,12 @@ import {
 } from "./state.js";
 import { contentToString, latestHumanMessage } from "./utils.js";
 import { enrichMemoryContext } from "./coc_multiagents_system/agents/memory/memoryAgent.js";
+import { TurnManager } from "./coc_multiagents_system/agents/memory/index.js";
 
 export interface GraphState {
   messages: BaseMessage[];
   gameState: GameState;
+  turnId?: string;  // Optional: track the current turn being processed
 }
 
 export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?: RAGEngine) => {
@@ -28,11 +30,13 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
   const actionAgent = new ActionAgent();
   const keeperAgent = new KeeperAgent();
   const directorAgent = new DirectorAgent(scenarioLoader, db);
+  const turnManager = new TurnManager(db);
 
   const graph = new StateGraph<GraphState>({
     channels: {
       messages: { value: (x) => x as BaseMessage[] },
       gameState: { value: (x) => x as GameState },
+      turnId: { value: (x) => x as string | undefined },
     },
   });
 
@@ -41,6 +45,18 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const userInput = latestHumanMessage(state.messages);
     const result = await orchestrator.processInput(userInput, gsm);
+    
+    // Update turn with action analysis if turnId exists
+    if (state.turnId) {
+      try {
+        turnManager.updateProcessing(state.turnId, {
+          actionAnalysis: gsm.getGameState().temporaryInfo.currentActionAnalysis
+        });
+      } catch (error) {
+        console.error("Failed to update turn with action analysis:", error);
+      }
+    }
+    
     return { ...state, gameState: gsm.getGameState() as GameState };
   });
 
@@ -60,6 +76,18 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     const runtime = {}; // ActionAgent expects runtime but only passes through generateText; keep empty placeholder
     const userInput = latestHumanMessage(state.messages);
     const updated = await actionAgent.processAction(runtime, gameState, userInput);
+    
+    // Update turn with action results if turnId exists
+    if (state.turnId) {
+      try {
+        turnManager.updateProcessing(state.turnId, {
+          actionResults: (updated as GameState).temporaryInfo.actionResults
+        });
+      } catch (error) {
+        console.error("Failed to update turn with action results:", error);
+      }
+    }
+    
     return { ...state, gameState: updated as GameState };
   });
 
@@ -80,6 +108,17 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     // Clear the request
     gsm.clearSceneChangeRequest();
     
+    // Update turn with director decision if turnId exists
+    if (state.turnId) {
+      try {
+        turnManager.updateProcessing(state.turnId, {
+          directorDecision: gsm.getGameState().temporaryInfo.directorDecision
+        });
+      } catch (error) {
+        console.error("Failed to update turn with director decision:", error);
+      }
+    }
+    
     return { ...state, gameState: gsm.getGameState() as GameState };
   });
 
@@ -88,6 +127,20 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const userInput = latestHumanMessage(state.messages);
     const result = await keeperAgent.generateNarrative(userInput, gsm);
+    
+    // Complete turn with keeper narrative if turnId exists
+    if (state.turnId) {
+      try {
+        turnManager.completeTurn(state.turnId, {
+          keeperNarrative: result.narrative,
+          clueRevelations: result.clueRevelations
+        });
+      } catch (error) {
+        console.error("Failed to complete turn:", error);
+        turnManager.markError(state.turnId, error as Error);
+      }
+    }
+    
     return {
       ...state,
       gameState: result.updatedGameState,
