@@ -1,0 +1,63 @@
+[
+    {
+      "name": "Haran Greenwood",
+      "occupation": "Train Station Attendant",
+      "age": 65,
+      "appearance": "An elderly man with a weathered face, dressed in old-fashioned work clothes typical of a small-town train station employee. He carries himself with the quiet routine of someone who has spent decades in the same place.",
+      "personality": "Taciturn, routine-oriented, and detached. Haran rarely involves himself in other people's affairs and shows little curiosity about the strange events around Cassandra.",
+      "background": "Haran has worked at the Cassandra train station for over forty years. He has no children, and his wife passed away many years ago. The train station was originally built underground and later relocated above ground; Haran has been there since those early days. He is well-known to locals like Bruno but remains largely overlooked.",
+      "goals": [
+        "Finish his remaining years quietly at the train station",
+        "Avoid involvement in town affairs or dangerous secrets"
+      ],
+      "secrets": [],
+      "attributes": {
+        "STR": 40,
+        "CON": 55,
+        "DEX": 35,
+        "APP": 30,
+        "POW": 50,
+        "SIZ": 50,
+        "INT": 55,
+        "EDU": 60
+      },
+      "status": {
+        "hp": 10,
+        "maxHp": 10,
+        "sanity": 50,
+        "maxSanity": 50,
+        "luck": 45,
+        "mp": 10,
+        "conditions": []
+      },
+      "skills": {
+        "Spot Hidden": 40,
+        "Listen": 45,
+        "Mechanical Repair": 30,
+        "History (Local)": 50
+      },
+      "inventory": [
+        "Station keys",
+        "Old cigar",
+        "Railway schedule ledger"
+      ],
+      "clues": [
+        {
+          "clueText": "Haran has worked at the Cassandra train station for over forty years and knows its history, including its original underground construction.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Cassandra Train Station"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Bruno",
+          "relationshipType": "friend",
+          "attitude": 30,
+          "description": "A familiar local policeman who occasionally talks with Haran at the station.",
+          "history": "They have known each other for many years through routine encounters at the train station."
+        }
+      ],
+      "notes": "Haran is a background NPC useful for atmosphere and local history rather than direct plot progression."
+    }
+  ]

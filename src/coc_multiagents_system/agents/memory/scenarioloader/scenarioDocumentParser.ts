@@ -247,7 +247,39 @@ Do not include any additional text, explanations, or markdown formatting.`;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const response = await this.llm.invoke(prompt);
-        const content = response.content as string;
+        const content =
+          typeof response.content === "string"
+            ? response.content
+            : JSON.stringify(response.content, null, 2);
+
+        // Save raw LLM response to JSON file for debugging/auditing
+        try {
+          const rawDir = path.join(
+            process.cwd(),
+            "data",
+            "scenarios",
+            "raw_responses"
+          );
+          fs.mkdirSync(rawDir, { recursive: true });
+
+          const safeFileName = fileName.replace(/[^\w.-]+/g, "_");
+          const rawPath = path.join(
+            rawDir,
+            `${safeFileName}-${Date.now()}.json`
+          );
+
+          const rawPayload = {
+            fileName,
+            attempt,
+            timestamp: new Date().toISOString(),
+            promptLength: prompt.length,
+            content,
+          };
+
+          fs.writeFileSync(rawPath, JSON.stringify(rawPayload, null, 2), "utf8");
+        } catch (saveErr) {
+          console.warn("⚠️ Failed to save raw LLM response:", saveErr);
+        }
 
         // Extract JSON from response (support both array and single object wrapped in code blocks)
         const jsonText =
@@ -364,7 +396,9 @@ Do not include any additional text, explanations, or markdown formatting.`;
   }
 
   /**
-   * Merge scenario results from multiple chunks
+   * LEGACY: Merge scenario results from multiple chunks
+   * Note: This is now only used for extremely large documents (>100k chars)
+   * Regular documents are processed in one shot with Large model
    */
   private mergeScenarioResults(
     base: ParsedScenarioData,

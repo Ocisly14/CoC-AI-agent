@@ -12,6 +12,7 @@ export interface ParsedModuleData {
   keeperGuidance?: string;
   storyHook?: string;
   moduleLimitations?: string;
+  initialScenario?: string; // Name or ID of the starting scenario
   tags?: string[];
   source?: string;
 }
@@ -26,6 +27,7 @@ export interface ModuleBackground {
   keeperGuidance?: string;
   storyHook?: string;
   moduleLimitations?: string;
+  initialScenario?: string; // Name or ID of the starting scenario
   tags: string[];
   source?: string;
   createdAt: string;

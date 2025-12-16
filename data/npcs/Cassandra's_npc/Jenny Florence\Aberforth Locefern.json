@@ -1,0 +1,81 @@
+[
+    {
+      "name": "Jenny Florence (alias: Aberforth Locefern)",
+      "occupation": "Hacker",
+      "age": 24,
+      "appearance": "A young Black woman with a sexy, charming figure and attractive facial features; carries herself with confidence.",
+      "personality": "Highly intelligent, confident to the point of arrogance, cautious, independent, and driven by a strong personal moral code.",
+      "background": "Jenny Florence was a gifted hacker who grew up in a poor Black family. She first encountered computers at school and quickly became fascinated with programming. Despite excellent grades, she dropped out of high school after her mother fell seriously ill, lost her job, and died, forcing Jenny to support her family. She worked near MIT, learning whenever she could, and later forged a new identity to start over in California. Under the alias Aberforth Locefern, she became involved in underground hacking activities and was ultimately murdered in the Reindeer Bar incident.",
+      "goals": [
+        "Uncover and preserve the truth behind the Reindeer Bar murder case",
+        "Gather evidence on Martin Qin (Ghost Hand) to assist Bruno in solving the cold case"
+      ],
+      "secrets": [
+        "Her real name is Jenny Florence; Aberforth Locefern is a fabricated identity",
+        "She knew the identity of the murderer in a one-year-old homicide case and secretly planned to reveal the truth to the police"
+      ],
+      "attributes": {
+        "STR": 40,
+        "CON": 50,
+        "DEX": 60,
+        "APP": 65,
+        "POW": 55,
+        "SIZ": 50,
+        "INT": 80,
+        "EDU": 70
+      },
+      "status": {
+        "hp": 10,
+        "maxHp": 10,
+        "sanity": 55,
+        "maxSanity": 99,
+        "luck": 65,
+        "mp": 11,
+        "conditions": []
+      },
+      "skills": {
+        "Computer Use": 90,
+        "Electronics": 80,
+        "Library Use": 60,
+        "Spot Hidden": 55,
+        "Psychology": 45,
+        "Stealth": 50
+      },
+      "inventory": [
+        "Smartphone with encrypted contacts",
+        "Wallet containing a coded password",
+        "Laptop with access to the Qianwei System"
+      ],
+      "clues": [
+        {
+          "clueText": "She knew that Martin Qin, known as Ghost Hand, was the murderer in a homicide that occurred one year earlier.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Martin Qin", "Reindeer Bar"]
+        },
+        {
+          "clueText": "Her alias and all associated documents were completely fabricated and do not correspond to any real records.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Aberforth Locefern"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Bruno (Police Officer)",
+          "relationshipType": "ally",
+          "attitude": 60,
+          "description": "She admired Bruno's persistence in investigating the murder of an overlooked victim.",
+          "history": "Moved by Bruno's dedication, she planned to anonymously provide him with crucial evidence during Christmas."
+        },
+        {
+          "targetName": "Martin Qin (Ghost Hand)",
+          "relationshipType": "enemy",
+          "attitude": -80,
+          "description": "A rival hacker and the murderer she secretly investigated.",
+          "history": "They crossed paths during a hacking intrusion, after which Jenny witnessed him committing murder."
+        }
+      ],
+      "notes": "Her hotel records for December 22 were deliberately erased, and her identity as Aberforth Locefern was known only to a select few trusted contacts. She was shot and killed before finalizing her deal involving intercepted pharmaceutical materials."
+    }
+  ]

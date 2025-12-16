@@ -130,6 +130,7 @@ export class MemoryAgent {
       keeperGuidance: row.keeper_guidance || undefined,
       storyHook: row.story_hook || undefined,
       moduleLimitations: row.module_limitations || undefined,
+      initialScenario: row.initial_scenario || undefined,
       tags: row.tags ? JSON.parse(row.tags) : [],
       source: row.source || undefined,
       createdAt: row.created_at,

@@ -1,0 +1,81 @@
+[
+    {
+      "name": "Ben Cleo",
+      "occupation": "Mafia Boss / Underground Power Broker",
+      "age": 38,
+      "appearance": "A composed and intimidating man with a calm posture. Dresses neatly and practically, giving the impression of a businessman rather than a criminal.",
+      "personality": "Cold-headed, pragmatic, disciplined, and authoritarian. Values order, loyalty, and efficiency; rarely acts on impulse.",
+      "background": "Ben Cleo is the current head of the Cleo family, a local mafia power in Cassandra. Raised within the criminal underworld, he inherited leadership after internal family power shifts. Under his control, the Cleo family manages smuggling and underground trade through the train station, operating under the principle of conducting business without interfering in the motives behind transactions. Ben maintains strict discipline among his subordinates and avoids unnecessary cruelty, focusing instead on long-term stability and profit.",
+      "goals": [
+        "Maintain control over the Cleo family's underground operations",
+        "Prevent outside forces from destabilizing his business"
+      ],
+      "secrets": [
+        "Has long-standing knowledge of illicit trades passing through the train station",
+        "Knows more about past family dealings and disappearances than he publicly admits"
+      ],
+      "attributes": {
+        "STR": 65,
+        "CON": 70,
+        "DEX": 55,
+        "APP": 60,
+        "POW": 60,
+        "SIZ": 65,
+        "INT": 70,
+        "EDU": 65
+      },
+      "status": {
+        "hp": 14,
+        "maxHp": 14,
+        "sanity": 60,
+        "maxSanity": 99,
+        "luck": 70,
+        "mp": 12,
+        "conditions": []
+      },
+      "skills": {
+        "Intimidate": 70,
+        "Persuade": 55,
+        "Psychology": 50,
+        "Firearms (Handgun)": 60,
+        "Brawl": 55,
+        "Spot Hidden": 50
+      },
+      "inventory": [
+        "Expensive lighter",
+        "Concealed handgun",
+        "Notebook of coded transaction records"
+      ],
+      "clues": [
+        {
+          "clueText": "The Cleo family uses the train station as a front for smuggling and black-market logistics.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Cassandra Train Station", "Cleo Family"]
+        },
+        {
+          "clueText": "Ben enforces a strict rule: conduct business without asking questions about clients' intentions.",
+          "category": "observation",
+          "difficulty": "regular",
+          "relatedTo": ["Cleo Family"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Harlan Greenwood",
+          "relationshipType": "employee",
+          "attitude": 70,
+          "description": "Trusted subordinate responsible for guarding the train station entrance.",
+          "history": "Harlan helped Ben secure power during earlier transitions within the Cleo family."
+        },
+        {
+          "targetName": "Adolph Carl",
+          "relationshipType": "neutral",
+          "attitude": 10,
+          "description": "Occasional business contact acting as a middleman.",
+          "history": "They have cooperated when interests aligned but maintain distance."
+        }
+      ],
+      "notes": "Ben rarely interacts directly with investigators unless provoked. Any harm done to Harlan will eventually provoke retaliation from Ben."
+    }
+  ]

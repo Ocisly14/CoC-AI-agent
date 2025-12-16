@@ -95,6 +95,7 @@ export class ModuleLoader {
       keeperGuidance: row.keeper_guidance,
       storyHook: row.story_hook,
       moduleLimitations: row.module_limitations,
+      initialScenario: row.initial_scenario,
       tags: JSON.parse(row.tags || '[]'),
       source: row.source,
       createdAt: row.created_at,
@@ -164,6 +165,7 @@ export class ModuleLoader {
       keeperGuidance: parsed.keeperGuidance,
       storyHook: parsed.storyHook,
       moduleLimitations: parsed.moduleLimitations,
+      initialScenario: parsed.initialScenario,
       tags: parsed.tags || [],
       source: parsed.source,
       createdAt: new Date().toISOString(),
@@ -180,8 +182,8 @@ export class ModuleLoader {
     const stmt = database.prepare(`
             INSERT OR REPLACE INTO module_backgrounds (
                 module_id, title, background, story_outline, module_notes,
-                keeper_guidance, story_hook, module_limitations, tags, source, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                keeper_guidance, story_hook, module_limitations, initial_scenario, tags, source, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
     stmt.run(
@@ -193,6 +195,7 @@ export class ModuleLoader {
       module.keeperGuidance || null,
       module.storyHook || null,
       module.moduleLimitations || null,
+      module.initialScenario || null,
       JSON.stringify(module.tags || []),
       module.source || null,
       module.createdAt

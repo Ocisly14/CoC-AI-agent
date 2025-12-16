@@ -1,0 +1,52 @@
+[
+    {
+      "name": "Lutz & Taran Emilion",
+      "occupation": "Bartenders",
+      "age": 34,
+      "appearance": "Two well-groomed men with a professional, approachable look typical of experienced bartenders; they appear attentive and accustomed to dealing with customers from all walks of life.",
+      "personality": "Sociable, observant, discreet, and emotionally perceptive; they are good listeners who know how to keep conversations flowing without revealing too much themselves.",
+      "background": "Lutz and Taran Emilion work together as bartenders. Through their daily interactions with patrons, they have developed strong people-reading skills and a habit of quietly collecting information. Their work has made them familiar with local rumors, personal dramas, and subtle changes in the town’s atmosphere.",
+      "goals": [
+        "Maintain smooth operation of their bar",
+        "Avoid becoming entangled in dangerous affairs"
+      ],
+      "secrets": [],
+      "attributes": {
+        "STR": 50,
+        "CON": 55,
+        "DEX": 50,
+        "APP": 55,
+        "POW": 50,
+        "SIZ": 60,
+        "INT": 55,
+        "EDU": 65
+      },
+      "status": {
+        "hp": 12,
+        "maxHp": 12,
+        "sanity": 50,
+        "maxSanity": 99,
+        "luck": 50,
+        "mp": 10,
+        "conditions": []
+      },
+      "skills": {
+        "Bartending": 70,
+        "Credit Rating": 30,
+        "Fast Talk": 55,
+        "Psychology": 50,
+        "Charm": 60,
+        "Spot Hidden": 50,
+        "Listen": 50,
+        "Accounting": 40
+      },
+      "inventory": [
+        "Bartending tools",
+        "Cash register",
+        "Bar ledger"
+      ],
+      "clues": [],
+      "relationships": [],
+      "notes": "As bartenders, Lutz and Taran are a reliable source of social information and local gossip, though they rarely volunteer sensitive details without prompting."
+    }
+  ]

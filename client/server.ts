@@ -52,6 +52,72 @@ app.get("/", (_req, res) => {
   }
 });
 
+// API endpoint to import game data (scenarios, NPCs, and modules)
+app.post("/api/game/import-data", async (req, res) => {
+  try {
+    console.log(`[${new Date().toISOString()}] Starting data import...`);
+
+    // Initialize database if not already initialized
+    if (!db) {
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized");
+    }
+
+    // Load scenarios from JSON files
+    const scenarioLoader = new ScenarioLoader(db);
+    const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
+    let scenariosLoaded = 0;
+    if (fs.existsSync(cassandraScenariosDir)) {
+      const scenarios = await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
+      scenariosLoaded = scenarios.length;
+      console.log(`Loaded ${scenariosLoaded} scenarios`);
+    } else {
+      console.log("Cassandra's_Scenarios directory not found, skipping scenario import");
+    }
+
+    // Load NPCs from JSON files
+    const npcLoader = new NPCLoader(db);
+    const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
+    let npcsLoaded = 0;
+    if (fs.existsSync(cassandraNPCsDir)) {
+      const npcs = await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
+      npcsLoaded = npcs.length;
+      console.log(`Loaded ${npcsLoaded} NPCs`);
+    } else {
+      console.log("Cassandra's_npc directory not found, skipping NPC import");
+    }
+
+    // Load modules from documents
+    const moduleLoader = new ModuleLoader(db);
+    const moduleDir = path.join(process.cwd(), "data", "background");
+    let modulesLoaded = 0;
+    if (fs.existsSync(moduleDir)) {
+      const modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
+      modulesLoaded = modules.length;
+      console.log(`Loaded ${modulesLoaded} modules`);
+    } else {
+      console.log("Module directory not found, skipping module import");
+    }
+
+    res.json({
+      success: true,
+      message: `数据导入完成：${scenariosLoaded} 个场景，${npcsLoaded} 个NPC，${modulesLoaded} 个模块`,
+      scenariosLoaded,
+      npcsLoaded,
+      modulesLoaded,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error importing data:", error);
+    res.status(500).json({ error: "Failed to import data: " + (error as Error).message });
+  }
+});
+
 // API endpoint to start/initialize the game
 app.post("/api/game/start", async (req, res) => {
   try {
@@ -70,16 +136,46 @@ app.post("/api/game/start", async (req, res) => {
       console.log("Database initialized");
     }
 
+    // Load scenarios and NPCs if not already loaded (check if data exists first)
+    const scenarioLoader = new ScenarioLoader(db);
+    const existingScenarios = scenarioLoader.getAllScenarios();
+    if (existingScenarios.length === 0) {
+      const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
+      if (fs.existsSync(cassandraScenariosDir)) {
+        await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
+      }
+    }
+
+    const npcLoader = new NPCLoader(db);
+    const existingNPCs = npcLoader.getAllNPCs();
+    if (existingNPCs.length === 0) {
+      const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
+      if (fs.existsSync(cassandraNPCsDir)) {
+        await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
+      }
+    }
+
+    // Load modules if not already loaded
+    const moduleLoader = new ModuleLoader(db);
+    const existingModules = moduleLoader.getAllModules();
+    if (existingModules.length === 0) {
+      const moduleDir = path.join(process.cwd(), "data", "background");
+      if (fs.existsSync(moduleDir)) {
+        await moduleLoader.loadModulesFromDirectory(moduleDir);
+      }
+    }
+
     // Lazy-load multi-agent system components (only when game starts)
     if (!graph || !ragEngine) {
-      console.log(`[${new Date().toISOString()}] Initializing multi-agent system (skipping resource loading)...`);
+      console.log(`[${new Date().toISOString()}] Initializing multi-agent system...`);
 
-      // Skip all resource loading for now
-      // Create minimal scenario loader
-      const scenarioLoader = new ScenarioLoader(db);
-      
-      // Skip RAG engine initialization for now
-      ragEngine = null as any; // Placeholder
+      // Initialize RAG engine
+      const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
+      if (!fs.existsSync(knowledgeDir)) {
+        fs.mkdirSync(knowledgeDir, { recursive: true });
+      }
+      ragEngine = new RAGEngine(db, knowledgeDir);
+      await ragEngine.ingestFromDirectory();
 
       // Build the multi-agent graph
       graph = buildGraph(db, scenarioLoader, ragEngine);
@@ -87,7 +183,7 @@ app.post("/api/game/start", async (req, res) => {
       // Initialize TurnManager
       turnManager = new TurnManager(db);
 
-      console.log(`[${new Date().toISOString()}] Multi-agent system loaded successfully (no resources loaded)`);
+      console.log(`[${new Date().toISOString()}] Multi-agent system loaded successfully`);
     }
 
     // Check if character exists
@@ -117,7 +213,7 @@ app.post("/api/game/start", async (req, res) => {
       const parsedSkills = JSON.parse(character.skills);
       const parsedInventory = JSON.parse(character.inventory);
 
-      persistentGameState = {
+      let gameState: GameState = {
         ...JSON.parse(JSON.stringify(initialGameState)),
         playerCharacter: {
           id: character.character_id,
@@ -130,6 +226,33 @@ app.post("/api/game/start", async (req, res) => {
           actionLog: [],
         },
       };
+
+      // Load module data and set keeper guidance and initial scenario
+      const modules = moduleLoader.getAllModules();
+      if (modules.length > 0) {
+        const module = modules[0]; // Use the first/latest module
+        
+        // Set keeper guidance
+        if (module.keeperGuidance) {
+          gameState.keeperGuidance = module.keeperGuidance;
+          console.log(`✓ Loaded keeper guidance from module: ${module.title}`);
+        }
+
+        // Load initial scenario if specified
+        if (module.initialScenario) {
+          const searchResult = scenarioLoader.searchScenarios({ name: module.initialScenario });
+          if (searchResult.scenarios.length > 0) {
+            // Use the first matching scenario
+            const initialScenarioProfile = searchResult.scenarios[0];
+            gameState.currentScenario = initialScenarioProfile.snapshot;
+            console.log(`✓ Loaded initial scenario: ${initialScenarioProfile.name} (${module.initialScenario})`);
+          } else {
+            console.warn(`⚠ Initial scenario "${module.initialScenario}" not found, starting without initial scenario`);
+          }
+        }
+      }
+
+      persistentGameState = gameState;
 
       console.log(`[${new Date().toISOString()}] Game started with character: ${character.name} (${characterId})`);
       
@@ -148,12 +271,40 @@ app.post("/api/game/start", async (req, res) => {
           playerCharacter: persistentGameState.playerCharacter,
           timeOfDay: persistentGameState.timeOfDay,
           tension: persistentGameState.tension,
+          currentScenario: persistentGameState.currentScenario,
         },
         timestamp: new Date().toISOString(),
       });
     } else {
       // Start with default character
-      persistentGameState = JSON.parse(JSON.stringify(initialGameState));
+      let gameState: GameState = JSON.parse(JSON.stringify(initialGameState));
+
+      // Load module data and set keeper guidance and initial scenario
+      const modules = moduleLoader.getAllModules();
+      if (modules.length > 0) {
+        const module = modules[0]; // Use the first/latest module
+        
+        // Set keeper guidance
+        if (module.keeperGuidance) {
+          gameState.keeperGuidance = module.keeperGuidance;
+          console.log(`✓ Loaded keeper guidance from module: ${module.title}`);
+        }
+
+        // Load initial scenario if specified
+        if (module.initialScenario) {
+          const searchResult = scenarioLoader.searchScenarios({ name: module.initialScenario });
+          if (searchResult.scenarios.length > 0) {
+            // Use the first matching scenario
+            const initialScenarioProfile = searchResult.scenarios[0];
+            gameState.currentScenario = initialScenarioProfile.snapshot;
+            console.log(`✓ Loaded initial scenario: ${initialScenarioProfile.name} (${module.initialScenario})`);
+          } else {
+            console.warn(`⚠ Initial scenario "${module.initialScenario}" not found, starting without initial scenario`);
+          }
+        }
+      }
+
+      persistentGameState = gameState;
       
       console.log(`[${new Date().toISOString()}] Game started with default character`);
       
@@ -172,6 +323,7 @@ app.post("/api/game/start", async (req, res) => {
           playerCharacter: persistentGameState.playerCharacter,
           timeOfDay: persistentGameState.timeOfDay,
           tension: persistentGameState.tension,
+          currentScenario: persistentGameState.currentScenario,
         },
         timestamp: new Date().toISOString(),
       });

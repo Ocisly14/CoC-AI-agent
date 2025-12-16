@@ -1,0 +1,49 @@
+[
+    {
+      "name": "Marks White",
+      "occupation": "Local businessman / fixer",
+      "age": 45,
+      "appearance": "A rather plain-looking middle-aged man with an unimpressive presence; his looks are forgettable, making him easy to overlook in a crowd.",
+      "personality": "Cautious, calculating, pragmatic, and emotionally restrained; prefers indirect methods and avoids unnecessary confrontation.",
+      "background": "Marks White operates quietly within Cassandra, handling business matters that require discretion rather than force. He is not physically imposing and relies more on planning, negotiation, and connections than intimidation. His low-key presence allows him to move beneath notice while staying informed.",
+      "goals": [
+        "Protect his business interests",
+        "Remain uninvolved in open conflicts"
+      ],
+      "secrets": [],
+      "attributes": {
+        "STR": 50,
+        "CON": 55,
+        "DEX": 50,
+        "APP": 30,
+        "POW": 65,
+        "SIZ": 60,
+        "INT": 55,
+        "EDU": 65
+      },
+      "status": {
+        "hp": 12,
+        "maxHp": 12,
+        "sanity": 50,
+        "maxSanity": 99,
+        "luck": 50,
+        "mp": 13,
+        "conditions": []
+      },
+      "skills": {
+        "Credit Rating": 40,
+        "Fast Talk": 50,
+        "Psychology": 55,
+        "Accounting": 60,
+        "Library Use": 40
+      },
+      "inventory": [
+        "Business documents",
+        "Notebook",
+        "Cash"
+      ],
+      "clues": [],
+      "relationships": [],
+      "notes": "Marks White is easy to underestimate; while lacking physical presence, his strength lies in information control and quiet influence."
+    }
+  ]

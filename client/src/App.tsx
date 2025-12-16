@@ -110,13 +110,14 @@ const App: React.FC = () => {
   };
 
   // Handle character selection and start game
+  // Note: Data import is now handled in CharacterSelector component
   const handleSelectCharacter = async (characterId: string, charName: string) => {
     console.log("Selected character:", characterId, charName);
     setSelectedCharacterId(characterId);
     setCharacterName(charName);
     
-    // Start game with selected character
     try {
+      // Start game with selected character (data should already be imported)
       const response = await fetch("http://localhost:3000/api/game/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,12 +131,12 @@ const App: React.FC = () => {
         setPage("game");
       } else {
         alert("启动游戏失败: " + (data.error || "Unknown error"));
-        setPage("home");
+        setPage("character-select");
       }
     } catch (error) {
       console.error("Error starting game:", error);
       alert("网络错误，无法连接到服务器");
-      setPage("home");
+      setPage("character-select");
     }
   };
 

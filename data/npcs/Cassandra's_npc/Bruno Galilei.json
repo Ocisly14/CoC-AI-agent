@@ -1,0 +1,99 @@
+[
+    {
+      "name": "Bruno Galilei",
+      "occupation": "Police detective (former private investigator)",
+      "age": 42,
+      "appearance": "A tall, powerfully built man with Russian ancestry. He has silver-gray hair, very pale eyes, and a rugged, straightforward demeanor that reflects his physical strength and honest nature.",
+      "personality": "Sincere, upright, patient, and deeply driven by a sense of justice. Reliable and trustworthy, with a calm surface that hides strong inner determination and a willingness for self-sacrifice.",
+      "background": "Bruno once ran a private detective agency with friends, but it failed because he refused unethical or illegal commissions and even turned corrupt clients over to the authorities. After the agency collapsed, he continued working as a police detective. For over a year, he persistently investigated an unresolved murder case that his superiors ignored, unknowingly drawing the attention of dangerous forces in Cassandra.",
+      "goals": [
+        "Uncover the truth behind the unsolved murder case from a year ago",
+        "Protect Cassandra and uphold justice regardless of personal cost"
+      ],
+      "secrets": [
+        "He suspects corruption within the local authorities but lacks proof",
+        "He received anonymous warnings telling him not to trust his superiors or the local priest"
+      ],
+      "attributes": {
+        "STR": 75,
+        "CON": 70,
+        "DEX": 55,
+        "APP": 50,
+        "POW": 60,
+        "SIZ": 70,
+        "INT": 65,
+        "EDU": 60
+      },
+      "status": {
+        "hp": 14,
+        "maxHp": 14,
+        "sanity": 60,
+        "maxSanity": 99,
+        "luck": 65,
+        "mp": 12,
+        "conditions": []
+      },
+      "skills": {
+        "Law": 60,
+        "Spot Hidden": 65,
+        "Listen": 60,
+        "Psychology": 55,
+        "Intimidate": 50,
+        "Persuade": 55,
+        "Firearms (Handgun)": 60,
+        "Drive Auto": 55,
+        "Brawl": 65
+      },
+      "inventory": [
+        "Police badge",
+        "Handgun",
+        "Cigars",
+        "Buick automobile",
+        "Case files and physical evidence"
+      ],
+      "clues": [
+        {
+          "clueText": "He does not know Sandra's true identity but trusts her deeply.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Sandra"]
+        },
+        {
+          "clueText": "An anonymous message warned him not to trust Mayor Padrich or Father Constantine.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Mayor Padrich", "Father Constantine"]
+        },
+        {
+          "clueText": "He was about to expose crucial leads in the year-old murder case before his death.",
+          "category": "knowledge",
+          "difficulty": "extreme",
+          "relatedTo": ["Reindeer Bar"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Sandra",
+          "relationshipType": "friend",
+          "attitude": 70,
+          "description": "A close confidant and emotional refuge for Bruno.",
+          "history": "Bruno often spent his free time at her shop, trusting her enough to confide his worries."
+        },
+        {
+          "targetName": "Lux",
+          "relationshipType": "ally",
+          "attitude": 60,
+          "description": "A trusted colleague within the police force.",
+          "history": "Lux respects Bruno and discreetly protects his investigation materials after his death."
+        },
+        {
+          "targetName": "Mayor Padrich",
+          "relationshipType": "enemy",
+          "attitude": -60,
+          "description": "An authority figure Bruno was warned against.",
+          "history": "Bruno believed Padrich was obstructing justice in the murder investigation."
+        }
+      ],
+      "notes": "Bruno ultimately dies under mysterious circumstances, his body found drained and marked by unnatural bite wounds, leaving behind an unfinished warning message on his phone."
+    }
+  ]

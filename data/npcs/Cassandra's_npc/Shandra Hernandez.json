@@ -1,0 +1,72 @@
+[
+    {
+      "name": "Shandra Hernandez",
+      "occupation": "Hotel Housekeeper / Temporary Staff",
+      "age": 26,
+      "appearance": "A young Latina woman with tired eyes and neatly tied dark hair. Dresses plainly in practical work clothes; often appears nervous and sleep-deprived.",
+      "personality": "Anxious, cautious, and soft-spoken. Easily intimidated but fundamentally compassionate. Tends to avoid conflict and authority figures.",
+      "background": "Shandra Hernandez is a temporary worker employed at the Paradier Hotel. She took the job due to financial pressure and limited options, unaware at first of the darker activities surrounding the hotel. Over time, she has witnessed disturbing events that have left her deeply unsettled.",
+      "goals": [
+        "Keep her job and avoid trouble",
+        "Stay out of dangerous situations she does not understand"
+      ],
+      "secrets": [
+        "She has seen guests and staff enter restricted areas late at night and never return",
+        "She suspects something inhuman is happening in the hotel but is too afraid to report it"
+      ],
+      "attributes": {
+        "STR": 45,
+        "CON": 55,
+        "DEX": 60,
+        "APP": 50,
+        "POW": 50,
+        "SIZ": 50,
+        "INT": 55,
+        "EDU": 50
+      },
+      "status": {
+        "hp": 10,
+        "maxHp": 10,
+        "sanity": 45,
+        "maxSanity": 50,
+        "luck": 65,
+        "mp": 10,
+        "conditions": []
+      },
+      "skills": {
+        "Spot Hidden": 55,
+        "Listen": 50,
+        "Stealth": 40,
+        "Psychology": 35
+      },
+      "inventory": [
+        "Hotel master key (limited access)",
+        "Cleaning supplies",
+        "Personal notebook"
+      ],
+      "clues": [
+        {
+          "clueText": "Late at night, hotel staff are ordered to avoid certain floors entirely.",
+          "category": "observation",
+          "difficulty": "regular",
+          "relatedTo": ["Paradier Hotel"]
+        },
+        {
+          "clueText": "She once heard chanting and wet, animal-like sounds behind a locked service door.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Cult Activities", "Paradier Hotel"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Paradier Hotel Management",
+          "relationshipType": "employer",
+          "attitude": -30,
+          "description": "Employers who intimidate her into silence.",
+          "history": "Threatened with termination if she asks questions."
+        }
+      ],
+      "notes": "Shandra may cooperate with investigators if they earn her trust and offer protection."
+    }
+  ]

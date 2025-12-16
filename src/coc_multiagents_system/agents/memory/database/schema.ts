@@ -423,6 +423,7 @@ export class CoCDatabase {
                 keeper_guidance TEXT,
                 story_hook TEXT,
                 module_limitations TEXT,
+                initial_scenario TEXT,
                 tags TEXT, -- JSON array
                 source TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -433,6 +434,16 @@ export class CoCDatabase {
       if (!this.hasColumn("module_backgrounds", "module_limitations")) {
         this.db.exec(
           "ALTER TABLE module_backgrounds ADD COLUMN module_limitations TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
+    // Backfill for initial_scenario if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "initial_scenario")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN initial_scenario TEXT;"
         );
       }
     } catch {

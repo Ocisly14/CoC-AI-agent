@@ -203,7 +203,7 @@ Important notes:
 2. For missing numerical attributes, you can infer reasonable values based on the NPC description
 3. If skills are not specified, include only the most relevant skills for this NPC
 4. Extract all clues and relationships mentioned in the document
-5. Ensure all numerical values are within valid CoC 7e ranges (attributes: 0-100, hp: derived from CON+SIZ/10, sanity: typically POW*5, luck: typically 50-99)
+5. Ensure all numerical values are within valid CoC 7e ranges (attributes: 0-Infinity, hp: derived from CON+SIZ/10, sanity: typically POW*5, luck: typically 50-99)
 6. Return a JSON ARRAY only. Do not wrap in an object or add extra keys.
 7. The text you see may be only a fragment of the full NPC data. If information is missing or incomplete, leave the field empty/omit it—do NOT fabricate details.
 8. Status fields: if provided, include hp/maxHp/sanity/maxSanity/luck/mp and, if available, damageBonus/build/mov. If not provided, leave them blank; they will be derived later.

@@ -301,6 +301,130 @@ export class NPCLoader {
   }
 
   /**
+   * Load NPCs from JSON files in a directory (skip document parsing)
+   */
+  async loadNPCsFromJSONDirectory(dirPath: string, forceReload = false): Promise<NPCProfile[]> {
+    console.log(`\n=== Loading NPCs from JSON directory: ${dirPath} ===`);
+
+    if (!fs.existsSync(dirPath)) {
+      console.log(`Directory does not exist: ${dirPath}`);
+      return [];
+    }
+
+    // Check for file changes unless forced reload
+    if (!forceReload) {
+      const { hasChanges } = this.checkForJSONChanges(dirPath);
+      if (!hasChanges) {
+        const existingNPCs = this.getAllNPCs();
+        console.log(`No changes detected. Using ${existingNPCs.length} existing NPCs from database.`);
+        return existingNPCs;
+      }
+    }
+
+    console.log(`Loading NPCs from JSON files in directory: ${dirPath}`);
+
+    const files = fs.readdirSync(dirPath);
+    const jsonFiles = files.filter((f) => f.toLowerCase().endsWith(".json"));
+
+    if (jsonFiles.length === 0) {
+      console.log("No JSON files found in directory.");
+      this.updateLastLoadTimestamp(dirPath);
+      return [];
+    }
+
+    const allParsedNPCs: ParsedNPCData[] = [];
+
+    for (const file of jsonFiles) {
+      try {
+        const filePath = path.join(dirPath, file);
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        const jsonData = JSON.parse(fileContent);
+
+        // Handle both array of NPCs and single NPC object
+        const npcs: ParsedNPCData[] = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+        for (const npcData of npcs) {
+          allParsedNPCs.push(npcData);
+        }
+      } catch (error) {
+        console.error(`✗ Failed to parse JSON file ${file}:`, error);
+      }
+    }
+
+    if (allParsedNPCs.length === 0) {
+      console.log("No NPC data found in JSON files.");
+      this.updateLastLoadTimestamp(dirPath);
+      return [];
+    }
+
+    // Merge similar NPCs (deduplication)
+    const dedupedNPCs = await this.mergeSimilarNPCs(allParsedNPCs);
+
+    // Convert and store each NPC
+    const npcProfiles: NPCProfile[] = [];
+    for (const parsedData of dedupedNPCs) {
+      try {
+        const npcProfile = this.convertToNPCProfile(parsedData);
+        this.saveNPCToDatabase(npcProfile);
+        npcProfiles.push(npcProfile);
+        console.log(`✓ Loaded NPC: ${npcProfile.name} (${npcProfile.id})`);
+      } catch (error) {
+        console.error(`✗ Failed to load NPC ${parsedData.name}:`, error);
+      }
+    }
+
+    // Update timestamp after successful load
+    this.updateLastLoadTimestamp(dirPath);
+
+    console.log(`\n=== Successfully loaded ${npcProfiles.length} NPCs from JSON files ===\n`);
+    return npcProfiles;
+  }
+
+  /**
+   * Check if any JSON files in directory have changed since last load
+   */
+  private checkForJSONChanges(dirPath: string): { hasChanges: boolean; currentFiles: Map<string, number> } {
+    if (!fs.existsSync(dirPath)) {
+      return { hasChanges: false, currentFiles: new Map() };
+    }
+
+    const currentFiles = new Map<string, number>();
+    const files = fs.readdirSync(dirPath).filter(file => file.toLowerCase().endsWith(".json"));
+
+    // Get modification times for all JSON files
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const stats = fs.statSync(filePath);
+      currentFiles.set(file, stats.mtime.getTime());
+    }
+
+    // Check if we have existing NPCs
+    const existingNPCs = this.getAllNPCs();
+    
+    // If no NPCs exist, we need to load
+    if (existingNPCs.length === 0) {
+      return { hasChanges: true, currentFiles };
+    }
+
+    // Check timestamp file
+    const lastLoadFile = path.join(dirPath, '.last_load_timestamp');
+    let lastLoadTime = 0;
+    
+    if (fs.existsSync(lastLoadFile)) {
+      try {
+        lastLoadTime = parseInt(fs.readFileSync(lastLoadFile, 'utf8'));
+      } catch {
+        return { hasChanges: true, currentFiles };
+      }
+    }
+
+    // Check if any file is newer than last load
+    const hasChanges = Array.from(currentFiles.values()).some(mtime => mtime > lastLoadTime);
+    
+    return { hasChanges, currentFiles };
+  }
+
+  /**
    * Load NPCs from a directory (only if files have changed)
    */
   async loadNPCsFromDirectory(dirPath: string, forceReload = false): Promise<NPCProfile[]> {

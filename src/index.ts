@@ -1,8 +1,8 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
-import { AIMessage } from "@langchain/core/messages";
-import type { Messages } from "@langchain/core/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import type { BaseMessage } from "@langchain/core/messages";
 import {
   CoCDatabase,
   seedDatabase,
@@ -11,6 +11,7 @@ import { NPCLoader } from "./coc_multiagents_system/agents/character/npcloader/i
 import { ModuleLoader } from "./coc_multiagents_system/agents/memory/moduleloader/index.js";
 import { ScenarioLoader } from "./coc_multiagents_system/agents/memory/scenarioloader/index.js";
 import { buildGraph } from "./graph.js";
+import type { GraphState } from "./graph.js";
 import { initialGameState } from "./state.js";
 import { RAGEngine } from "./rag/engine.js";
 
@@ -33,9 +34,15 @@ if (!fs.existsSync(npcDir)) {
   );
 }
 
-// Load NPCs from documents
+// Load NPCs from JSON files in Cassandra's_npc folder (skip document parsing)
 const npcLoader = new NPCLoader(db);
-await npcLoader.loadNPCsFromDirectory(npcDir);
+const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
+if (fs.existsSync(cassandraNPCsDir)) {
+  await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
+} else {
+  // Fallback to document parsing if JSON directory doesn't exist
+  await npcLoader.loadNPCsFromDirectory(npcDir);
+}
 
 // Initialize module background directory
 const moduleDir = path.join(process.cwd(), "data", "background");
@@ -49,7 +56,16 @@ if (!fs.existsSync(moduleDir)) {
 
 // Load module briefings from documents
 const moduleLoader = new ModuleLoader(db);
-await moduleLoader.loadModulesFromDirectory(moduleDir);
+const modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
+
+// Prepare initial game state (will be used in main function)
+let preparedGameState = { ...initialGameState };
+
+// Load keeper guidance into game state if available
+if (modules.length > 0 && modules[0].keeperGuidance) {
+  preparedGameState.keeperGuidance = modules[0].keeperGuidance;
+  console.log(`✓ Loaded keeper guidance from module: ${modules[0].title}`);
+}
 
 // Initialize scenario directory
 const scenarioDir = path.join(process.cwd(), "data", "scenarios");
@@ -61,9 +77,15 @@ if (!fs.existsSync(scenarioDir)) {
   );
 }
 
-// Load scenarios from documents
+// Load scenarios from JSON files in Cassandra's_Scenarios folder (skip document parsing)
 const scenarioLoader = new ScenarioLoader(db);
-await scenarioLoader.loadScenariosFromDirectory(scenarioDir);
+const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
+if (fs.existsSync(cassandraScenariosDir)) {
+  await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
+} else {
+  // Fallback to document parsing if JSON directory doesn't exist
+  await scenarioLoader.loadScenariosFromDirectory(scenarioDir);
+}
 
 // Initialize RAG knowledge directory
 const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
@@ -99,16 +121,16 @@ const main = async () => {
   const userPrompt = parseArgs(process.argv);
   const app = buildGraph(db, scenarioLoader, ragEngine);
 
-  const initialMessages: Messages = [{ type: "human", content: userPrompt }];
+  const initialMessages: BaseMessage[] = [new HumanMessage(userPrompt)];
 
-  const result = await app.invoke({
+  const result: any = await app.invoke({
     messages: initialMessages,
     agentQueue: [],
-    gameState: initialGameState,
+    gameState: preparedGameState,
   });
 
-  const agentMessages = result.messages.filter(
-    (message: any): message is AIMessage => message instanceof AIMessage
+  const agentMessages = (result.messages as BaseMessage[]).filter(
+    (message): message is AIMessage => message instanceof AIMessage
   );
 
   printTranscript(agentMessages);

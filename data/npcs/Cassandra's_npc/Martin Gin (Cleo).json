@@ -1,0 +1,73 @@
+[
+    {
+      "name": "Martin Gin (Cleo)",
+      "occupation": "Criminal courier and fixer (alias: Ghost Hand)",
+      "age": 35,
+      "appearance": "A cautious-looking man with an unremarkable face, deliberately dressing in plain, practical clothing to avoid attention. His movements are controlled and alert, giving the impression of someone used to watching exits and escape routes.",
+      "personality": "Calculating, opportunistic, and highly pragmatic. Martin is patient and careful, preferring indirect methods and aliases to direct confrontation. He is loyal only as long as cooperation benefits his own survival and profit.",
+      "background": "Martin deliberately attracted the attention of Patrizio von Samsa and was subsequently employed by him under the alias \"Ghost Hand.\" Acting as a courier and intermediary, Martin transported goods to the docks and handled sensitive deliveries. Through his work, he assisted Patrizio in seizing the missing businessmen’s bank assets in Cassandra. Martin operates under false names and avoids revealing his true identity.",
+      "goals": [
+        "Complete assignments efficiently to secure payment and protection",
+        "Remain hidden and avoid becoming a disposable pawn"
+      ],
+      "secrets": [
+        "He operates under the alias \"Ghost Hand\" and conceals his true identity",
+        "He knowingly assisted Patrizio in acquiring the missing businessmen’s assets"
+      ],
+      "attributes": {
+        "STR": 55,
+        "CON": 60,
+        "DEX": 65,
+        "APP": 40,
+        "POW": 55,
+        "SIZ": 55,
+        "INT": 65,
+        "EDU": 55
+      },
+      "status": {
+        "hp": 11,
+        "maxHp": 11,
+        "sanity": 55,
+        "maxSanity": 55,
+        "luck": 60,
+        "mp": 11,
+        "conditions": []
+      },
+      "skills": {
+        "Stealth": 60,
+        "Drive Auto": 55,
+        "Fast Talk": 50,
+        "Spot Hidden": 45,
+        "Locksmith": 40
+      },
+      "inventory": [
+        "False identification papers",
+        "Unmarked mobile phone",
+        "Dock delivery documents"
+      ],
+      "clues": [
+        {
+          "clueText": "The individual known as \"Ghost Hand\" was responsible for transporting goods to the docks for Patrizio.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Patrizio von Samsa", "Docks"]
+        },
+        {
+          "clueText": "Ghost Hand assisted Patrizio in obtaining the missing businessmen’s bank assets in Cassandra.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Patrizio von Samsa", "Missing Businessmen"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Patrizio von Samsa",
+          "relationshipType": "employer",
+          "attitude": -20,
+          "description": "A dangerous employer whom Martin serves out of necessity rather than loyalty.",
+          "history": "Martin deliberately drew Patrizio’s attention and accepted work under the alias Ghost Hand to gain profit and protection."
+        }
+      ],
+      "notes": "Martin is a shadowy logistical NPC who can reveal connections between criminal operations, financial manipulation, and Patrizio’s larger schemes if pressured or exposed."
+    }
+  ]

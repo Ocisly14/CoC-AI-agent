@@ -31,6 +31,8 @@ export function CharacterSelector({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string>('');
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadCharacters();
@@ -60,12 +62,42 @@ export function CharacterSelector({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedId) return;
     
     const selectedChar = characters.find(c => c.character_id === selectedId);
-    if (selectedChar) {
+    if (!selectedChar) return;
+
+    try {
+      setImporting(true);
+      setImportMessage("正在导入游戏数据...");
+      
+      // Step 1: Import game data
+      const importResponse = await fetch(`${apiBaseUrl}/game/import-data`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const importData = await importResponse.json();
+
+      if (!importResponse.ok) {
+        throw new Error(importData.error || "数据导入失败");
+      }
+
+      setImportMessage(`数据导入完成：${importData.scenariosLoaded} 个场景，${importData.npcsLoaded} 个NPC`);
+      
+      // Small delay to show the message
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setImportMessage("正在启动游戏...");
+      
+      // Step 2: Call the parent handler which will start the game
       onSelectCharacter(selectedId, selectedChar.name);
+    } catch (err) {
+      console.error("Error importing data:", err);
+      setError(err instanceof Error ? err.message : "数据导入失败");
+      setImporting(false);
+      setImportMessage(null);
     }
   };
 
@@ -96,13 +128,18 @@ export function CharacterSelector({
         </div>
 
         <div className="modal-content">
-          {loading && (
+          {(loading || importing) && (
             <div className="loading-state">
-              <p>加载角色中...</p>
+              <p>{importing ? (importMessage || "正在处理...") : "加载角色中..."}</p>
+              {importing && (
+                <div style={{ marginTop: "10px", fontSize: "0.9rem", color: "#666" }}>
+                  请稍候，这可能需要几秒钟...
+                </div>
+              )}
             </div>
           )}
 
-          {error && (
+          {error && !importing && (
             <div className="error-state">
               <p style={{ color: '#dc3545' }}>{error}</p>
               <button onClick={loadCharacters}>重试</button>
@@ -118,7 +155,7 @@ export function CharacterSelector({
             </div>
           )}
 
-          {!loading && !error && characters.length > 0 && (
+          {!loading && !importing && !error && characters.length > 0 && (
             <>
               <div className="character-list">
                 {characters.map((char) => {
@@ -175,9 +212,9 @@ export function CharacterSelector({
                 <button 
                   onClick={handleConfirm} 
                   className="primary"
-                  disabled={!selectedId}
+                  disabled={!selectedId || importing}
                 >
-                  使用此角色开始游戏
+                  {importing ? "正在导入数据..." : "使用此角色开始游戏"}
                 </button>
               </div>
             </>

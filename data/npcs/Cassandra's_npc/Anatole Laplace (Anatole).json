@@ -1,0 +1,82 @@
+[
+    {
+      "name": "Anatole Laplace (Anatole / 安纳托尔)",
+      "occupation": "Information Security Engineer / Surveillance System Designer",
+      "age": 36,
+      "appearance": "A thin, pale man with sharp features and tired eyes. Often dressed in simple shirts and jackets, giving off the impression of a reclusive technician rather than a social figure.",
+      "personality": "Coldly rational, controlling, and distrustful. Anatole believes order and control are necessary to survive in a dangerous world. He is intelligent but emotionally rigid, easily frustrated by what he sees as others’ irresponsibility.",
+      "background": "Anatole is a highly skilled information security and surveillance systems expert. In 1998, he was recruited via the dark web by two wealthy businessmen seeking to build a secure monitoring system to facilitate their secret sacrificial activities. Anatole designed and implemented the \"Qianwei System,\" a comprehensive surveillance network. He deliberately left a backdoor in the system, allowing himself remote access and approximate geolocation of all monitored sites. When he discovered the system ultimately centered on Cassandra, he relocated there, viewing it as the safest place due to his absolute control over the surveillance infrastructure. Anatole strongly disapproved of Simon’s decision to take Nancy away and live a drifting life, seeing it as reckless.",
+      "goals": [
+        "Maintain total control over the surveillance system in Cassandra",
+        "Ensure his own safety through information dominance"
+      ],
+      "secrets": [
+        "He knowingly enabled and protected ritual sacrifice activities by providing surveillance technology",
+        "He retains secret backdoor access capable of exposing or sabotaging powerful individuals"
+      ],
+      "attributes": {
+        "STR": 40,
+        "CON": 55,
+        "DEX": 50,
+        "APP": 45,
+        "POW": 70,
+        "SIZ": 50,
+        "INT": 80,
+        "EDU": 85
+      },
+      "status": {
+        "hp": 10,
+        "maxHp": 10,
+        "sanity": 55,
+        "maxSanity": 70,
+        "luck": 60,
+        "mp": 14,
+        "conditions": []
+      },
+      "skills": {
+        "Computer Use": 85,
+        "Electronics": 75,
+        "Electrical Repair": 65,
+        "Cryptography": 70,
+        "Library Use": 60,
+        "Spot Hidden": 50
+      },
+      "inventory": [
+        "Encrypted laptop",
+        "External hard drives",
+        "Surveillance system schematics",
+        "Multiple backup keys and passwords"
+      ],
+      "clues": [
+        {
+          "clueText": "The Qianwei surveillance system covers most of Cassandra and key facilities.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Cassandra", "Qianwei System"]
+        },
+        {
+          "clueText": "A hidden backdoor allows Anatole to remotely access and control the entire system.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Qianwei System", "Dark Web Clients"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Simon Laplace",
+          "relationshipType": "family",
+          "attitude": -60,
+          "description": "Disapproves of Simon’s choices and views him as irresponsible.",
+          "history": "Their relationship deteriorated after Simon took Nancy away and rejected Anatole’s plans."
+        },
+        {
+          "targetName": "Nancy",
+          "relationshipType": "neutral",
+          "attitude": -20,
+          "description": "Sees her as a destabilizing influence on Simon.",
+          "history": "Blames her presence for Simon abandoning a controlled, profitable life."
+        }
+      ],
+      "notes": "Anatole is more dangerous as an information broker than as a direct combatant. He may attempt to manipulate investigators through surveillance data rather than confrontation."
+    }
+  ]

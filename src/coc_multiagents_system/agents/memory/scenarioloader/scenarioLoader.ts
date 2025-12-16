@@ -87,6 +87,115 @@ export class ScenarioLoader {
   }
 
   /**
+   * Load scenarios from JSON files in a directory (skip document parsing)
+   */
+  async loadScenariosFromJSONDirectory(dirPath: string, forceReload = false): Promise<ScenarioProfile[]> {
+    console.log(`\n=== Loading Scenarios from JSON directory: ${dirPath} ===`);
+
+    if (!fs.existsSync(dirPath)) {
+      console.log(`Directory does not exist: ${dirPath}`);
+      return [];
+    }
+
+    // Check for file changes unless forced reload
+    if (!forceReload) {
+      const { hasChanges } = this.checkForJSONChanges(dirPath);
+      if (!hasChanges) {
+        const existingScenarios = this.getAllScenarios();
+        console.log(`No changes detected. Using ${existingScenarios.length} existing scenarios from database.`);
+        return existingScenarios;
+      }
+    }
+
+    console.log(`Loading Scenarios from JSON files in directory: ${dirPath}`);
+
+    const files = fs.readdirSync(dirPath);
+    const jsonFiles = files.filter((f) => f.toLowerCase().endsWith(".json"));
+
+    if (jsonFiles.length === 0) {
+      console.log("No JSON files found in directory.");
+      this.updateLastLoadTimestamp(dirPath);
+      return [];
+    }
+
+    const scenarioProfiles: ScenarioProfile[] = [];
+
+    for (const file of jsonFiles) {
+      try {
+        const filePath = path.join(dirPath, file);
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        const jsonData = JSON.parse(fileContent);
+
+        // Handle both array of scenarios and single scenario object
+        const scenarios: ParsedScenarioData[] = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+        for (const parsedData of scenarios) {
+          try {
+            const scenarioProfile = this.convertToScenarioProfile(parsedData);
+            this.saveScenarioToDatabase(scenarioProfile);
+            scenarioProfiles.push(scenarioProfile);
+            console.log(`✓ Loaded Scenario: ${scenarioProfile.name} (${scenarioProfile.id})`);
+          } catch (error) {
+            console.error(`✗ Failed to load scenario ${parsedData.name} from ${file}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error(`✗ Failed to parse JSON file ${file}:`, error);
+      }
+    }
+
+    // Update timestamp after successful load
+    this.updateLastLoadTimestamp(dirPath);
+
+    console.log(`\n=== Successfully loaded ${scenarioProfiles.length} scenarios from JSON files ===\n`);
+    return scenarioProfiles;
+  }
+
+  /**
+   * Check if any JSON files in directory have changed since last load
+   */
+  private checkForJSONChanges(dirPath: string): { hasChanges: boolean; currentFiles: Map<string, number> } {
+    if (!fs.existsSync(dirPath)) {
+      return { hasChanges: false, currentFiles: new Map() };
+    }
+
+    const currentFiles = new Map<string, number>();
+    const files = fs.readdirSync(dirPath).filter(file => file.toLowerCase().endsWith(".json"));
+
+    // Get modification times for all JSON files
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      const stats = fs.statSync(filePath);
+      currentFiles.set(file, stats.mtime.getTime());
+    }
+
+    // Check if we have existing scenarios
+    const existingScenarios = this.getAllScenarios();
+    
+    // If no scenarios exist, we need to load
+    if (existingScenarios.length === 0) {
+      return { hasChanges: true, currentFiles };
+    }
+
+    // Check timestamp file
+    const lastLoadFile = path.join(dirPath, '.last_scenario_load_timestamp');
+    let lastLoadTime = 0;
+    
+    if (fs.existsSync(lastLoadFile)) {
+      try {
+        lastLoadTime = parseInt(fs.readFileSync(lastLoadFile, 'utf8'));
+      } catch {
+        return { hasChanges: true, currentFiles };
+      }
+    }
+
+    // Check if any file is newer than last load
+    const hasChanges = Array.from(currentFiles.values()).some(mtime => mtime > lastLoadTime);
+    
+    return { hasChanges, currentFiles };
+  }
+
+  /**
    * Load scenarios from a directory (only if files have changed)
    */
   async loadScenariosFromDirectory(dirPath: string, forceReload = false): Promise<ScenarioProfile[]> {

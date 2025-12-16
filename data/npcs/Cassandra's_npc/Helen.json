@@ -1,0 +1,58 @@
+[
+    {
+      "name": "Helen",
+      "occupation": "Restaurant Owner and Chef (secretly a retired assassin)",
+      "appearance": "A sexy Latina woman with a confident and alluring presence, well-groomed and stylish, blending the charm of a successful restaurateur with subtle hints of danger.",
+      "personality": "Calm, observant, and socially adept; outwardly warm and sociable, but inwardly cautious, independent, and capable of lethal decisiveness.",
+      "background": "Helen is an ordinary friend of Aberforth Locefern. Publicly, she runs a restaurant as its beautiful owner and chef. In truth, she is a retired assassin enjoying a peaceful life. She and Locefern often go shopping together, yet neither knows the other's hidden identity. On the day of the Reindeer Bar incident, she was invited by a friend named Johnny to drink, but they parted on bad terms. Later, when she intended to invite Locefern out for a drink, she discovered that Locefern had been killed.",
+      "goals": [
+        "Maintain her peaceful retired life without exposing her past",
+        "Understand the circumstances behind Locefern's death"
+      ],
+      "secrets": [
+        "She is a retired professional killer",
+        "Her background has indirect ties to the Italian Mafia"
+      ],
+      "attributes": {
+        "STR": 55,
+        "CON": 60,
+        "DEX": 70,
+        "APP": 75,
+        "POW": 65,
+        "SIZ": 55,
+        "INT": 70,
+        "EDU": 60
+      },
+      "skills": {
+        "Charm": 65,
+        "Psychology": 60,
+        "Stealth": 70,
+        "Handgun": 65,
+        "Brawl": 60
+      },
+      "clues": [
+        {
+          "clueText": "She once suspected that Vito was having an affair with Shandra because he visited Shandra's cabin to look for Bruno several times, but later realized it was a misunderstanding.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Vito", "Shandra Hernandez", "Bruno Galilei"]
+        },
+        {
+          "clueText": "She has some familial or cultural connections to the Italian Mafia, which influenced her lukewarm faith in Catholicism.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Italian Mafia", "Catholic Church"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Aberforth Locefern",
+          "relationshipType": "friend",
+          "attitude": 40,
+          "description": "A casual shopping companion and ordinary friend, unaware of each other's true identities.",
+          "history": "They spent time together socially, believing the other to be a normal civilian."
+        }
+      ],
+      "notes": "Helen serves as a seemingly minor NPC who can unexpectedly display high competence and hidden depth if events force her past to resurface."
+    }
+  ]

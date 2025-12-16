@@ -24,7 +24,7 @@ const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame }) => {
 
         <div className="home-actions">
           <button className="primary" onClick={handleStartGame}>
-            🎮 开始游戏
+            🎮 新游戏
           </button>
           <button onClick={onCreate}>
             创建角色

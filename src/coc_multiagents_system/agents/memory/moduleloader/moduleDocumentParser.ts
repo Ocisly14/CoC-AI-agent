@@ -139,6 +139,7 @@ Return a JSON object with exactly these fields:
   "keeperGuidance": "Running advice: reveals, pacing levers, fail-forward options, tone cues, when to call for rolls",
   "storyHook": "Player-facing entry: who contacts them, what they see/hear, immediate actionable choices, why they care",
   "moduleLimitations": "Concise hard constraints: scope limits, time caps, locked areas, forbidden actions, bounded outcomes (summarize but keep all key points)",
+  "initialScenario": "Name or identifier of the starting scenario/location where the game begins (e.g., 'Reindeer Bar', 'Train Station Platform'). Leave empty if not specified.",
   "tags": ["keyword1", "keyword2"]
 }
 

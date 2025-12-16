@@ -1,0 +1,81 @@
+[
+    {
+      "name": "Simon Laplace (Simon / 西蒙)",
+      "occupation": "Drifter / Former Escort Organizer",
+      "age": 34,
+      "appearance": "A lean Caucasian man with a weary expression and unkempt hair. His clothing is often mismatched and worn from constant travel, giving him the look of someone who rarely stays in one place for long.",
+      "personality": "Protective, guilt-ridden, and restless. Simon shows a surprising sense of conscience despite his morally gray past. Distrustful of authority, but deeply loyal to the few people he cares about.",
+      "background": "Simon was once involved in organizing escort work and fringe nightlife circles. After nearly allowing Nancy to be forced into sex work in a red-light district, he intervened at the last moment and took her away. Determined to help her quit gambling and start over, Simon chose a life on the road, traveling across the United States with Nancy. This decision caused deep dissatisfaction and conflict with Anatole, who viewed Simon’s actions as irresponsible and dangerous.",
+      "goals": [
+        "Protect Nancy and help her rebuild her life",
+        "Avoid being dragged back into his former criminal connections"
+      ],
+      "secrets": [
+        "He knows more about underground trafficking networks than he admits",
+        "He fears that his past choices will eventually catch up with him and Nancy"
+      ],
+      "attributes": {
+        "STR": 55,
+        "CON": 60,
+        "DEX": 65,
+        "APP": 55,
+        "POW": 60,
+        "SIZ": 55,
+        "INT": 65,
+        "EDU": 50
+      },
+      "status": {
+        "hp": 11,
+        "maxHp": 11,
+        "sanity": 50,
+        "maxSanity": 60,
+        "luck": 70,
+        "mp": 12,
+        "conditions": []
+      },
+      "skills": {
+        "Persuade": 55,
+        "Psychology": 50,
+        "Stealth": 45,
+        "Fast Talk": 60,
+        "Drive Auto": 55
+      },
+      "inventory": [
+        "Old car with personal belongings",
+        "Cash savings",
+        "Fake identification papers",
+        "Notebook with travel routes"
+      ],
+      "clues": [
+        {
+          "clueText": "Nancy was nearly forced into sex work before Simon intervened and took her away.",
+          "category": "knowledge",
+          "difficulty": "regular",
+          "relatedTo": ["Nancy"]
+        },
+        {
+          "clueText": "Their constant travel was intended to escape both gambling debts and criminal retaliation.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Anatole", "Underworld Networks"]
+        }
+      ],
+      "relationships": [
+        {
+          "targetName": "Nancy",
+          "relationshipType": "family",
+          "attitude": 80,
+          "description": "Acts as her protector and caretaker.",
+          "history": "Rescued her from exploitation and chose a drifting life to keep her safe."
+        },
+        {
+          "targetName": "Anatole",
+          "relationshipType": "enemy",
+          "attitude": -50,
+          "description": "Anatole disapproves of Simon’s choices and lifestyle.",
+          "history": "Their relationship deteriorated after Simon took Nancy away and rejected Anatole’s plans."
+        }
+      ],
+      "notes": "Simon may be reluctant to share information unless investigators convince him they pose no threat to Nancy."
+    }
+  ]
