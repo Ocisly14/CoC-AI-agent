@@ -126,7 +126,7 @@ export class ScenarioLoader {
         const scenarioProfile = this.convertToScenarioProfile(parsedData);
         this.saveScenarioToDatabase(scenarioProfile);
         scenarioProfiles.push(scenarioProfile);
-        console.log(`✓ Loaded Scenario: ${scenarioProfile.name} (${scenarioProfile.id}) - ${scenarioProfile.timeline.length} time points`);
+        console.log(`✓ Loaded Scenario: ${scenarioProfile.name} (${scenarioProfile.id})`);
       } catch (error) {
         console.error(`✗ Failed to load scenario ${parsedData.name}:`, error);
       }
@@ -144,68 +144,58 @@ export class ScenarioLoader {
    */
   private convertToScenarioProfile(parsedData: ParsedScenarioData): ScenarioProfile {
     const scenarioId = this.generateScenarioId(parsedData.name);
+    const snapshotId = `${scenarioId}-snapshot`;
 
-    // Convert timeline entries
-    const timeline: ScenarioSnapshot[] = parsedData.timeline.map((timelineEntry, index) => {
-      const snapshotId = `${scenarioId}-snapshot-${index}`;
+    const snapshotData = parsedData.snapshot;
 
-      // Convert characters
-      const characters: ScenarioCharacter[] = (timelineEntry.characters || []).map((char, charIndex) => ({
-        id: `${snapshotId}-char-${charIndex}`,
-        name: char.name,
-        role: char.role || "unknown",
-        status: char.status || "unknown",
-        location: char.location,
-        notes: char.notes,
-      }));
+    // Convert characters
+    const characters: ScenarioCharacter[] = (snapshotData.characters || []).map((char, charIndex) => ({
+      id: `${snapshotId}-char-${charIndex}`,
+      name: char.name,
+      role: char.role || "unknown",
+      status: char.status || "unknown",
+      location: char.location,
+      notes: char.notes,
+    }));
 
-      // Convert clues
-      const clues: ScenarioClue[] = (timelineEntry.clues || []).map((clue, clueIndex) => ({
-        id: `${snapshotId}-clue-${clueIndex}`,
-        clueText: clue.clueText,
-        category: (clue.category as any) || "observation",
-        difficulty: (clue.difficulty as any) || "regular",
-        location: clue.location || timelineEntry.location,
-        discoveryMethod: clue.discoveryMethod,
-        reveals: clue.reveals || [],
-        discovered: false,
-      }));
+    // Convert clues
+    const clues: ScenarioClue[] = (snapshotData.clues || []).map((clue, clueIndex) => ({
+      id: `${snapshotId}-clue-${clueIndex}`,
+      clueText: clue.clueText,
+      category: (clue.category as any) || "observation",
+      difficulty: (clue.difficulty as any) || "regular",
+      location: clue.location || snapshotData.location,
+      discoveryMethod: clue.discoveryMethod,
+      reveals: clue.reveals || [],
+      discovered: false,
+    }));
 
-      // Convert conditions
-      const conditions: ScenarioCondition[] = (timelineEntry.conditions || []).map((cond, condIndex) => ({
-        type: (cond.type as any) || "other",
-        description: cond.description,
-        mechanicalEffect: cond.mechanicalEffect,
-      }));
+    // Convert conditions
+    const conditions: ScenarioCondition[] = (snapshotData.conditions || []).map((cond) => ({
+      type: (cond.type as any) || "other",
+      description: cond.description,
+      mechanicalEffect: cond.mechanicalEffect,
+    }));
 
-      const snapshot: ScenarioSnapshot = {
-        id: snapshotId,
-        scenarioId,
-        timePoint: {
-          absoluteTime: timelineEntry.timePoint.absoluteTime,
-          gameDay: timelineEntry.timePoint.gameDay,
-          timeOfDay: timelineEntry.timePoint.timeOfDay,
-          notes: timelineEntry.timePoint.notes,
-        },
-        name: timelineEntry.name || parsedData.name,
-        location: timelineEntry.location,
-        description: timelineEntry.description,
-        characters,
-        clues,
-        conditions,
-        events: timelineEntry.events || [],
-        exits: timelineEntry.exits || [],
-        keeperNotes: timelineEntry.keeperNotes,
-      };
-
-      return snapshot;
-    });
+    const snapshot: ScenarioSnapshot = {
+      id: snapshotId,
+      name: snapshotData.name || parsedData.name,
+      location: snapshotData.location,
+      description: snapshotData.description,
+      characters,
+      clues,
+      conditions,
+      events: snapshotData.events || [],
+      exits: snapshotData.exits || [],
+      permanentChanges: snapshotData.permanentChanges || [],
+      keeperNotes: snapshotData.keeperNotes,
+    };
 
     const scenarioProfile: ScenarioProfile = {
       id: scenarioId,
       name: parsedData.name,
       description: parsedData.description,
-      timeline,
+      snapshot,
       tags: parsedData.tags || [],
       connections: parsedData.connections?.map((conn) => ({
         scenarioId: this.generateScenarioId(conn.scenarioName),
@@ -246,7 +236,7 @@ export class ScenarioLoader {
         scenario.description,
         JSON.stringify(scenario.tags),
         JSON.stringify(scenario.connections),
-        scenario.permanentChanges ? JSON.stringify(scenario.permanentChanges) : null,
+        scenario.snapshot.permanentChanges ? JSON.stringify(scenario.snapshot.permanentChanges) : null,
         JSON.stringify(scenario.metadata),
       ];
 
@@ -268,17 +258,13 @@ export class ScenarioLoader {
       database.prepare("DELETE FROM scenario_snapshots WHERE scenario_id = ?").run(scenario.id);
       // Note: Foreign key constraints will cascade delete related characters, clues, and conditions
 
-      // Insert timeline snapshots (permanent_changes are at scenario level, not snapshot level)
-      scenario.timeline.forEach((snapshot, idx) => {
-        // Insert snapshot
+      // Insert single snapshot
+      const snapshot = scenario.snapshot;
+      {
+        // Insert snapshot (no time fields needed)
         const snapshotColumns = [
           "snapshot_id",
           "scenario_id",
-          "time_timestamp",
-          "absolute_time",
-          "game_day",
-          "time_of_day",
-          "time_notes",
           "snapshot_name",
           "location",
           "description",
@@ -289,11 +275,6 @@ export class ScenarioLoader {
         const snapshotValues: any[] = [
           snapshot.id,
           scenario.id,
-          snapshot.timePoint.absoluteTime, // Use as primary timestamp for backward compatibility
-          snapshot.timePoint.absoluteTime,
-          snapshot.timePoint.gameDay,
-          snapshot.timePoint.timeOfDay,
-          snapshot.timePoint.notes || null,
           snapshot.name,
           snapshot.location,
           snapshot.description,
@@ -301,11 +282,6 @@ export class ScenarioLoader {
           JSON.stringify(snapshot.exits),
           snapshot.keeperNotes || null,
         ];
-
-        if (hasTimeOrderColumn) {
-          snapshotColumns.splice(3, 0, "time_order");
-          snapshotValues.splice(3, 0, idx);
-        }
 
         const snapshotStmt = database.prepare(
           `INSERT INTO scenario_snapshots (${snapshotColumns.join(", ")}) VALUES (${snapshotColumns
@@ -381,7 +357,7 @@ export class ScenarioLoader {
             );
           }
         }
-      });
+      }
     });
   }
 
@@ -400,98 +376,73 @@ export class ScenarioLoader {
       return null;
     }
 
-    // Get timeline snapshots
-    const hasTimeOrder = this.db.hasColumn("scenario_snapshots", "time_order");
-    const orderColumn = hasTimeOrder ? "time_order" : "rowid";
-    const snapshots = database
-      .prepare(`
-            SELECT * FROM scenario_snapshots 
-            WHERE scenario_id = ? 
-            ORDER BY ${orderColumn} ASC
-        `)
-      .all(scenarioId) as any[];
+    // Get snapshot (single snapshot per scenario)
+    const snap = database
+      .prepare(`SELECT * FROM scenario_snapshots WHERE scenario_id = ? LIMIT 1`)
+      .get(scenarioId) as any;
 
-    const timeline: ScenarioSnapshot[] = [];
-
-    for (const snap of snapshots) {
-      // Get characters for this snapshot
-      const characters = database
-        .prepare(`SELECT * FROM scenario_characters WHERE snapshot_id = ?`)
-        .all(snap.snapshot_id) as any[];
-
-      // Get clues for this snapshot
-      const clues = database
-        .prepare(`SELECT * FROM scenario_clues WHERE snapshot_id = ?`)
-        .all(snap.snapshot_id) as any[];
-
-      // Get conditions for this snapshot
-      const conditions = database
-        .prepare(`SELECT * FROM scenario_conditions WHERE snapshot_id = ?`)
-        .all(snap.snapshot_id) as any[];
-
-      const timelineSnapshot: ScenarioSnapshot = {
-        id: snap.snapshot_id,
-        scenarioId,
-        timePoint: {
-          absoluteTime: snap.absolute_time || snap.time_timestamp, // Fallback to old field for backward compatibility
-          gameDay: snap.game_day || 1, // Default to day 1 if not set
-          timeOfDay: snap.time_of_day || "unknown", // Default to unknown if not set
-          notes: snap.time_notes,
-        },
-        name: snap.snapshot_name,
-        location: snap.location,
-        description: snap.description,
-        characters: characters.map((c) => ({
-          id: c.id,
-          name: c.character_name,
-          role: c.character_role,
-          status: c.character_status,
-          location: c.character_location,
-          notes: c.character_notes,
-        })),
-        clues: clues.map((c) => ({
-          id: c.clue_id,
-          clueText: c.clue_text,
-          category: c.category,
-          difficulty: c.difficulty,
-          location: c.clue_location,
-          discoveryMethod: c.discovery_method,
-          reveals: c.reveals ? JSON.parse(c.reveals) : [],
-          discovered: c.discovered === 1,
-          discoveryDetails: c.discovery_details ? JSON.parse(c.discovery_details) : undefined,
-        })),
-        conditions: conditions.map((c) => ({
-          type: c.condition_type,
-          description: c.description,
-          mechanicalEffect: c.mechanical_effect,
-        })),
-        events: snap.events ? JSON.parse(snap.events) : [],
-        exits: snap.exits ? JSON.parse(snap.exits) : [],
-        keeperNotes: snap.keeper_notes,
-        // permanentChanges will be assigned from scenario level after all snapshots are loaded
-      };
-
-      timeline.push(timelineSnapshot);
+    if (!snap) {
+      console.warn(`No snapshot found for scenario ${scenarioId}`);
+      return null;
     }
 
-    // Parse scenario-level permanent changes (shared by all snapshots)
-    const scenarioPermanentChanges = scenario.permanent_changes 
-      ? JSON.parse(scenario.permanent_changes) 
-      : [];
+    // Get characters for this snapshot
+    const characters = database
+      .prepare(`SELECT * FROM scenario_characters WHERE snapshot_id = ?`)
+      .all(snap.snapshot_id) as any[];
 
-    // Assign scenario-level permanent changes to all snapshots
-    timeline.forEach(snapshot => {
-      snapshot.permanentChanges = scenarioPermanentChanges;
-    });
+    // Get clues for this snapshot
+    const clues = database
+      .prepare(`SELECT * FROM scenario_clues WHERE snapshot_id = ?`)
+      .all(snap.snapshot_id) as any[];
+
+    // Get conditions for this snapshot
+    const conditions = database
+      .prepare(`SELECT * FROM scenario_conditions WHERE snapshot_id = ?`)
+      .all(snap.snapshot_id) as any[];
+
+    const snapshot: ScenarioSnapshot = {
+      id: snap.snapshot_id,
+      name: snap.snapshot_name,
+      location: snap.location,
+      description: snap.description,
+      characters: characters.map((c) => ({
+        id: c.id,
+        name: c.character_name,
+        role: c.character_role,
+        status: c.character_status,
+        location: c.character_location,
+        notes: c.character_notes,
+      })),
+      clues: clues.map((c) => ({
+        id: c.clue_id,
+        clueText: c.clue_text,
+        category: c.category,
+        difficulty: c.difficulty,
+        location: c.clue_location,
+        discoveryMethod: c.discovery_method,
+        reveals: c.reveals ? JSON.parse(c.reveals) : [],
+        discovered: c.discovered === 1,
+        discoveryDetails: c.discovery_details ? JSON.parse(c.discovery_details) : undefined,
+      })),
+      conditions: conditions.map((c) => ({
+        type: c.condition_type,
+        description: c.description,
+        mechanicalEffect: c.mechanical_effect,
+      })),
+      events: snap.events ? JSON.parse(snap.events) : [],
+      exits: snap.exits ? JSON.parse(snap.exits) : [],
+      permanentChanges: scenario.permanent_changes ? JSON.parse(scenario.permanent_changes) : [],
+      keeperNotes: snap.keeper_notes,
+    };
 
     const scenarioProfile: ScenarioProfile = {
       id: scenario.scenario_id,
       name: scenario.name,
       description: scenario.description,
-      timeline,
+      snapshot,
       tags: JSON.parse(scenario.tags || "[]"),
       connections: JSON.parse(scenario.connections || "[]"),
-      permanentChanges: scenarioPermanentChanges,
       metadata: JSON.parse(scenario.metadata),
     };
 
@@ -541,7 +492,6 @@ export class ScenarioLoader {
 
     return {
       scenarios,
-      snapshots: scenarios.flatMap((s) => s.timeline),
       totalCount: scenarios.length,
     };
   }

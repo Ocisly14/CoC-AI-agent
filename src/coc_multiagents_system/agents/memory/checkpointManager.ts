@@ -146,7 +146,7 @@ export class CheckpointManager {
   private generateAutoCheckpointName(gameState: GameState): string {
     if (gameState.currentScenario) {
       const scene = gameState.currentScenario;
-      return `${scene.name} - Day ${scene.timePoint.gameDay} ${scene.timePoint.timeOfDay}`;
+      return `${scene.name}`;
     }
     return `Auto-save - ${new Date().toLocaleString()}`;
   }

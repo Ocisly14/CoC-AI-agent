@@ -59,8 +59,6 @@ export class DirectorAgent {
     // 获取未访问的场景选项
     const unvisitedScenarios = await this.getUnvisitedScenarios(gameState);
     
-    // 获取当前场景的时间线进展选项
-    const timeProgressionOptions = this.getTimeProgressionOptions(gameState);
     
     // 获取模板
     const template = getDirectorTemplate();
@@ -79,13 +77,11 @@ export class DirectorAgent {
       // 未访问的场景
       unvisitedScenarios,
       
-      // 时间推进选项
-      timeProgressionOptions,
-      
       // 游戏状态统计
       gameStats: {
         sessionId: gameState.sessionId,
         phase: gameState.phase,
+        gameDay: gameState.gameDay,
         timeOfDay: gameState.timeOfDay,
         tension: gameState.tension,
         totalCluesDiscovered: gameState.discoveredClues.length,
@@ -242,29 +238,27 @@ export class DirectorAgent {
       return [];
     }
 
-    // 获取24小时内的连接场景
-    const connectedScenes = await this.getConnectedScenesWithin24Hours(gameState.currentScenario);
+    // 获取连接的场景
+    const connectedScenes = await this.getConnectedScenes(gameState.currentScenario);
     
-    // 获取已访问的场景ID集合（注意这里是 scenarioId，不是 snapshot id）
-    const visitedScenarioIds = new Set<string>();
+    // 获取已访问的场景ID集合（使用 snapshot id）
+    const visitedSnapshotIds = new Set<string>();
     
-    // 添加当前场景的 scenarioId
-    visitedScenarioIds.add(gameState.currentScenario.scenarioId);
+    // 添加当前场景的 id
+    visitedSnapshotIds.add(gameState.currentScenario.id);
     
-    // 添加已访问场景的 scenarioId
+    // 添加已访问场景的 id
     gameState.visitedScenarios.forEach(scenario => {
-      visitedScenarioIds.add(scenario.scenarioId);
+      visitedSnapshotIds.add(scenario.id);
     });
 
     // 过滤出未访问的连接场景
     const unvisitedScenarios = connectedScenes
-      .filter(snapshot => !visitedScenarioIds.has(snapshot.scenarioId))
+      .filter(snapshot => !visitedSnapshotIds.has(snapshot.id))
       .map(snapshot => ({
         id: snapshot.id,
-        scenarioId: snapshot.scenarioId,
         name: snapshot.name,
         location: snapshot.location,
-        timePoint: snapshot.timePoint,
         description: snapshot.description.length > 200 ? snapshot.description.slice(0, 200) + "..." : snapshot.description,
         keeperNotes: snapshot.keeperNotes || "",
         hoursFromNow: snapshot.timeDifferenceHours,
@@ -277,41 +271,7 @@ export class DirectorAgent {
     return unvisitedScenarios;
   }
 
-  /**
-   * 获取当前场景的时间线推进选项
-   */
-  private getTimeProgressionOptions(gameState: GameState): any[] {
-    if (!gameState.currentScenario || !gameState.currentScenario.scenarioId) {
-      return [];
-    }
-
-    // 从数据库获取完整的场景信息
-    const fullScenario = this.scenarioLoader.getScenarioById(gameState.currentScenario.scenarioId);
-    if (!fullScenario) {
-      return [];
-    }
-
-    // 找到当前时间点在timeline中的位置
-    const currentSnapshotId = gameState.currentScenario.id;
-    const currentIndex = fullScenario.timeline.findIndex(snapshot => snapshot.id === currentSnapshotId);
-    
-    if (currentIndex === -1) {
-      return [];
-    }
-
-    // 返回后续的时间点选项（只包含基础信息）
-    const futureSnapshots = fullScenario.timeline.slice(currentIndex + 1);
-    
-    return futureSnapshots.map(snapshot => ({
-      id: snapshot.id,
-      scenarioId: snapshot.scenarioId,
-      name: snapshot.name,
-      location: snapshot.location,
-      timePoint: snapshot.timePoint,
-      description: snapshot.description,
-      keeperNotes: snapshot.keeperNotes
-    }));
-  }
+  // Time progression removed - scenarios are now static snapshots without timeline
 
   /**
    * 执行场景推进 - 根据目标场景ID更新当前场景
@@ -322,16 +282,15 @@ export class DirectorAgent {
     estimatedShortActions: number | null = null
   ): Promise<void> {
     try {
-      // 从场景加载器中查找目标场景快照
+      // 从场景加载器中查找目标场景快照（每个场景只有一个snapshot）
       const allScenarios = this.scenarioLoader.getAllScenarios();
       let targetSnapshot: ScenarioSnapshot | null = null;
       let scenarioName = "";
 
-      // 在所有场景的时间线中搜索目标快照
+      // 在所有场景中搜索目标快照
       for (const scenario of allScenarios) {
-        const foundSnapshot = scenario.timeline.find(snapshot => snapshot.id === targetSnapshotId);
-        if (foundSnapshot) {
-          targetSnapshot = foundSnapshot;
+        if (scenario.snapshot.id === targetSnapshotId) {
+          targetSnapshot = scenario.snapshot;
           scenarioName = scenario.name;
           break;
         }
@@ -416,12 +375,14 @@ export class DirectorAgent {
   }
 
   /**
-   * 获取与当前场景连接的、时间在24小时内的场景
+   * 获取相关连接的场景（不再有时间限制）
    */
-  async getConnectedScenesWithin24Hours(currentScenario: ScenarioSnapshot): Promise<ConnectedSceneInfo[]> {
+  async getConnectedScenes(currentScenario: ScenarioSnapshot): Promise<ConnectedSceneInfo[]> {
     try {
-      // 获取当前场景所属的 scenario profile
-      const currentScenarioProfile = this.scenarioLoader.getScenarioById(currentScenario.scenarioId);
+      // Find the scenario profile that contains this snapshot
+      const allScenarios = this.scenarioLoader.getAllScenarios();
+      const currentScenarioProfile = allScenarios.find(s => s.snapshot.id === currentScenario.id);
+      
       if (!currentScenarioProfile || !currentScenarioProfile.connections) {
         console.log("No scenario profile or connections found");
         return [];
@@ -435,11 +396,6 @@ export class DirectorAgent {
         return [];
       }
 
-      // 解析当前场景的时间
-      const currentTime = new Date(currentScenario.timePoint.absoluteTime);
-      const currentTimeMs = currentTime.getTime();
-      const twentyFourHoursMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
       const connectedScenes: ConnectedSceneInfo[] = [];
 
       // 遍历每个连接的 scenario
@@ -452,35 +408,18 @@ export class DirectorAgent {
           conn => conn.scenarioId === connectedScenarioId
         );
 
-        // 遍历该 scenario 的所有 timeline snapshots
-        for (const snapshot of scenarioProfile.timeline) {
-          try {
-            const snapshotTime = new Date(snapshot.timePoint.absoluteTime);
-            const snapshotTimeMs = snapshotTime.getTime();
-            
-            // 检查时间是否在当前场景之后的24小时内
-            const timeDiffMs = snapshotTimeMs - currentTimeMs;
-            if (timeDiffMs > 0 && timeDiffMs <= twentyFourHoursMs) {
-              const timeDifferenceHours = Math.round(timeDiffMs / (60 * 60 * 1000) * 10) / 10;
+        // Get the single snapshot for this scenario (no timeline)
+        const snapshot = scenarioProfile.snapshot;
               
-              connectedScenes.push({
-                ...snapshot,
-                connectionType: connectionInfo?.relationshipType || "unknown",
-                connectionDescription: connectionInfo?.description || "",
-                timeDifferenceHours,
-              });
-            }
-          } catch (error) {
-            console.warn(`Failed to parse time for snapshot ${snapshot.id}:`, error);
-            continue;
-          }
-        }
+        connectedScenes.push({
+          ...snapshot,
+          connectionType: connectionInfo?.relationshipType || "unknown",
+          connectionDescription: connectionInfo?.description || "",
+          timeDifferenceHours: 0, // No time difference concept anymore
+        });
       }
 
-      // 按时间差排序（最近的优先）
-      connectedScenes.sort((a, b) => a.timeDifferenceHours - b.timeDifferenceHours);
-
-      console.log(`Found ${connectedScenes.length} connected scenes within 24 hours`);
+      console.log(`Found ${connectedScenes.length} connected scenes`);
       return connectedScenes;
     } catch (error) {
       console.error("Error getting connected scenes:", error);
@@ -501,7 +440,7 @@ export class DirectorAgent {
     }
 
     // 获取连接的场景
-    const connectedScenes = await this.getConnectedScenesWithin24Hours(gameState.currentScenario);
+    const connectedScenes = await this.getConnectedScenes(gameState.currentScenario);
 
     // 打包当前场景信息
     const discoveredCount = gameState.currentScenario.clues.filter(c => c.discovered).length;
@@ -512,8 +451,6 @@ export class DirectorAgent {
     const currentScene = {
       name: gameState.currentScenario.name,
       location: gameState.currentScenario.location,
-      gameDay: gameState.currentScenario.timePoint.gameDay,
-      timeOfDay: gameState.currentScenario.timePoint.timeOfDay,
       description: gameState.currentScenario.description,
       cluesDiscovered: discoveredCount,
       cluesTotal: totalCount,
@@ -527,9 +464,6 @@ export class DirectorAgent {
       id: scene.id,
       name: scene.name,
       location: scene.location,
-      gameDay: scene.timePoint.gameDay,
-      timeOfDay: scene.timePoint.timeOfDay,
-      hoursFromNow: scene.timeDifferenceHours,
       connectionType: scene.connectionType,
       connectionDesc: scene.connectionDescription,
       description: scene.description.length > 200 ? scene.description.slice(0, 200) + "..." : scene.description,
@@ -671,14 +605,16 @@ export class DirectorAgent {
         };
       }
 
-      // 在 timeline 中找到对应的 snapshot
-      const targetSnapshot = targetScenario.timeline.find(snap => snap.id === targetScenarioId);
-      if (!targetSnapshot) {
-        console.error(`Snapshot ${targetScenarioId} not found in scenario timeline`);
+      // 获取场景的单个snapshot（每个场景现在只有一个snapshot）
+      const targetSnapshot = targetScenario.snapshot;
+      
+      // 验证snapshot ID是否匹配
+      if (targetSnapshot.id !== targetScenarioId) {
+        console.error(`Snapshot ID mismatch: expected ${targetScenarioId}, got ${targetSnapshot.id}`);
         return {
           decision,
           transitioned: false,
-          message: `Snapshot not found: ${targetScenarioId}`
+          message: `Snapshot ID mismatch: ${targetScenarioId}`
         };
       }
 

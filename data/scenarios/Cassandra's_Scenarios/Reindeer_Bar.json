@@ -1,0 +1,148 @@
+[
+  {
+    "name": "Reindeer Bar",
+    "description": "A well-known bar in the town of Cassandra and the location of a recent murder. The bar has two floors: an open hall on the ground floor and surrounding private booths on the second floor. It is under the protection of local organized crime, and its surveillance system contains blind spots known only to a few insiders.",
+    "snapshot": {
+      "name": "Reindeer Bar (Post-Incident)",
+      "location": "A two-story bar in the town of Cassandra",
+      "description": "The crime scene has already been cleaned, and the owners are preparing to reopen the bar. Despite this, the atmosphere remains tense and oppressive. Several suspects have been brought back here by the police for a second round of questioning. At night, regular patrons still come in for drinks.",
+      "characters": [
+        {
+          "name": "Taran Emilion",
+          "role": "Bar owner",
+          "status": "alive",
+          "location": "Behind the bar counter and main hall",
+          "notes": "Responsible for bartending and part of the service work; operates under Ben Cleo’s protection."
+        },
+        {
+          "name": "Lutz Emilion",
+          "role": "Bar owner / staff",
+          "status": "alive",
+          "location": "Main hall",
+          "notes": "Handles cleaning, charging customers, and delivering drinks."
+        },
+        {
+          "name": "Ben Cleo",
+          "role": "Suspect",
+          "status": "alive",
+          "location": "Seated at a round table in the hall",
+          "notes": "A mafia boss and one of the bar’s real owners; visibly displeased about being implicated."
+        },
+        {
+          "name": "Adolf Karl",
+          "role": "Suspect",
+          "status": "alive",
+          "location": "Main hall",
+          "notes": "Brought in by Bruno for a second interrogation."
+        },
+        {
+          "name": "Marcel Gemberlain",
+          "role": "Suspect",
+          "status": "alive",
+          "location": "Main hall",
+          "notes": "An important figure connected to the case."
+        },
+        {
+          "name": "Simon Laplace",
+          "role": "Suspect / witness",
+          "status": "alive",
+          "location": "Main hall",
+          "notes": "Appears as Simon, but may conceal another personality known as Anatole."
+        },
+        {
+          "name": "Philip Scaletta",
+          "role": "Witness",
+          "status": "alive",
+          "location": "Leaning against a wall decorated with reindeer antlers",
+          "notes": "The one who discovered the body; a habitual thief who secretly took the victim’s wallet."
+        },
+        {
+          "name": "Lux",
+          "role": "Police officer",
+          "status": "alive",
+          "location": "Main hall",
+          "notes": "Bruno’s colleague, assisting with crowd control and interrogations."
+        }
+      ],
+      "clues": [
+        {
+          "clueText": "The bar’s two-level layout suggests complex movement patterns during the time of the murder.",
+          "category": "environment",
+          "difficulty": "automatic",
+          "location": "Entire bar",
+          "reveals": ["The murder occurred in a public but structurally complex space"]
+        },
+        {
+          "clueText": "The surveillance system contains blind spots and shows signs of tampering.",
+          "category": "environment",
+          "difficulty": "regular",
+          "location": "Surveillance and monitoring areas",
+          "discoveryMethod": "Spot Hidden or Electronics",
+          "reveals": ["The killer may have exploited camera blind spots"]
+        },
+        {
+          "clueText": "Philip secretly took the victim’s wallet on the day of the crime.",
+          "category": "witness",
+          "difficulty": "hard",
+          "location": "Philip’s person or during conversation",
+          "discoveryMethod": "Persuade or Psychology",
+          "reveals": ["The victim’s identity and a possible financial motive"]
+        },
+        {
+          "clueText": "All major suspects were compelled by Bruno to return to the bar for a second interrogation.",
+          "category": "observation",
+          "difficulty": "automatic",
+          "location": "Main hall",
+          "reveals": ["The case is far from resolved and remains highly suspicious"]
+        }
+      ],
+      "conditions": [
+        {
+          "type": "lighting",
+          "description": "Dim interior lighting creates a private but oppressive atmosphere.",
+          "mechanicalEffect": "Some Spot Hidden checks may be more difficult"
+        },
+        {
+          "type": "sound",
+          "description": "Low music and the clinking of glasses fill the background.",
+          "mechanicalEffect": ""
+        }
+      ],
+      "events": [
+        "December 22: A murder occurs inside Reindeer Bar",
+        "After the incident, suspects are gathered here for further questioning",
+        "At night, certain individuals such as Vincent and Philip may still visit for drinks"
+      ],
+      "exits": [
+        {
+          "direction": "Front entrance",
+          "destination": "Streets of Cassandra",
+          "description": "The main public entrance of the bar"
+        },
+        {
+          "direction": "Staircase",
+          "destination": "Second-floor booths",
+          "description": "Leads to the surrounding private booths on the upper floor"
+        }
+      ],
+      "keeperNotes": "Reindeer Bar is a core early-investigation location. Multiple suspects, conflicting testimonies, and the surveillance blind spots allow the Keeper to apply pressure and escalate tension.",
+      "permanentChanges": [
+        "The bar’s reputation in town is permanently affected by the murder",
+        "Investigators’ actions may influence whether the bar reopens smoothly"
+      ]
+    },
+    "tags": ["bar", "crime_scene", "murder", "interrogation", "organized_crime"],
+    "connections": [
+      {
+        "scenarioName": "Paradire Grand Hotel",
+        "relationshipType": "leads_to",
+        "description": "After the interrogation, Bruno arranges lodging for the investigators at the hotel."
+      },
+      {
+        "scenarioName": "Church",
+        "relationshipType": "alternate",
+        "description": "Some suspects claim they were at the church during the time of the murder as an alibi."
+      }
+    ]
+  }
+]

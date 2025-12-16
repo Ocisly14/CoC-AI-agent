@@ -36,6 +36,16 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 - clues: array of clue objects
 - permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
 
+TIME ESTIMATION:
+Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:
+- Quick actions: 1-10 minutes (glancing, brief conversation, opening doors)
+- Standard actions: 10-30 minutes (searching, examining, skill checks)
+- Extended actions: 30-120 minutes (combat, lengthy conversations, research)
+- Long activities: 2-8 hours (travel, surveillance, extended tasks)
+- Very long activities: 8+ hours (sleeping, all-day journeys)
+
+Be realistic and use your judgment. Include "timeElapsedMinutes" in your response.
+
 SCENE CHANGE DETECTION:
 1. Determine if player intends to move to a new location (entering/exiting rooms, moving between areas, climbing/crossing obstacles)
 2. If movement requires a skill check (locked door, difficult terrain, stealth entry), call roll_dice first and base scene change on the result
@@ -289,6 +299,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     const actionResult: ActionResult = {
       timestamp: new Date(),
       gameTime: gameState.timeOfDay || "Unknown time",
+      timeElapsedMinutes: parsed.timeElapsedMinutes || 0,
       location: gameState.currentScenario?.location || "Unknown location", 
       character: parsed.stateUpdate?.playerCharacter?.name || gameState.playerCharacter.name,
       result: parsed.summary || "performed an action",
@@ -299,6 +310,24 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     
     // Add to action results
     stateManager.addActionResult(actionResult);
+
+    // Update game time based on elapsed time
+    if (actionResult.timeElapsedMinutes && actionResult.timeElapsedMinutes > 0) {
+      const oldDay = gameState.gameDay;
+      const oldTime = gameState.timeOfDay;
+      stateManager.updateGameTime(actionResult.timeElapsedMinutes);
+      const updatedState = stateManager.getGameState();
+      const newDay = updatedState.gameDay;
+      const newTime = updatedState.timeOfDay;
+      const fullTime = stateManager.getFullGameTime();
+      
+      console.log(`⏰ Time advanced by ${actionResult.timeElapsedMinutes} minutes`);
+      if (newDay > oldDay) {
+        console.log(`   Day ${oldDay}, ${oldTime} → ${fullTime} 🌅`);
+      } else {
+        console.log(`   ${oldTime} → ${fullTime}`);
+      }
+    }
 
     // Append summary to action logs for actor and target (if any)
     const logEntry: ActionLogEntry = {

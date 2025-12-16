@@ -1,0 +1,85 @@
+[
+    {
+      "name": "Sandra's Cabin",
+      "description": "A secluded and modest cabin belonging to Sandra, located away from the busier parts of Cassandra. The cabin serves as a private refuge where confidential conversations can take place, and it becomes an important narrative location following Bruno’s death.",
+      "snapshot": {
+        "name": "Sandra's Cabin",
+        "location": "Outskirts of Cassandra",
+        "description": "The cabin is quiet and sparsely furnished, with a sense of isolation that makes it suitable for private discussions. The atmosphere is tense and heavy with unspoken fear. Inside, Sandra recounts events surrounding Bruno, clearly shaken and emotionally strained.",
+        "characters": [
+          {
+            "name": "Sandra",
+            "role": "Witness / confidant",
+            "status": "alive",
+            "location": "Inside the cabin",
+            "notes": "A reserved woman who trusted Bruno deeply. She is visibly pale and distressed when speaking about him and insists on secrecy."
+          }
+        ],
+        "clues": [
+          {
+            "clueText": "Sandra reveals that Bruno received an anonymous text message warning him not to trust his superiors, especially Padrich, and stating that Constantine was unfit to serve God.",
+            "category": "witness",
+            "difficulty": "regular",
+            "location": "Conversation with Sandra inside the cabin",
+            "discoveryMethod": "Talk / Charm",
+            "reveals": ["Bruno was investigating a past case against orders.", "Padrich and Constantine may be involved in a conspiracy."]
+          },
+          {
+            "clueText": "Sandra confirms the message sender knew details about Bruno’s investigation that were not public knowledge.",
+            "category": "knowledge",
+            "difficulty": "automatic",
+            "location": "Conversation with Sandra",
+            "discoveryMethod": "",
+            "reveals": ["The anonymous sender had insider information."]
+          },
+          {
+            "clueText": "Sandra admits she did not tell the local police about the message, fearing they could not be trusted.",
+            "category": "witness",
+            "difficulty": "automatic",
+            "location": "Conversation with Sandra",
+            "discoveryMethod": "",
+            "reveals": ["Local authorities may be compromised."]
+          }
+        ],
+        "conditions": [
+          {
+            "type": "lighting",
+            "description": "Dim indoor lighting, mostly from a single lamp.",
+            "mechanicalEffect": ""
+          },
+          {
+            "type": "other",
+            "description": "An atmosphere of secrecy and paranoia.",
+            "mechanicalEffect": "Keeper may apply a situational penalty to social rolls if investigators push too aggressively."
+          }
+        ],
+        "events": [
+          "Sandra recounts Bruno’s final days and the anonymous warning message.",
+          "Sandra entrusts the investigators with information she refused to give the police."
+        ],
+        "exits": [
+          {
+            "direction": "Front door",
+            "destination": "Cassandra outskirts",
+            "description": "A simple wooden door leading outside the cabin.",
+            "condition": ""
+          }
+        ],
+        "keeperNotes": "Sandra is cautious and will not reveal everything at once. If investigators mention Mythos or inhuman forces, she may become more cooperative but will still withhold details about the Nine Angels.",
+        "permanentChanges": []
+      },
+      "tags": ["witness testimony", "secrecy", "conspiracy hint", "safe location"],
+      "connections": [
+        {
+          "scenarioName": "Police Office",
+          "relationshipType": "alternate",
+          "description": "Sandra deliberately avoids reporting information to the police, offering an alternate source of truth."
+        },
+        {
+          "scenarioName": "Church",
+          "relationshipType": "leads_to",
+          "description": "The warning message implicates Constantine, connecting the cabin revelations to the church storyline."
+        }
+      ]
+    }
+  ]

@@ -59,6 +59,12 @@ export class KeeperAgent {
     
     // Prepare template context (JSON-packed to keep template concise)
     const playerCharacterComplete = this.extractCompletePlayerCharacter(gameState.playerCharacter);
+    
+    // Get time description
+    const stateManager = new GameStateManager(gameState);
+    const timeDescription = stateManager.getTimeOfDayDescription();
+    const fullGameTime = stateManager.getFullGameTime();
+    
     const templateContext = {
       characterInput,
       completeScenarioInfo,
@@ -66,12 +72,16 @@ export class KeeperAgent {
       playerCharacterComplete,
       allSceneCharacters,
       actionRelatedNpcs,
+      gameDay: gameState.gameDay,
       timeOfDay: gameState.timeOfDay,
+      timeDescription: timeDescription,  // Human-readable time (Morning, Evening, etc.)
+      fullGameTime: fullGameTime,  // Complete display: "Day 1, 08:00 (Morning)"
       tension: gameState.tension,
       phase: gameState.phase,
       isTransition,
       previousScenarioInfo,
       sceneTransitionRejection,
+      keeperGuidance: gameState.keeperGuidance,  // Module keeper guidance (permanent)
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
       latestActionResultJson: latestCompleteActionResult
         ? this.safeStringify(latestCompleteActionResult)
@@ -109,6 +119,16 @@ export class KeeperAgent {
     // 更新游戏状态中的线索状态
     const updatedGameState = this.updateClueStates(gameState, parsedResponse.clueRevelations, gameStateManager);
 
+    // 更新紧张度（如果LLM提供了）
+    if (parsedResponse.tensionLevel && typeof parsedResponse.tensionLevel === 'number') {
+      const oldTension = gameState.tension;
+      gameStateManager.updateTension(parsedResponse.tensionLevel);
+      const newTension = gameStateManager.getGameState().tension;
+      if (oldTension !== newTension) {
+        console.log(`🎭 Tension changed: ${oldTension} → ${newTension}`);
+      }
+    }
+
     // 清除 transition 标志（已经在叙事中处理过了）
     if (gameState.temporaryInfo.transition) {
       gameStateManager.clearTransitionFlag();
@@ -142,11 +162,9 @@ export class KeeperAgent {
     return {
       hasScenario: true,
       id: currentScenario.id,
-      scenarioId: currentScenario.scenarioId,
       name: currentScenario.name,
       location: currentScenario.location,
       description: currentScenario.description,
-      timePoint: currentScenario.timePoint || { timestamp: "Unknown", notes: "" },
       characters: currentScenario.characters || [],
       clues: currentScenario.clues || [],
       conditions: currentScenario.conditions || [],
@@ -175,10 +193,8 @@ export class KeeperAgent {
     return {
       hasPreviousScenario: true,
       id: previousScenario.id,
-      scenarioId: previousScenario.scenarioId,
       name: previousScenario.name,
-      location: previousScenario.location,
-      timePoint: previousScenario.timePoint
+      location: previousScenario.location
     };
   }
 

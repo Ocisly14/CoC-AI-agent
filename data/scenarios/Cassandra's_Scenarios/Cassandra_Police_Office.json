@@ -1,0 +1,62 @@
+[
+    {
+      "name": "Cassandra Police Office",
+      "description": "The local police office of Cassandra, a small-town law enforcement building that includes reception areas, interrogation rooms, a forensic workspace, and internal archives. While modest in size, it serves as the town’s central hub for official records, investigations, and post-incident processing.",
+      "snapshot": {
+        "name": "Cassandra Police Office",
+        "location": "Cassandra town center",
+        "description": "The police office consists of a public-facing front area, several offices, a small forensic studio used for basic autopsy and evidence examination, and an internal archive room storing case files, reports, and historical records. The atmosphere is restrained and bureaucratic, with a sense that not all past incidents have been thoroughly resolved.",
+        "characters": [
+          {
+            "name": "Vito",
+            "role": "auxiliary police officer",
+            "status": "alive",
+            "location": "Main office area",
+            "notes": "A good-natured auxiliary officer in his thirties with Latin American heritage. Helpful but not particularly sharp, he follows protocol and defers to superiors."
+          }
+        ],
+        "clues": [
+          {
+            "clueText": "Basic police records referencing past unusual deaths or disappearances in Cassandra.",
+            "category": "document",
+            "difficulty": "regular",
+            "location": "Archive room",
+            "discoveryMethod": "Library Use or Credit Rating",
+            "reveals": ["A pattern of recurring incidents over multiple years"]
+          },
+          {
+            "clueText": "Forensic notes indicating that certain bodies showed anomalies not consistent with normal causes of death.",
+            "category": "document",
+            "difficulty": "hard",
+            "location": "Forensic studio",
+            "discoveryMethod": "Forensics or Medicine",
+            "reveals": ["Evidence suggesting unnatural or abnormal causes"]
+          }
+        ],
+        "conditions": [
+          {
+            "type": "lighting",
+            "description": "Harsh fluorescent lighting in offices and forensic areas.",
+            "mechanicalEffect": "Extended research here may cause minor fatigue at Keeper’s discretion"
+          }
+        ],
+        "events": [
+          "Officers moving files between offices and the archive",
+          "Routine evidence handling in the forensic studio"
+        ],
+        "exits": [
+          {
+            "direction": "Front entrance",
+            "destination": "Cassandra streets",
+            "description": "Public entrance used by civilians and officers"
+          }
+        ],
+        "keeperNotes": "The police office should feel procedural and restrained. Access to sensitive files may require persuasion, authority, or favors. The forensic studio is limited in capability and may overlook non-human explanations.",
+        "permanentChanges": [
+          "Sensitive files removed or flagged after investigator interference"
+        ]
+      },
+      "tags": ["police", "forensics", "archives", "law enforcement", "investigation"],
+      "connections": []
+    }
+  ]

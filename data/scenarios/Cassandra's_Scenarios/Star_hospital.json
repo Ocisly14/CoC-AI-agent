@@ -1,0 +1,131 @@
+[
+    {
+      "name": "Stars Hospital",
+      "description": "Stars Hospital is a moderately equipped but poorly managed medical facility in Cassandra. While outwardly functional, it suffers from lax internal control, uneven security coverage, and signs of external interference with its digital systems. It is a critical investigative location connected to the handling of Lucifero’s body.",
+      "snapshot": {
+        "name": "Stars Hospital",
+        "location": "Stars Hospital, Cassandra",
+        "description": "The hospital operates normally on the surface, with staff accustomed to routine police inquiries. Surveillance cameras cover most areas but leave exploitable blind spots. Certain internal departments—particularly medical storage and laboratories—are unusually well protected. The morgue records indicate suspicious recent activity.",
+        "characters": [
+          {
+            "name": "Vincent Galenus",
+            "role": "hospital director / suspect",
+            "status": "alive",
+            "location": "Hospital (director’s office or restricted areas)",
+            "notes": "Personally transported Lucifero’s body to the crematorium according to hospital records. Possesses an ID card required to access restricted areas."
+          },
+          {
+            "name": "Lucifero",
+            "role": "victim",
+            "status": "missing",
+            "location": "Originally morgue; currently unknown",
+            "notes": "Hospital records show the body was registered and then rapidly transferred out. The corpse is no longer in the morgue."
+          }
+        ],
+        "clues": [
+          {
+            "clueText": "Hospital surveillance system is unusually resistant to hacking and intrusion.",
+            "category": "observation",
+            "difficulty": "automatic",
+            "location": "Hospital security system",
+            "discoveryMethod": "Consulting Simon or attempting system intrusion",
+            "reveals": [
+              "Someone has deliberately reinforced the hospital’s digital security",
+              "The hospital is concealing sensitive activity"
+            ]
+          },
+          {
+            "clueText": "Two areas stand out as suspicious: the pharmaceutical storage room and the laboratory.",
+            "category": "knowledge",
+            "difficulty": "regular",
+            "location": "Hospital internal layout",
+            "discoveryMethod": "Technical analysis or consultation with Simon",
+            "reveals": [
+              "Restricted access areas likely tied to illicit experimentation or evidence handling"
+            ]
+          },
+          {
+            "clueText": "Morgue records show Lucifero’s body was transferred to the crematorium very recently by Vincent himself.",
+            "category": "document",
+            "difficulty": "automatic",
+            "location": "Hospital records / morgue logs",
+            "discoveryMethod": "Accessing hospital archives",
+            "reveals": [
+              "Vincent Galenus is directly involved in the body’s disappearance",
+              "The crematorium is a new investigative lead"
+            ]
+          },
+          {
+            "clueText": "Lucifero’s corpse is missing from the morgue despite being officially logged.",
+            "category": "physical",
+            "difficulty": "automatic",
+            "location": "Morgue",
+            "discoveryMethod": "Direct inspection",
+            "reveals": [
+              "Evidence tampering",
+              "Urgency and concealment surrounding the victim"
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "type": "lighting",
+            "description": "Clinical fluorescent lighting throughout most areas; dimmer conditions near storage and service corridors.",
+            "mechanicalEffect": ""
+          },
+          {
+            "type": "sound",
+            "description": "Routine hospital ambience—distant footsteps, carts, and ventilation noise.",
+            "mechanicalEffect": ""
+          },
+          {
+            "type": "other",
+            "description": "Surveillance coverage with exploitable blind spots.",
+            "mechanicalEffect": "Stealth and infiltration possible with planning"
+          }
+        ],
+        "events": [
+          "Investigators may disguise themselves as police to access the hospital without suspicion",
+          "Failed disguises require alternate infiltration methods",
+          "Simon warns that forced hacking risks triggering alarms",
+          "Discovery that the body has already been moved escalates the investigation"
+        ],
+        "exits": [
+          {
+            "direction": "Main Entrance",
+            "destination": "Avenue of Stars",
+            "description": "Public-facing entrance used by staff, patients, and visitors"
+          },
+          {
+            "direction": "Service Exit",
+            "destination": "Crematorium route",
+            "description": "Used for transporting bodies and supplies",
+            "condition": "restricted"
+          }
+        ],
+        "keeperNotes": "Stars Hospital is a pivotal escalation point. Evidence here confirms deliberate concealment and pushes the investigation toward Vincent and the crematorium. Use surveillance pressure and time sensitivity to increase tension.",
+        "permanentChanges": [
+          "Lucifero’s body is no longer accessible in the hospital once discovered missing"
+        ]
+      },
+      "tags": [
+        "hospital",
+        "investigation",
+        "urban",
+        "restricted-access",
+        "evidence-tampering"
+      ],
+      "connections": [
+        {
+          "scenarioName": "Avenue of Stars",
+          "relationshipType": "prerequisite",
+          "description": "Stars Hospital is listed under and accessed from Avenue of Stars during the investigation."
+        },
+        {
+          "scenarioName": "Crematorium",
+          "relationshipType": "leads_to",
+          "description": "Hospital records indicate Lucifero’s body was transferred there by Vincent."
+        }
+      ]
+    }
+  ]

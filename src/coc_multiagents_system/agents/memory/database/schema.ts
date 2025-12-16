@@ -314,13 +314,11 @@ export class CoCDatabase {
       // ignore if column already exists or cannot be added
     }
 
-    // Scenario snapshots table - for timeline data
+    // Scenario snapshots table - each scenario now has a single snapshot (no timeline)
     this.db.exec(`
             CREATE TABLE IF NOT EXISTS scenario_snapshots (
                 snapshot_id TEXT PRIMARY KEY,
                 scenario_id TEXT NOT NULL,
-                time_timestamp TEXT NOT NULL,
-                time_notes TEXT,
                 snapshot_name TEXT,
                 location TEXT NOT NULL,
                 description TEXT NOT NULL,
@@ -333,27 +331,7 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_snapshots_scenario ON scenario_snapshots(scenario_id);
         `);
     
-    // Add new quantifiable time fields
-    try {
-      if (!this.hasColumn("scenario_snapshots", "absolute_time")) {
-        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN absolute_time TEXT;");
-      }
-      if (!this.hasColumn("scenario_snapshots", "game_day")) {
-        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN game_day INTEGER;");
-      }
-      if (!this.hasColumn("scenario_snapshots", "time_of_day")) {
-        this.db.exec("ALTER TABLE scenario_snapshots ADD COLUMN time_of_day TEXT;");
-      }
-    } catch {
-      // ignore if columns already exist or cannot be added
-    }
-    
-    // Create indexes for new time fields for efficient querying
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_snapshots_absolute_time ON scenario_snapshots(absolute_time);
-      CREATE INDEX IF NOT EXISTS idx_snapshots_game_day ON scenario_snapshots(game_day);
-      CREATE INDEX IF NOT EXISTS idx_snapshots_time_of_day ON scenario_snapshots(time_of_day);
-    `);
+    // Legacy time fields removed - scenarios no longer have timeline/timepoint data
 
     // Scenario characters table - characters present in scenarios
     this.db.exec(`
@@ -546,8 +524,8 @@ export class CoCDatabase {
     const database = this.db;
     
     // Extract metadata for quick queries
-    const gameDay = gameState.currentScenario?.timePoint?.gameDay || null;
-    const gameTime = gameState.currentScenario?.timePoint?.timeOfDay || gameState.timeOfDay || null;
+    const gameDay = gameState.gameDay || 1;
+    const gameTime = gameState.timeOfDay || null;
     const currentSceneName = gameState.currentScenario?.name || null;
     const currentLocation = gameState.currentScenario?.location || null;
     const playerHp = gameState.playerCharacter?.status?.hp || null;

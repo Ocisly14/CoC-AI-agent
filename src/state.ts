@@ -42,15 +42,8 @@ export interface SceneTransitionRejection {
 
 export interface VisitedScenarioBasic {
   id: string;
-  scenarioId: string;
   name: string;
   location: string;
-  timePoint: {
-    absoluteTime: string;
-    gameDay: number;
-    timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
-    notes?: string;
-  };
 }
 
 export interface GameState {
@@ -58,8 +51,10 @@ export interface GameState {
   phase: Phase;
   currentScenario: ScenarioSnapshot | null;
   visitedScenarios: VisitedScenarioBasic[];
-  timeOfDay: string;
+  gameDay: number;  // 游戏内第几天
+  timeOfDay: string;  // 游戏时间 HH:MM 格式
   tension: number;
+  keeperGuidance: string | null;  // 模组守秘人指导（永久信息）
   openThreads: string[];
   discoveredClues: string[];
   playerCharacter: CharacterProfile;
@@ -125,14 +120,16 @@ export const initialGameState: GameState = {
   phase: "intro",
   currentScenario: null,
   visitedScenarios: [],
-  timeOfDay: "Evening",
+  gameDay: 1,
+  timeOfDay: "08:00",
   tension: 1,
+  keeperGuidance: null,
   openThreads: [],
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
   scenarioTimeState: {
-    sceneStartTime: "Evening",
+    sceneStartTime: "08:00",
     playerTimeConsumption: {},
   },
   temporaryInfo: {
@@ -162,6 +159,7 @@ export interface DirectorDecision {
 export interface ActionResult {
   timestamp: Date;
   gameTime: string;
+  timeElapsedMinutes?: number; // 行动实际消耗的分钟数
   location: string;
   character: string;
   result: string;
@@ -266,10 +264,8 @@ export class GameStateManager {
       // Extract only basic information for visited scenarios
       const basicScenario: VisitedScenarioBasic = {
         id: scenario.id,
-        scenarioId: scenario.scenarioId,
         name: scenario.name,
-        location: scenario.location,
-        timePoint: scenario.timePoint
+        location: scenario.location
       };
       
       // Add scenario to visited list
@@ -483,6 +479,65 @@ export class GameStateManager {
   resetScenarioTimeState(): void {
     this.gameState.scenarioTimeState.playerTimeConsumption = {};
     this.gameState.scenarioTimeState.sceneStartTime = this.gameState.timeOfDay;
+  }
+
+  /**
+   * Update game time based on elapsed time in minutes
+   */
+  updateGameTime(elapsedMinutes: number): void {
+    if (!elapsedMinutes || elapsedMinutes <= 0) return;
+
+    // Parse current time "HH:MM"
+    const [hours, minutes] = this.gameState.timeOfDay.split(':').map(Number);
+    
+    // Calculate new time
+    let totalMinutes = hours * 60 + minutes + elapsedMinutes;
+    
+    // Handle day overflow (24 hours = 1440 minutes)
+    if (totalMinutes >= 1440) {
+      const daysElapsed = Math.floor(totalMinutes / 1440);
+      this.gameState.gameDay += daysElapsed;
+      totalMinutes = totalMinutes % 1440;
+      console.log(`🌅 A new day has dawned! It is now Day ${this.gameState.gameDay}`);
+    }
+    
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+    
+    // Update time in HH:MM format
+    this.gameState.timeOfDay = 
+      `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+  }
+
+  /**
+   * Get human-readable time of day description
+   */
+  getTimeOfDayDescription(): string {
+    const [hours] = this.gameState.timeOfDay.split(':').map(Number);
+    
+    if (hours >= 5 && hours < 8) return "Dawn";
+    if (hours >= 8 && hours < 12) return "Morning";
+    if (hours >= 12 && hours < 14) return "Noon";
+    if (hours >= 14 && hours < 17) return "Afternoon";
+    if (hours >= 17 && hours < 20) return "Evening";
+    if (hours >= 20 && hours < 23) return "Night";
+    return "Midnight";
+  }
+
+  /**
+   * Get full game time display with day and time
+   */
+  getFullGameTime(): string {
+    const timeDesc = this.getTimeOfDayDescription();
+    return `Day ${this.gameState.gameDay}, ${this.gameState.timeOfDay} (${timeDesc})`;
+  }
+
+  /**
+   * Update tension level (1-10 scale)
+   */
+  updateTension(newTension: number): void {
+    // Clamp between 1 and 10
+    this.gameState.tension = Math.max(1, Math.min(10, Math.round(newTension)));
   }
 
   /**

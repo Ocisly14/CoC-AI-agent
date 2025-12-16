@@ -1,21 +1,7 @@
 /**
  * Scenario Type Definitions
- * Data structures for scenario management and timeline tracking
+ * Data structures for scenario management (single snapshot per scenario, no timeline)
  */
-
-/**
- * Time point for scenario events
- */
-export interface ScenarioTimePoint {
-  /** Absolute time in ISO 8601 format (e.g., "1925-03-15T08:00:00Z") */
-  absoluteTime: string;
-  /** Game day number (1 for first day, 2 for second day, etc.) */
-  gameDay: number;
-  /** Time of day classification for quick filtering and atmospheric queries */
-  timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
-  /** Additional notes about this time point */
-  notes?: string;
-}
 
 /**
  * Character presence in a scenario
@@ -74,15 +60,11 @@ export interface ScenarioCondition {
 }
 
 /**
- * Single scenario state at a specific time point
+ * Scenario snapshot - represents the current state of a scenario
  */
 export interface ScenarioSnapshot {
   id: string;
-  /** Reference to the parent scenario */
-  scenarioId: string;
-  /** Time information */
-  timePoint: ScenarioTimePoint;
-  /** Scenario name at this time */
+  /** Scenario name */
   name: string;
   /** Primary location */
   location: string;
@@ -94,7 +76,7 @@ export interface ScenarioSnapshot {
   clues: ScenarioClue[];
   /** Environmental conditions */
   conditions: ScenarioCondition[];
-  /** Notable events at this time */
+  /** Notable events */
   events: string[];
   /** Exits and connections to other locations */
   exits?: {
@@ -103,16 +85,16 @@ export interface ScenarioSnapshot {
     description?: string;
     condition?: string; // e.g., "locked", "hidden"
   }[];
-  /** Reference to permanent changes from the parent scenario */
+  /** Permanent changes made to this scenario */
   permanentChanges?: string[];
-  /** Keeper notes for this snapshot */
+  /** Keeper notes */
   keeperNotes?: string;
   /** Estimated short actions the scene can accommodate (runtime-only, set by Director) */
   estimatedShortActions?: number;
 }
 
 /**
- * Complete scenario with timeline
+ * Complete scenario profile (single snapshot, no timeline)
  */
 export interface ScenarioProfile {
   id: string;
@@ -120,8 +102,8 @@ export interface ScenarioProfile {
   name: string;
   /** Overall description */
   description: string;
-  /** All timeline snapshots */
-  timeline: ScenarioSnapshot[];
+  /** Current scenario snapshot */
+  snapshot: ScenarioSnapshot;
   /** Scenario tags for organization */
   tags: string[];
   /** Related scenarios */
@@ -130,8 +112,6 @@ export interface ScenarioProfile {
     relationshipType: "leads_to" | "concurrent" | "prerequisite" | "alternate";
     description?: string;
   }[];
-  /** Permanent changes made to the scenario */
-  permanentChanges?: string[];
   /** Scenario metadata */
   metadata: {
     createdAt: string;
@@ -148,13 +128,7 @@ export interface ScenarioProfile {
 export interface ParsedScenarioData {
   name: string;
   description: string;
-  timeline: {
-    timePoint: {
-      absoluteTime: string;
-      gameDay: number;
-      timeOfDay: "dawn" | "morning" | "noon" | "afternoon" | "evening" | "night" | "midnight" | "unknown";
-      notes?: string;
-    };
+  snapshot: {
     name?: string;
     location: string;
     description: string;
@@ -186,7 +160,8 @@ export interface ParsedScenarioData {
       condition?: string;
     }[];
     keeperNotes?: string;
-  }[];
+    permanentChanges?: string[];
+  };
   tags?: string[];
   connections?: {
     scenarioName: string;
@@ -200,10 +175,6 @@ export interface ParsedScenarioData {
  */
 export interface ScenarioQuery {
   name?: string;
-  timeRange?: {
-    start: string;
-    end: string;
-  };
   location?: string;
   charactersInvolved?: string[];
   tags?: string[];
@@ -215,7 +186,6 @@ export interface ScenarioQuery {
  */
 export interface ScenarioSearchResult {
   scenarios: ScenarioProfile[];
-  snapshots: ScenarioSnapshot[];
   totalCount: number;
   relevanceScores?: number[];
 }

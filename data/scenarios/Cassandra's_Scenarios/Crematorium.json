@@ -1,0 +1,58 @@
+[
+    {
+      "name": "Crematorium",
+      "description": "The Crematorium is the official facility in Cassandra responsible for the final disposal of bodies. It is normally inaccessible to the public and becomes relevant due to suspicious hospital records regarding the rapid transfer of a victim’s body.",
+      "snapshot": {
+        "name": "Crematorium",
+        "location": "Cassandra Crematorium",
+        "description": "According to hospital archives, Lucifero’s body was transferred here shortly before investigators arrived at the hospital. The facility represents the final documented destination of the corpse, but what actually occurred inside remains unclear.",
+        "characters": [],
+        "clues": [
+          {
+            "clueText": "Hospital records state that Lucifero’s body was transported to the crematorium shortly before the investigators’ arrival.",
+            "category": "document",
+            "difficulty": "automatic",
+            "location": "Hospital transfer records referencing the crematorium",
+            "discoveryMethod": "",
+            "reveals": [
+              "The crematorium is the last known official destination of the body",
+              "The transfer happened with unusual speed"
+            ]
+          },
+          {
+            "clueText": "The transfer record lists Vincent Galenus as the person who personally delivered the body.",
+            "category": "document",
+            "difficulty": "automatic",
+            "location": "Hospital morgue and transport logs",
+            "discoveryMethod": "",
+            "reveals": [
+              "Vincent Galenus is directly involved in the handling of the body",
+              "The crematorium visit may be connected to evidence concealment"
+            ]
+          }
+        ],
+        "conditions": [],
+        "events": [
+          "Investigators learn that the victim’s body has already been sent to the crematorium"
+        ],
+        "exits": [],
+        "keeperNotes": "The crematorium is introduced through documentation rather than direct on-site description. The Keeper may choose whether the body was truly destroyed or if the transfer record conceals further wrongdoing.",
+        "permanentChanges": [
+          "Once the transfer is confirmed, the body can no longer be found at the hospital"
+        ]
+      },
+      "tags": [
+        "crematorium",
+        "evidence-disposal",
+        "investigation",
+        "restricted-access"
+      ],
+      "connections": [
+        {
+          "scenarioName": "Stars Hospital",
+          "relationshipType": "prerequisite",
+          "description": "Hospital records reveal that the body was sent to the crematorium."
+        }
+      ]
+    }
+  ]

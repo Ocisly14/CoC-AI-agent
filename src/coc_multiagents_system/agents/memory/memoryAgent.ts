@@ -119,7 +119,7 @@ export const createScenarioCheckpoint = async (
   db.transaction(() => {
     // UNIFIED CHECKPOINT: Save complete game state to single checkpoint table
     const checkpointId = `checkpoint-${currentScenario.id}-${Date.now()}`;
-    const checkpointName = `${currentScenario.name} - Day ${currentScenario.timePoint.gameDay} ${currentScenario.timePoint.timeOfDay}`;
+    const checkpointName = `${currentScenario.name}`;
     const description = `Auto-saved at ${currentScenario.location}`;
     
     db.saveCheckpoint(
@@ -132,12 +132,20 @@ export const createScenarioCheckpoint = async (
     );
 
     // LEGACY: Still save to normalized tables for backwards compatibility and queries
-    // 1. Save/Update permanent changes at scenario level (shared by all timeline snapshots)
+    // Determine scenarioId - infer from snapshot ID
+    let scenarioId = (currentScenario as any).scenarioId;
+    if (!scenarioId && currentScenario.id) {
+      // Infer scenario ID from snapshot ID (e.g., "scenario-xyz-snapshot" -> "scenario-xyz")
+      scenarioId = currentScenario.id.replace(/-snapshot.*$/, '');
+    }
+    const finalScenarioId = scenarioId || 'unknown';
+
+    // 1. Save/Update permanent changes at scenario level
     if (currentScenario.permanentChanges && currentScenario.permanentChanges.length > 0) {
       // Check if scenario exists in scenarios table
       const existingScenario = database
         .prepare("SELECT scenario_id, permanent_changes FROM scenarios WHERE scenario_id = ?")
-        .get(currentScenario.scenarioId) as any;
+        .get(finalScenarioId) as any;
 
       if (existingScenario) {
         // Merge with existing permanent changes to avoid duplicates
@@ -151,7 +159,7 @@ export const createScenarioCheckpoint = async (
         // Update permanent changes in scenarios table
         database
           .prepare("UPDATE scenarios SET permanent_changes = ? WHERE scenario_id = ?")
-          .run(JSON.stringify(mergedChanges), currentScenario.scenarioId);
+          .run(JSON.stringify(mergedChanges), finalScenarioId);
       } else {
         // Create minimal scenario record if it doesn't exist
         database
@@ -161,7 +169,7 @@ export const createScenarioCheckpoint = async (
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
           `)
           .run(
-            currentScenario.scenarioId,
+            finalScenarioId,
             currentScenario.name,
             currentScenario.description || "",
             JSON.stringify([]),
@@ -179,19 +187,13 @@ export const createScenarioCheckpoint = async (
     // 2. Save/Update the scenario snapshot (without permanent_changes - those are at scenario level)
     const snapshotStmt = database.prepare(`
       INSERT OR REPLACE INTO scenario_snapshots (
-        snapshot_id, scenario_id, time_timestamp, absolute_time, game_day, time_of_day,
-        time_notes, snapshot_name, location, description, events, exits, keeper_notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        snapshot_id, scenario_id, snapshot_name, location, description, events, exits, keeper_notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     snapshotStmt.run(
       currentScenario.id,
-      currentScenario.scenarioId,
-      currentScenario.timePoint.absoluteTime, // Use as legacy timestamp
-      currentScenario.timePoint.absoluteTime,
-      currentScenario.timePoint.gameDay,
-      currentScenario.timePoint.timeOfDay,
-      currentScenario.timePoint.notes || null,
+      finalScenarioId,
       currentScenario.name,
       currentScenario.location,
       currentScenario.description,
@@ -402,7 +404,6 @@ export const createScenarioCheckpoint = async (
           gameState.sessionId,
           new Date().toISOString(),
           JSON.stringify({
-            scenarioId: currentScenario.scenarioId,
             snapshotId: currentScenario.id,
             change: change,
           }),

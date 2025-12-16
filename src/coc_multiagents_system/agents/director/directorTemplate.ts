@@ -9,7 +9,6 @@ Monitor game progress and determine when to advance the story while respecting p
 ## 🎬 Current Scene
 {{#if currentScenario}}
 **{{currentScenario.name}}** @ {{currentScenario.location}}
-🕐 Day {{currentScenario.timePoint.gameDay}}, {{currentScenario.timePoint.timeOfDay}}
 
 {{currentScenario.description}}
 
@@ -41,29 +40,17 @@ Monitor game progress and determine when to advance the story while respecting p
 
 ## 🗺️ Progression Options
 
-### Unvisited Connected Scenes (Next 24h)
+### Unvisited Connected Scenes
 {{#if unvisitedScenarios}}
 {{#each unvisitedScenarios}}
 **{{this.name}}** ({{this.id}})
-📍 {{this.location}} | 🕐 +{{this.hoursFromNow}}h (Day {{this.timePoint.gameDay}}, {{this.timePoint.timeOfDay}})
+📍 {{this.location}}
 🔗 {{this.connectionType}}: {{this.connectionDescription}}
 
 {{this.description}}
 
 💡 {{this.clueCount}} clues | 👥 {{this.characterCount}} characters
 {{#if this.keeperNotes}}🎭 {{this.keeperNotes}}{{/if}}
-
-{{/each}}
-{{else}}
-*None available within 24 hours*
-{{/if}}
-
-### Time Progression (Same Location)
-{{#if timeProgressionOptions}}
-{{#each timeProgressionOptions}}
-**{{this.name}}** ({{this.id}})
-🕐 Day {{this.timePoint.gameDay}}, {{this.timePoint.timeOfDay}}
-{{this.description}}
 
 {{/each}}
 {{else}}
@@ -88,7 +75,6 @@ Monitor game progress and determine when to advance the story while respecting p
 - Player has meaningful options
 
 **Types**:
-- **time_advance**: Next time point in same location
 - **scene_change**: Move to different location
 - **narrative_push**: Inject events into current scene
 - **none**: Continue current scene
@@ -125,7 +111,6 @@ Decide whether to transition to a new scene based on the current state and avail
 ## 📍 Current Scene
 {{#if currentScene}}
 **{{currentScene.name}}** @ {{currentScene.location}}
-🕐 Day {{currentScene.gameDay}}, {{currentScene.timeOfDay}}
 
 {{currentScene.description}}
 
@@ -137,12 +122,12 @@ Decide whether to transition to a new scene based on the current state and avail
 *No current scene*
 {{/if}}
 
-## 🗺️ Available Transitions (Next 24h)
+## 🗺️ Available Transitions
 {{#if availableScenes}}
 {{#each availableScenes}}
 
 **{{this.name}}** (ID: {{this.id}})
-📍 {{this.location}} | 🕐 +{{this.hoursFromNow}}h (Day {{this.gameDay}}, {{this.timeOfDay}})
+📍 {{this.location}}
 🔗 {{this.connectionType}}: {{this.connectionDesc}}
 
 {{this.description}}

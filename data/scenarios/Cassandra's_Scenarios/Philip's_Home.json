@@ -1,0 +1,75 @@
+[
+    {
+      "name": "Philip's Home",
+      "description": "A modest, cramped private residence belonging to Philip Scaletta, filled with stolen goods and personal mementos. The space reflects a life of poverty, paranoia, and petty crime, with cluttered storage and little concern for hospitality or order.",
+      "snapshot": {
+        "name": "Philip's Home",
+        "location": "A small, inconspicuous residence in Cassandra, serving as Philip Scaletta’s personal living space",
+        "description": "Philip’s home is cluttered with numerous stolen items—his so-called 'trophies'—carelessly stacked or hidden throughout the room. Despite the mess, certain items are kept with care, including a treasured old family photograph. The atmosphere is tense and defensive, suggesting Philip’s constant fear of being exposed or robbed himself.",
+        "characters": [
+          {
+            "name": "Philip Scaletta",
+            "role": "Witness / Suspect",
+            "status": "Alive",
+            "location": "Inside his home",
+            "notes": "A small-time thief who values money and survival above all else. He is extremely reluctant to cooperate unless bribed or promised protection from trouble."
+          }
+        ],
+        "clues": [
+          {
+            "clueText": "The house is filled with various stolen goods and personal 'trophies' collected by Philip over time.",
+            "category": "observation",
+            "difficulty": "automatic",
+            "location": "Throughout the residence",
+            "discoveryMethod": "",
+            "reveals": ["Philip’s habitual theft and obsession with keeping his stolen gains"]
+          },
+          {
+            "clueText": "An old family photograph showing Philip with his parents, carefully preserved.",
+            "category": "physical",
+            "difficulty": "regular",
+            "location": "Hidden among Philip’s personal belongings",
+            "discoveryMethod": "Search",
+            "reveals": ["Philip once had a happy family life and still harbors emotional attachment to his past"]
+          }
+        ],
+        "conditions": [
+          {
+            "type": "lighting",
+            "description": "Dim indoor lighting with poorly lit corners",
+            "mechanicalEffect": ""
+          },
+          {
+            "type": "other",
+            "description": "Cluttered and cramped interior space",
+            "mechanicalEffect": "May impose situational penalties on movement or stealth if a chase or struggle occurs indoors"
+          }
+        ],
+        "events": [
+          "Investigators may confront Philip about his stolen property",
+          "Philip may refuse cooperation unless offered money or assistance"
+        ],
+        "exits": [
+          {
+            "direction": "Front door",
+            "destination": "Cassandra streets",
+            "description": "A simple, frequently used exit",
+            "condition": ""
+          }
+        ],
+        "keeperNotes": "Philip is highly protective of his belongings and will react defensively if investigators search his home without permission. Emphasize his greed, fear, and resentment of authority. He may reveal information only when adequately bribed or pressured.",
+        "permanentChanges": [
+          "Stolen items may be confiscated or removed by investigators",
+          "Philip’s attitude toward the investigators may permanently worsen or improve depending on their actions"
+        ]
+      },
+      "tags": ["private residence", "criminal", "cluttered", "NPC home"],
+      "connections": [
+        {
+          "scenarioName": "Reindeer Bar",
+          "relationshipType": "leads_to",
+          "description": "Philip’s involvement in the bar incident and his lost knife connect his home to the events at the Reindeer Bar"
+        }
+      ]
+    }
+  ]

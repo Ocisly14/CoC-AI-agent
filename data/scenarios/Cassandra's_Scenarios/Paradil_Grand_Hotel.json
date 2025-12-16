@@ -1,0 +1,65 @@
+[
+    {
+      "name": "Paradil Grand Hotel",
+      "description": "A local hotel in Cassandra that became the site of an unexplained death the previous year. The hotel is known to locals but is not currently under active investigation by authorities. Its past incident is largely forgotten, recorded only as an anonymous death with no clear resolution.",
+      "snapshot": {
+        "name": "Paradil Grand Hotel",
+        "location": "A standard mid-sized hotel in the town of Cassandra",
+        "description": "The hotel appears ordinary and functional, serving travelers and visitors. Beneath its mundane appearance, it carries the shadow of an unresolved incident: the death of an unidentified individual the year before, which never developed into a formal missing person case.",
+        "characters": [
+          {
+            "name": "Unknown Deceased Woman",
+            "role": "victim",
+            "status": "deceased",
+            "location": "Paradil Grand Hotel (historical incident)",
+            "notes": "Not a local resident of Cassandra. There was no local missing person report filed for her."
+          }
+        ],
+        "clues": [
+          {
+            "clueText": "Record of an unidentified death that occurred in the Paradil Grand Hotel the previous year.",
+            "category": "document",
+            "difficulty": "regular",
+            "location": "Hotel records or local archives",
+            "discoveryMethod": "Library Use or investigation of hotel records",
+            "reveals": [
+              "The victim was not from Cassandra",
+              "The case was never fully investigated"
+            ]
+          },
+          {
+            "clueText": "Information indicating the deceased woman came to Cassandra to search for her missing sister.",
+            "category": "knowledge",
+            "difficulty": "hard",
+            "location": "Cross-referenced testimonies or background investigation",
+            "discoveryMethod": "Interviews or research",
+            "reveals": [
+              "Her sister disappeared after traveling to Cassandra",
+              "A possible connection to cult activities"
+            ]
+          }
+        ],
+        "conditions": [],
+        "events": [
+          "An anonymous death occurred at the hotel in the previous year"
+        ],
+        "exits": [
+          {
+            "direction": "Main Entrance",
+            "destination": "Cassandra town streets",
+            "description": "The primary entrance and exit for guests and staff"
+          }
+        ],
+        "keeperNotes": "The Paradil Grand Hotel serves as a background location tying past events to the current investigation. The unidentified death can be used to foreshadow cult activity and reinforce the theme that outsiders who investigate Cassandra often meet grim ends.",
+        "permanentChanges": []
+      },
+      "tags": ["hotel", "past crime", "unresolved death", "outsider victim"],
+      "connections": [
+        {
+          "scenarioName": "Cassandra Town",
+          "relationshipType": "concurrent",
+          "description": "The hotel is part of the town and its unresolved incident contributes to the broader mystery surrounding Cassandra."
+        }
+      ]
+    }
+  ]
