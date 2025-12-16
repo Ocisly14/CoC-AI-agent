@@ -13,6 +13,7 @@ export interface ParsedModuleData {
   storyHook?: string;
   moduleLimitations?: string;
   initialScenario?: string; // Name or ID of the starting scenario
+  initialGameTime?: string; // Initial game time in format "HH:MM" or "Day X HH:MM"
   tags?: string[];
   source?: string;
 }
@@ -28,6 +29,7 @@ export interface ModuleBackground {
   storyHook?: string;
   moduleLimitations?: string;
   initialScenario?: string; // Name or ID of the starting scenario
+  initialGameTime?: string; // Initial game time in format "HH:MM" or "Day X HH:MM"
   tags: string[];
   source?: string;
   createdAt: string;

@@ -52,6 +52,32 @@ app.get("/", (_req, res) => {
   }
 });
 
+// API endpoint to get all available mods
+app.get("/api/mods", (req, res) => {
+  try {
+    const modsDir = path.join(process.cwd(), "data", "Mods");
+    if (!fs.existsSync(modsDir)) {
+      return res.json({ success: true, mods: [] });
+    }
+
+    const dirs = fs.readdirSync(modsDir, { withFileTypes: true });
+    const mods = dirs
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => ({
+        name: dirent.name,
+        path: path.join(modsDir, dirent.name),
+      }));
+
+    res.json({
+      success: true,
+      mods: mods,
+    });
+  } catch (error) {
+    console.error("Error fetching mods:", error);
+    res.status(500).json({ error: "Failed to fetch mods: " + (error as Error).message });
+  }
+});
+
 // API endpoint to import game data (scenarios, NPCs, and modules)
 app.post("/api/game/import-data", async (req, res) => {
   try {
@@ -68,40 +94,73 @@ app.post("/api/game/import-data", async (req, res) => {
       console.log("Database initialized");
     }
 
+    // Helper function to find Cassandra mod directory (handles different quote characters)
+    const findCassandraModDir = (): string | null => {
+      const modsDir = path.join(process.cwd(), "data", "Mods");
+      if (!fs.existsSync(modsDir)) {
+        return null;
+      }
+      const dirs = fs.readdirSync(modsDir);
+      const cassandraDir = dirs.find(d => d.includes("Cassandra") && d.includes("Black Carnival"));
+      return cassandraDir ? path.join(modsDir, cassandraDir) : null;
+    };
+
+    const cassandraModDir = findCassandraModDir();
+
     // Load scenarios from JSON files
     const scenarioLoader = new ScenarioLoader(db);
-    const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
     let scenariosLoaded = 0;
-    if (fs.existsSync(cassandraScenariosDir)) {
-      const scenarios = await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
-      scenariosLoaded = scenarios.length;
-      console.log(`Loaded ${scenariosLoaded} scenarios`);
+    if (cassandraModDir) {
+      const cassandraScenariosDir = path.join(cassandraModDir, "Cassandra's_Scenarios");
+      if (fs.existsSync(cassandraScenariosDir)) {
+        const scenarios = await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
+        scenariosLoaded = scenarios.length;
+        console.log(`Loaded ${scenariosLoaded} scenarios`);
+      } else {
+        console.log("Cassandra's_Scenarios directory not found, skipping scenario import");
+      }
     } else {
-      console.log("Cassandra's_Scenarios directory not found, skipping scenario import");
+      console.log("Cassandra mod directory not found, skipping scenario import");
     }
 
     // Load NPCs from JSON files
     const npcLoader = new NPCLoader(db);
-    const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
     let npcsLoaded = 0;
-    if (fs.existsSync(cassandraNPCsDir)) {
-      const npcs = await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
-      npcsLoaded = npcs.length;
-      console.log(`Loaded ${npcsLoaded} NPCs`);
+    if (cassandraModDir) {
+      const cassandraNPCsDir = path.join(cassandraModDir, "Cassandra's_npc");
+      if (fs.existsSync(cassandraNPCsDir)) {
+        const npcs = await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
+        npcsLoaded = npcs.length;
+        console.log(`Loaded ${npcsLoaded} NPCs`);
+      } else {
+        console.log("Cassandra's_npc directory not found, skipping NPC import");
+      }
     } else {
-      console.log("Cassandra's_npc directory not found, skipping NPC import");
+      console.log("Cassandra mod directory not found, skipping NPC import");
     }
 
-    // Load modules from documents
+    // Load modules from JSON files (skip document parsing if JSON exists)
     const moduleLoader = new ModuleLoader(db);
-    const moduleDir = path.join(process.cwd(), "data", "background");
     let modulesLoaded = 0;
-    if (fs.existsSync(moduleDir)) {
-      const modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
-      modulesLoaded = modules.length;
-      console.log(`Loaded ${modulesLoaded} modules`);
+    if (cassandraModDir) {
+      const moduleDir = path.join(cassandraModDir, "background");
+      if (fs.existsSync(moduleDir)) {
+        // Try JSON first, fallback to document parsing
+        const jsonFiles = fs.readdirSync(moduleDir).filter(f => f.toLowerCase().endsWith('.json'));
+        if (jsonFiles.length > 0) {
+          const modules = await moduleLoader.loadModulesFromJSONDirectory(moduleDir);
+          modulesLoaded = modules.length;
+          console.log(`Loaded ${modulesLoaded} modules from JSON files`);
+        } else {
+          const modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
+          modulesLoaded = modules.length;
+          console.log(`Loaded ${modulesLoaded} modules from documents`);
+        }
+      } else {
+        console.log("Module directory not found, skipping module import");
+      }
     } else {
-      console.log("Module directory not found, skipping module import");
+      console.log("Cassandra mod directory not found, skipping module import");
     }
 
     res.json({
@@ -121,7 +180,7 @@ app.post("/api/game/import-data", async (req, res) => {
 // API endpoint to start/initialize the game
 app.post("/api/game/start", async (req, res) => {
   try {
-    const { characterId } = req.body;
+    const { characterId, modName } = req.body;
 
     console.log(`[${new Date().toISOString()}] Initializing multi-agent system...`);
 
@@ -136,34 +195,118 @@ app.post("/api/game/start", async (req, res) => {
       console.log("Database initialized");
     }
 
-    // Load scenarios and NPCs if not already loaded (check if data exists first)
-    const scenarioLoader = new ScenarioLoader(db);
-    const existingScenarios = scenarioLoader.getAllScenarios();
-    if (existingScenarios.length === 0) {
-      const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
-      if (fs.existsSync(cassandraScenariosDir)) {
-        await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
+    // Load mod data if modName is provided
+    let scenarioLoader: ScenarioLoader;
+    let npcLoader: NPCLoader;
+    let moduleLoader: ModuleLoader;
+
+    if (modName) {
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`🎮 开始加载模组: ${modName}`);
+      console.log(`${"=".repeat(60)}\n`);
+      
+      scenarioLoader = new ScenarioLoader(db);
+      npcLoader = new NPCLoader(db);
+      moduleLoader = new ModuleLoader(db);
+
+      const modsDir = path.join(process.cwd(), "data", "Mods");
+      if (!fs.existsSync(modsDir)) {
+        throw new Error("Mods directory does not exist");
       }
+
+      const dirs = fs.readdirSync(modsDir);
+      const modDir = dirs.find(d => d === modName);
+      if (!modDir) {
+        throw new Error(`Mod "${modName}" not found`);
+      }
+
+      const modPath = path.join(modsDir, modDir);
+
+      // Scan subdirectories and match by name patterns
+      const subdirs = fs.readdirSync(modPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+
+      console.log(`📂 扫描模组子文件夹: ${subdirs.join(", ")}`);
+
+      // Find directories by name patterns (case-insensitive)
+      const scenarioDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("scenario")
+      );
+      const npcDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("npc")
+      );
+      const backgroundDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("background") || 
+        name.toLowerCase().includes("module")
+      );
+
+      // Load scenarios
+      if (scenarioDirs.length > 0) {
+        console.log(`\n📋 [1/3] 加载场景数据...`);
+        for (const scenarioDirName of scenarioDirs) {
+          const scenariosDir = path.join(modPath, scenarioDirName);
+          console.log(`   → 从文件夹加载场景: ${scenarioDirName}`);
+          try {
+            await scenarioLoader.loadScenariosFromJSONDirectory(scenariosDir);
+          } catch (error) {
+            console.error(`   ✗ 加载场景失败 ${scenarioDirName}:`, error);
+          }
+        }
+      } else {
+        console.log(`\n📋 [1/3] 未找到场景文件夹（包含"scenario"的文件夹）`);
+      }
+
+      // Load NPCs
+      if (npcDirs.length > 0) {
+        console.log(`\n👥 [2/3] 加载NPC数据...`);
+        for (const npcDirName of npcDirs) {
+          const npcsDir = path.join(modPath, npcDirName);
+          console.log(`   → 从文件夹加载NPC: ${npcDirName}`);
+          try {
+            await npcLoader.loadNPCsFromJSONDirectory(npcsDir);
+          } catch (error) {
+            console.error(`   ✗ 加载NPC失败 ${npcDirName}:`, error);
+          }
+        }
+      } else {
+        console.log(`\n👥 [2/3] 未找到NPC文件夹（包含"npc"的文件夹）`);
+      }
+
+      // Load modules/background
+      if (backgroundDirs.length > 0) {
+        console.log(`\n📚 [3/3] 加载模块数据...`);
+        for (const backgroundDirName of backgroundDirs) {
+          const moduleDir = path.join(modPath, backgroundDirName);
+          console.log(`   → 从文件夹加载模块: ${backgroundDirName}`);
+          try {
+            const jsonFiles = fs.readdirSync(moduleDir).filter(f => f.toLowerCase().endsWith('.json'));
+            if (jsonFiles.length > 0) {
+              await moduleLoader.loadModulesFromJSONDirectory(moduleDir);
+            } else {
+              await moduleLoader.loadModulesFromDirectory(moduleDir);
+            }
+          } catch (error) {
+            console.error(`   ✗ 加载模块失败 ${backgroundDirName}:`, error);
+          }
+        }
+      } else {
+        console.log(`\n📚 [3/3] 未找到模块文件夹（包含"background"或"module"的文件夹）`);
+      }
+
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`✅ 模组数据加载完成！`);
+      console.log(`${"=".repeat(60)}\n`);
+    } else {
+      // Fallback: use existing loaders (for backward compatibility)
+      scenarioLoader = new ScenarioLoader(db);
+      npcLoader = new NPCLoader(db);
+      moduleLoader = new ModuleLoader(db);
     }
 
-    const npcLoader = new NPCLoader(db);
-    const existingNPCs = npcLoader.getAllNPCs();
-    if (existingNPCs.length === 0) {
-      const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
-      if (fs.existsSync(cassandraNPCsDir)) {
-        await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
-      }
-    }
-
-    // Load modules if not already loaded
-    const moduleLoader = new ModuleLoader(db);
-    const existingModules = moduleLoader.getAllModules();
-    if (existingModules.length === 0) {
-      const moduleDir = path.join(process.cwd(), "data", "background");
-      if (fs.existsSync(moduleDir)) {
-        await moduleLoader.loadModulesFromDirectory(moduleDir);
-      }
-    }
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`✅ 游戏数据加载完成！`);
+    console.log(`${"=".repeat(60)}\n`);
 
     // Lazy-load multi-agent system components (only when game starts)
     if (!graph || !ragEngine) {
@@ -208,11 +351,16 @@ app.post("/api/game/start", async (req, res) => {
       }
 
       // Parse character data and create game state with this character
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`🎲 初始化游戏状态...`);
+      console.log(`${"=".repeat(60)}\n`);
+
       const parsedAttributes = JSON.parse(character.attributes);
       const parsedStatus = JSON.parse(character.status);
       const parsedSkills = JSON.parse(character.skills);
       const parsedInventory = JSON.parse(character.inventory);
 
+      console.log(`📝 [1/3] 创建基础游戏状态...`);
       let gameState: GameState = {
         ...JSON.parse(JSON.stringify(initialGameState)),
         playerCharacter: {
@@ -226,33 +374,92 @@ app.post("/api/game/start", async (req, res) => {
           actionLog: [],
         },
       };
+      console.log(`   ✓ 基础状态已创建`);
+      console.log(`   - 角色: ${character.name}`);
+      console.log(`   - 阶段: ${gameState.phase}`);
+      console.log(`   - 游戏时间: 第${gameState.gameDay}天 ${gameState.timeOfDay}`);
 
       // Load module data and set keeper guidance and initial scenario
+      console.log(`\n📚 [2/3] 加载模组配置到游戏状态...`);
       const modules = moduleLoader.getAllModules();
       if (modules.length > 0) {
         const module = modules[0]; // Use the first/latest module
+        console.log(`   → 使用模组: ${module.title}`);
         
         // Set keeper guidance
         if (module.keeperGuidance) {
           gameState.keeperGuidance = module.keeperGuidance;
-          console.log(`✓ Loaded keeper guidance from module: ${module.title}`);
+          console.log(`   ✓ 已设置守秘人指导 (长度: ${module.keeperGuidance.length} 字符)`);
+        } else {
+          console.log(`   ⚠️  模组未提供守秘人指导`);
         }
 
-        // Load initial scenario if specified
+        // Load initial scenario if specified (with fuzzy matching - returns best match only)
         if (module.initialScenario) {
+          console.log(`   → 查找初始场景: "${module.initialScenario}" (模糊匹配)`);
           const searchResult = scenarioLoader.searchScenarios({ name: module.initialScenario });
           if (searchResult.scenarios.length > 0) {
-            // Use the first matching scenario
+            // Use the best matching scenario (only one returned)
             const initialScenarioProfile = searchResult.scenarios[0];
             gameState.currentScenario = initialScenarioProfile.snapshot;
-            console.log(`✓ Loaded initial scenario: ${initialScenarioProfile.name} (${module.initialScenario})`);
+            console.log(`   ✓ 已匹配并注入初始场景到游戏状态: ${initialScenarioProfile.name}`);
+            console.log(`     - 场景ID: ${initialScenarioProfile.snapshot.id}`);
+            console.log(`     - 位置: ${initialScenarioProfile.snapshot.location || "未指定"}`);
+            console.log(`     - 描述: ${initialScenarioProfile.snapshot.description ? initialScenarioProfile.snapshot.description.substring(0, 100) + "..." : "无"}`);
+            console.log(`     - 角色数: ${initialScenarioProfile.snapshot.characters?.length || 0}`);
+            console.log(`     - 线索数: ${initialScenarioProfile.snapshot.clues?.length || 0}`);
+            console.log(`     - 出口数: ${initialScenarioProfile.snapshot.exits?.length || 0}`);
+            console.log(`     - 事件数: ${initialScenarioProfile.snapshot.events?.length || 0}`);
           } else {
-            console.warn(`⚠ Initial scenario "${module.initialScenario}" not found, starting without initial scenario`);
+            console.warn(`   ⚠️  初始场景 "${module.initialScenario}" 未找到，将不设置初始场景`);
           }
+        } else {
+          console.log(`   ⚠️  模组未指定初始场景`);
         }
+
+        // Load initial game time if specified
+        if (module.initialGameTime) {
+          console.log(`   → 设置初始游戏时间: "${module.initialGameTime}"`);
+          // Parse time format: "HH:MM" or "Day X HH:MM"
+          const timeMatch = module.initialGameTime.match(/(?:Day\s*(\d+)\s+)?(\d{1,2}):(\d{2})/i);
+          if (timeMatch) {
+            const day = timeMatch[1] ? parseInt(timeMatch[1], 10) : 1;
+            const hours = timeMatch[2];
+            const minutes = timeMatch[3];
+            gameState.gameDay = day;
+            gameState.timeOfDay = `${hours.padStart(2, '0')}:${minutes}`;
+            gameState.scenarioTimeState.sceneStartTime = gameState.timeOfDay;
+            console.log(`   ✓ 已设置初始游戏时间: 第${day}天 ${gameState.timeOfDay}`);
+          } else {
+            // Try simple HH:MM format
+            const simpleTimeMatch = module.initialGameTime.match(/(\d{1,2}):(\d{2})/);
+            if (simpleTimeMatch) {
+              const hours = simpleTimeMatch[1];
+              const minutes = simpleTimeMatch[2];
+              gameState.timeOfDay = `${hours.padStart(2, '0')}:${minutes}`;
+              gameState.scenarioTimeState.sceneStartTime = gameState.timeOfDay;
+              console.log(`   ✓ 已设置初始游戏时间: ${gameState.timeOfDay}`);
+            } else {
+              console.warn(`   ⚠️  无法解析初始游戏时间格式: "${module.initialGameTime}"`);
+            }
+          }
+        } else {
+          console.log(`   ⚠️  模组未指定初始游戏时间，使用默认时间`);
+        }
+      } else {
+        console.log(`   ⚠️  未找到模组数据，使用默认配置`);
       }
 
+      console.log(`\n💾 [3/3] 保存游戏状态...`);
       persistentGameState = gameState;
+      console.log(`   ✓ 游戏状态已保存`);
+      console.log(`   - Session ID: ${gameState.sessionId}`);
+      console.log(`   - 当前场景: ${gameState.currentScenario ? gameState.currentScenario.name : "无"}`);
+      console.log(`   - 游戏时间: 第${gameState.gameDay}天 ${gameState.timeOfDay}`);
+      console.log(`   - 守秘人指导: ${gameState.keeperGuidance ? "已设置" : "未设置"}`);
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`✅ 游戏状态初始化完成！`);
+      console.log(`${"=".repeat(60)}\n`);
 
       console.log(`[${new Date().toISOString()}] Game started with character: ${character.name} (${characterId})`);
       
@@ -277,35 +484,99 @@ app.post("/api/game/start", async (req, res) => {
       });
     } else {
       // Start with default character
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`🎲 初始化游戏状态（使用默认角色）...`);
+      console.log(`${"=".repeat(60)}\n`);
+
+      console.log(`📝 [1/3] 创建基础游戏状态...`);
       let gameState: GameState = JSON.parse(JSON.stringify(initialGameState));
+      console.log(`   ✓ 基础状态已创建`);
+      console.log(`   - 角色: ${gameState.playerCharacter.name}`);
+      console.log(`   - 阶段: ${gameState.phase}`);
+      console.log(`   - 游戏时间: 第${gameState.gameDay}天 ${gameState.timeOfDay}`);
 
       // Load module data and set keeper guidance and initial scenario
+      console.log(`\n📚 [2/3] 加载模组配置到游戏状态...`);
       const modules = moduleLoader.getAllModules();
       if (modules.length > 0) {
         const module = modules[0]; // Use the first/latest module
+        console.log(`   → 使用模组: ${module.title}`);
         
         // Set keeper guidance
         if (module.keeperGuidance) {
           gameState.keeperGuidance = module.keeperGuidance;
-          console.log(`✓ Loaded keeper guidance from module: ${module.title}`);
+          console.log(`   ✓ 已设置守秘人指导 (长度: ${module.keeperGuidance.length} 字符)`);
+        } else {
+          console.log(`   ⚠️  模组未提供守秘人指导`);
         }
 
-        // Load initial scenario if specified
+        // Load initial scenario if specified (with fuzzy matching - returns best match only)
         if (module.initialScenario) {
+          console.log(`   → 查找初始场景: "${module.initialScenario}" (模糊匹配)`);
           const searchResult = scenarioLoader.searchScenarios({ name: module.initialScenario });
           if (searchResult.scenarios.length > 0) {
-            // Use the first matching scenario
+            // Use the best matching scenario (only one returned)
             const initialScenarioProfile = searchResult.scenarios[0];
             gameState.currentScenario = initialScenarioProfile.snapshot;
-            console.log(`✓ Loaded initial scenario: ${initialScenarioProfile.name} (${module.initialScenario})`);
+            console.log(`   ✓ 已匹配并注入初始场景到游戏状态: ${initialScenarioProfile.name}`);
+            console.log(`     - 场景ID: ${initialScenarioProfile.snapshot.id}`);
+            console.log(`     - 位置: ${initialScenarioProfile.snapshot.location || "未指定"}`);
+            console.log(`     - 描述: ${initialScenarioProfile.snapshot.description ? initialScenarioProfile.snapshot.description.substring(0, 100) + "..." : "无"}`);
+            console.log(`     - 角色数: ${initialScenarioProfile.snapshot.characters?.length || 0}`);
+            console.log(`     - 线索数: ${initialScenarioProfile.snapshot.clues?.length || 0}`);
+            console.log(`     - 出口数: ${initialScenarioProfile.snapshot.exits?.length || 0}`);
+            console.log(`     - 事件数: ${initialScenarioProfile.snapshot.events?.length || 0}`);
           } else {
-            console.warn(`⚠ Initial scenario "${module.initialScenario}" not found, starting without initial scenario`);
+            console.warn(`   ⚠️  初始场景 "${module.initialScenario}" 未找到，将不设置初始场景`);
           }
+        } else {
+          console.log(`   ⚠️  模组未指定初始场景`);
         }
+
+        // Load initial game time if specified
+        if (module.initialGameTime) {
+          console.log(`   → 设置初始游戏时间: "${module.initialGameTime}"`);
+          // Parse time format: "HH:MM" or "Day X HH:MM"
+          const timeMatch = module.initialGameTime.match(/(?:Day\s*(\d+)\s+)?(\d{1,2}):(\d{2})/i);
+          if (timeMatch) {
+            const day = timeMatch[1] ? parseInt(timeMatch[1], 10) : 1;
+            const hours = timeMatch[2];
+            const minutes = timeMatch[3];
+            gameState.gameDay = day;
+            gameState.timeOfDay = `${hours.padStart(2, '0')}:${minutes}`;
+            gameState.scenarioTimeState.sceneStartTime = gameState.timeOfDay;
+            console.log(`   ✓ 已设置初始游戏时间: 第${day}天 ${gameState.timeOfDay}`);
+          } else {
+            // Try simple HH:MM format
+            const simpleTimeMatch = module.initialGameTime.match(/(\d{1,2}):(\d{2})/);
+            if (simpleTimeMatch) {
+              const hours = simpleTimeMatch[1];
+              const minutes = simpleTimeMatch[2];
+              gameState.timeOfDay = `${hours.padStart(2, '0')}:${minutes}`;
+              gameState.scenarioTimeState.sceneStartTime = gameState.timeOfDay;
+              console.log(`   ✓ 已设置初始游戏时间: ${gameState.timeOfDay}`);
+            } else {
+              console.warn(`   ⚠️  无法解析初始游戏时间格式: "${module.initialGameTime}"`);
+            }
+          }
+        } else {
+          console.log(`   ⚠️  模组未指定初始游戏时间，使用默认时间`);
+        }
+      } else {
+        console.log(`   ⚠️  未找到模组数据，使用默认配置`);
       }
 
+      console.log(`\n💾 [3/3] 保存游戏状态...`);
       persistentGameState = gameState;
-      
+      console.log(`   ✓ 游戏状态已保存`);
+      console.log(`   - Session ID: ${gameState.sessionId}`);
+      console.log(`   - 当前场景: ${gameState.currentScenario ? gameState.currentScenario.name : "无"}`);
+      console.log(`   - 游戏时间: 第${gameState.gameDay}天 ${gameState.timeOfDay}`);
+      console.log(`   - 守秘人指导: ${gameState.keeperGuidance ? "已设置" : "未设置"}`);
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`✅ 游戏状态初始化完成！`);
+      console.log(`${"=".repeat(60)}\n`);
+
       console.log(`[${new Date().toISOString()}] Game started with default character`);
       
       if (!persistentGameState) {
@@ -356,13 +627,16 @@ app.post("/api/message", async (req, res) => {
     const initialMessages = [new HumanMessage(message)];
 
     // Invoke the graph with persistent state
+    console.log("🚀 [API] 开始执行 Graph 流程...");
     const result = (await graph.invoke({
       messages: initialMessages,
       gameState: persistentGameState,
     })) as unknown as GraphState;
+    console.log("✅ [API] Graph 流程执行完成");
 
     // Update the persistent state with the result
     persistentGameState = result.gameState as GameState;
+    console.log("💾 [API] 游戏状态已更新");
 
     // Extract the keeper's response (last AI message)
     const agentMessages = (result.messages as BaseMessage[]).filter(
@@ -372,7 +646,8 @@ app.post("/api/message", async (req, res) => {
       ? agentMessages[agentMessages.length - 1].content 
       : "No response generated.";
 
-    console.log(`[${new Date().toISOString()}] Keeper response generated`);
+    console.log(`📤 [API] Keeper 响应已提取 (${typeof lastResponse === 'string' ? lastResponse.length : 0} 字符)`);
+    console.log(`📤 [API] 准备返回响应给客户端`);
 
     res.json({
       success: true,
@@ -638,6 +913,8 @@ app.get("/api/turns/:turnId", (req, res) => {
     if (!turn) {
       return res.status(404).json({ error: "Turn not found" });
     }
+
+    console.log(`📖 [API] 获取 Turn ${turnId}: status=${turn.status}, keeperNarrative=${turn.keeperNarrative ? `${turn.keeperNarrative.length} 字符` : 'null'}`);
 
     res.json({
       success: true,

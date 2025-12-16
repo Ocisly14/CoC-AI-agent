@@ -106,9 +106,24 @@ export class KeeperAgent {
     // 解析LLM的JSON响应
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(response);
+      // Extract JSON from response (in case LLM wraps it in markdown code blocks)
+      const jsonText =
+        response.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
+        response.match(/\{[\s\S]*\}/)?.[0];
+
+      if (!jsonText) {
+        console.warn("Failed to extract JSON from keeper response");
+        return {
+          narrative: response,
+          clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },
+          updatedGameState: gameState
+        };
+      }
+
+      parsedResponse = JSON.parse(jsonText);
     } catch (error) {
       console.error("Failed to parse keeper response as JSON:", error);
+      console.warn("Response content:", response.substring(0, 200));
       return {
         narrative: response,
         clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },

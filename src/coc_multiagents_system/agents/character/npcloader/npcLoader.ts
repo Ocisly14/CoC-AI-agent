@@ -334,8 +334,11 @@ export class NPCLoader {
 
     const allParsedNPCs: ParsedNPCData[] = [];
 
-    for (const file of jsonFiles) {
+    console.log(`📦 找到 ${jsonFiles.length} 个NPC JSON文件，开始加载...`);
+    for (let i = 0; i < jsonFiles.length; i++) {
+      const file = jsonFiles[i];
       try {
+        console.log(`  [${i + 1}/${jsonFiles.length}] 正在加载: ${file}`);
         const filePath = path.join(dirPath, file);
         const fileContent = fs.readFileSync(filePath, "utf-8");
         const jsonData = JSON.parse(fileContent);
@@ -346,8 +349,9 @@ export class NPCLoader {
         for (const npcData of npcs) {
           allParsedNPCs.push(npcData);
         }
+        console.log(`  ✓ 已加载 ${npcs.length} 个NPC从文件: ${file}`);
       } catch (error) {
-        console.error(`✗ Failed to parse JSON file ${file}:`, error);
+        console.error(`  ✗ 加载文件失败 ${file}:`, error);
       }
     }
 
@@ -357,19 +361,18 @@ export class NPCLoader {
       return [];
     }
 
-    // Merge similar NPCs (deduplication)
-    const dedupedNPCs = await this.mergeSimilarNPCs(allParsedNPCs);
-
-    // Convert and store each NPC
+    // Direct import from JSON - no merging needed
+    console.log(`💾 开始保存 ${allParsedNPCs.length} 个NPC到数据库（直接导入，跳过合并）...`);
     const npcProfiles: NPCProfile[] = [];
-    for (const parsedData of dedupedNPCs) {
+    for (let i = 0; i < allParsedNPCs.length; i++) {
+      const parsedData = allParsedNPCs[i];
       try {
         const npcProfile = this.convertToNPCProfile(parsedData);
         this.saveNPCToDatabase(npcProfile);
         npcProfiles.push(npcProfile);
-        console.log(`✓ Loaded NPC: ${npcProfile.name} (${npcProfile.id})`);
+        console.log(`  [${i + 1}/${allParsedNPCs.length}] ✓ 已保存NPC: ${npcProfile.name}`);
       } catch (error) {
-        console.error(`✗ Failed to load NPC ${parsedData.name}:`, error);
+        console.error(`  [${i + 1}/${allParsedNPCs.length}] ✗ 保存NPC失败 ${parsedData.name}:`, error);
       }
     }
 
@@ -450,24 +453,28 @@ export class NPCLoader {
 
     // Parse all documents in the directory
     const parsedNPCs = await this.parser.parseDirectory(dirPath);
+    console.log(`🔄 开始合并相似NPC，共 ${parsedNPCs.length} 个...`);
     const dedupedNPCs = await this.mergeSimilarNPCs(parsedNPCs);
+    console.log(`✓ 合并完成，剩余 ${dedupedNPCs.length} 个唯一NPC`);
 
     if (dedupedNPCs.length === 0) {
-      console.log("No NPC documents found in directory.");
+      console.log("⚠️  目录中未找到NPC文档。");
       this.updateLastLoadTimestamp(dirPath);
       return [];
     }
 
     // Convert and store each NPC
+    console.log(`💾 开始保存 ${dedupedNPCs.length} 个NPC到数据库...`);
     const npcProfiles: NPCProfile[] = [];
-    for (const parsedData of dedupedNPCs) {
+    for (let i = 0; i < dedupedNPCs.length; i++) {
+      const parsedData = dedupedNPCs[i];
       try {
         const npcProfile = this.convertToNPCProfile(parsedData);
         this.saveNPCToDatabase(npcProfile);
         npcProfiles.push(npcProfile);
-        console.log(`✓ Loaded NPC: ${npcProfile.name} (${npcProfile.id})`);
+        console.log(`  [${i + 1}/${dedupedNPCs.length}] ✓ 已保存NPC: ${npcProfile.name}`);
       } catch (error) {
-        console.error(`✗ Failed to load NPC ${parsedData.name}:`, error);
+        console.error(`  [${i + 1}/${dedupedNPCs.length}] ✗ 保存NPC失败 ${parsedData.name}:`, error);
       }
     }
 

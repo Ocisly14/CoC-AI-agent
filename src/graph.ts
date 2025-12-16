@@ -2,7 +2,7 @@ import { END, START, StateGraph } from "@langchain/langgraph";
 import type { CoCDatabase } from "./coc_multiagents_system/agents/memory/database/index.js";
 import type { RAGEngine } from "./rag/engine.js";
 import type { BaseMessage } from "@langchain/core/messages";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { OrchestratorAgent } from "./coc_multiagents_system/agents/orchestrator/orchestratorAgent.js";
 import { MemoryAgent } from "./coc_multiagents_system/agents/memory/util.js";
 import { ActionAgent } from "./coc_multiagents_system/agents/action/actionAgent.js";
@@ -42,9 +42,12 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
 
   // Orchestrator: analyze user input and write actionAnalysis into state
   graph.addNode("orchestrator", async (state: GraphState) => {
+    console.log("🎯 [Orchestrator Agent] 开始分析用户输入...");
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const userInput = latestHumanMessage(state.messages);
+    console.log(`🎯 [Orchestrator Agent] 用户输入: "${userInput.substring(0, 100)}${userInput.length > 100 ? '...' : ''}"`);
     const result = await orchestrator.processInput(userInput, gsm);
+    console.log("✅ [Orchestrator Agent] 分析完成");
     
     // Update turn with action analysis if turnId exists
     if (state.turnId) {
@@ -62,27 +65,35 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
 
   // Memory: enrich with rules + RAG slices, log agent content
   graph.addNode("memory", async (state: GraphState) => {
+    console.log("🧠 [Memory Agent] 开始丰富上下文信息...");
     const gameState = state.gameState ?? initialGameState;
     const actionAnalysis =
       gameState.temporaryInfo.currentActionAnalysis as ActionAnalysis | null;
     const enriched = await enrichMemoryContext(gameState, actionAnalysis, rag);
+    console.log("✅ [Memory Agent] 上下文丰富完成");
 
     return { ...state, gameState: enriched };
   });
 
   // Action: execute action agent using current game state
   graph.addNode("action", async (state: GraphState) => {
+    console.log("⚡ [Action Agent] 开始执行动作...");
     const gameState = state.gameState ?? initialGameState;
     const runtime = {}; // ActionAgent expects runtime but only passes through generateText; keep empty placeholder
     const userInput = latestHumanMessage(state.messages);
     const updated = await actionAgent.processAction(runtime, gameState, userInput);
+    console.log("✅ [Action Agent] 动作执行完成");
     
     // Update turn with action results if turnId exists
     if (state.turnId) {
       try {
-        turnManager.updateProcessing(state.turnId, {
-          actionResults: (updated as GameState).temporaryInfo.actionResults
-        });
+        const updatedState = updated as GameState;
+        const actionResults = updatedState.temporaryInfo?.actionResults;
+        if (actionResults) {
+          turnManager.updateProcessing(state.turnId, {
+            actionResults: actionResults
+          });
+        }
       } catch (error) {
         console.error("Failed to update turn with action results:", error);
       }
@@ -93,16 +104,21 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
 
   // Director: handle scene change requests from action agent
   graph.addNode("director", async (state: GraphState) => {
+    console.log("🎬 [Director Agent] 开始处理场景转换请求...");
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const sceneChangeRequest = gsm.getGameState().temporaryInfo.sceneChangeRequest;
     
     // If there's a scene change request, execute it
     if (sceneChangeRequest?.shouldChange && sceneChangeRequest.targetSceneName) {
+      console.log(`🎬 [Director Agent] 检测到场景转换请求: ${sceneChangeRequest.targetSceneName}`);
       await directorAgent.handleActionDrivenSceneChange(
         gsm, 
         sceneChangeRequest.targetSceneName,
         sceneChangeRequest.reason
       );
+      console.log(`✅ [Director Agent] 场景转换完成: ${sceneChangeRequest.targetSceneName}`);
+    } else {
+      console.log("✅ [Director Agent] 无场景转换请求，跳过");
     }
     
     // Clear the request
@@ -124,9 +140,11 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
 
   // Keeper: produce narrative and update clues
   graph.addNode("keeper", async (state: GraphState) => {
+    console.log("🎭 [Keeper Agent] 开始生成叙事和线索揭示...");
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const userInput = latestHumanMessage(state.messages);
     const result = await keeperAgent.generateNarrative(userInput, gsm);
+    console.log(`✅ [Keeper Agent] 叙事生成完成 (${result.narrative.length} 字符)`);
     
     // Complete turn with keeper narrative if turnId exists
     if (state.turnId) {
@@ -135,14 +153,23 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
           keeperNarrative: result.narrative,
           clueRevelations: result.clueRevelations
         });
+        console.log(`📝 [Keeper Agent] Turn ${state.turnId} 已完成并保存到数据库`);
       } catch (error) {
         console.error("Failed to complete turn:", error);
         turnManager.markError(state.turnId, error as Error);
       }
     }
     
+    // Add keeper's narrative to messages so it can be returned to client
+    const keeperMessage = new AIMessage(result.narrative);
+    const updatedMessages = [...state.messages, keeperMessage];
+    
+    console.log("📤 [Keeper Agent] 叙事已添加到消息流，准备返回给客户端");
+    console.log("🔄 [Graph Flow] 所有 Agent 处理完成，Graph 流程结束");
+    
     return {
       ...state,
+      messages: updatedMessages,
       gameState: result.updatedGameState,
     };
   });

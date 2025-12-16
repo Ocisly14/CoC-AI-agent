@@ -2,9 +2,10 @@ import React, { useMemo, useState } from "react";
 import Homes from "./views/Homes";
 import { GameChat } from "./components/GameChat";
 import { CharacterSelector } from "./components/CharacterSelector";
+import { ModSelector } from "./components/ModSelector";
 
 type SkillEntry = { name: string; base: string; category: string };
-type AppPage = "home" | "sheet" | "game" | "character-select";
+type AppPage = "home" | "sheet" | "game" | "character-select" | "mod-select";
 
 const SKILLS: SkillEntry[] = [
   // Interpersonal & Social Skills
@@ -101,11 +102,18 @@ const App: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>("");
   const [characterName, setCharacterName] = useState<string>("Investigator");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
+  const [selectedModName, setSelectedModName] = useState<string>("");
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
-  // Show character selector
+  // Show mod selector first, then character selector
   const handleShowCharacterSelector = () => {
+    setPage("mod-select");
+  };
+
+  // Handle mod selection
+  const handleSelectMod = (modName: string) => {
+    setSelectedModName(modName);
     setPage("character-select");
   };
 
@@ -117,11 +125,11 @@ const App: React.FC = () => {
     setCharacterName(charName);
     
     try {
-      // Start game with selected character (data should already be imported)
+      // Start game with selected character and mod
       const response = await fetch("http://localhost:3000/api/game/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ characterId }),
+        body: JSON.stringify({ characterId, modName: selectedModName }),
       });
 
       const data = await response.json();
@@ -622,11 +630,20 @@ const App: React.FC = () => {
     return <Homes onCreate={() => setPage("sheet")} onStartGame={handleShowCharacterSelector} />;
   }
 
+  if (page === "mod-select") {
+    return (
+      <ModSelector
+        onSelectMod={handleSelectMod}
+        onCancel={handleBackToHome}
+      />
+    );
+  }
+
   if (page === "character-select") {
     return (
       <CharacterSelector
         onSelectCharacter={handleSelectCharacter}
-        onCancel={handleBackToHome}
+        onCancel={() => setPage("mod-select")}
         onCreateNew={() => setPage("sheet")}
       />
     );

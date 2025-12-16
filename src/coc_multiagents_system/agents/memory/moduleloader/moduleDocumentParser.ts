@@ -78,15 +78,17 @@ export class ModuleDocumentParser {
 
     const results: ParsedModuleData[] = [];
 
-    for (const file of moduleFiles) {
+    console.log(`📄 找到 ${moduleFiles.length} 个模块文档，开始解析...`);
+    for (let i = 0; i < moduleFiles.length; i++) {
+      const file = moduleFiles[i];
       try {
         const filePath = path.join(dirPath, file);
-        console.log(`Parsing module document: ${file}...`);
+        console.log(`  [${i + 1}/${moduleFiles.length}] 正在解析: ${file}`);
         const moduleData = await this.parseDocument(filePath);
         results.push(moduleData);
-        console.log(`✓ Parsed module: ${moduleData.title}`);
+        console.log(`    ✓ 解析完成: ${moduleData.title}`);
       } catch (error) {
-        console.error(`✗ Failed to parse ${file}:`, error);
+        console.error(`    ✗ 解析失败 ${file}:`, error);
       }
     }
 
@@ -139,7 +141,8 @@ Return a JSON object with exactly these fields:
   "keeperGuidance": "Running advice: reveals, pacing levers, fail-forward options, tone cues, when to call for rolls",
   "storyHook": "Player-facing entry: who contacts them, what they see/hear, immediate actionable choices, why they care",
   "moduleLimitations": "Concise hard constraints: scope limits, time caps, locked areas, forbidden actions, bounded outcomes (summarize but keep all key points)",
-  "initialScenario": "Name or identifier of the starting scenario/location where the game begins (e.g., 'Reindeer Bar', 'Train Station Platform'). Leave empty if not specified.",
+  "initialScenario": "Name or identifier of the starting scenario/location where the game begins (e.g., 'Reindeer Bar', 'Train Station Platform'). ",
+  "initialGameTime": "Initial game time when the scenario starts, in format 'HH:MM' (e.g., '08:00', '14:30') or 'Day X HH:MM' (e.g., 'Day 1 08:00'). If it is vague, give a estimate time",
   "tags": ["keyword1", "keyword2"]
 }
 

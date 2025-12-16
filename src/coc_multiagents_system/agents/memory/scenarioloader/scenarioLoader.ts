@@ -120,8 +120,11 @@ export class ScenarioLoader {
 
     const scenarioProfiles: ScenarioProfile[] = [];
 
-    for (const file of jsonFiles) {
+    console.log(`📦 找到 ${jsonFiles.length} 个场景JSON文件，开始加载...`);
+    for (let i = 0; i < jsonFiles.length; i++) {
+      const file = jsonFiles[i];
       try {
+        console.log(`  [${i + 1}/${jsonFiles.length}] 正在加载: ${file}`);
         const filePath = path.join(dirPath, file);
         const fileContent = fs.readFileSync(filePath, "utf-8");
         const jsonData = JSON.parse(fileContent);
@@ -134,13 +137,14 @@ export class ScenarioLoader {
             const scenarioProfile = this.convertToScenarioProfile(parsedData);
             this.saveScenarioToDatabase(scenarioProfile);
             scenarioProfiles.push(scenarioProfile);
-            console.log(`✓ Loaded Scenario: ${scenarioProfile.name} (${scenarioProfile.id})`);
+            console.log(`    ✓ 已加载场景: ${scenarioProfile.name}`);
           } catch (error) {
-            console.error(`✗ Failed to load scenario ${parsedData.name} from ${file}:`, error);
+            console.error(`    ✗ 加载场景失败 ${parsedData.name} from ${file}:`, error);
           }
         }
+        console.log(`  ✓ 已加载 ${scenarios.length} 个场景从文件: ${file}`);
       } catch (error) {
-        console.error(`✗ Failed to parse JSON file ${file}:`, error);
+        console.error(`  ✗ 解析JSON文件失败 ${file}:`, error);
       }
     }
 
@@ -574,16 +578,30 @@ export class ScenarioLoader {
   }
 
   /**
-   * Search scenarios based on query
+   * Search scenarios based on query with fuzzy matching
+   * Returns only the best matching scenario
    */
   searchScenarios(query: ScenarioQuery): ScenarioSearchResult {
     const database = this.db.getDatabase();
-    let sqlQuery = `SELECT scenario_id FROM scenarios WHERE 1=1`;
+    let sqlQuery = `SELECT scenario_id, name FROM scenarios WHERE 1=1`;
     const params: any[] = [];
 
     if (query.name) {
-      sqlQuery += ` AND name LIKE ?`;
-      params.push(`%${query.name}%`);
+      // Use very loose matching - match if ANY word from search term appears
+      // Then use scoring to find the best match
+      const searchTerm = query.name.trim().toLowerCase();
+      const words = searchTerm.split(/\s+/).filter(w => w.length > 0);
+      
+      if (words.length > 0) {
+        // Match if any word appears (very loose, will filter by score later)
+        const wordConditions = words.map(() => `LOWER(name) LIKE ?`).join(' OR ');
+        sqlQuery += ` AND (${wordConditions})`;
+        words.forEach(word => params.push(`%${word}%`));
+      } else {
+        // Fallback: simple contains match
+        sqlQuery += ` AND LOWER(name) LIKE ?`;
+        params.push(`%${searchTerm}%`);
+      }
     }
 
     if (query.tags && query.tags.length > 0) {
@@ -595,9 +613,74 @@ export class ScenarioLoader {
 
     const results = database.prepare(sqlQuery).all(params) as any[];
 
-    const scenarios = results
-      .map((r) => this.getScenarioById(r.scenario_id))
-      .filter((scenario) => scenario !== null) as ScenarioProfile[];
+    if (results.length === 0) {
+      return {
+        scenarios: [],
+        totalCount: 0,
+      };
+    }
+
+    // Find the best match by similarity score
+    const searchTerm = query.name ? query.name.trim().toLowerCase() : '';
+    const normalizedSearch = searchTerm.replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+    const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+
+    let bestMatch = results[0];
+    let bestScore = 0;
+
+    for (const result of results) {
+      const name = result.name.toLowerCase();
+      const normalizedName = name.replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+      const nameWords = name.split(/\s+/).filter((w: string) => w.length > 0);
+      
+      let score = 0;
+      
+      // Exact match gets highest score
+      if (name === searchTerm) {
+        score = 1000;
+      }
+      // Contains search term (higher priority than starts with)
+      else if (name.includes(searchTerm)) {
+        score = 500;
+      }
+      // Starts with search term
+      else if (name.startsWith(searchTerm)) {
+        score = 300;
+      }
+      // Normalized exact match
+      else if (normalizedName === normalizedSearch) {
+        score = 200;
+      }
+      // Normalized contains
+      else if (normalizedName.includes(normalizedSearch)) {
+        score = 100;
+      }
+      // Word-based matching: count how many search words appear in the name
+      else if (searchWords.length > 0) {
+        const matchedWords = searchWords.filter((word: string) => name.includes(word)).length;
+        const matchRatio = matchedWords / searchWords.length;
+        // Score based on how many words match
+        score = matchRatio * 150; // Max 150 for partial word matches
+        // Bonus if key words match (like "train", "station")
+        if (matchedWords >= 2) {
+          score += 50; // Bonus for multiple word matches
+        }
+      }
+      // Calculate similarity based on common characters
+      else {
+        const commonChars = normalizedSearch.split('').filter(char => normalizedName.includes(char)).length;
+        score = (commonChars / Math.max(normalizedSearch.length, normalizedName.length)) * 50;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = result;
+      }
+    }
+
+    // Return only the best matching scenario
+    const bestScenario = this.getScenarioById(bestMatch.scenario_id);
+    const scenarios = bestScenario ? [bestScenario] : [];
 
     return {
       scenarios,

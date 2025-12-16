@@ -449,6 +449,16 @@ export class CoCDatabase {
     } catch {
       // ignore if column already exists or cannot be added
     }
+    // Backfill for initial_game_time if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "initial_game_time")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN initial_game_time TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
 
     // Full-text search for module backgrounds
     this.db.exec(`
@@ -756,7 +766,18 @@ export class CoCDatabase {
     if (!row) return null;
 
     return {
-      ...row,
+      turnId: row.turn_id,
+      sessionId: row.session_id,
+      turnNumber: row.turn_number,
+      characterInput: row.character_input,
+      keeperNarrative: row.keeper_narrative,
+      status: row.status,
+      errorMessage: row.error_message,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      sceneId: row.scene_id,
+      sceneName: row.scene_name,
+      location: row.location,
       actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
@@ -778,7 +799,18 @@ export class CoCDatabase {
     
     const rows = stmt.all(sessionId, limit) as any[];
     return rows.map(row => ({
-      ...row,
+      turnId: row.turn_id,
+      sessionId: row.session_id,
+      turnNumber: row.turn_number,
+      characterInput: row.character_input,
+      keeperNarrative: row.keeper_narrative,
+      status: row.status,
+      errorMessage: row.error_message,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      sceneId: row.scene_id,
+      sceneName: row.scene_name,
+      location: row.location,
       actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
@@ -802,7 +834,18 @@ export class CoCDatabase {
     if (!row) return null;
 
     return {
-      ...row,
+      turnId: row.turn_id,
+      sessionId: row.session_id,
+      turnNumber: row.turn_number,
+      characterInput: row.character_input,
+      keeperNarrative: row.keeper_narrative,
+      status: row.status,
+      errorMessage: row.error_message,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      sceneId: row.scene_id,
+      sceneName: row.scene_name,
+      location: row.location,
       actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
@@ -836,7 +879,18 @@ export class CoCDatabase {
     
     const rows = stmt.all(sessionId) as any[];
     return rows.map(row => ({
-      ...row,
+      turnId: row.turn_id,
+      sessionId: row.session_id,
+      turnNumber: row.turn_number,
+      characterInput: row.character_input,
+      keeperNarrative: row.keeper_narrative,
+      status: row.status,
+      errorMessage: row.error_message,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      sceneId: row.scene_id,
+      sceneName: row.scene_name,
+      location: row.location,
       actionAnalysis: row.action_analysis ? JSON.parse(row.action_analysis) : null,
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,

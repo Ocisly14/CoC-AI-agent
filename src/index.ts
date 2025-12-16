@@ -34,9 +34,9 @@ if (!fs.existsSync(npcDir)) {
   );
 }
 
-// Load NPCs from JSON files in Cassandra's_npc folder (skip document parsing)
+// Load NPCs from JSON files in Mods directory (skip document parsing)
 const npcLoader = new NPCLoader(db);
-const cassandraNPCsDir = path.join(process.cwd(), "data", "npcs", "Cassandra's_npc");
+const cassandraNPCsDir = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "Cassandra's_npc");
 if (fs.existsSync(cassandraNPCsDir)) {
   await npcLoader.loadNPCsFromJSONDirectory(cassandraNPCsDir);
 } else {
@@ -45,13 +45,17 @@ if (fs.existsSync(cassandraNPCsDir)) {
 }
 
 // Initialize module background directory
-const moduleDir = path.join(process.cwd(), "data", "background");
+const moduleDir = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "background");
 if (!fs.existsSync(moduleDir)) {
-  fs.mkdirSync(moduleDir, { recursive: true });
-  console.log(`Created module background directory: ${moduleDir}`);
-  console.log(
-    `Place your module .docx or .pdf files in this directory to load background/outlines automatically.\n`
-  );
+  // Fallback to old location
+  const fallbackModuleDir = path.join(process.cwd(), "data", "background");
+  if (!fs.existsSync(fallbackModuleDir)) {
+    fs.mkdirSync(fallbackModuleDir, { recursive: true });
+    console.log(`Created module background directory: ${fallbackModuleDir}`);
+    console.log(
+      `Place your module .docx or .pdf files in this directory to load background/outlines automatically.\n`
+    );
+  }
 }
 
 // Load module briefings from documents
@@ -77,9 +81,9 @@ if (!fs.existsSync(scenarioDir)) {
   );
 }
 
-// Load scenarios from JSON files in Cassandra's_Scenarios folder (skip document parsing)
+// Load scenarios from JSON files in Mods directory (skip document parsing)
 const scenarioLoader = new ScenarioLoader(db);
-const cassandraScenariosDir = path.join(process.cwd(), "data", "scenarios", "Cassandra's_Scenarios");
+const cassandraScenariosDir = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "Cassandra's_Scenarios");
 if (fs.existsSync(cassandraScenariosDir)) {
   await scenarioLoader.loadScenariosFromJSONDirectory(cassandraScenariosDir);
 } else {

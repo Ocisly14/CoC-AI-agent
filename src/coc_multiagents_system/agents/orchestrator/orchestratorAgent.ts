@@ -54,16 +54,26 @@ export class OrchestratorAgent {
 
     // Parse the response and store action analysis
     try {
-      const parsedResponse = JSON.parse(response);
-      if (parsedResponse.actionAnalysis) {
-        const normalizedActionAnalysis = this.normalizeActionAnalysis(
-          parsedResponse.actionAnalysis,
-          characterName
-        );
-        gameStateManager.setActionAnalysis(normalizedActionAnalysis);
+      // Extract JSON from response (in case LLM wraps it in markdown code blocks)
+      const jsonText =
+        response.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
+        response.match(/\{[\s\S]*\}/)?.[0];
+
+      if (!jsonText) {
+        console.warn("Failed to extract JSON from orchestrator response");
+      } else {
+        const parsedResponse = JSON.parse(jsonText);
+        if (parsedResponse.actionAnalysis) {
+          const normalizedActionAnalysis = this.normalizeActionAnalysis(
+            parsedResponse.actionAnalysis,
+            characterName
+          );
+          gameStateManager.setActionAnalysis(normalizedActionAnalysis);
+        }
       }
     } catch (error) {
       console.warn("Failed to parse orchestrator response for action analysis:", error);
+      console.warn("Response content:", response.substring(0, 200));
     }
 
     return response;
