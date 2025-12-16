@@ -38,15 +38,16 @@ logs
 *.db
 *.db-shm
 *.db-wal
-data/
-# Exception: allow Cassandra's Scenarios directory
+
+# Exception: allow specific data subdirectories
 !data/scenarios/
 !data/scenarios/Cassandra's_Scenarios/
-# Exception: allow Cassandra's NPCs directory
+!data/scenarios/Cassandra's_Scenarios/**
 !data/npcs/
 !data/npcs/Cassandra's_npc/
-# Exception: allow background/module directory
+!data/npcs/Cassandra's_npc/**
 !data/background/
+!data/background/**
 
 # Cache directories
 .cache/
