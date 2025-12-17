@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import Homes from "./views/Homes";
 import { GameChat } from "./components/GameChat";
+import { GameSidebar } from "./components/GameSidebar";
 import { CharacterSelector } from "./components/CharacterSelector";
 import { ModSelector } from "./components/ModSelector";
 
@@ -99,7 +100,13 @@ const App: React.FC = () => {
   const [page, setPage] = useState<AppPage>("home");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [occupations, setOccupations] = useState<any[]>([]);
+  const [selectedOccupation, setSelectedOccupation] = useState<any>(null);
+  const [occupationalPoints, setOccupationalPoints] = useState<number>(0);
+  const [interestPoints, setInterestPoints] = useState<number>(0);
   const [sessionId, setSessionId] = useState<string>("");
+  const [showAttributeSelector, setShowAttributeSelector] = useState(false);
+  const [attributeOptions, setAttributeOptions] = useState<any[]>([]);
   const [characterName, setCharacterName] = useState<string>("Investigator");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
   const [selectedModName, setSelectedModName] = useState<string>("");
@@ -112,6 +119,70 @@ const App: React.FC = () => {
   const [modLoadProgress, setModLoadProgress] = useState<{ stage: string; progress: number; message: string } | null>(null);
 
   const [form, setForm] = React.useState<Record<string, string>>({});
+
+  // Fetch occupations on component mount
+  React.useEffect(() => {
+    const fetchOccupations = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/occupations");
+        const data = await response.json();
+
+        if (data.success && data.occupations) {
+          // Flatten all occupations from all groups
+          const allOccupations: any[] = [];
+          data.occupations.groups.forEach((group: any) => {
+            group.occupations.forEach((occ: any) => {
+              allOccupations.push({
+                ...occ,
+                groupName: group.name_zh,
+              });
+            });
+          });
+          setOccupations(allOccupations);
+        }
+      } catch (error) {
+        console.error("Error fetching occupations:", error);
+      }
+    };
+
+    fetchOccupations();
+  }, []);
+
+  // Calculate occupational and interest skill points
+  React.useEffect(() => {
+    // Calculate interest points (INT × 2)
+    const intValue = Number(form.INT) || 0;
+    setInterestPoints(intValue * 2);
+
+    // Calculate occupational points based on selected occupation
+    if (selectedOccupation && selectedOccupation.suggested_occupational_points) {
+      const expression = selectedOccupation.suggested_occupational_points.expression;
+
+      try {
+        // Parse and evaluate the expression
+        // Replace attribute names with their values from form
+        let evaluatedExpression = expression
+          .replace(/STR/g, String(Number(form.STR) || 0))
+          .replace(/CON/g, String(Number(form.CON) || 0))
+          .replace(/DEX/g, String(Number(form.DEX) || 0))
+          .replace(/APP/g, String(Number(form.APP) || 0))
+          .replace(/POW/g, String(Number(form.POW) || 0))
+          .replace(/SIZ/g, String(Number(form.SIZ) || 0))
+          .replace(/INT/g, String(Number(form.INT) || 0))
+          .replace(/EDU/g, String(Number(form.EDU) || 0));
+
+        // Safely evaluate the expression
+        // eslint-disable-next-line no-eval
+        const result = eval(evaluatedExpression);
+        setOccupationalPoints(Math.floor(result));
+      } catch (error) {
+        console.error("Error calculating occupational points:", error);
+        setOccupationalPoints(0);
+      }
+    } else {
+      setOccupationalPoints(0);
+    }
+  }, [form.STR, form.CON, form.DEX, form.APP, form.POW, form.SIZ, form.INT, form.EDU, selectedOccupation]);
 
   // Show mod selector first, then character selector
   const handleShowCharacterSelector = () => {
@@ -342,6 +413,70 @@ const App: React.FC = () => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Handle random attribute generation - generate one set and show modal
+  const handleRandomizeAttributes = async () => {
+    try {
+      const age = Number(form.age) || undefined;
+      const response = await fetch("http://localhost:3000/api/character/random-attributes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAttributeOptions([{ id: 1, attributes: data.attributes }]);
+        setShowAttributeSelector(true);
+      } else {
+        alert("生成属性失败: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error generating random attributes:", error);
+      alert("网络错误，无法生成随机属性");
+    }
+  };
+
+  // Generate another attribute set in the modal (max 5 sets)
+  const handleGenerateAnotherSet = async () => {
+    if (attributeOptions.length >= 5) {
+      return;
+    }
+
+    try {
+      const age = Number(form.age) || undefined;
+      const response = await fetch("http://localhost:3000/api/character/random-attributes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAttributeOptions((prev) => [
+          ...prev,
+          { id: prev.length + 1, attributes: data.attributes }
+        ]);
+      } else {
+        alert("生成属性失败: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error generating random attributes:", error);
+      alert("网络错误，无法生成随机属性");
+    }
+  };
+
+  // Handle attribute set selection
+  const handleSelectAttributeSet = (attributes: any) => {
+    setForm((prev) => ({
+      ...prev,
+      ...attributes,
+    }));
+    setShowAttributeSelector(false);
+    setAttributeOptions([]);
+  };
+
   const skillsState = useMemo(() => {
     return SKILLS.map((skill) => ({
       name: skill.name,
@@ -351,6 +486,33 @@ const App: React.FC = () => {
       checked: form[`skillcheck_${skill.name}`] === "on",
     }));
   }, [form]);
+
+  // Calculate used skill points
+  const skillPointsUsage = useMemo(() => {
+    let occupationalUsed = 0;
+    let interestUsed = 0;
+
+    skillsState.forEach((skill) => {
+      const baseValue = parseInt(skill.base.replace("%", "")) || 0;
+      const currentValue = parseInt(skill.value) || 0;
+      const pointsAdded = Math.max(0, currentValue - baseValue);
+
+      if (skill.checked) {
+        // Checked skills use occupational points
+        occupationalUsed += pointsAdded;
+      } else {
+        // Unchecked skills use interest points
+        interestUsed += pointsAdded;
+      }
+    });
+
+    return {
+      occupationalUsed,
+      interestUsed,
+      occupationalRemaining: Math.max(0, occupationalPoints - occupationalUsed),
+      interestRemaining: Math.max(0, interestPoints - interestUsed),
+    };
+  }, [skillsState, occupationalPoints, interestPoints]);
 
   const weapons = [0, 1, 2].map((i) => ({
     name: form[`weapon_${i}_name`] || "",
@@ -469,7 +631,26 @@ const App: React.FC = () => {
               </td>
               <th>Occupation</th>
               <td>
-                <input name="occupation" placeholder="调查员" value={form.occupation || ""} onChange={(e) => onChange("occupation", e.target.value)} />
+                <select
+                  name="occupation"
+                  value={form.occupation || ""}
+                  onChange={(e) => {
+                    const occupationName = e.target.value;
+                    onChange("occupation", occupationName);
+
+                    // Find and store the selected occupation details
+                    const selected = occupations.find(occ => occ.name_zh === occupationName || occ.name_en === occupationName);
+                    setSelectedOccupation(selected);
+                  }}
+                  style={{ width: "100%", padding: "4px" }}
+                >
+                  <option value="">选择职业...</option>
+                  {occupations.map((occ) => (
+                    <option key={occ.id} value={occ.name_zh}>
+                      {occ.name_zh} ({occ.name_en})
+                    </option>
+                  ))}
+                </select>
               </td>
             </tr>
             <tr>
@@ -495,208 +676,260 @@ const App: React.FC = () => {
           </tbody>
         </table>
 
-        <div className="two-col">
+        <div className="section-title">Attributes</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+          <button
+            type="button"
+            className="pill-btn"
+            onClick={handleRandomizeAttributes}
+            style={{ background: "#8b7355", color: "#f5f1e8" }}
+          >
+            🎲 随机生成属性
+          </button>
+        </div>
+        <table>
+          <tbody>
+            <tr>
+              {[
+                { key: "STR", label: "Strength" },
+                { key: "CON", label: "Constitution" },
+                { key: "DEX", label: "Dexterity" },
+                { key: "APP", label: "Appearance" },
+                { key: "POW", label: "Power" },
+                { key: "SIZ", label: "Size" },
+                { key: "INT", label: "Intelligence" },
+                { key: "EDU", label: "Education" },
+                { key: "LCK", label: "Luck" }
+              ].map((attr) => (
+                <th key={attr.key}>{attr.label}</th>
+              ))}
+            </tr>
+            <tr>
+              {[
+                { key: "STR", label: "Strength" },
+                { key: "CON", label: "Constitution" },
+                { key: "DEX", label: "Dexterity" },
+                { key: "APP", label: "Appearance" },
+                { key: "POW", label: "Power" },
+                { key: "SIZ", label: "Size" },
+                { key: "INT", label: "Intelligence" },
+                { key: "EDU", label: "Education" },
+                { key: "LCK", label: "Luck" }
+              ].map((attr) => (
+                <td key={attr.key}>
+                  <input
+                    name={attr.key}
+                    type="number"
+                    min="1"
+                    max="99"
+                    placeholder="50"
+                    value={form[attr.key] || ""}
+                    onChange={(e) => onChange(attr.key, e.target.value)}
+                  />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+
+        <table>
+          <tbody>
+            <tr>
+              <th>HP</th>
+              <td>
+                <input name="HP" type="number" min="1" placeholder="10" value={form.HP || ""} onChange={(e) => onChange("HP", e.target.value)} />
+              </td>
+              <th>Sanity</th>
+              <td>
+                <input name="SAN" type="number" min="0" placeholder="60" value={form.SAN || ""} onChange={(e) => onChange("SAN", e.target.value)} />
+              </td>
+              <th>MP</th>
+              <td>
+                <input name="MP" type="number" min="0" placeholder="10" value={form.MP || ""} onChange={(e) => onChange("MP", e.target.value)} />
+              </td>
+              <th>Luck</th>
+              <td>
+                <input name="LUCK" type="number" min="0" placeholder="50" value={form.LUCK || ""} onChange={(e) => onChange("LUCK", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th>Move</th>
+              <td>
+                <input name="MOV" type="number" min="1" placeholder="8" value={form.MOV || ""} onChange={(e) => onChange("MOV", e.target.value)} />
+              </td>
+              <th>Build</th>
+              <td>
+                <input name="BUILD" placeholder="0" value={form.BUILD || ""} onChange={(e) => onChange("BUILD", e.target.value)} />
+              </td>
+              <th>DB</th>
+              <td>
+                <input name="DB" placeholder="+0" value={form.DB || ""} onChange={(e) => onChange("DB", e.target.value)} />
+              </td>
+              <th>Armor</th>
+              <td colSpan={3}>
+                <input name="ARMOR" placeholder="-" value={form.ARMOR || ""} onChange={(e) => onChange("ARMOR", e.target.value)} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="section-title">Skills</div>
+
+        {/* Skill Points Display */}
+        <div style={{
+          marginBottom: "16px",
+          padding: "16px",
+          background: "#fff9e6",
+          border: "2px solid #8b7355",
+          borderRadius: "4px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "16px"
+        }}>
           <div>
-            <div className="section-title">Attributes</div>
-            <table>
-              <tbody>
-                <tr>
-                  {["STR", "CON", "DEX", "APP", "POW", "SIZ", "INT", "EDU", "LCK"].map((k) => (
-                    <th key={k}>{k}</th>
-                  ))}
-                </tr>
-                <tr>
-                  {["STR", "CON", "DEX", "APP", "POW", "SIZ", "INT", "EDU", "LCK"].map((k) => (
-                    <td key={k}>
-                      <input
-                        name={k}
-                        type="number"
-                        min="1"
-                        max="99"
-                        placeholder="50"
-                        value={form[k] || ""}
-                        onChange={(e) => onChange(k, e.target.value)}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
+            <strong style={{ color: "#8b7355", fontSize: "1rem" }}>职业技能点数:</strong>
+            <div style={{
+              fontSize: "1.5rem",
+              fontWeight: "bold",
+              color: skillPointsUsage.occupationalRemaining < 0 ? "#c41e3a" : "#3d2817",
+              marginTop: "4px"
+            }}>
+              剩余: {skillPointsUsage.occupationalRemaining}
+            </div>
+            <div style={{ fontSize: "0.9rem", color: "#666", marginTop: "4px" }}>
+              总共: {occupationalPoints} | 已用: {skillPointsUsage.occupationalUsed}
+            </div>
+            {selectedOccupation && selectedOccupation.suggested_occupational_points && (
+              <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "2px" }}>
+                ({selectedOccupation.suggested_occupational_points.expression})
+              </div>
+            )}
+            {skillPointsUsage.occupationalRemaining < 0 && (
+              <div style={{ fontSize: "0.8rem", color: "#c41e3a", marginTop: "4px", fontWeight: "bold" }}>
+                ⚠️ 超出可用点数！
+              </div>
+            )}
+          </div>
+          <div>
+            <strong style={{ color: "#8b7355", fontSize: "1rem" }}>兴趣技能点数:</strong>
+            <div style={{
+              fontSize: "1.5rem",
+              fontWeight: "bold",
+              color: skillPointsUsage.interestRemaining < 0 ? "#c41e3a" : "#3d2817",
+              marginTop: "4px"
+            }}>
+              剩余: {skillPointsUsage.interestRemaining}
+            </div>
+            <div style={{ fontSize: "0.9rem", color: "#666", marginTop: "4px" }}>
+              总共: {interestPoints} | 已用: {skillPointsUsage.interestUsed}
+            </div>
+            <div style={{ fontSize: "0.75rem", color: "#999", marginTop: "2px" }}>
+              (INT × 2)
+            </div>
+            {skillPointsUsage.interestRemaining < 0 && (
+              <div style={{ fontSize: "0.8rem", color: "#c41e3a", marginTop: "4px", fontWeight: "bold" }}>
+                ⚠️ 超出可用点数！
+              </div>
+            )}
+          </div>
+        </div>
 
-            <table>
-              <tbody>
-                <tr>
-                  <th>HP</th>
-                  <td>
-                    <input name="HP" type="number" min="1" placeholder="10" value={form.HP || ""} onChange={(e) => onChange("HP", e.target.value)} />
-                  </td>
-                  <th>Sanity</th>
-                  <td>
-                    <input name="SAN" type="number" min="0" placeholder="60" value={form.SAN || ""} onChange={(e) => onChange("SAN", e.target.value)} />
-                  </td>
-                  <th>MP</th>
-                  <td>
-                    <input name="MP" type="number" min="0" placeholder="10" value={form.MP || ""} onChange={(e) => onChange("MP", e.target.value)} />
-                  </td>
-                  <th>Luck</th>
-                  <td>
-                    <input name="LUCK" type="number" min="0" placeholder="50" value={form.LUCK || ""} onChange={(e) => onChange("LUCK", e.target.value)} />
-                  </td>
-                </tr>
-                <tr>
-                  <th>Move</th>
-                  <td>
-                    <input name="MOV" type="number" min="1" placeholder="8" value={form.MOV || ""} onChange={(e) => onChange("MOV", e.target.value)} />
-                  </td>
-                  <th>Build</th>
-                  <td>
-                    <input name="BUILD" placeholder="0" value={form.BUILD || ""} onChange={(e) => onChange("BUILD", e.target.value)} />
-                  </td>
-                  <th>DB</th>
-                  <td>
-                    <input name="DB" placeholder="+0" value={form.DB || ""} onChange={(e) => onChange("DB", e.target.value)} />
-                  </td>
-                  <th>Armor</th>
-                  <td colSpan={3}>
-                    <input name="ARMOR" placeholder="-" value={form.ARMOR || ""} onChange={(e) => onChange("ARMOR", e.target.value)} />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <div style={{
+          marginBottom: "12px",
+          padding: "10px",
+          background: "#e8f4f8",
+          border: "1px solid #5ba3c0",
+          borderRadius: "4px",
+          fontSize: "0.85rem",
+          color: "#2c5f75"
+        }}>
+          <strong>💡 提示:</strong> 勾选的技能使用<strong>职业技能点数</strong>，未勾选的技能使用<strong>兴趣技能点数</strong>
+        </div>
 
-            <div className="section-title">Skills</div>
-            <div style={{ maxHeight: "600px", overflowY: "auto", border: "1px solid #ddd", padding: "8px", borderRadius: "4px" }}>
-              {["Social", "Knowledge", "Investigation", "Physical", "Stealth", "Technical", "Medical", "Combat", "Criminal", "Language", "Status", "Mythos"].map((category) => {
-                const categorySkills = skillsState.filter((s) => s.category === category);
-                if (categorySkills.length === 0) return null;
-                
-                const categoryNames: Record<string, string> = {
-                  Social: "Interpersonal & Social",
-                  Knowledge: "Knowledge & Academic",
-                  Investigation: "Perception & Investigation",
-                  Physical: "Physical & Movement",
-                  Stealth: "Stealth & Deception",
-                  Technical: "Mechanical & Technical",
-                  Medical: "Medical & Survival",
-                  Combat: "Combat",
-                  Criminal: "Criminal & Subterfuge",
-                  Language: "Communication & Language",
-                  Status: "Financial & Status",
-                  Mythos: "Cthulhu Mythos"
-                };
-
-                return (
-                  <div key={category} style={{ marginBottom: "16px" }}>
-                    <h4 style={{ margin: "8px 0", color: "#555", fontSize: "0.9rem", borderBottom: "1px solid #ccc", paddingBottom: "4px" }}>
-                      {categoryNames[category]}
-                    </h4>
-                    <table className="skills-table" style={{ width: "100%", marginBottom: "0" }}>
-                      <tbody>
-                        {categorySkills.map((skill) => (
-                          <tr key={skill.name}>
-                            <td style={{ width: "70%" }}>
-                              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={skill.checked}
-                                  onChange={(e) => onChange(`skillcheck_${skill.name}`, e.target.checked ? "on" : "")}
-                                />
-                                <span>{skill.name}</span>
-                                <span style={{ color: "#888", fontSize: "0.85rem" }}>({skill.base})</span>
-                              </label>
-                            </td>
-                            <td style={{ width: "30%" }}>
-                              <input
-                                type="number"
-                                min="0"
-                                max="99"
-                                placeholder={skill.base.replace("%", "")}
-                                value={skill.value}
-                                onChange={(e) => onChange(`skill_${skill.name}`, e.target.value)}
-                                style={{ width: "100%" }}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })}
+        {selectedOccupation && selectedOccupation.suggested_skills && selectedOccupation.suggested_skills.length > 0 && (
+          <div style={{
+            marginBottom: "16px",
+            padding: "12px",
+            background: "#f0f8ff",
+            border: "1px solid #8b7355",
+            borderRadius: "4px"
+          }}>
+            <strong style={{ color: "#8b7355" }}>
+              {selectedOccupation.name_zh} ({selectedOccupation.name_en}) 推荐技能:
+            </strong>
+            <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {selectedOccupation.suggested_skills.map((skill: string, index: number) => (
+                <span
+                  key={index}
+                  style={{
+                    padding: "4px 8px",
+                    background: "#fff",
+                    border: "1px solid #ddd",
+                    borderRadius: "3px",
+                    fontSize: "0.85rem"
+                  }}
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
+        )}
+        <div className="skills-three-columns">
+          {["Social", "Knowledge", "Investigation", "Physical", "Stealth", "Technical", "Medical", "Combat", "Criminal", "Language", "Status", "Mythos"].map((category) => {
+            const categorySkills = skillsState.filter((s) => s.category === category);
+            if (categorySkills.length === 0) return null;
 
-          <div>
-            <div className="section-title">Portrait & Notes</div>
-            <table>
-              <tbody>
-                <tr>
-                  <th>Appearance</th>
-                </tr>
-                <tr>
-                  <td>
-                    <textarea
-                      name="appearance"
-                      placeholder="描绘形象、装束、伤疤、举止..."
-                      value={form.appearance || ""}
-                      onChange={(e) => onChange("appearance", e.target.value)}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table>
-              <tbody>
-                <tr>
-                  <th>Traits / Ideology</th>
-                </tr>
-                <tr>
-                  <td>
-                    <textarea
-                      name="ideology"
-                      placeholder="信念、政治、宗教、性格癖好..."
-                      value={form.ideology || ""}
-                      onChange={(e) => onChange("ideology", e.target.value)}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table>
-              <tbody>
-                <tr>
-                  <th>Significant People</th>
-                </tr>
-                <tr>
-                  <td>
-                    <textarea
-                      name="people"
-                      placeholder="重要之人、导师、家族、联系人..."
-                      value={form.people || ""}
-                      onChange={(e) => onChange("people", e.target.value)}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <table>
-              <tbody>
-                <tr>
-                  <th>Gear & Assets</th>
-                </tr>
-                <tr>
-                  <td>
-                    <textarea
-                      name="gear"
-                      placeholder="装备、物品、资产、资金..."
-                      value={form.gear || ""}
-                      onChange={(e) => onChange("gear", e.target.value)}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            const categoryNames: Record<string, string> = {
+              Social: "Interpersonal & Social",
+              Knowledge: "Knowledge & Academic",
+              Investigation: "Perception & Investigation",
+              Physical: "Physical & Movement",
+              Stealth: "Stealth & Deception",
+              Technical: "Mechanical & Technical",
+              Medical: "Medical & Survival",
+              Combat: "Combat",
+              Criminal: "Criminal & Subterfuge",
+              Language: "Communication & Language",
+              Status: "Financial & Status",
+              Mythos: "Cthulhu Mythos"
+            };
+
+            return (
+              <div key={category} className="skill-category">
+                <h4 className="skill-category-title">{categoryNames[category]}</h4>
+                <table className="skills-table">
+                  <tbody>
+                    {categorySkills.map((skill) => (
+                      <tr key={skill.name}>
+                        <td className="skill-name-cell">
+                          <label className="skill-label">
+                            <input
+                              type="checkbox"
+                              checked={skill.checked}
+                              onChange={(e) => onChange(`skillcheck_${skill.name}`, e.target.checked ? "on" : "")}
+                            />
+                            <span>{skill.name}</span>
+                            <span className="skill-base">({skill.base})</span>
+                          </label>
+                        </td>
+                        <td className="skill-value-cell">
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            placeholder={skill.base.replace("%", "")}
+                            value={skill.value}
+                            onChange={(e) => onChange(`skill_${skill.name}`, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
 
         <div className="section-title">Weapons</div>
@@ -765,6 +998,78 @@ const App: React.FC = () => {
           </tbody>
         </table>
 
+        <div className="section-title">Portrait & Notes</div>
+        <div className="notes-grid">
+          <table>
+            <tbody>
+              <tr>
+                <th>Appearance</th>
+              </tr>
+              <tr>
+                <td>
+                  <textarea
+                    name="appearance"
+                    placeholder="描绘形象、装束、伤疤、举止..."
+                    value={form.appearance || ""}
+                    onChange={(e) => onChange("appearance", e.target.value)}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <tbody>
+              <tr>
+                <th>Traits / Ideology</th>
+              </tr>
+              <tr>
+                <td>
+                  <textarea
+                    name="ideology"
+                    placeholder="信念、政治、宗教、性格癖好..."
+                    value={form.ideology || ""}
+                    onChange={(e) => onChange("ideology", e.target.value)}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <tbody>
+              <tr>
+                <th>Significant People</th>
+              </tr>
+              <tr>
+                <td>
+                  <textarea
+                    name="people"
+                    placeholder="重要之人、导师、家族、联系人..."
+                    value={form.people || ""}
+                    onChange={(e) => onChange("people", e.target.value)}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <tbody>
+              <tr>
+                <th>Gear & Assets</th>
+              </tr>
+              <tr>
+                <td>
+                  <textarea
+                    name="gear"
+                    placeholder="装备、物品、资产、资金..."
+                    value={form.gear || ""}
+                    onChange={(e) => onChange("gear", e.target.value)}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div className="section-title">Background Story</div>
         <table>
           <tbody>
@@ -811,6 +1116,231 @@ const App: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Attribute Selector Modal */}
+      {showAttributeSelector && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          padding: '20px',
+        }}>
+          <div style={{
+            backgroundColor: '#f5f1e8',
+            padding: '30px',
+            borderRadius: '8px',
+            maxWidth: '1200px',
+            width: '95%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            border: '3px solid #8b7355',
+            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.4)',
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                margin: 0,
+                color: '#3d2817',
+                fontSize: '1.6rem'
+              }}>
+                🎲 选择属性组合
+              </h2>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px'
+              }}>
+                <span style={{
+                  fontSize: '0.9rem',
+                  color: '#666',
+                  fontWeight: 'bold'
+                }}>
+                  已生成: {attributeOptions.length}/5
+                </span>
+                <button
+                  onClick={handleGenerateAnotherSet}
+                  disabled={attributeOptions.length >= 5}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: attributeOptions.length >= 5 ? '#ccc' : '#8b7355',
+                    color: '#f5f1e8',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: attributeOptions.length >= 5 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (attributeOptions.length < 5) {
+                      e.currentTarget.style.backgroundColor = '#6b5a45';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (attributeOptions.length < 5) {
+                      e.currentTarget.style.backgroundColor = '#8b7355';
+                    }
+                  }}
+                >
+                  {attributeOptions.length >= 5 ? '已达上限' : '🎲 再随机一组'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '12px',
+              background: '#e8f4f8',
+              border: '1px solid #5ba3c0',
+              borderRadius: '4px',
+              marginBottom: '15px',
+              fontSize: '0.9rem',
+              color: '#2c5f75',
+              textAlign: 'center'
+            }}>
+              💡 点击卡片选择该组属性，或点击右上角"再随机一组"继续生成（最多5组）
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '15px',
+              marginBottom: '20px'
+            }}>
+              {attributeOptions.map((option) => {
+                const attrs = option.attributes;
+                const total = (attrs.STR || 0) + (attrs.CON || 0) + (attrs.DEX || 0) +
+                             (attrs.APP || 0) + (attrs.POW || 0) + (attrs.SIZ || 0) +
+                             (attrs.INT || 0) + (attrs.EDU || 0) + (attrs.LCK || 0);
+
+                return (
+                  <div
+                    key={option.id}
+                    onClick={() => handleSelectAttributeSet(attrs)}
+                    style={{
+                      padding: '15px',
+                      border: '2px solid #8b7355',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      backgroundColor: '#fff',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f0ebe0';
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fff';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <div style={{
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem',
+                      marginBottom: '10px',
+                      color: '#8b7355',
+                      textAlign: 'center',
+                      borderBottom: '1px solid #ddd',
+                      paddingBottom: '8px'
+                    }}>
+                      方案 {option.id}
+                    </div>
+
+                    <table style={{ width: '100%', fontSize: '0.85rem' }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>STR:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.STR}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>CON:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.CON}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>DEX:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.DEX}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>APP:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.APP}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>POW:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.POW}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>SIZ:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.SIZ}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>INT:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.INT}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>EDU:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.EDU}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '2px 4px', fontWeight: '500' }}>LCK:</td>
+                          <td style={{ padding: '2px 4px', textAlign: 'right' }}>{attrs.LCK}</td>
+                        </tr>
+                        <tr style={{ borderTop: '1px solid #ddd' }}>
+                          <td style={{ padding: '4px 4px 2px', fontWeight: 'bold' }}>总计:</td>
+                          <td style={{ padding: '4px 4px 2px', textAlign: 'right', fontWeight: 'bold' }}>{total}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '8px',
+                      background: '#f9f9f9',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      color: '#666'
+                    }}>
+                      <div><strong>HP:</strong> {attrs.HP}</div>
+                      <div><strong>MP:</strong> {attrs.MP}</div>
+                      <div><strong>SAN:</strong> {attrs.SAN}</div>
+                      <div><strong>MOV:</strong> {attrs.MOV}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowAttributeSelector(false);
+                setAttributeOptions([]);
+              }}
+              style={{
+                width: '100%',
+                padding: '12px 20px',
+                backgroundColor: '#6b5a45',
+                color: '#f5f1e8',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+              }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1163,12 +1693,18 @@ const App: React.FC = () => {
             ← 返回首页
           </button>
         </div>
-          <GameChat 
-            sessionId={sessionId} 
+        <div className="game-main-layout">
+          <GameChat
+            sessionId={sessionId}
             apiBaseUrl="http://localhost:3000/api"
             characterName={characterName}
             moduleIntroduction={moduleIntroduction}
           />
+          <GameSidebar
+            sessionId={sessionId}
+            apiBaseUrl="http://localhost:3000/api"
+          />
+        </div>
       </div>
     );
   }

@@ -11,9 +11,11 @@ import type {
   CharacterAttributes,
   CharacterProfile,
   CharacterStatus,
+  InventoryItem,
   Skill,
   WeaponData,
 } from "../models/gameTypes.js";
+import { InventoryUtils } from "../models/gameTypes.js";
 import type { ModuleBackground } from "../models/moduleTypes.js";
 import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
 
@@ -291,7 +293,7 @@ export class MemoryAgent {
         row.status,
         this.buildDefaultStatus()
       ),
-      inventory: this.safeParse<string[]>(row.inventory, []),
+      inventory: InventoryUtils.normalizeInventory(this.safeParse<InventoryItem[]>(row.inventory, [])),
       skills: this.safeParse<Record<string, number>>(row.skills, {}),
       notes: row.notes ?? this.buildNpcNotes(row),
     };

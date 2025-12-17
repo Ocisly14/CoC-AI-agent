@@ -6,13 +6,18 @@ export function getOrchestratorTemplate(): string {
 
 You classify the investigator's latest input into a structured action analysis. Do NOT route to other agents; only return the analysis JSON.
 
-## Input
-"{{input}}"
-
 ## Game Context
 - Character: {{characterName}}
 - Location: {{scenarioLocation}}
 - Available NPCs: {{npcNames}}
+
+## Investigator's Input
+"{{input}}"
+
+{{#if previousNarrative}}
+## Previous Round Narrative
+"{{previousNarrative}}"
+{{/if}}
 
 ## Action Types
 - exploration | social | stealth | combat | chase | mental | environmental | narrative

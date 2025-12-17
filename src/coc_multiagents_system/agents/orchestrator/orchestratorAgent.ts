@@ -37,12 +37,31 @@ export class OrchestratorAgent {
     const scenarioLocation = gameState.currentScenario?.location || "Unknown location";
     const npcNames = gameState.npcCharacters?.map(npc => npc.name).join(", ") || "None";
     
+    // Get conversation history to extract previous narrative
+    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+      turnNumber: number;
+      characterInput: string;
+      keeperNarrative: string | null;
+    }>) || [];
+    
+    // Get previous round narrative (last completed turn with narrative)
+    let previousNarrative: string | null = null;
+    if (conversationHistory.length > 0) {
+      const lastTurnWithNarrative = [...conversationHistory]
+        .reverse()
+        .find(turn => turn.keeperNarrative);
+      if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+        previousNarrative = lastTurnWithNarrative.keeperNarrative;
+      }
+    }
+    
     // Compose the prompt with input and game context
     const prompt = composeTemplate(template, {}, {
       input,
       characterName,
       scenarioLocation,
-      npcNames
+      npcNames,
+      previousNarrative
     });
 
     // Generate response using LLM

@@ -1,78 +1,98 @@
 [
-    {
-      "name": "Adolph Carl",
-      "occupation": "Information broker / upper-class intermediary",
-      "age": 35,
-      "appearance": "A tall, slender man with a pale complexion and an unhealthy yet dangerous aura. He is meticulous about his appearance, always dressed in elegant, well-tailored formal wear. He keeps expensive incense and has refined taste in perfumes.",
-      "personality": "Calm, elegant, manipulative, highly self-controlled. Enjoys being in control, skilled at concealing emotions and lying when necessary. Cynical toward high society yet obsessed with being accepted by it. Opportunistic and untrustworthy.",
-      "background": "Born into a once-wealthy family descended from minor nobility. Studied economics and electronics in university, believing in the future of information industries. His parents were ruined by an Egyptian businessman (an avatar of Nyarlathotep), whose organization seized their assets. Adolph was sent to the United States before completing his studies; his parents later committed suicide in France. While his family was collapsing, he secretly witnessed a murder committed in his family home. After the rise of the internet, he used his computer skills and gathered secrets to infiltrate elite circles again.",
-      "goals": [
-        "Return permanently to high society",
-        "Take revenge on those who destroyed his family",
-        "Maintain control through information"
-      ],
-      "secrets": [
-        "He secretly witnessed a murder in his family home in France",
-        "He possesses and controls the Qianwei System",
-        "He survives among elites by blackmail and sensitive information"
-      ],
-      "attributes": {
-        "STR": 45,
-        "CON": 50,
-        "DEX": 55,
-        "APP": 70,
-        "POW": 65,
-        "SIZ": 55,
-        "INT": 80,
-        "EDU": 75
-      },
-      "status": {
-        "hp": 10,
-        "maxHp": 10,
-        "sanity": 65,
-        "maxSanity": 99,
-        "luck": 60,
-        "mp": 13,
-        "conditions": []
-      },
-      "skills": {
-        "Psychology": 70,
-        "Charm": 60,
-        "Fast Talk": 65,
-        "Persuade": 55,
-        "Computer Use": 60,
-        "Credit Rating": 70,
-        "Spot Hidden": 50
-      },
-      "inventory": [
-        "Elegant formal suits",
-        "Expensive incense",
-        "Assorted perfumes",
-        "Information records and blackmail material"
-      ],
-      "clues": [
-        {
-          "clueText": "Knows extensive hidden information about influential figures in Cassandra.",
-          "category": "knowledge",
-          "difficulty": "hard",
-          "relatedTo": ["Cassandra", "Qianwei System"]
-        },
-        {
-          "clueText": "Witnessed a murder involving Anatole in France years ago.",
-          "category": "secret",
-          "difficulty": "extreme",
-          "relatedTo": ["Anatole", "France"]
+  {
+    "name": "Adolph Carl",
+    "occupation": "Information broker / upper-class intermediary",
+    "age": 35,
+    "appearance": "A tall, slender man with a pale complexion and an unhealthy yet dangerous aura. He is meticulous about his appearance, always dressed in elegant, well-tailored formal wear. He keeps expensive incense and has refined taste in perfumes.",
+    "personality": "Calm, elegant, manipulative, highly self-controlled. Enjoys being in control, skilled at concealing emotions and lying when necessary. Cynical toward high society yet obsessed with being accepted by it. Opportunistic and untrustworthy.",
+    "background": "Born into a once-wealthy family descended from minor nobility. Studied economics and electronics in university, believing in the future of information industries. His parents were ruined by an Egyptian businessman (an avatar of Nyarlathotep), whose organization seized their assets. Adolph was sent to the United States before completing his studies; his parents later committed suicide in France. While his family was collapsing, he secretly witnessed a murder committed in his family home. After the rise of the internet, he used his computer skills and gathered secrets to infiltrate elite circles again.",
+    "goals": [
+      "Return permanently to high society",
+      "Take revenge on those who destroyed his family",
+      "Maintain control through information"
+    ],
+    "secrets": [
+      "He secretly witnessed a murder in his family home in France",
+      "He possesses and controls the Qianwei System",
+      "He survives among elites by blackmail and sensitive information"
+    ],
+    "attributes": {
+      "STR": 45,
+      "CON": 50,
+      "DEX": 55,
+      "APP": 70,
+      "POW": 65,
+      "SIZ": 55,
+      "INT": 80,
+      "EDU": 75
+    },
+    "status": {
+      "hp": 10,
+      "maxHp": 10,
+      "sanity": 65,
+      "maxSanity": 99,
+      "luck": 60,
+      "mp": 13,
+      "conditions": []
+    },
+    "skills": {
+      "Psychology": 70,
+      "Charm": 60,
+      "Fast Talk": 65,
+      "Persuade": 55,
+      "Computer Use": 60,
+      "Credit Rating": 70,
+      "Spot Hidden": 50
+    },
+    "inventory": [
+      {
+        "name": "Fine formal suits (wardrobe)",
+        "properties": {
+          "note": "Keeps many well-preserved, tailored formal outfits."
         }
-      ],
-      "relationships": [
-        {
-          "targetName": "Anatole",
-          "relationshipType": "neutral",
-          "attitude": -20,
-          "description": "Unaware that Adolph once witnessed his crime.",
-          "history": "Their paths crossed unknowingly during a murder in France."
+      },
+      {
+        "name": "Expensive incense (in wardrobe)",
+        "properties": {
+          "note": "Always stores pricey incense; skilled with perfume pairings."
         }
-      ],
-      "notes": "Adolph frequently manipulates investigators to gather information while revealing only what benefits him. He may betray allies at any moment if it secures his safety or advantage."
-    }
-  ]
+      },
+      {
+        "name": "Qianwei System (the real one, stolen/obtained)",
+        "properties": {
+          "clue": "The real Qianwei System was built by Anatole and was taken away by Adolph."
+        }
+      }
+    ],
+    "clues": [
+      {
+        "clueText": "Knows extensive hidden information about influential figures in Cassandra.",
+        "category": "knowledge",
+        "difficulty": "hard",
+        "relatedTo": [
+          "Cassandra",
+          "Qianwei System"
+        ]
+      },
+      {
+        "clueText": "Witnessed a murder involving Anatole in France years ago.",
+        "category": "secret",
+        "difficulty": "extreme",
+        "relatedTo": [
+          "Anatole",
+          "France"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "targetName": "Anatole",
+        "relationshipType": "neutral",
+        "attitude": -20,
+        "description": "Unaware that Adolph once witnessed his crime.",
+        "history": "Their paths crossed unknowingly during a murder in France."
+      }
+    ],
+    "notes": "Adolph frequently manipulates investigators to gather information while revealing only what benefits him. He may betray allies at any moment if it secures his safety or advantage."
+  }
+]

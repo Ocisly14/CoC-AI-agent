@@ -12,11 +12,13 @@ import type { CoCDatabase } from "../../memory/database/schema.js";
 import type {
   CharacterAttributes,
   CharacterStatus,
+  InventoryItem,
   NPCClue,
   NPCProfile,
   NPCRelationship,
   ParsedNPCData,
 } from "../../models/gameTypes.js";
+import { InventoryUtils } from "../../models/gameTypes.js";
 import {
   createChatModel,
   ModelClass,
@@ -530,7 +532,7 @@ export class NPCLoader {
       name: parsedData.name,
       attributes,
       status,
-      inventory: parsedData.inventory || [],
+      inventory: InventoryUtils.normalizeInventory(parsedData.inventory),
       skills: parsedData.skills || {},
       notes: parsedData.notes,
       occupation: parsedData.occupation,
@@ -729,7 +731,7 @@ export class NPCLoader {
       attributes: npc.attributes || {},
       status: npc.status || {},
       skills: npc.skills || {},
-      inventory: npc.inventory || [],
+      inventory: InventoryUtils.normalizeInventory(npc.inventory),
       clues: npc.clues || [],
       relationships: npc.relationships || [],
       notes: npc.notes,
@@ -1013,7 +1015,7 @@ Return ONLY JSON array, no extra text.`;
       name: character.name,
       attributes: JSON.parse(character.attributes),
       status: JSON.parse(character.status),
-      inventory: JSON.parse(character.inventory || "[]"),
+      inventory: InventoryUtils.normalizeInventory(JSON.parse(character.inventory || "[]")),
       skills: JSON.parse(character.skills || "{}"),
       notes: character.notes,
       occupation: character.occupation,

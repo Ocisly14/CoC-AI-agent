@@ -1,4 +1,5 @@
-import type { CharacterProfile } from "./coc_multiagents_system/agents/models/gameTypes.js";
+import type { CharacterProfile, InventoryItem } from "./coc_multiagents_system/agents/models/gameTypes.js";
+import { InventoryUtils } from "./coc_multiagents_system/agents/models/gameTypes.js";
 import type { ScenarioSnapshot } from "./coc_multiagents_system/agents/models/scenarioTypes.js";
 import { actionRules } from "./coc_multiagents_system/rules/index.js";
 
@@ -116,7 +117,7 @@ const defaultPlayerCharacter: CharacterProfile = {
     mp: 10,
     conditions: [],
   },
-  inventory: [],
+  inventory: [], // InventoryItem[]
   skills: {
     "Spot Hidden": 25,
     Listen: 20,
@@ -189,26 +190,6 @@ export interface AgentResult {
   content: string;
   timestamp: Date;
   metadata?: any;
-}
-
-export interface AgentState {
-  userQuery: string;
-  orchestrator: {
-    nextAgent?: AgentId;
-    routingNotes?: string;
-    isCompleted: boolean;
-  };
-  memory: {
-    status: "idle" | "processing" | "completed" | "failed";
-    retrievedData?: string[];
-    errorMessage?: string;
-  };
-  action: {
-    status: "idle" | "processing" | "completed" | "failed";
-    pendingActions?: string[];
-    executedActions?: string[];
-    errorMessage?: string;
-  };
 }
 
 /**
@@ -470,28 +451,31 @@ export class GameStateManager {
     
     // Update inventory if provided
     if (updates.inventory !== undefined) {
-      if (!character.inventory) {
-        character.inventory = [];
-      }
+      // Normalize existing inventory to InventoryItem[]
+      character.inventory = InventoryUtils.normalizeInventory(character.inventory);
       
       if (Array.isArray(updates.inventory)) {
-        // If it's an array, replace the entire inventory
-        character.inventory = [...updates.inventory];
-      } else if (typeof updates.inventory === 'object') {
-        // Support operations like { add: ["item1"], remove: ["item2"] }
-        if (updates.inventory.add && Array.isArray(updates.inventory.add)) {
-          // Add items (avoid duplicates)
-          updates.inventory.add.forEach((item: string) => {
-            if (item && !character.inventory.includes(item)) {
-              character.inventory.push(item);
-            }
-          });
+        // Replace entire inventory with InventoryItem[]
+        character.inventory = InventoryUtils.normalizeInventory(updates.inventory as InventoryItem[]);
+      } else if (typeof updates.inventory === 'object' && !Array.isArray(updates.inventory)) {
+        // Support operations like { add: [...], remove: [...] }
+        if (updates.inventory.add) {
+          const itemsToAdd = Array.isArray(updates.inventory.add) 
+            ? updates.inventory.add 
+            : [updates.inventory.add];
+          character.inventory = InventoryUtils.addItems(
+            character.inventory, 
+            InventoryUtils.normalizeInventory(itemsToAdd as InventoryItem[])
+          );
         }
         
-        if (updates.inventory.remove && Array.isArray(updates.inventory.remove)) {
-          // Remove items
-          character.inventory = character.inventory.filter(
-            (item: string) => !updates.inventory.remove.includes(item)
+        if (updates.inventory.remove) {
+          const itemsToRemove = Array.isArray(updates.inventory.remove)
+            ? updates.inventory.remove
+            : [updates.inventory.remove];
+          character.inventory = InventoryUtils.removeItems(
+            character.inventory, 
+            InventoryUtils.normalizeInventory(itemsToRemove as InventoryItem[])
           );
         }
       }

@@ -12,20 +12,7 @@ import { actionRules } from "../../rules/index.js";
 import type { RAGEngine } from "../../../rag/engine.js";
 import type { CoCDatabase } from "./database/index.js";
 import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
-import { generateText } from "../../../models/index.js";
-import { ModelClass } from "../../../models/types.js";
-import { composeTemplate } from "../../../template.js";
-import { getRagQueryTemplate } from "./ragQueryTemplate.js";
 
-interface DirectorRuntime {
-  modelProvider: any;
-  getSetting: (key: string) => string | undefined;
-}
-
-const createRuntime = (): DirectorRuntime => ({
-  modelProvider: (process.env.MODEL_PROVIDER as any) || "openai",
-  getSetting: (key: string) => process.env[key],
-});
 
 /**
  * Inject action-type-specific rules into temporary rules so downstream agents can apply them.
@@ -54,64 +41,69 @@ export const injectActionTypeRules = (
 };
 
 /**
- * Generate RAG queries using LLM based on action context
+ * Generate RAG queries using string concatenation
+ * Completely removed template mode, using direct string concatenation instead
  */
-const generateRagQueries = async (
+const generateRagQueries = (
   actionAnalysis: ActionAnalysis,
   gameState: GameState,
   characterInput: string
-): Promise<string[]> => {
-  try {
-    const runtime = createRuntime();
-    const template = getRagQueryTemplate();
-    
-    const templateContext = {
-      sceneName: gameState.currentScenario?.name || "Unknown",
-      location: gameState.currentScenario?.location || "Unknown location",
-      sceneDescription: gameState.currentScenario?.description || "",
-      characterInput,
-      character: actionAnalysis.character,
-      actionType: actionAnalysis.actionType,
-      action: actionAnalysis.action,
-      targetName: actionAnalysis.target.name || "unknown",
-      targetIntent: actionAnalysis.target.intent || "unknown",
-    };
-    
-    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
-    
-    const response = await generateText({
-      runtime,
-      context: prompt,
-      modelClass: ModelClass.SMALL,
-    });
-    
-    // Parse JSON response
-    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/i) || 
-                     response.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      console.warn("Failed to extract JSON from RAG query generation response");
-      return [];
+): string[] => {
+  const queries: string[] = [];
+  
+  // Get investigator name
+  const investigatorName = actionAnalysis.character;
+  
+  // Check if target is an NPC
+  const targetName = actionAnalysis.target.name;
+  let npcName: string | null = null;
+  if (targetName) {
+    // Check if target name matches any NPC in the game state
+    const matchingNpc = gameState.npcCharacters.find(npc => 
+      npc.name.toLowerCase() === targetName.toLowerCase() ||
+      npc.name.toLowerCase().includes(targetName.toLowerCase()) ||
+      targetName.toLowerCase().includes(npc.name.toLowerCase())
+    );
+    if (matchingNpc) {
+      npcName = matchingNpc.name;
     }
-    
-    const jsonStr = jsonMatch[1] || jsonMatch[0];
-    const parsed = JSON.parse(jsonStr);
-    
-    if (parsed.queries && Array.isArray(parsed.queries) && parsed.queries.length > 0) {
-      console.log(`🔍 [Memory Agent] 生成了 ${parsed.queries.length} 条 RAG 查询`);
-      return parsed.queries.slice(0, 3); // Ensure max 3 queries
-    }
-    
-    return [];
-  } catch (error) {
-    console.warn("Failed to generate RAG queries with LLM:", error);
-    return [];
   }
+  
+  // Get location name
+  const locationName = gameState.currentScenario?.location || null;
+  
+  // Generate queries based on available information
+  // 1. "investigator + npc name" (if NPC exists)
+  if (investigatorName && npcName) {
+    queries.push(`${investigatorName} ${npcName}`);
+  }
+  
+  // 2. "npc name" (if NPC exists)
+  if (npcName) {
+    queries.push(npcName);
+  }
+  
+  // 3. "location name" (if location exists)
+  if (locationName) {
+    queries.push(locationName);
+  }
+  
+  // 4. "input" (characterInput)
+  if (characterInput && characterInput.trim()) {
+    queries.push(characterInput.trim());
+  }
+  
+  console.log(`🔍 [Memory Agent] 生成了 ${queries.length} 条 RAG 查询（字符串拼接模式）`);
+  queries.forEach((q, idx) => {
+    console.log(`   Query ${idx + 1}: "${q}"`);
+  });
+  
+  return queries;
 };
 
 /**
  * Fetch top-N RAG slices based on the current action analysis and scenario context.
- * Now uses LLM to generate optimized queries.
+ * Uses string concatenation to generate queries.
  */
 export const fetchRagSlicesForAction = async (
   ragEngine: RAGEngine | undefined,
@@ -133,20 +125,21 @@ export const fetchRagSlicesForAction = async (
     }
   }
 
-  // Generate queries using LLM
-  const queries = await generateRagQueries(actionAnalysis, gameState, effectiveCharacterInput || "");
+  // Generate queries using string concatenation
+  const queries = generateRagQueries(actionAnalysis, gameState, effectiveCharacterInput || "");
   
-  // Fallback to simple query if LLM generation fails
+  // Fallback to simple query if no queries generated
   if (queries.length === 0) {
-    console.log("⚠️ [Memory Agent] LLM query generation failed, using fallback query");
+    console.log("⚠️ [Memory Agent] No queries generated, using fallback query");
     const queryParts = [
       actionAnalysis.character,
-      actionAnalysis.actionType,
-      actionAnalysis.action,
-      actionAnalysis.target.intent,
       actionAnalysis.target.name ?? undefined,
+      gameState.currentScenario?.location ?? undefined,
+      effectiveCharacterInput || undefined,
     ].filter(Boolean);
-    queries.push(queryParts.join(" "));
+    if (queryParts.length > 0) {
+      queries.push(queryParts.join(" "));
+    }
   }
 
   const context = gameState.currentScenario
@@ -159,10 +152,7 @@ export const fetchRagSlicesForAction = async (
   const seenHits = new Set<string>();
 
   try {
-    console.log(`🔍 [Memory Agent] 使用 ${queries.length} 条 LLM 生成的查询进行 RAG 检索:`);
-    queries.forEach((q, idx) => {
-      console.log(`   Query ${idx + 1}: "${q}"`);
-    });
+    console.log(`🔍 [Memory Agent] 使用 ${queries.length} 条查询进行 RAG 检索:`);
 
     // Search with each query - each query gets 1 result
     for (const query of queries) {

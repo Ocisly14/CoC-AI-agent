@@ -15,6 +15,7 @@ import { initialGameState, type GameState } from "../src/state.js";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 import { TurnManager } from "../src/coc_multiagents_system/agents/memory/index.js";
 import { saveManualCheckpoint, loadCheckpoint, listAvailableCheckpoints } from "../src/coc_multiagents_system/agents/memory/memoryAgent.js";
+import { generateRandomAttributes } from "../src/coc_multiagents_system/agents/character/characterBuilder.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -129,6 +130,27 @@ app.get("/", (_req, res) => {
     res
       .status(500)
       .send("Frontend not built. Run `pnpm --filter coc-investigator-sheet build` inside client/ to generate dist/.");
+  }
+});
+
+// API endpoint to get all available occupations
+app.get("/api/occupations", (req, res) => {
+  try {
+    const occupationsFile = path.join(process.cwd(), "src", "coc_multiagents_system", "agents", "character", "Character occupation.json");
+
+    if (!fs.existsSync(occupationsFile)) {
+      return res.status(404).json({ error: "Occupations file not found" });
+    }
+
+    const occupationsData = JSON.parse(fs.readFileSync(occupationsFile, "utf-8"));
+
+    res.json({
+      success: true,
+      occupations: occupationsData,
+    });
+  } catch (error) {
+    console.error("Error fetching occupations:", error);
+    res.status(500).json({ error: "Failed to fetch occupations: " + (error as Error).message });
   }
 });
 
@@ -1481,6 +1503,27 @@ app.post("/api/game/stop", (req, res) => {
   } catch (error) {
     console.error("Error stopping game:", error);
     res.status(500).json({ error: "Failed to stop game" });
+  }
+});
+
+// API endpoint to generate random attributes according to CoC 7th Edition rules
+app.post("/api/character/random-attributes", (req, res) => {
+  try {
+    const { age } = req.body;
+
+    // Generate random attributes
+    const attributes = generateRandomAttributes(age);
+
+    console.log(`[${new Date().toISOString()}] Generated random attributes${age ? ` for age ${age}` : ''}`);
+
+    res.json({
+      success: true,
+      attributes: attributes,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error generating random attributes:", error);
+    res.status(500).json({ error: "Failed to generate random attributes: " + (error as Error).message });
   }
 });
 

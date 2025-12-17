@@ -44,16 +44,17 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 
 INVENTORY UPDATES:
 If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
-- To add items: "inventory": { "add": ["item name 1", "item name 2"] }
-- To remove items: "inventory": { "remove": ["item name"] }
-- To replace entire inventory: "inventory": ["item1", "item2", "item3"]
+- Inventory items are objects with: { name: string, quantity?: number, properties?: Record<string, any> }
+- To add items: "inventory": { "add": [{ "name": "item name 1", "quantity": 1 }, { "name": "item name 2" }] }
+- To remove items: "inventory": { "remove": [{ "name": "item name", "quantity": 1 }] }
+- To replace entire inventory: "inventory": [{ "name": "item1" }, { "name": "item2", "quantity": 3, "properties": { "weight": 2.5 } }]
 - For item transfers between characters: update BOTH the giver and receiver
-  * Giver: "inventory": { "remove": ["item name"] }
-  * Receiver: "inventory": { "add": ["item name"] }
+  * Giver: "inventory": { "remove": [{ "name": "item name" }] }
+  * Receiver: "inventory": { "add": [{ "name": "item name" }] }
 Examples:
-- Giving item to NPC: playerCharacter: { "inventory": { "remove": ["flashlight"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": ["flashlight"] } }]
-- Receiving item from NPC: playerCharacter: { "inventory": { "add": ["library key"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["library key"] } }]
-- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["item"] } }, { "id": "npc-2", "inventory": { "add": ["item"] } }]
+- Giving item to NPC: playerCharacter: { "inventory": { "remove": [{ "name": "flashlight" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": [{ "name": "flashlight" }] } }]
+- Receiving item from NPC: playerCharacter: { "inventory": { "add": [{ "name": "library key" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "library key" }] } }]
+- Picking up multiple items: playerCharacter: { "inventory": { "add": [{ "name": "pistol", "quantity": 1, "properties": { "ammo": 6 } }, { "name": "bullet", "quantity": 12 }] } }
 
 TIME ESTIMATION:
 Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:
@@ -609,18 +610,19 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 
 INVENTORY UPDATES:
 If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
-- To add items: "inventory": { "add": ["item name 1", "item name 2"] }
-- To remove items: "inventory": { "remove": ["item name"] }
-- To replace entire inventory: "inventory": ["item1", "item2", "item3"]
+- Inventory items are objects with: { name: string, quantity?: number, properties?: Record<string, any> }
+- To add items: "inventory": { "add": [{ "name": "item name 1", "quantity": 1 }, { "name": "item name 2" }] }
+- To remove items: "inventory": { "remove": [{ "name": "item name", "quantity": 1 }] }
+- To replace entire inventory: "inventory": [{ "name": "item1" }, { "name": "item2", "quantity": 3, "properties": { "weight": 2.5 } }]
 - For item transfers between characters: update BOTH the giver and receiver
-  * Giver: "inventory": { "remove": ["item name"] }
-  * Receiver: "inventory": { "add": ["item name"] }
+  * Giver: "inventory": { "remove": [{ "name": "item name" }] }
+  * Receiver: "inventory": { "add": [{ "name": "item name" }] }
 Examples:
-- Picking up a key: playerCharacter: { "inventory": { "add": ["rusty key"] } }
-- Dropping a weapon: playerCharacter: { "inventory": { "remove": ["pistol"] } }
-- Giving item to NPC: playerCharacter: { "inventory": { "remove": ["flashlight"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": ["flashlight"] } }]
-- Receiving item from NPC: playerCharacter: { "inventory": { "add": ["library key"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["library key"] } }]
-- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["item"] } }, { "id": "npc-2", "inventory": { "add": ["item"] } }]
+- Picking up a key: playerCharacter: { "inventory": { "add": [{ "name": "rusty key" }] } }
+- Dropping a weapon: playerCharacter: { "inventory": { "remove": [{ "name": "pistol" }] } }
+- Giving item to NPC: playerCharacter: { "inventory": { "remove": [{ "name": "flashlight" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": [{ "name": "flashlight" }] } }]
+- Receiving item from NPC: playerCharacter: { "inventory": { "add": [{ "name": "library key" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "library key" }] } }]
+- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "item" }] } }, { "id": "npc-2", "inventory": { "add": [{ "name": "item" }] } }]
 
 TIME ESTIMATION:
 Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:

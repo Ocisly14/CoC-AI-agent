@@ -1,4 +1,4 @@
-import { getDirectorTemplate } from "./directorTemplate.js";
+import { getDirectorTemplate, getActionDrivenSceneChangeTemplate } from "./directorTemplate.js";
 import { composeTemplate } from "../../../template.js";
 import type { GameState, GameStateManager, VisitedScenarioBasic, DirectorDecision } from "../../../state.js";
 import type { ScenarioProfile, ScenarioSnapshot } from "../models/scenarioTypes.js";
@@ -10,6 +10,8 @@ import {
   ModelClass,
   generateText,
 } from "../../../models/index.js";
+import * as fs from "fs";
+import * as path from "path";
 
 interface DirectorRuntime {
   modelProvider: ModelProviderName;
@@ -56,9 +58,17 @@ export class DirectorAgent {
     // 获取用户最近10条查询
     const recentQueries = this.getRecentQueries();
     
-    // 获取未访问的场景选项
-    const unvisitedScenarios = await this.getUnvisitedScenarios(gameState);
+    // 加载地图信息
+    const mapData = this.loadMapData();
     
+    // 获取已访问的场景名称集合（用于地图判断）
+    const visitedScenarioNames = new Set<string>();
+    if (gameState.currentScenario) {
+      visitedScenarioNames.add(gameState.currentScenario.name);
+    }
+    gameState.visitedScenarios.forEach(scenario => {
+      visitedScenarioNames.add(scenario.name);
+    });
     
     // 获取模板
     const template = getDirectorTemplate();
@@ -74,8 +84,11 @@ export class DirectorAgent {
       // 用户查询历史
       recentQueries,
       
-      // 未访问的场景
-      unvisitedScenarios,
+      // 地图信息
+      mapData,
+      
+      // 已访问的场景名称
+      visitedScenarioNames: Array.from(visitedScenarioNames),
       
       // 游戏状态统计
       gameStats: {
@@ -131,9 +144,25 @@ export class DirectorAgent {
         : null;
 
     // 构建 Director Decision
+    // 如果 LLM 返回的是场景名称而不是 ID，需要先查找对应的场景 ID
+    let targetSnapshotId = parsedResponse.targetSnapshotId;
+    if (parsedResponse.targetScenarioName && !targetSnapshotId) {
+      // 尝试通过场景名称查找 ID
+      const allScenarios = this.scenarioLoader.getAllScenarios();
+      const matchedScenario = allScenarios.find(s => 
+        s.snapshot.name.toLowerCase().trim() === parsedResponse.targetScenarioName.toLowerCase().trim()
+      );
+      if (matchedScenario) {
+        targetSnapshotId = matchedScenario.snapshot.id;
+        console.log(`Found scenario ID ${targetSnapshotId} for name "${parsedResponse.targetScenarioName}"`);
+      } else {
+        console.warn(`Could not find scenario with name "${parsedResponse.targetScenarioName}"`);
+      }
+    }
+
     const decision: DirectorDecision = {
       shouldProgress: parsedResponse.shouldProgress || false,
-      targetSnapshotId: parsedResponse.targetSnapshotId,
+      targetSnapshotId: targetSnapshotId,
       estimatedShortActions,
       increaseShortActionCapBy,
       reasoning: parsedResponse.reasoning || parsedResponse.recommendation || "No reasoning provided",
@@ -231,44 +260,21 @@ export class DirectorAgent {
   }
 
   /**
-   * 获取未访问的场景（仅返回24小时内且有连接的场景）
+   * 加载地图信息
    */
-  private async getUnvisitedScenarios(gameState: GameState): Promise<any[]> {
-    if (!gameState.currentScenario) {
-      return [];
+  private loadMapData(): any | null {
+    try {
+      const mapPath = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "map.json");
+      if (!fs.existsSync(mapPath)) {
+        console.warn(`Map file not found at: ${mapPath}`);
+        return null;
+      }
+      const mapContent = fs.readFileSync(mapPath, "utf-8");
+      return JSON.parse(mapContent);
+    } catch (error) {
+      console.error("Error loading map data:", error);
+      return null;
     }
-
-    // 获取连接的场景
-    const connectedScenes = await this.getConnectedScenes(gameState.currentScenario);
-    
-    // 获取已访问的场景ID集合（使用 snapshot id）
-    const visitedSnapshotIds = new Set<string>();
-    
-    // 添加当前场景的 id
-    visitedSnapshotIds.add(gameState.currentScenario.id);
-    
-    // 添加已访问场景的 id
-    gameState.visitedScenarios.forEach(scenario => {
-      visitedSnapshotIds.add(scenario.id);
-    });
-
-    // 过滤出未访问的连接场景
-    const unvisitedScenarios = connectedScenes
-      .filter(snapshot => !visitedSnapshotIds.has(snapshot.id))
-      .map(snapshot => ({
-        id: snapshot.id,
-        name: snapshot.name,
-        location: snapshot.location,
-        description: snapshot.description.length > 200 ? snapshot.description.slice(0, 200) + "..." : snapshot.description,
-        keeperNotes: snapshot.keeperNotes || "",
-        hoursFromNow: snapshot.timeDifferenceHours,
-        connectionType: snapshot.connectionType,
-        connectionDescription: snapshot.connectionDescription,
-        clueCount: snapshot.clues.length,
-        characterCount: snapshot.characters.length
-      }));
-
-    return unvisitedScenarios;
   }
 
   // Time progression removed - scenarios are now static snapshots without timeline
@@ -361,61 +367,20 @@ export class DirectorAgent {
   }
 
   /**
-   * 处理 Action Agent 发起的场景切换请求
-   * 直接执行场景切换，不需要判断进度条件
+   * 执行场景切换（根据场景名称查找并切换）
+   * 这是一个可复用的辅助方法，用于根据场景名称查找并执行场景切换
    */
-  async handleActionDrivenSceneChange(
-    gameStateManager: GameStateManager,
+  private async executeSceneChangeByName(
     targetSceneName: string,
-    reason: string
+    gameStateManager: GameStateManager
   ): Promise<void> {
-    console.log(`\n🎬 [Director Agent] ========================================`);
-    console.log(`🎬 [Director Agent] 开始处理 Action 驱动的场景转换`);
-    console.log(`🎬 [Director Agent] ========================================`);
-    
     const gameState = gameStateManager.getGameState();
-    const currentScenario = gameState.currentScenario;
-    
-    // Log current state
-    console.log(`\n📍 [当前场景状态]:`);
-    if (currentScenario) {
-      console.log(`   场景名称: ${currentScenario.name}`);
-      console.log(`   场景ID: ${currentScenario.id}`);
-      console.log(`   位置: ${currentScenario.location}`);
-      console.log(`   描述: ${currentScenario.description ? currentScenario.description.substring(0, 100) + '...' : '无'}`);
-      console.log(`   角色数: ${currentScenario.characters?.length || 0}`);
-      console.log(`   线索数: ${currentScenario.clues?.length || 0}`);
-      console.log(`   出口数: ${currentScenario.exits?.length || 0}`);
-      if (currentScenario.exits && currentScenario.exits.length > 0) {
-        console.log(`   出口列表:`);
-        currentScenario.exits.forEach((exit, index) => {
-          console.log(`     [${index + 1}] ${exit.direction} → ${exit.destination} (${exit.condition || 'open'})`);
-        });
-      }
-    } else {
-      console.log(`   ⚠️  当前无场景`);
-    }
-    
-    // Log visited scenarios
-    console.log(`\n📚 [已访问场景历史] (共 ${gameState.visitedScenarios.length} 个):`);
-    if (gameState.visitedScenarios.length > 0) {
-      gameState.visitedScenarios.forEach((visited, index) => {
-        console.log(`   [${index + 1}] ${visited.name} (${visited.location})`);
-      });
-    } else {
-      console.log(`   (无)`);
-    }
-    
-    // Log target scene request
-    console.log(`\n🎯 [场景转换请求]:`);
-    console.log(`   目标场景名称: ${targetSceneName}`);
-    console.log(`   转换原因: ${reason}`);
     
     // Search for target scenario
     console.log(`\n🔍 [查找目标场景]:`);
     console.log(`   正在搜索场景: "${targetSceneName}"...`);
     
-    // First try exact match (since Action Agent provides scene names from the list)
+    // First try exact match
     let targetScenarioProfile: ScenarioProfile | null = null;
     const allScenarios = this.scenarioLoader.getAllScenarios();
     const exactMatch = allScenarios.find(s => 
@@ -502,6 +467,138 @@ export class DirectorAgent {
       }
       throw error;
     }
+  }
+
+  /**
+   * 处理 Action Agent 发起的场景切换请求
+   * 使用地图数据和 LLM 来验证并选择目标场景
+   */
+  async handleActionDrivenSceneChange(
+    gameStateManager: GameStateManager,
+    targetSceneName: string,
+    reason: string
+  ): Promise<void> {
+    console.log(`\n🎬 [Director Agent] ========================================`);
+    console.log(`🎬 [Director Agent] 开始处理 Action 驱动的场景转换`);
+    console.log(`🎬 [Director Agent] ========================================`);
+    
+    const gameState = gameStateManager.getGameState();
+    const currentScenario = gameState.currentScenario;
+    
+    // Log current state
+    console.log(`\n📍 [当前场景状态]:`);
+    if (currentScenario) {
+      console.log(`   场景名称: ${currentScenario.name}`);
+      console.log(`   场景ID: ${currentScenario.id}`);
+      console.log(`   位置: ${currentScenario.location}`);
+      console.log(`   描述: ${currentScenario.description ? currentScenario.description.substring(0, 100) + '...' : '无'}`);
+    } else {
+      console.log(`   ⚠️  当前无场景`);
+    }
+    
+    // Log target scene request
+    console.log(`\n🎯 [场景转换请求]:`);
+    console.log(`   目标场景名称: ${targetSceneName}`);
+    console.log(`   转换原因: ${reason}`);
+    
+    // Load map data
+    const mapData = this.loadMapData();
+    if (!mapData) {
+      console.warn(`   ⚠️  无法加载地图数据，将直接使用请求的场景名称`);
+      await this.executeSceneChangeByName(targetSceneName, gameStateManager);
+      return;
+    }
+    
+    // Get conversation history to extract previous narrative and current character input
+    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+      turnNumber: number;
+      characterInput: string;
+      keeperNarrative: string | null;
+    }>) || [];
+    
+    // Get previous round narrative (last completed turn with narrative)
+    let previousNarrative: string | null = null;
+    if (conversationHistory.length > 0) {
+      const lastTurnWithNarrative = [...conversationHistory]
+        .reverse()
+        .find(turn => turn.keeperNarrative);
+      if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+        previousNarrative = lastTurnWithNarrative.keeperNarrative;
+      }
+    }
+    
+    // Get current round character input (latest turn without narrative yet, or from the latest turn)
+    let characterInput: string | null = null;
+    if (conversationHistory.length > 0) {
+      // Get the latest turn that has characterInput but no narrative yet
+      const latestTurn = conversationHistory[conversationHistory.length - 1];
+      if (latestTurn && latestTurn.characterInput && !latestTurn.keeperNarrative) {
+        characterInput = latestTurn.characterInput;
+      } else {
+        // Fallback: get the latest characterInput from any turn
+        const latestWithInput = [...conversationHistory]
+          .reverse()
+          .find(turn => turn.characterInput);
+        if (latestWithInput && latestWithInput.characterInput) {
+          characterInput = latestWithInput.characterInput;
+        }
+      }
+    }
+    
+    // Use LLM to validate and select target scene based on map
+    console.log(`\n🤖 [使用 LLM 根据地图验证场景选择]:`);
+    const runtime = createRuntime();
+    const template = getActionDrivenSceneChangeTemplate();
+    
+    const templateContext = {
+      currentScene: currentScenario ? {
+        name: currentScenario.name,
+        location: currentScenario.location
+      } : null,
+      mapData,
+      previousNarrative,
+      characterInput
+    };
+    
+    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
+    
+    let validatedTargetSceneName: string;
+    try {
+      const response = await generateText({
+        runtime,
+        context: prompt,
+        modelClass: ModelClass.MEDIUM,
+      });
+      
+      // Parse LLM response
+      let parsedResponse;
+      try {
+        parsedResponse = JSON.parse(response);
+      } catch (error) {
+        console.error("Failed to parse LLM response as JSON:", error);
+        console.log(`   ⚠️  JSON 解析失败，使用原始请求的场景名称`);
+        validatedTargetSceneName = targetSceneName;
+      }
+      
+      if (parsedResponse && parsedResponse.targetScenarioName) {
+        validatedTargetSceneName = parsedResponse.targetScenarioName;
+        console.log(`   ✓ LLM 验证完成`);
+        console.log(`   LLM 返回的场景名称: ${validatedTargetSceneName}`);
+        if (parsedResponse.reasoning) {
+          console.log(`   LLM 推理: ${parsedResponse.reasoning}`);
+        }
+      } else {
+        console.warn(`   ⚠️  LLM 响应中未找到 targetScenarioName，使用原始请求的场景名称`);
+        validatedTargetSceneName = targetSceneName;
+      }
+    } catch (error) {
+      console.error(`   ❌ LLM 调用失败:`, error);
+      console.log(`   ⚠️  将使用原始请求的场景名称`);
+      validatedTargetSceneName = targetSceneName;
+    }
+    
+    // Execute scene change using the validated scene name
+    await this.executeSceneChangeByName(validatedTargetSceneName, gameStateManager);
   }
 
   /**

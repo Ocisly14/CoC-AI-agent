@@ -1,68 +1,81 @@
 [
-    {
-      "name": "Harrison Lockheed",
-      "occupation": "Tourist / Visitor",
-      "age": 35,
-      "appearance": "An ordinary-looking adult man with no particularly striking features, dressed casually like a traveler on holiday.",
-      "personality": "Friendly, relaxed, and sociable. Treats the trip as a vacation and is largely unaware of the deeper dangers surrounding Cassandra.",
-      "background": "Harrison Lockheed is one of several visitors who came to Cassandra around Christmas 2003. He is part of a close-knit group of friends who traveled together to visit a friend's fiancée and enjoy a holiday getaway. He has no involvement in the occult events unfolding in the town and is considered a cameo, non-investigative NPC.",
-      "goals": [
-        "Enjoy a peaceful holiday trip",
-        "Spend time with friends without trouble"
-      ],
-      "secrets": [],
-      "attributes": {
-        "STR": 50,
-        "CON": 50,
-        "DEX": 50,
-        "APP": 50,
-        "POW": 50,
-        "SIZ": 60,
-        "INT": 50,
-        "EDU": 60
-      },
-      "status": {
-        "hp": 11,
-        "maxHp": 11,
-        "sanity": 50,
-        "maxSanity": 50,
-        "luck": 50,
-        "mp": 10,
-        "conditions": []
-      },
-      "skills": {},
-      "inventory": [],
-      "clues": [],
-      "relationships": [
-        {
-          "targetName": "Bigbear",
-          "relationshipType": "friend",
-          "attitude": 60,
-          "description": "Travel companion and close friend.",
-          "history": "They are part of the same group of friends traveling together for the holidays."
-        },
-        {
-          "targetName": "Reid",
-          "relationshipType": "friend",
-          "attitude": 60,
-          "description": "Member of the same traveling friend group.",
-          "history": "Met through a shared friend circle and remained close over the years."
-        },
-        {
-          "targetName": "Lily",
-          "relationshipType": "friend",
-          "attitude": 60,
-          "description": "Friend and travel companion.",
-          "history": "Part of the holiday group visiting Cassandra together."
-        },
-        {
-          "targetName": "Wind",
-          "relationshipType": "friend",
-          "attitude": 70,
-          "description": "Friend whose upcoming marriage prompted the trip.",
-          "history": "Traveled to Cassandra to accompany Wind before his wedding."
+  {
+    "name": "Harrison Lockheed",
+    "occupation": "Tourist / Visitor",
+    "age": 35,
+    "appearance": "An ordinary-looking adult man with no particularly striking features, dressed casually like a traveler on holiday.",
+    "personality": "Friendly, relaxed, and sociable. Treats the trip as a vacation and is largely unaware of the deeper dangers surrounding Cassandra.",
+    "background": "Harrison Lockheed is one of several visitors who came to Cassandra around Christmas 2003. He is part of a close-knit group of friends who traveled together to visit a friend's fiancée and enjoy a holiday getaway. He has no involvement in the occult events unfolding in the town and is considered a cameo, non-investigative NPC.",
+    "goals": [
+      "Enjoy a peaceful holiday trip",
+      "Spend time with friends without trouble"
+    ],
+    "secrets": [],
+    "attributes": {
+      "STR": 50,
+      "CON": 50,
+      "DEX": 50,
+      "APP": 50,
+      "POW": 50,
+      "SIZ": 60,
+      "INT": 50,
+      "EDU": 60
+    },
+    "status": {
+      "hp": 11,
+      "maxHp": 11,
+      "sanity": 50,
+      "maxSanity": 50,
+      "luck": 50,
+      "mp": 10,
+      "conditions": []
+    },
+    "skills": {},
+    "inventory": [
+      {
+        "name": "Illegal firearms stock (kept out of sight)",
+        "properties": {
+          "clue": "明面五金店老板，实为枪支贩子；因存在不符合加州法令的枪支，武器只能暗处出售。"
         }
-      ],
-      "notes": "Harrison Lockheed is categorized as a cameo NPC and does not actively participate in the investigators’ investigation unless the Keeper chooses to expand his role."
-    }
-  ]
+      },
+      {
+        "name": "Weapon modification tools / hobby gear",
+        "properties": {
+          "note": "资料提到他是武器改装爱好者；若获得好感，可能帮调查员做简单改良或制作非常规武器（守秘人裁定）。"
+        }
+      }
+    ],
+    "clues": [],
+    "relationships": [
+      {
+        "targetName": "Bigbear",
+        "relationshipType": "friend",
+        "attitude": 60,
+        "description": "Travel companion and close friend.",
+        "history": "They are part of the same group of friends traveling together for the holidays."
+      },
+      {
+        "targetName": "Reid",
+        "relationshipType": "friend",
+        "attitude": 60,
+        "description": "Member of the same traveling friend group.",
+        "history": "Met through a shared friend circle and remained close over the years."
+      },
+      {
+        "targetName": "Lily",
+        "relationshipType": "friend",
+        "attitude": 60,
+        "description": "Friend and travel companion.",
+        "history": "Part of the holiday group visiting Cassandra together."
+      },
+      {
+        "targetName": "Wind",
+        "relationshipType": "friend",
+        "attitude": 70,
+        "description": "Friend whose upcoming marriage prompted the trip.",
+        "history": "Traveled to Cassandra to accompany Wind before his wedding."
+      }
+    ],
+    "notes": "Harrison Lockheed is categorized as a cameo NPC and does not actively participate in the investigators’ investigation unless the Keeper chooses to expand his role."
+  }
+]

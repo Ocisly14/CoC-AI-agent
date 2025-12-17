@@ -38,23 +38,49 @@ Monitor game progress and determine when to advance the story while respecting i
 *None*
 {{/if}}
 
-## 🗺️ Progression Options
+## 🗺️ Town Map & Spatial Logic
+{{#if mapData}}
+**Map Name**: {{mapData.map_name}}
 
-### Unvisited Connected Scenes
-{{#if unvisitedScenarios}}
-{{#each unvisitedScenarios}}
-**{{this.name}}** ({{this.id}})
-📍 {{this.location}}
-🔗 {{this.connectionType}}: {{this.connectionDescription}}
+**Spatial Logic**: {{mapData.spatial_logic}}
 
-{{this.description}}
-
-💡 {{this.clueCount}} clues | 👥 {{this.characterCount}} characters
-{{#if this.keeperNotes}}🎭 {{this.keeperNotes}}{{/if}}
+### Road Network
+{{#each mapData.road_network}}
+**{{this.road_name}}** ({{this.orientation}})
+{{#if this.connected_to}}
+🔗 Connected to: {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if this.locations_along_road}}
+📍 Locations: {{#each this.locations_along_road}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if this.sub_sections}}
+{{#each this.sub_sections}}
+  - **{{this.segment}}**: Connected to {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+    Locations: {{#each this.locations}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/each}}
+{{/if}}
 
 {{/each}}
+
+### Hidden Connectivity
+{{#if mapData.hidden_connectivity}}
+{{#each mapData.hidden_connectivity}}
+- **{{this.entry_point}}** → {{this.leads_to}}
+{{/each}}
 {{else}}
-*None available*
+*No hidden connections*
+{{/if}}
+
+### Visited Scenarios
+{{#if visitedScenarioNames}}
+{{#each visitedScenarioNames}}
+- ✅ {{this}}
+{{/each}}
+{{else}}
+*None visited yet*
+{{/if}}
+{{else}}
+*Map data not available*
 {{/if}}
 
 ## 📊 Game State
@@ -84,18 +110,26 @@ Monitor game progress and determine when to advance the story while respecting i
 {
   "shouldProgress": true/false,
   "targetSnapshotId": "snapshot-id or null",
+  "targetScenarioName": "scenario name from map or null (alternative to targetSnapshotId)",
   "estimatedShortActions": number or null,
   "increaseShortActionCapBy": number or null,
-  "reasoning": "Explanation (2-3 sentences)"
+  "reasoning": "Explanation (2-3 sentences, must reference map spatial logic)"
 }
 \`\`\`
 
 **Fields**:
 - **shouldProgress**: true to advance story
-- **targetSnapshotId**: ID from options above (null if no progress)
+- **targetSnapshotId**: Snapshot ID of target scenario (can be null if using targetScenarioName)
+- **targetScenarioName**: Name of target scenario from map (alternative to targetSnapshotId, e.g., "Star Hospital", "Train Station", "Helen's Restaurant")
 - **estimatedShortActions**: Actions available in new scene (null if staying)
 - **increaseShortActionCapBy**: Extra actions for current scene (null if progressing)
-- **reasoning**: Why progress or stay
+- **reasoning**: Why progress or stay (must reference map spatial logic and road connections)
+
+**Important**: 
+- Use the map's spatial logic to determine which locations are accessible from the current scene
+- Consider road connections and locations_along_road when selecting next scene
+- Check visitedScenarioNames to avoid revisiting unless story requires it
+- Match scenario names from the map to actual scenario names in the system
 
 *Analyze and decide:*`;
 }
@@ -160,4 +194,96 @@ Decide whether to transition to a new scene based on the current state and avail
 \`\`\`
 
 *Decide:*`;
+}
+
+/**
+ * Action-Driven Scene Change Template - for validating and selecting scene based on map
+ */
+export function getActionDrivenSceneChangeTemplate(): string {
+    return `# Director Agent - Action-Driven Scene Change Validation
+
+Based on the character's input and previous narrative context, determine the appropriate target scene using the town map and spatial logic.
+
+## 📍 Current Scene
+{{#if currentScene}}
+**{{currentScene.name}}** @ {{currentScene.location}}
+{{else}}
+*No current scene*
+{{/if}}
+
+## 🗺️ Town Map & Spatial Logic
+{{#if mapData}}
+**Map Name**: {{mapData.map_name}}
+
+**Spatial Logic**: {{mapData.spatial_logic}}
+
+### Road Network
+{{#each mapData.road_network}}
+**{{this.road_name}}** ({{this.orientation}})
+{{#if this.connected_to}}
+🔗 Connected to: {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if this.locations_along_road}}
+📍 Locations: {{#each this.locations_along_road}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/if}}
+{{#if this.sub_sections}}
+{{#each this.sub_sections}}
+  - **{{this.segment}}**: Connected to {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+    Locations: {{#each this.locations}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+{{/each}}
+{{/if}}
+
+{{/each}}
+
+### Hidden Connectivity
+{{#if mapData.hidden_connectivity}}
+{{#each mapData.hidden_connectivity}}
+- **{{this.entry_point}}** → {{this.leads_to}}
+{{/each}}
+{{else}}
+*No hidden connections*
+{{/if}}
+{{else}}
+*Map data not available*
+{{/if}}
+
+## 📜 Previous Round Context
+{{#if previousNarrative}}
+**Previous Keeper Narrative**:
+"{{previousNarrative}}"
+{{else}}
+*No previous narrative available*
+{{/if}}
+
+## 💬 Current Character Input
+{{#if characterInput}}
+"{{characterInput}}"
+{{else}}
+*No character input available*
+{{/if}}
+
+## Guidelines
+- Analyze the character's input and the previous narrative to understand the intent for scene change
+- Use the map's spatial logic to determine which scene the character wants to reach or should reach
+- Check road connections: scenes on the same road or connected roads are accessible from the current location
+- Consider hidden connectivity (entry points) if applicable
+- Based on the character's intent and the map's spatial logic, determine the most appropriate target scene
+- Return the exact scene name as it appears in the map or scenario system
+
+## Response
+\`\`\`json
+{
+  "targetScenarioName": "exact scene name from map (e.g., 'Star Hospital', 'Train Station', 'Helen's Restaurant')",
+  "reasoning": "Why this scene is selected based on map spatial logic (2-3 sentences)"
+}
+\`\`\`
+
+**Important**: 
+- Return the exact scene name that matches the scenario names in the system
+- Base your decision on the character's input and the context from the previous narrative
+- Use the map's spatial logic to determine the most appropriate accessible scene
+- If the character's intended destination is not directly accessible, suggest the closest accessible scene based on map connections
+- Reference specific roads and connections in your reasoning
+
+*Validate and decide:*`;
 }

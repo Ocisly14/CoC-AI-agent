@@ -12,7 +12,9 @@ import type {
   CharacterAttributes,
   CharacterStatus,
   CharacterProfile,
+  InventoryItem,
 } from "../../models/gameTypes.js";
+import { InventoryUtils } from "../../models/gameTypes.js";
 import {
   PlayerDocumentParser,
   type ParsedPlayerData,
@@ -259,7 +261,7 @@ export class PlayerLoader {
       name: parsedData.name,
       attributes,
       status,
-      inventory: parsedData.inventory || [],
+      inventory: InventoryUtils.normalizeInventory(parsedData.inventory),
       skills: parsedData.skills || {},
       notes: [
         parsedData.notes,
@@ -350,7 +352,7 @@ export class PlayerLoader {
       name: character.name,
       attributes: JSON.parse(character.attributes),
       status: JSON.parse(character.status),
-      inventory: JSON.parse(character.inventory || "[]"),
+      inventory: InventoryUtils.normalizeInventory(JSON.parse(character.inventory || "[]")),
       skills: JSON.parse(character.skills || "{}"),
       notes: character.notes,
     };

@@ -1,5 +1,5 @@
 [
-    {
+  {
     "name": "Abel William",
     "occupation": "Distillery owner",
     "age": 40,
@@ -31,7 +31,9 @@
       "maxSanity": 50,
       "luck": 55,
       "mp": 10,
-      "conditions": ["deceased"]
+      "conditions": [
+        "deceased"
+      ]
     },
     "skills": {
       "Accounting": 45,
@@ -39,25 +41,44 @@
       "Spot Hidden": 40,
       "Listen": 40
     },
-    "inventory": [],
+    "inventory": [
+      {
+        "name": "Scrapbook clippings (incl. father's obituary + loose 1988 newspaper clipping)",
+        "properties": {
+          "clue": "Obituary + a loose 1988-era clipping about a riot, hinting at Simon's past."
+        }
+      },
+      {
+        "name": "Recent newspaper (weeks old)",
+        "properties": {
+          "clue": "Reports unusual Pacific fish activity + shark attacks/beach controls; foreshadows Cassandra anomalies tied to Deep Ones activity."
+        }
+      }
+    ],
     "clues": [
       {
         "clueText": "Abel complained about a growing spider infestation in and around the distillery.",
         "category": "observation",
         "difficulty": "regular",
-        "relatedTo": ["William Distillery"]
+        "relatedTo": [
+          "William Distillery"
+        ]
       },
       {
         "clueText": "A black spider emerged from Abel’s neck, killing him instantly.",
         "category": "observation",
         "difficulty": "regular",
-        "relatedTo": ["William Distillery"]
+        "relatedTo": [
+          "William Distillery"
+        ]
       },
       {
         "clueText": "Marcel was one of the employees laid off after the distillery downsized.",
         "category": "knowledge",
         "difficulty": "regular",
-        "relatedTo": ["Marcel"]
+        "relatedTo": [
+          "Marcel"
+        ]
       }
     ],
     "relationships": [
