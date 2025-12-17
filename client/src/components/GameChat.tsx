@@ -18,14 +18,16 @@ interface GameChatProps {
   sessionId: string;
   apiBaseUrl?: string;
   characterName?: string;
+  moduleIntroduction?: { introduction: string; characterGuidance: string } | null;
 }
 
-export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator' }: GameChatProps) {
+export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator', moduleIntroduction }: GameChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
   const { turn, isPolling, error, startPolling } = useTurnPolling(apiBaseUrl);
 
   // Load conversation history on mount
@@ -68,9 +70,12 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
 
       if (data.success && data.conversation) {
         setMessages(data.conversation);
+      } else {
+        setMessages([]);
       }
     } catch (err) {
       console.error('Failed to load conversation history:', err);
+      setMessages([]);
     }
   };
 
@@ -116,6 +121,40 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
     }
   };
 
+  const handleSaveCheckpoint = async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/checkpoints/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to save checkpoint');
+      }
+
+      setSaveMessage(`✓ ${data.message}: ${data.checkpointName}`);
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to save checkpoint:', err);
+      setSaveMessage('存档失败: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="game-chat-container">
       {/* Session Info Bar */}
@@ -127,6 +166,25 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
         <div className="character-info">
           <span className="character-label">Playing as:</span>
           <span className="character-value">{characterName}</span>
+        </div>
+        <div className="save-checkpoint-section">
+          <button
+            className="save-checkpoint-btn"
+            onClick={handleSaveCheckpoint}
+            disabled={isSaving}
+            title="保存当前游戏进度"
+          >
+            {isSaving ? '💾 保存中...' : '💾 存档'}
+          </button>
+          {saveMessage && (
+            <span className="save-message" style={{ 
+              marginLeft: '10px', 
+              fontSize: '0.85rem',
+              color: saveMessage.startsWith('✓') ? '#155724' : '#721c24'
+            }}>
+              {saveMessage}
+            </span>
+          )}
         </div>
       </div>
 

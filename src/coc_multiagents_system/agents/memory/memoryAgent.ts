@@ -75,12 +75,49 @@ export const fetchRagSlicesForAction = async (
 };
 
 /**
- * Enrich game state with action-type rules and RAG results for the memory workflow.
+ * Extract recent conversation history (last 3 completed turns) from database
+ */
+const extractRecentConversationHistory = async (
+  db: CoCDatabase | undefined,
+  sessionId: string,
+  limit = 3
+): Promise<Array<{ turnNumber: number; characterInput: string; keeperNarrative: string | null }>> => {
+  if (!db) return [];
+
+  try {
+    // Get more turns to ensure we have enough completed ones
+    const turns = db.getTurnHistory(sessionId, limit * 2);
+    
+    // Filter only completed turns with keeper narrative, then take the last 3
+    const completedTurns = turns
+      .filter(turn => turn.status === 'completed' && turn.keeperNarrative)
+      .slice(0, limit)
+      .map(turn => ({
+        turnNumber: turn.turnNumber,
+        characterInput: turn.characterInput,
+        keeperNarrative: turn.keeperNarrative,
+      }))
+      .reverse(); // Reverse to get chronological order (oldest first)
+
+    if (completedTurns.length > 0) {
+      console.log(`📜 [Memory Agent] 提取了 ${completedTurns.length} 轮历史对话 (Turn #${completedTurns[0]?.turnNumber} 到 Turn #${completedTurns[completedTurns.length - 1]?.turnNumber})`);
+    }
+
+    return completedTurns;
+  } catch (error) {
+    console.warn("Failed to extract conversation history:", error);
+    return [];
+  }
+};
+
+/**
+ * Enrich game state with action-type rules, RAG results, and conversation history for the memory workflow.
  */
 export const enrichMemoryContext = async (
   gameState: GameState,
   actionAnalysis: ActionAnalysis | null,
-  ragEngine?: RAGEngine
+  ragEngine?: RAGEngine,
+  db?: CoCDatabase
 ): Promise<GameState> => {
   // First inject the action-type rules
   const withRules = injectActionTypeRules(gameState, actionAnalysis?.actionType);
@@ -92,11 +129,22 @@ export const enrichMemoryContext = async (
     withRules
   );
 
+  // Extract recent conversation history (last 3 turns) and store in contextualData
+  const conversationHistory = await extractRecentConversationHistory(
+    db,
+    gameState.sessionId,
+    3
+  );
+
   return {
     ...withRules,
     temporaryInfo: {
       ...withRules.temporaryInfo,
       ragResults,
+      contextualData: {
+        ...withRules.temporaryInfo.contextualData,
+        conversationHistory,
+      },
     },
   };
 };
@@ -306,9 +354,9 @@ export const createScenarioCheckpoint = async (
       const npcStmt = database.prepare(`
         INSERT OR REPLACE INTO characters (
           character_id, name, attributes, status, inventory, skills, notes,
-          is_npc, occupation, age, appearance, personality, background, goals, secrets,
+          is_npc, occupation, age, appearance, personality, background, goals, secrets, current_location,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `);
 
       for (const npc of gameState.npcCharacters) {
@@ -330,7 +378,8 @@ export const createScenarioCheckpoint = async (
           npcWithExtras.personality || null,
           npcWithExtras.background || null,
           npcWithExtras.goals ? JSON.stringify(npcWithExtras.goals) : null,
-          npcWithExtras.secrets ? JSON.stringify(npcWithExtras.secrets) : null
+          npcWithExtras.secrets ? JSON.stringify(npcWithExtras.secrets) : null,
+          npcWithExtras.currentLocation || null
         );
         
         // Save NPC clues if available
@@ -420,9 +469,66 @@ export const createScenarioCheckpoint = async (
 };
 
 /**
- * Update current scenario with automatic checkpoint creation.
+ * Merge scenario state from checkpoint into current scenario snapshot
+ * Preserves global state (player, discoveredClues, etc.) while restoring scenario-specific state
+ */
+const mergeScenarioStateFromCheckpoint = (
+  originalSnapshot: ScenarioSnapshot,
+  checkpointScenario: ScenarioSnapshot | null,
+  currentGameState: GameState
+): ScenarioSnapshot => {
+  if (!checkpointScenario) {
+    return originalSnapshot;
+  }
+
+  // Create a merged snapshot
+  const mergedSnapshot: ScenarioSnapshot = {
+    ...originalSnapshot,
+    // Restore clue discovery states from checkpoint
+    clues: originalSnapshot.clues.map(originalClue => {
+      const checkpointClue = checkpointScenario.clues.find(c => c.id === originalClue.id);
+      if (checkpointClue) {
+        // Restore discovery state and details from checkpoint
+        return {
+          ...originalClue,
+          discovered: checkpointClue.discovered,
+          discoveryDetails: checkpointClue.discoveryDetails,
+        };
+      }
+      return originalClue;
+    }),
+    // Restore permanent changes from checkpoint (merge with original to avoid duplicates)
+    permanentChanges: [
+      ...(originalSnapshot.permanentChanges || []),
+      ...(checkpointScenario.permanentChanges || []).filter(
+        change => !originalSnapshot.permanentChanges?.includes(change)
+      )
+    ],
+    // Merge events (combine original and checkpoint events, avoiding duplicates)
+    events: [
+      ...(originalSnapshot.events || []),
+      ...(checkpointScenario.events || []).filter(e => !originalSnapshot.events?.includes(e))
+    ],
+    // Merge conditions (prefer checkpoint conditions if they exist and are different)
+    conditions: checkpointScenario.conditions.length > 0 
+      ? checkpointScenario.conditions 
+      : originalSnapshot.conditions,
+    // Merge exits (prefer checkpoint exits if they exist)
+    exits: checkpointScenario.exits && checkpointScenario.exits.length > 0
+      ? checkpointScenario.exits
+      : originalSnapshot.exits,
+    // Keep checkpoint keeper notes if they exist
+    keeperNotes: checkpointScenario.keeperNotes || originalSnapshot.keeperNotes,
+  };
+
+  return mergedSnapshot;
+};
+
+/**
+ * Update current scenario with automatic checkpoint creation and restoration.
  * This should be called instead of directly calling GameStateManager.updateCurrentScenario
- * to ensure the current state is persisted before switching scenarios.
+ * to ensure the current state is persisted before switching scenarios, and to restore
+ * previous state when returning to a previously visited scenario.
  */
 export const updateCurrentScenarioWithCheckpoint = async (
   manager: GameStateManager,
@@ -438,8 +544,38 @@ export const updateCurrentScenarioWithCheckpoint = async (
     await createScenarioCheckpoint(gameStateBefore, db);
   }
 
-  // Now update the scenario in memory
-  manager.updateCurrentScenario(scenarioData);
+  // Check if we're returning to a previously visited scenario
+  // If so, restore its state from the latest checkpoint
+  const latestCheckpoint = db.findLatestCheckpointForScenario(
+    gameStateBefore.sessionId,
+    scenarioData.scenarioName,
+    scenarioData.snapshot.id  // Also match by snapshot ID for more reliable matching
+  );
+
+  let targetSnapshot = scenarioData.snapshot;
+
+  if (latestCheckpoint && latestCheckpoint.gameState?.currentScenario) {
+    console.log(`📂 [Checkpoint] 发现场景 "${scenarioData.scenarioName}" 的历史 checkpoint，正在恢复场景状态...`);
+    
+    // Merge scenario state from checkpoint while preserving current global state
+    targetSnapshot = mergeScenarioStateFromCheckpoint(
+      scenarioData.snapshot,  // Original scenario from database
+      latestCheckpoint.gameState.currentScenario,  // Scenario state from checkpoint
+      gameStateBefore  // Current game state (to preserve global state)
+    );
+
+    console.log(`✓ [Checkpoint] 场景状态已恢复：`);
+    console.log(`   - 已发现线索: ${targetSnapshot.clues.filter(c => c.discovered).length}/${targetSnapshot.clues.length}`);
+    console.log(`   - 永久性变化: ${targetSnapshot.permanentChanges?.length || 0} 项`);
+  } else {
+    console.log(`📂 [Checkpoint] 场景 "${scenarioData.scenarioName}" 首次访问，使用原始状态`);
+  }
+
+  // Now update the scenario in memory with merged state
+  manager.updateCurrentScenario({
+    snapshot: targetSnapshot,
+    scenarioName: scenarioData.scenarioName
+  });
   
   // 设置场景转换标志，让 Keeper Agent 知道发生了场景变化
   manager.setTransitionFlag(true);

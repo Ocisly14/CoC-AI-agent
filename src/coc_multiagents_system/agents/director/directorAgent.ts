@@ -369,9 +369,124 @@ export class DirectorAgent {
     targetSceneName: string,
     reason: string
   ): Promise<void> {
-    console.log(`\n=== Director Agent: Handling action-driven scene change ===`);
-    console.log(`Target: ${targetSceneName}`);
-    console.log(`Reason: ${reason}`);
+    console.log(`\n🎬 [Director Agent] ========================================`);
+    console.log(`🎬 [Director Agent] 开始处理 Action 驱动的场景转换`);
+    console.log(`🎬 [Director Agent] ========================================`);
+    
+    const gameState = gameStateManager.getGameState();
+    const currentScenario = gameState.currentScenario;
+    
+    // Log current state
+    console.log(`\n📍 [当前场景状态]:`);
+    if (currentScenario) {
+      console.log(`   场景名称: ${currentScenario.name}`);
+      console.log(`   场景ID: ${currentScenario.id}`);
+      console.log(`   位置: ${currentScenario.location}`);
+      console.log(`   描述: ${currentScenario.description ? currentScenario.description.substring(0, 100) + '...' : '无'}`);
+      console.log(`   角色数: ${currentScenario.characters?.length || 0}`);
+      console.log(`   线索数: ${currentScenario.clues?.length || 0}`);
+      console.log(`   出口数: ${currentScenario.exits?.length || 0}`);
+      if (currentScenario.exits && currentScenario.exits.length > 0) {
+        console.log(`   出口列表:`);
+        currentScenario.exits.forEach((exit, index) => {
+          console.log(`     [${index + 1}] ${exit.direction} → ${exit.destination} (${exit.condition || 'open'})`);
+        });
+      }
+    } else {
+      console.log(`   ⚠️  当前无场景`);
+    }
+    
+    // Log visited scenarios
+    console.log(`\n📚 [已访问场景历史] (共 ${gameState.visitedScenarios.length} 个):`);
+    if (gameState.visitedScenarios.length > 0) {
+      gameState.visitedScenarios.forEach((visited, index) => {
+        console.log(`   [${index + 1}] ${visited.name} (${visited.location})`);
+      });
+    } else {
+      console.log(`   (无)`);
+    }
+    
+    // Log target scene request
+    console.log(`\n🎯 [场景转换请求]:`);
+    console.log(`   目标场景名称: ${targetSceneName}`);
+    console.log(`   转换原因: ${reason}`);
+    
+    // Search for target scenario
+    console.log(`\n🔍 [查找目标场景]:`);
+    console.log(`   正在搜索场景: "${targetSceneName}"...`);
+    const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
+    
+    if (searchResult.scenarios.length === 0) {
+      console.error(`   ❌ 未找到匹配的场景: "${targetSceneName}"`);
+      console.error(`   💡 提示: 请检查场景名称是否正确，或场景是否已加载到数据库中`);
+      return;
+    }
+    
+    // Use the best matching scenario
+    const targetScenarioProfile = searchResult.scenarios[0];
+    const targetSnapshot = targetScenarioProfile.snapshot;
+    
+    console.log(`   ✓ 找到匹配场景: ${targetScenarioProfile.name}`);
+    console.log(`     场景ID: ${targetSnapshot.id}`);
+    console.log(`     位置: ${targetSnapshot.location}`);
+    console.log(`     描述: ${targetSnapshot.description ? targetSnapshot.description.substring(0, 100) + '...' : '无'}`);
+    console.log(`     角色数: ${targetSnapshot.characters?.length || 0}`);
+    console.log(`     线索数: ${targetSnapshot.clues?.length || 0}`);
+    console.log(`     出口数: ${targetSnapshot.exits?.length || 0}`);
+    
+    // Check if we're returning to a previously visited scenario
+    const wasVisited = gameState.visitedScenarios.some(
+      v => v.id === targetSnapshot.id || v.name === targetScenarioProfile.name
+    );
+    
+    if (wasVisited) {
+      console.log(`   📂 这是已访问过的场景，将恢复历史状态`);
+    } else {
+      console.log(`   🆕 这是首次访问的场景`);
+    }
+    
+    // Execute scene transition
+    console.log(`\n🔄 [执行场景转换]:`);
+    try {
+      await updateCurrentScenarioWithCheckpoint(
+        gameStateManager,
+        {
+          snapshot: targetSnapshot,
+          scenarioName: targetScenarioProfile.name
+        },
+        this.db
+      );
+      
+      const updatedState = gameStateManager.getGameState();
+      
+      console.log(`   ✓ 场景转换成功完成`);
+      console.log(`\n📍 [转换后状态]:`);
+      console.log(`   当前场景: ${updatedState.currentScenario?.name || '无'}`);
+      console.log(`   场景ID: ${updatedState.currentScenario?.id || '无'}`);
+      console.log(`   位置: ${updatedState.currentScenario?.location || '无'}`);
+      console.log(`   已访问场景数: ${updatedState.visitedScenarios.length}`);
+      
+      console.log(`\n📚 [更新后的已访问场景列表]:`);
+      if (updatedState.visitedScenarios.length > 0) {
+        updatedState.visitedScenarios.forEach((visited, index) => {
+          console.log(`   [${index + 1}] ${visited.name} (${visited.location})`);
+        });
+      } else {
+        console.log(`   (无)`);
+      }
+      
+      console.log(`\n✅ [Director Agent] 场景转换完成`);
+      console.log(`🎬 [Director Agent] ========================================\n`);
+      
+    } catch (error) {
+      console.error(`   ❌ 场景转换失败:`, error);
+      console.error(`   错误类型: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   错误消息: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error && error.stack) {
+        console.error(`   堆栈跟踪:\n${error.stack}`);
+      }
+      throw error;
+    }
   }
 
   /**

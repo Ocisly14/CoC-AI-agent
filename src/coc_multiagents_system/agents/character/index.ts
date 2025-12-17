@@ -1,1 +1,2 @@
-export { PlayerLoader, PlayerDocumentParser } from "./playerloader/index.js";
+export { CharacterAgent } from "./characterAgent.js";
+export { getCharacterTemplate } from "./characterTemplate.js";

@@ -10,7 +10,7 @@ TIME CONSUMPTION ANALYSIS:
 - "instant": Quick glance at obvious clues, overview of room, checking exposed items, confirming environment
 - "short": Quick search of desk/drawers, listening at door, checking locks/windows, rough search of corner
 - "scene": Thorough search of house, investigating crime scene, systematic area investigation, reading documents
-
+For example:
 {
   "type": "result",
   "summary": "Detective Smith carefully searches the library shelves and discovers a hidden compartment containing an ancient tome",
@@ -39,7 +39,7 @@ TIME CONSUMPTION ANALYSIS:
   "sceneChange": {
     "shouldChange": false,
     "targetSceneName": null,
-    "reason": "Action performed within current location"
+    "reason": "Smith just try to search the hidden compartment, has nothing to do with the moving to another scene"
   },
   "log": ["Spot Hidden 45% vs roll 23 = success", "Hidden compartment discovered"]
 }`;
@@ -51,7 +51,7 @@ TIME CONSUMPTION ANALYSIS:
 - "instant": Nod/brief response, casual question, simple yes/no answer
 - "short": Probing questions, interjecting/arguing, observing reactions, simple threats/reassurance
 - "scene": Formal conversation/interrogation, multi-round persuasion, building/breaking trust, changing NPC stance
-
+For example:
 {
   "type": "result",
   "summary": "Detective Smith successfully persuades the librarian to reveal information about the missing books",
@@ -72,7 +72,7 @@ TIME CONSUMPTION ANALYSIS:
   "sceneChange": {
     "shouldChange": false,
     "targetSceneName": null,
-    "reason": "Conversation occurs in current location"
+    "reason": "Smith is having a conversation,has nothing to do with the moving to another scene"
   },
   "log": ["Persuade 60% vs roll 45 = success", "Librarian becomes helpful"]
 }`;
@@ -98,7 +98,7 @@ TIME CONSUMPTION ANALYSIS:
   "sceneChange": {
     "shouldChange": false,
     "targetSceneName": null,
-    "reason": "Stealth movement within current area"
+    "reason": "Smith is executing a Stealth movement within the current area,not stealth movement to another scene"
   },
   "log": ["Stealth 35% vs roll 67 = failure", "Noise alerts enemies"]
 }`;

@@ -14,8 +14,12 @@ export interface ParsedModuleData {
   moduleLimitations?: string;
   initialScenario?: string; // Name or ID of the starting scenario
   initialGameTime?: string; // Initial game time in format "HH:MM" or "Day X HH:MM"
+  initialScenarioNPCs?: string[]; // List of NPC names that are present with the player at the initial scenario
   tags?: string[];
   source?: string;
+  // Player-facing introduction (generated during parsing)
+  introduction?: string;
+  characterGuidance?: string;
 }
 
 /** Stored module background record */
@@ -30,7 +34,11 @@ export interface ModuleBackground {
   moduleLimitations?: string;
   initialScenario?: string; // Name or ID of the starting scenario
   initialGameTime?: string; // Initial game time in format "HH:MM" or "Day X HH:MM"
+  initialScenarioNPCs?: string[]; // List of NPC names that are present with the player at the initial scenario
   tags: string[];
   source?: string;
   createdAt: string;
+  // Player-facing introduction (generated automatically)
+  introduction?: string;
+  characterGuidance?: string;
 }

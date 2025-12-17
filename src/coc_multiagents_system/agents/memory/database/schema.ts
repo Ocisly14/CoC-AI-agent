@@ -202,6 +202,7 @@ export class CoCDatabase {
                 background TEXT,
                 goals TEXT, -- JSON array
                 secrets TEXT, -- JSON array
+                current_location TEXT, -- NPC的当前地点
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(name);
@@ -218,6 +219,7 @@ export class CoCDatabase {
       "background TEXT",
       "goals TEXT",
       "secrets TEXT",
+      "current_location TEXT",
     ];
     for (const column of columnsToAdd) {
       try {
@@ -424,6 +426,10 @@ export class CoCDatabase {
                 story_hook TEXT,
                 module_limitations TEXT,
                 initial_scenario TEXT,
+                initial_game_time TEXT,
+                initial_scenario_npcs TEXT, -- JSON array of NPC names
+                introduction TEXT,
+                character_guidance TEXT,
                 tags TEXT, -- JSON array
                 source TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -454,6 +460,36 @@ export class CoCDatabase {
       if (!this.hasColumn("module_backgrounds", "initial_game_time")) {
         this.db.exec(
           "ALTER TABLE module_backgrounds ADD COLUMN initial_game_time TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
+    // Backfill for introduction if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "introduction")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN introduction TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
+    // Backfill for character_guidance if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "character_guidance")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN character_guidance TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
+    // Backfill for initial_scenario_npcs if table already existed
+    try {
+      if (!this.hasColumn("module_backgrounds", "initial_scenario_npcs")) {
+        this.db.exec(
+          "ALTER TABLE module_backgrounds ADD COLUMN initial_scenario_npcs TEXT;"
         );
       }
     } catch {
@@ -514,6 +550,8 @@ export class CoCDatabase {
             CREATE INDEX IF NOT EXISTS idx_checkpoints_type ON game_checkpoints(checkpoint_type);
             CREATE INDEX IF NOT EXISTS idx_checkpoints_created ON game_checkpoints(created_at);
             CREATE INDEX IF NOT EXISTS idx_checkpoints_game_day ON game_checkpoints(game_day);
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_scene_name ON game_checkpoints(current_scene_name);
+            CREATE INDEX IF NOT EXISTS idx_checkpoints_session_scene ON game_checkpoints(session_id, current_scene_name);
         `);
   }
 
@@ -624,6 +662,81 @@ export class CoCDatabase {
     `);
     
     return stmt.all(sessionId, limit) as any[];
+  }
+
+  /**
+   * Find the latest checkpoint for a specific scenario
+   * Returns the most recent checkpoint where current_scene_name matches the scenario name
+   * or where the scenario snapshot ID matches
+   */
+  findLatestCheckpointForScenario(
+    sessionId: string, 
+    scenarioName: string, 
+    scenarioSnapshotId?: string
+  ): any | null {
+    const database = this.db;
+    
+    // First try to find by scenario name
+    let stmt = database.prepare(`
+      SELECT 
+        checkpoint_id, checkpoint_name, checkpoint_type, description,
+        game_day, game_time, current_scene_name, current_location,
+        player_hp, player_sanity, created_at, game_state
+      FROM game_checkpoints 
+      WHERE session_id = ? AND current_scene_name = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+    
+    let row = stmt.get(sessionId, scenarioName) as any;
+    
+    // If not found by name and we have snapshot ID, try to find by matching snapshot ID in game_state
+    if (!row && scenarioSnapshotId) {
+      // Get all checkpoints for this session and filter by snapshot ID
+      const allCheckpoints = database.prepare(`
+        SELECT 
+          checkpoint_id, checkpoint_name, checkpoint_type, description,
+          game_day, game_time, current_scene_name, current_location,
+          player_hp, player_sanity, created_at, game_state
+        FROM game_checkpoints 
+        WHERE session_id = ?
+        ORDER BY created_at DESC
+      `).all(sessionId) as any[];
+      
+      // Find checkpoint where the scenario snapshot ID matches
+      for (const checkpointRow of allCheckpoints) {
+        try {
+          const gameState = JSON.parse(checkpointRow.game_state);
+          if (gameState.currentScenario?.id === scenarioSnapshotId) {
+            row = checkpointRow;
+            break;
+          }
+        } catch (e) {
+          // Skip invalid JSON
+          continue;
+        }
+      }
+    }
+    
+    if (!row) return null;
+
+    return {
+      checkpointId: row.checkpoint_id,
+      sessionId: sessionId,
+      checkpointName: row.checkpoint_name,
+      checkpointType: row.checkpoint_type,
+      description: row.description,
+      gameState: JSON.parse(row.game_state),
+      metadata: {
+        gameDay: row.game_day,
+        gameTime: row.game_time,
+        currentSceneName: row.current_scene_name,
+        currentLocation: row.current_location,
+        playerHp: row.player_hp,
+        playerSanity: row.player_sanity,
+        createdAt: row.created_at,
+      }
+    };
   }
 
   /**

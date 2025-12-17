@@ -27,6 +27,20 @@ export interface ActionAnalysis {
   requiresDice: boolean;  // Whether dice roll is required
 }
 
+export type NPCResponseType = 
+  | "none"              // No response
+  | ActionType;         // One of the eight action types
+
+export interface NPCResponseAnalysis {
+  npcName: string;
+  willRespond: boolean;  // Whether the NPC will respond
+  responseType: NPCResponseType | null;  // Type of response if willRespond is true (one of the eight action types, or "none")
+  responseDescription: string;  // Description of what the NPC will do
+  reasoning: string;  // Reasoning for the response decision
+  urgency: "low" | "medium" | "high";  // Urgency level of the response
+  targetCharacter?: string | null;  // Target character if response is directed
+}
+
 export interface SceneChangeRequest {
   shouldChange: boolean;        // 是否需要切换场景
   targetSceneName: string | null;  // 目标场景名称（LLM生成）
@@ -72,6 +86,7 @@ export interface GameState {
     contextualData: Record<string, any>;
     actionResults: ActionResult[];
     currentActionAnalysis: ActionAnalysis | null;
+    npcResponseAnalyses: NPCResponseAnalysis[];  // NPC feedback analyses
     directorDecision: DirectorDecision | null;
     sceneChangeRequest: SceneChangeRequest | null;
     transition: boolean;  // Indicates if a scene change just occurred
@@ -138,6 +153,7 @@ export const initialGameState: GameState = {
     contextualData: {},
     actionResults: [],
     currentActionAnalysis: null,
+    npcResponseAnalyses: [],
     directorDecision: null,
     sceneChangeRequest: null,
     transition: false,
@@ -242,12 +258,49 @@ export class GameStateManager {
     // Set new current scenario
     this.gameState.currentScenario = newScenario;
     
+    // 自动更新场景中NPC的位置
+    this.updateNpcLocationsForScenario(newScenario);
+    
     // Reset time consumption state for any scenario update (location change OR time progression)
     this.resetScenarioTimeState();
     
     // Reset progression monitor on scenario change
     if (this.progressionMonitor) {
       this.progressionMonitor.resetOnScenarioChange();
+    }
+  }
+
+  /**
+   * 根据场景中的角色列表，自动更新NPC的当前位置
+   */
+  private updateNpcLocationsForScenario(scenario: ScenarioSnapshot): void {
+    if (!scenario || !scenario.characters || scenario.characters.length === 0) {
+      return;
+    }
+
+    const scenarioLocation = scenario.location;
+    const scenarioCharacters = scenario.characters;
+
+    // 遍历场景中的角色，更新匹配的NPC位置
+    for (const scenarioChar of scenarioCharacters) {
+      // 在NPC列表中查找匹配的角色（通过名称匹配）
+      const matchingNpc = this.gameState.npcCharacters.find(npc => {
+        // 精确匹配或包含匹配
+        return npc.name.toLowerCase() === scenarioChar.name.toLowerCase() ||
+               npc.name.toLowerCase().includes(scenarioChar.name.toLowerCase()) ||
+               scenarioChar.name.toLowerCase().includes(npc.name.toLowerCase());
+      });
+
+      if (matchingNpc) {
+        const npcProfile = matchingNpc as any; // NPCProfile
+        const oldLocation = npcProfile.currentLocation || null;
+        npcProfile.currentLocation = scenarioLocation;
+        
+        if (oldLocation !== scenarioLocation) {
+          const oldLocationDisplay = oldLocation || "Unknown";
+          console.log(`📍 [场景切换] NPC ${matchingNpc.name} 位置已更新: ${oldLocationDisplay} → ${scenarioLocation}`);
+        }
+      }
     }
   }
 
@@ -559,6 +612,20 @@ export class GameStateManager {
    */
   clearActionAnalysis(): void {
     this.gameState.temporaryInfo.currentActionAnalysis = null;
+  }
+
+  /**
+   * Set NPC response analyses from character agent
+   */
+  setNPCResponseAnalyses(analyses: NPCResponseAnalysis[]): void {
+    this.gameState.temporaryInfo.npcResponseAnalyses = analyses;
+  }
+
+  /**
+   * Clear NPC response analyses
+   */
+  clearNPCResponseAnalyses(): void {
+    this.gameState.temporaryInfo.npcResponseAnalyses = [];
   }
 
   /**

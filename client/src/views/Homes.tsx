@@ -3,9 +3,10 @@ import React, { useState } from "react";
 interface HomeProps {
   onCreate: () => void;
   onStartGame: () => void;
+  onContinueGame: () => void;
 }
 
-const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame }) => {
+const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame, onContinueGame }) => {
   const handleStartGame = () => {
     // Just trigger the character selector
     onStartGame();
@@ -25,6 +26,9 @@ const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame }) => {
         <div className="home-actions">
           <button className="primary" onClick={handleStartGame}>
             🎮 新游戏
+          </button>
+          <button className="secondary" onClick={onContinueGame}>
+            📂 继续游戏
           </button>
           <button onClick={onCreate}>
             创建角色

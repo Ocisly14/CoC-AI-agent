@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 import cors from "cors";
 import express from "express";
 import { CoCDatabase, seedDatabase } from "../src/coc_multiagents_system/agents/memory/database/index.js";
@@ -13,6 +14,7 @@ import { buildGraph, type GraphState } from "../src/graph.js";
 import { initialGameState, type GameState } from "../src/state.js";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
 import { TurnManager } from "../src/coc_multiagents_system/agents/memory/index.js";
+import { saveManualCheckpoint, loadCheckpoint, listAvailableCheckpoints } from "../src/coc_multiagents_system/agents/memory/memoryAgent.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -177,6 +179,262 @@ app.post("/api/game/import-data", async (req, res) => {
   }
 });
 
+// API endpoint to load mod data with progress reporting
+app.post("/api/mod/load", async (req, res) => {
+  try {
+    const { modName } = req.body;
+
+    if (!modName || typeof modName !== 'string') {
+      return res.status(400).json({ error: "modName is required" });
+    }
+
+    console.log(`[${new Date().toISOString()}] Loading mod data: ${modName}`);
+
+    // Initialize database if not already initialized
+    if (!db) {
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized");
+    }
+
+    const scenarioLoader = new ScenarioLoader(db);
+    const npcLoader = new NPCLoader(db);
+    const moduleLoader = new ModuleLoader(db);
+
+    const modsDir = path.join(process.cwd(), "data", "Mods");
+    if (!fs.existsSync(modsDir)) {
+      return res.status(404).json({ error: "Mods directory does not exist" });
+    }
+
+    const dirs = fs.readdirSync(modsDir);
+    const modDir = dirs.find(d => d === modName);
+    if (!modDir) {
+      return res.status(404).json({ error: `Mod "${modName}" not found` });
+    }
+
+    const modPath = path.join(modsDir, modDir);
+
+    // Scan subdirectories and match by name patterns
+    const subdirs = fs.readdirSync(modPath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+
+    console.log(`📂 扫描模组子文件夹: ${subdirs.join(", ")}`);
+
+      // Find directories by name patterns (case-insensitive)
+      const scenarioDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("scenario")
+      );
+      const npcDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("npc")
+      );
+      const backgroundDirs = subdirs.filter(name => 
+        name.toLowerCase().includes("background") ||
+        name.toLowerCase().includes("module") ||
+        name.toLowerCase().includes("briefing")
+      );
+      const knowledgeDirs = subdirs.filter(name => 
+        name.toLowerCase() === "knowledge"
+      );
+
+    let scenariosLoaded = 0;
+    let npcsLoaded = 0;
+    let modulesLoaded = 0;
+
+    // Load scenarios
+    if (scenarioDirs.length > 0) {
+      console.log(`\n📋 [1/3] 加载场景数据...`);
+      for (const scenarioDirName of scenarioDirs) {
+        const scenariosDir = path.join(modPath, scenarioDirName);
+        console.log(`   → 从文件夹加载场景: ${scenarioDirName}`);
+        try {
+          const scenarios = await scenarioLoader.loadScenariosFromJSONDirectory(scenariosDir, false); // false = don't force reload
+          scenariosLoaded += scenarios.length;
+          console.log(`   ✓ 已加载 ${scenarios.length} 个场景`);
+        } catch (error) {
+          console.error(`   ✗ 加载场景失败 ${scenarioDirName}:`, error);
+        }
+      }
+    } else {
+      console.log(`\n📋 [1/3] 未找到场景文件夹（包含"scenario"的文件夹）`);
+    }
+
+    // Load NPCs
+    if (npcDirs.length > 0) {
+      console.log(`\n👥 [2/3] 加载NPC数据...`);
+      for (const npcDirName of npcDirs) {
+        const npcsDir = path.join(modPath, npcDirName);
+        console.log(`   → 从文件夹加载NPC: ${npcDirName}`);
+        try {
+          const npcs = await npcLoader.loadNPCsFromJSONDirectory(npcsDir, false); // false = don't force reload
+          npcsLoaded += npcs.length;
+          console.log(`   ✓ 已加载 ${npcs.length} 个NPC`);
+        } catch (error) {
+          console.error(`   ✗ 加载NPC失败 ${npcDirName}:`, error);
+        }
+      }
+    } else {
+      console.log(`\n👥 [2/3] 未找到NPC文件夹（包含"npc"的文件夹）`);
+    }
+
+      // Load modules/background
+      if (backgroundDirs.length > 0) {
+        console.log(`\n📚 [3/4] 加载模块数据...`);
+        for (const backgroundDirName of backgroundDirs) {
+          const moduleDir = path.join(modPath, backgroundDirName);
+          console.log(`   → 从文件夹加载模块: ${backgroundDirName}`);
+          try {
+            const jsonFiles = fs.readdirSync(moduleDir).filter(f => f.toLowerCase().endsWith('.json'));
+            let modules: any[] = [];
+            if (jsonFiles.length > 0) {
+              modules = await moduleLoader.loadModulesFromJSONDirectory(moduleDir, false); // false = don't force reload
+            } else {
+              modules = await moduleLoader.loadModulesFromDirectory(moduleDir, false); // false = don't force reload
+            }
+          modulesLoaded += modules.length;
+          console.log(`   ✓ 已加载 ${modules.length} 个模块`);
+        } catch (error) {
+          console.error(`   ✗ 加载模块失败 ${backgroundDirName}:`, error);
+        }
+      }
+    } else {
+      console.log(`\n📚 [3/4] 未找到模块文件夹（包含"background"或"module"的文件夹）`);
+    }
+
+      // Load RAG knowledge from mod's knowledge directory
+      if (knowledgeDirs.length > 0) {
+        console.log(`\n📖 [4/4] 处理模组 RAG 知识库...`);
+        for (const knowledgeDirName of knowledgeDirs) {
+          const modKnowledgeDir = path.join(modPath, knowledgeDirName);
+          console.log(`   → 处理知识库文件夹: ${knowledgeDirName}`);
+          try {
+            // Create RAGEngine instance for this mod's knowledge directory
+            const modRagEngine = new RAGEngine(db, modKnowledgeDir);
+            await modRagEngine.ingestFromDirectory();
+            console.log(`   ✓ 已处理模组知识库: ${knowledgeDirName}`);
+          } catch (error) {
+            console.error(`   ✗ 处理知识库失败 ${knowledgeDirName}:`, error);
+          }
+        }
+      } else {
+        console.log(`\n📖 [4/4] 未找到知识库文件夹（"knowledge"文件夹）`);
+      }
+
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`✅ 模组数据加载完成！`);
+    console.log(`   - 场景: ${scenariosLoaded}`);
+    console.log(`   - NPC: ${npcsLoaded}`);
+    console.log(`   - 模块: ${modulesLoaded}`);
+    console.log(`   - RAG知识库: ${knowledgeDirs.length > 0 ? "已处理" : "未找到"}`);
+    console.log(`${"=".repeat(60)}\n`);
+
+    res.json({
+      success: true,
+      message: `模组数据加载完成：${scenariosLoaded} 个场景，${npcsLoaded} 个NPC，${modulesLoaded} 个模块`,
+      scenariosLoaded,
+      npcsLoaded,
+      modulesLoaded,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error loading mod data:", error);
+    res.status(500).json({ error: "Failed to load mod data: " + (error as Error).message });
+  }
+});
+
+// API endpoint to get module introduction (without starting game)
+app.get("/api/module/introduction", async (req, res) => {
+  try {
+    const { modName } = req.query;
+
+    if (!modName || typeof modName !== 'string') {
+      return res.status(400).json({ error: "modName is required" });
+    }
+
+    console.log(`[${new Date().toISOString()}] Getting module introduction for: ${modName}`);
+
+    // Initialize database if not already initialized
+    if (!db) {
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized");
+    }
+
+    // Load module data
+    const moduleLoader = new ModuleLoader(db);
+
+    const modsDir = path.join(process.cwd(), "data", "Mods");
+    if (!fs.existsSync(modsDir)) {
+      return res.status(404).json({ error: "Mods directory does not exist" });
+    }
+
+    const dirs = fs.readdirSync(modsDir);
+    const modDir = dirs.find(d => d === modName);
+    if (!modDir) {
+      return res.status(404).json({ error: `Mod "${modName}" not found` });
+    }
+
+    const modPath = path.join(modsDir, modDir);
+
+    // Scan subdirectories and match by name patterns
+    const subdirs = fs.readdirSync(modPath, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+
+    // Find directories by name patterns (case-insensitive)
+    const backgroundDirs = subdirs.filter(name => 
+      name.toLowerCase().includes("background") ||
+      name.toLowerCase().includes("module") ||
+      name.toLowerCase().includes("briefing")
+    );
+
+    if (backgroundDirs.length > 0) {
+      const backgroundPath = path.join(modPath, backgroundDirs[0]);
+      console.log(`📚 Loading module from: ${backgroundPath}`);
+      await moduleLoader.loadModulesFromDirectory(backgroundPath);
+    }
+
+    // Get module and generate introduction
+    const modules = moduleLoader.getAllModules();
+    if (modules.length === 0) {
+      return res.status(404).json({ error: "No module data found" });
+    }
+
+    const module = modules[0];
+    console.log(`   → 使用模组: ${module.title}`);
+
+    // Get introduction from module (generated automatically during load)
+    const moduleIntroduction: { introduction: string; characterGuidance: string } | null = 
+      module.introduction && module.characterGuidance
+        ? {
+            introduction: module.introduction,
+            characterGuidance: module.characterGuidance,
+          }
+        : {
+            // Fallback if not generated yet
+            introduction: module.storyHook || module.background || `Welcome to ${module.title}.`,
+            characterGuidance: module.moduleNotes || "Create an investigator appropriate for this module.",
+          };
+
+    res.json({
+      success: true,
+      moduleIntroduction: moduleIntroduction,
+      moduleTitle: module.title,
+    });
+  } catch (error) {
+    console.error("Error getting module introduction:", error);
+    res.status(500).json({ error: "Failed to get module introduction: " + (error as Error).message });
+  }
+});
+
 // API endpoint to start/initialize the game
 app.post("/api/game/start", async (req, res) => {
   try {
@@ -241,14 +499,14 @@ app.post("/api/game/start", async (req, res) => {
         name.toLowerCase().includes("module")
       );
 
-      // Load scenarios
+      // Load scenarios (loader will check for changes and skip if already loaded)
       if (scenarioDirs.length > 0) {
-        console.log(`\n📋 [1/3] 加载场景数据...`);
+        console.log(`\n📋 [1/3] 检查场景数据...`);
         for (const scenarioDirName of scenarioDirs) {
           const scenariosDir = path.join(modPath, scenarioDirName);
-          console.log(`   → 从文件夹加载场景: ${scenarioDirName}`);
+          console.log(`   → 检查场景文件夹: ${scenarioDirName}`);
           try {
-            await scenarioLoader.loadScenariosFromJSONDirectory(scenariosDir);
+            await scenarioLoader.loadScenariosFromJSONDirectory(scenariosDir, false); // false = don't force reload
           } catch (error) {
             console.error(`   ✗ 加载场景失败 ${scenarioDirName}:`, error);
           }
@@ -257,14 +515,14 @@ app.post("/api/game/start", async (req, res) => {
         console.log(`\n📋 [1/3] 未找到场景文件夹（包含"scenario"的文件夹）`);
       }
 
-      // Load NPCs
+      // Load NPCs (loader will check for changes and skip if already loaded)
       if (npcDirs.length > 0) {
-        console.log(`\n👥 [2/3] 加载NPC数据...`);
+        console.log(`\n👥 [2/3] 检查NPC数据...`);
         for (const npcDirName of npcDirs) {
           const npcsDir = path.join(modPath, npcDirName);
-          console.log(`   → 从文件夹加载NPC: ${npcDirName}`);
+          console.log(`   → 检查NPC文件夹: ${npcDirName}`);
           try {
-            await npcLoader.loadNPCsFromJSONDirectory(npcsDir);
+            await npcLoader.loadNPCsFromJSONDirectory(npcsDir, false); // false = don't force reload
           } catch (error) {
             console.error(`   ✗ 加载NPC失败 ${npcDirName}:`, error);
           }
@@ -273,18 +531,18 @@ app.post("/api/game/start", async (req, res) => {
         console.log(`\n👥 [2/3] 未找到NPC文件夹（包含"npc"的文件夹）`);
       }
 
-      // Load modules/background
+      // Load modules/background (loader will check for changes and skip if already loaded)
       if (backgroundDirs.length > 0) {
-        console.log(`\n📚 [3/3] 加载模块数据...`);
+        console.log(`\n📚 [3/3] 检查模块数据...`);
         for (const backgroundDirName of backgroundDirs) {
           const moduleDir = path.join(modPath, backgroundDirName);
-          console.log(`   → 从文件夹加载模块: ${backgroundDirName}`);
+          console.log(`   → 检查模块文件夹: ${backgroundDirName}`);
           try {
             const jsonFiles = fs.readdirSync(moduleDir).filter(f => f.toLowerCase().endsWith('.json'));
             if (jsonFiles.length > 0) {
-              await moduleLoader.loadModulesFromJSONDirectory(moduleDir);
+              await moduleLoader.loadModulesFromJSONDirectory(moduleDir, false); // false = don't force reload
             } else {
-              await moduleLoader.loadModulesFromDirectory(moduleDir);
+              await moduleLoader.loadModulesFromDirectory(moduleDir, false); // false = don't force reload
             }
           } catch (error) {
             console.error(`   ✗ 加载模块失败 ${backgroundDirName}:`, error);
@@ -382,9 +640,27 @@ app.post("/api/game/start", async (req, res) => {
       // Load module data and set keeper guidance and initial scenario
       console.log(`\n📚 [2/3] 加载模组配置到游戏状态...`);
       const modules = moduleLoader.getAllModules();
+      let moduleIntroduction: { introduction: string; characterGuidance: string } | null = null;
+      
       if (modules.length > 0) {
         const module = modules[0]; // Use the first/latest module
         console.log(`   → 使用模组: ${module.title}`);
+        
+        // Get introduction from module (generated automatically during load)
+        if (module.introduction && module.characterGuidance) {
+          moduleIntroduction = {
+            introduction: module.introduction,
+            characterGuidance: module.characterGuidance,
+          };
+          console.log(`   ✓ 导入叙事已加载 (介绍: ${moduleIntroduction.introduction.length} 字符, 角色指导: ${moduleIntroduction.characterGuidance.length} 字符)`);
+        } else {
+          // Fallback if not generated yet
+          moduleIntroduction = {
+            introduction: module.storyHook || module.background || `Welcome to ${module.title}.`,
+            characterGuidance: module.moduleNotes || "Create an investigator appropriate for this module.",
+          };
+          console.log(`   ⚠️  使用备用导入叙事`);
+        }
         
         // Set keeper guidance
         if (module.keeperGuidance) {
@@ -401,15 +677,126 @@ app.post("/api/game/start", async (req, res) => {
           if (searchResult.scenarios.length > 0) {
             // Use the best matching scenario (only one returned)
             const initialScenarioProfile = searchResult.scenarios[0];
-            gameState.currentScenario = initialScenarioProfile.snapshot;
+            gameState.currentScenario = {
+              ...initialScenarioProfile.snapshot,
+              characters: initialScenarioProfile.snapshot.characters || []
+            };
+            const scenarioLocation = initialScenarioProfile.snapshot.location;
             console.log(`   ✓ 已匹配并注入初始场景到游戏状态: ${initialScenarioProfile.name}`);
             console.log(`     - 场景ID: ${initialScenarioProfile.snapshot.id}`);
-            console.log(`     - 位置: ${initialScenarioProfile.snapshot.location || "未指定"}`);
+            console.log(`     - 位置: ${scenarioLocation || "未指定"}`);
             console.log(`     - 描述: ${initialScenarioProfile.snapshot.description ? initialScenarioProfile.snapshot.description.substring(0, 100) + "..." : "无"}`);
             console.log(`     - 角色数: ${initialScenarioProfile.snapshot.characters?.length || 0}`);
             console.log(`     - 线索数: ${initialScenarioProfile.snapshot.clues?.length || 0}`);
             console.log(`     - 出口数: ${initialScenarioProfile.snapshot.exits?.length || 0}`);
             console.log(`     - 事件数: ${initialScenarioProfile.snapshot.events?.length || 0}`);
+
+            // Set currentLocation for initial scenario NPCs and add them to gameState
+            if (module.initialScenarioNPCs && module.initialScenarioNPCs.length > 0 && scenarioLocation) {
+              console.log(`   → 设置初始场景NPC位置并注入到游戏状态 (${module.initialScenarioNPCs.length} 个NPC):`);
+              const allNPCs = npcLoader.getAllNPCs();
+              const database = db.getDatabase();
+              let matchedCount = 0;
+              const npcsToAdd: any[] = [];
+              
+              for (const npcName of module.initialScenarioNPCs) {
+                // Find matching NPC by name (case-insensitive, partial match)
+                const matchingNpc = allNPCs.find(npc => {
+                  const npcNameLower = npc.name.toLowerCase();
+                  const targetNameLower = npcName.toLowerCase();
+                  return npcNameLower === targetNameLower ||
+                         npcNameLower.includes(targetNameLower) ||
+                         targetNameLower.includes(npcNameLower);
+                });
+
+                if (matchingNpc) {
+                  const npcProfile = matchingNpc as any; // NPCProfile
+                  const oldLocation = npcProfile.currentLocation || null;
+                  npcProfile.currentLocation = scenarioLocation;
+                  
+                  if (oldLocation !== scenarioLocation) {
+                    console.log(`     ✓ ${matchingNpc.name}: ${oldLocation || "Unknown"} → ${scenarioLocation}`);
+                    matchedCount++;
+                    
+                    // Update NPC in database
+                    const updateStmt = database.prepare(`
+                      UPDATE characters 
+                      SET current_location = ? 
+                      WHERE character_id = ? AND is_npc = 1
+                    `);
+                    updateStmt.run(scenarioLocation, matchingNpc.id);
+                  } else {
+                    console.log(`     - ${matchingNpc.name}: 已在 ${scenarioLocation} (无需更新)`);
+                    matchedCount++;
+                  }
+                  
+                  // Add NPC to gameState (create a copy to avoid mutating the original)
+                  npcsToAdd.push({
+                    ...npcProfile,
+                    currentLocation: scenarioLocation
+                  });
+                } else {
+                  console.warn(`     ⚠️  NPC "${npcName}" 未找到，跳过位置设置`);
+                }
+              }
+              
+              // Add all matched NPCs to gameState
+              if (npcsToAdd.length > 0) {
+                gameState.npcCharacters = [...(gameState.npcCharacters || []), ...npcsToAdd];
+                console.log(`   ✓ 已将 ${npcsToAdd.length} 个NPC注入到游戏状态`);
+                
+                // Also add NPCs to currentScenario.characters if scenario is set
+                if (gameState.currentScenario) {
+                  const scenarioCharacters = gameState.currentScenario.characters || [];
+                  const updatedCharacters = [...scenarioCharacters];
+                  
+                  for (const npc of npcsToAdd) {
+                    // Check if NPC already exists in scenario characters
+                    const existingIndex = updatedCharacters.findIndex(c => 
+                      c.id === npc.id || c.name.toLowerCase() === npc.name.toLowerCase()
+                    );
+                    
+                    if (existingIndex >= 0) {
+                      // Update existing character
+                      updatedCharacters[existingIndex] = {
+                        ...updatedCharacters[existingIndex],
+                        location: scenarioLocation,
+                        status: updatedCharacters[existingIndex].status || 'present'
+                      };
+                    } else {
+                      // Add new character to scenario
+                      updatedCharacters.push({
+                        id: npc.id,
+                        name: npc.name,
+                        role: npc.occupation || 'npc',
+                        status: 'present',
+                        location: scenarioLocation,
+                        notes: npc.background ? npc.background.substring(0, 100) : undefined
+                      });
+                    }
+                  }
+                  
+                  gameState.currentScenario.characters = updatedCharacters;
+                  const originalCount = scenarioCharacters.length;
+                  const finalCount = updatedCharacters.length;
+                  const addedCount = finalCount - originalCount;
+                  const updatedCount = npcsToAdd.length - addedCount;
+                  if (addedCount > 0) {
+                    console.log(`   ✓ 已将 ${addedCount} 个新NPC添加到当前场景的角色列表中`);
+                  }
+                  if (updatedCount > 0) {
+                    console.log(`   ✓ 已更新 ${updatedCount} 个已存在的NPC在场景中的信息`);
+                  }
+                  if (addedCount === 0 && updatedCount === 0) {
+                    console.log(`   ✓ 所有NPC已在场景中`);
+                  }
+                }
+              }
+              
+              console.log(`   ✓ 已设置 ${matchedCount}/${module.initialScenarioNPCs.length} 个NPC的位置`);
+            } else if (module.initialScenarioNPCs && module.initialScenarioNPCs.length > 0) {
+              console.warn(`   ⚠️  场景位置未指定，无法设置初始场景NPC位置`);
+            }
           } else {
             console.warn(`   ⚠️  初始场景 "${module.initialScenario}" 未找到，将不设置初始场景`);
           }
@@ -467,12 +854,53 @@ app.post("/api/game/start", async (req, res) => {
         throw new Error("Failed to initialize game state");
       }
 
+      // Create introduction turn if module introduction is available and turnManager is initialized
+      if (moduleIntroduction && turnManager && db) {
+        try {
+          // Check if introduction turn already exists for this session
+          const database = db.getDatabase();
+          const existingIntro = database.prepare(`
+            SELECT turn_id FROM game_turns 
+            WHERE session_id = ? AND turn_number = 0 AND character_input = ''
+          `).get(persistentGameState.sessionId);
+          
+          if (!existingIntro) {
+            // Only save introduction, not characterGuidance
+            const introContent = moduleIntroduction.introduction;
+            
+            const introTurnId = `turn-intro-${Date.now()}-${randomUUID().slice(0, 8)}`;
+            
+            // Create a special turn with turnNumber 0 for introduction
+            database.prepare(`
+              INSERT INTO game_turns (
+                turn_id, session_id, turn_number, character_input, character_id, character_name,
+                keeper_narrative, status, started_at, completed_at, created_at
+              ) VALUES (?, ?, 0, '', ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).run(
+              introTurnId,
+              persistentGameState.sessionId,
+              character.character_id,
+              character.name,
+              introContent
+            );
+            
+            console.log(`✓ Introduction turn created: ${introTurnId}`);
+          } else {
+            console.log(`✓ Introduction turn already exists for this session`);
+          }
+        } catch (error) {
+          console.error("Failed to create introduction turn:", error);
+          // Don't fail the game start if introduction turn creation fails
+        }
+      }
+
       res.json({
         success: true,
         message: `游戏已开始！欢迎，${character.name}！`,
         sessionId: persistentGameState.sessionId,
         characterId: character.character_id,
         characterName: character.name,
+        moduleIntroduction: moduleIntroduction, // Include module introduction for frontend display
         gameState: {
           phase: persistentGameState.phase,
           playerCharacter: persistentGameState.playerCharacter,
@@ -498,9 +926,27 @@ app.post("/api/game/start", async (req, res) => {
       // Load module data and set keeper guidance and initial scenario
       console.log(`\n📚 [2/3] 加载模组配置到游戏状态...`);
       const modules = moduleLoader.getAllModules();
+      let moduleIntroduction: { introduction: string; characterGuidance: string } | null = null;
+      
       if (modules.length > 0) {
         const module = modules[0]; // Use the first/latest module
         console.log(`   → 使用模组: ${module.title}`);
+        
+        // Get introduction from module (generated automatically during load)
+        if (module.introduction && module.characterGuidance) {
+          moduleIntroduction = {
+            introduction: module.introduction,
+            characterGuidance: module.characterGuidance,
+          };
+          console.log(`   ✓ 导入叙事已加载 (介绍: ${moduleIntroduction.introduction.length} 字符, 角色指导: ${moduleIntroduction.characterGuidance.length} 字符)`);
+        } else {
+          // Fallback if not generated yet
+          moduleIntroduction = {
+            introduction: module.storyHook || module.background || `Welcome to ${module.title}.`,
+            characterGuidance: module.moduleNotes || "Create an investigator appropriate for this module.",
+          };
+          console.log(`   ⚠️  使用备用导入叙事`);
+        }
         
         // Set keeper guidance
         if (module.keeperGuidance) {
@@ -517,15 +963,126 @@ app.post("/api/game/start", async (req, res) => {
           if (searchResult.scenarios.length > 0) {
             // Use the best matching scenario (only one returned)
             const initialScenarioProfile = searchResult.scenarios[0];
-            gameState.currentScenario = initialScenarioProfile.snapshot;
+            gameState.currentScenario = {
+              ...initialScenarioProfile.snapshot,
+              characters: initialScenarioProfile.snapshot.characters || []
+            };
+            const scenarioLocation = initialScenarioProfile.snapshot.location;
             console.log(`   ✓ 已匹配并注入初始场景到游戏状态: ${initialScenarioProfile.name}`);
             console.log(`     - 场景ID: ${initialScenarioProfile.snapshot.id}`);
-            console.log(`     - 位置: ${initialScenarioProfile.snapshot.location || "未指定"}`);
+            console.log(`     - 位置: ${scenarioLocation || "未指定"}`);
             console.log(`     - 描述: ${initialScenarioProfile.snapshot.description ? initialScenarioProfile.snapshot.description.substring(0, 100) + "..." : "无"}`);
             console.log(`     - 角色数: ${initialScenarioProfile.snapshot.characters?.length || 0}`);
             console.log(`     - 线索数: ${initialScenarioProfile.snapshot.clues?.length || 0}`);
             console.log(`     - 出口数: ${initialScenarioProfile.snapshot.exits?.length || 0}`);
             console.log(`     - 事件数: ${initialScenarioProfile.snapshot.events?.length || 0}`);
+
+            // Set currentLocation for initial scenario NPCs and add them to gameState
+            if (module.initialScenarioNPCs && module.initialScenarioNPCs.length > 0 && scenarioLocation) {
+              console.log(`   → 设置初始场景NPC位置并注入到游戏状态 (${module.initialScenarioNPCs.length} 个NPC):`);
+              const allNPCs = npcLoader.getAllNPCs();
+              const database = db.getDatabase();
+              let matchedCount = 0;
+              const npcsToAdd: any[] = [];
+              
+              for (const npcName of module.initialScenarioNPCs) {
+                // Find matching NPC by name (case-insensitive, partial match)
+                const matchingNpc = allNPCs.find(npc => {
+                  const npcNameLower = npc.name.toLowerCase();
+                  const targetNameLower = npcName.toLowerCase();
+                  return npcNameLower === targetNameLower ||
+                         npcNameLower.includes(targetNameLower) ||
+                         targetNameLower.includes(npcNameLower);
+                });
+
+                if (matchingNpc) {
+                  const npcProfile = matchingNpc as any; // NPCProfile
+                  const oldLocation = npcProfile.currentLocation || null;
+                  npcProfile.currentLocation = scenarioLocation;
+                  
+                  if (oldLocation !== scenarioLocation) {
+                    console.log(`     ✓ ${matchingNpc.name}: ${oldLocation || "Unknown"} → ${scenarioLocation}`);
+                    matchedCount++;
+                    
+                    // Update NPC in database
+                    const updateStmt = database.prepare(`
+                      UPDATE characters 
+                      SET current_location = ? 
+                      WHERE character_id = ? AND is_npc = 1
+                    `);
+                    updateStmt.run(scenarioLocation, matchingNpc.id);
+                  } else {
+                    console.log(`     - ${matchingNpc.name}: 已在 ${scenarioLocation} (无需更新)`);
+                    matchedCount++;
+                  }
+                  
+                  // Add NPC to gameState (create a copy to avoid mutating the original)
+                  npcsToAdd.push({
+                    ...npcProfile,
+                    currentLocation: scenarioLocation
+                  });
+                } else {
+                  console.warn(`     ⚠️  NPC "${npcName}" 未找到，跳过位置设置`);
+                }
+              }
+              
+              // Add all matched NPCs to gameState
+              if (npcsToAdd.length > 0) {
+                gameState.npcCharacters = [...(gameState.npcCharacters || []), ...npcsToAdd];
+                console.log(`   ✓ 已将 ${npcsToAdd.length} 个NPC注入到游戏状态`);
+                
+                // Also add NPCs to currentScenario.characters if scenario is set
+                if (gameState.currentScenario) {
+                  const scenarioCharacters = gameState.currentScenario.characters || [];
+                  const updatedCharacters = [...scenarioCharacters];
+                  
+                  for (const npc of npcsToAdd) {
+                    // Check if NPC already exists in scenario characters
+                    const existingIndex = updatedCharacters.findIndex(c => 
+                      c.id === npc.id || c.name.toLowerCase() === npc.name.toLowerCase()
+                    );
+                    
+                    if (existingIndex >= 0) {
+                      // Update existing character
+                      updatedCharacters[existingIndex] = {
+                        ...updatedCharacters[existingIndex],
+                        location: scenarioLocation,
+                        status: updatedCharacters[existingIndex].status || 'present'
+                      };
+                    } else {
+                      // Add new character to scenario
+                      updatedCharacters.push({
+                        id: npc.id,
+                        name: npc.name,
+                        role: npc.occupation || 'npc',
+                        status: 'present',
+                        location: scenarioLocation,
+                        notes: npc.background ? npc.background.substring(0, 100) : undefined
+                      });
+                    }
+                  }
+                  
+                  gameState.currentScenario.characters = updatedCharacters;
+                  const originalCount = scenarioCharacters.length;
+                  const finalCount = updatedCharacters.length;
+                  const addedCount = finalCount - originalCount;
+                  const updatedCount = npcsToAdd.length - addedCount;
+                  if (addedCount > 0) {
+                    console.log(`   ✓ 已将 ${addedCount} 个新NPC添加到当前场景的角色列表中`);
+                  }
+                  if (updatedCount > 0) {
+                    console.log(`   ✓ 已更新 ${updatedCount} 个已存在的NPC在场景中的信息`);
+                  }
+                  if (addedCount === 0 && updatedCount === 0) {
+                    console.log(`   ✓ 所有NPC已在场景中`);
+                  }
+                }
+              }
+              
+              console.log(`   ✓ 已设置 ${matchedCount}/${module.initialScenarioNPCs.length} 个NPC的位置`);
+            } else if (module.initialScenarioNPCs && module.initialScenarioNPCs.length > 0) {
+              console.warn(`   ⚠️  场景位置未指定，无法设置初始场景NPC位置`);
+            }
           } else {
             console.warn(`   ⚠️  初始场景 "${module.initialScenario}" 未找到，将不设置初始场景`);
           }
@@ -583,12 +1140,53 @@ app.post("/api/game/start", async (req, res) => {
         throw new Error("Failed to initialize game state");
       }
 
+      // Create introduction turn if module introduction is available and turnManager is initialized
+      if (moduleIntroduction && turnManager && db) {
+        try {
+          // Check if introduction turn already exists for this session
+          const database = db.getDatabase();
+          const existingIntro = database.prepare(`
+            SELECT turn_id FROM game_turns 
+            WHERE session_id = ? AND turn_number = 0 AND character_input = ''
+          `).get(persistentGameState.sessionId);
+          
+          if (!existingIntro) {
+            // Only save introduction, not characterGuidance
+            const introContent = moduleIntroduction.introduction;
+            
+            const introTurnId = `turn-intro-${Date.now()}-${randomUUID().slice(0, 8)}`;
+            
+            // Create a special turn with turnNumber 0 for introduction
+            database.prepare(`
+              INSERT INTO game_turns (
+                turn_id, session_id, turn_number, character_input, character_id, character_name,
+                keeper_narrative, status, started_at, completed_at, created_at
+              ) VALUES (?, ?, 0, '', ?, ?, ?, 'completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).run(
+              introTurnId,
+              persistentGameState.sessionId,
+              persistentGameState.playerCharacter.id,
+              persistentGameState.playerCharacter.name,
+              introContent
+            );
+            
+            console.log(`✓ Introduction turn created: ${introTurnId}`);
+          } else {
+            console.log(`✓ Introduction turn already exists for this session`);
+          }
+        } catch (error) {
+          console.error("Failed to create introduction turn:", error);
+          // Don't fail the game start if introduction turn creation fails
+        }
+      }
+
       res.json({
         success: true,
         message: "游戏已开始！使用默认角色。",
         sessionId: persistentGameState.sessionId,
         characterId: persistentGameState.playerCharacter.id,
         characterName: persistentGameState.playerCharacter.name,
+        moduleIntroduction: moduleIntroduction, // Include module introduction for frontend display
         gameState: {
           phase: persistentGameState.phase,
           playerCharacter: persistentGameState.playerCharacter,
@@ -901,13 +1499,80 @@ app.post("/api/turns", async (req, res) => {
 });
 
 // GET /api/turns/:turnId - Get turn status and result
-app.get("/api/turns/:turnId", (req, res) => {
+// Supports long polling: if ?wait=true, waits until turn is completed
+app.get("/api/turns/:turnId", async (req, res) => {
   try {
     if (!turnManager) {
       return res.status(400).json({ error: "Game not initialized" });
     }
 
     const { turnId } = req.params;
+    const waitForCompletion = req.query.wait === 'true';
+    const maxWaitTime = 60000; // 60 seconds max wait time
+    const checkInterval = 500; // Check every 500ms
+    const startTime = Date.now();
+
+    // Long polling: wait until turn is completed
+    if (waitForCompletion) {
+      while (Date.now() - startTime < maxWaitTime) {
+        const turn = turnManager.getTurn(turnId);
+        
+        if (!turn) {
+          return res.status(404).json({ error: "Turn not found" });
+        }
+
+        // If turn is completed or error, return immediately
+        if (turn.status === 'completed' || turn.status === 'error') {
+          console.log(`📖 [API] 获取 Turn ${turnId}: status=${turn.status}, keeperNarrative=${turn.keeperNarrative ? `${turn.keeperNarrative.length} 字符` : 'null'}`);
+          
+          return res.json({
+            success: true,
+            turn: {
+              turnId: turn.turnId,
+              turnNumber: turn.turnNumber,
+              characterInput: turn.characterInput,
+              keeperNarrative: turn.keeperNarrative,
+              status: turn.status,
+              errorMessage: turn.errorMessage,
+              startedAt: turn.startedAt,
+              completedAt: turn.completedAt,
+              sceneId: turn.sceneId,
+              sceneName: turn.sceneName,
+              location: turn.location,
+            },
+          });
+        }
+
+        // Wait before next check
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+      }
+
+      // Timeout: return current status
+      const turn = turnManager.getTurn(turnId);
+      if (!turn) {
+        return res.status(404).json({ error: "Turn not found" });
+      }
+
+      console.log(`📖 [API] 获取 Turn ${turnId}: timeout, status=${turn.status}`);
+      return res.json({
+        success: true,
+        turn: {
+          turnId: turn.turnId,
+          turnNumber: turn.turnNumber,
+          characterInput: turn.characterInput,
+          keeperNarrative: turn.keeperNarrative,
+          status: turn.status,
+          errorMessage: turn.errorMessage,
+          startedAt: turn.startedAt,
+          completedAt: turn.completedAt,
+          sceneId: turn.sceneId,
+          sceneName: turn.sceneName,
+          location: turn.location,
+        },
+      });
+    }
+
+    // Immediate return (no waiting)
     const turn = turnManager.getTurn(turnId);
 
     if (!turn) {
@@ -1017,6 +1682,139 @@ app.get("/api/messages", (req, res) => {
   } catch (error) {
     console.error("Error fetching messages:", error);
     res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
+// ==================== CHECKPOINT API ENDPOINTS ====================
+
+// POST /api/checkpoints/save - Save current game state as checkpoint
+app.post("/api/checkpoints/save", (req, res) => {
+  try {
+    if (!persistentGameState || !db) {
+      return res.status(400).json({ 
+        error: "Game not started. Please start the game first." 
+      });
+    }
+
+    const currentScenario = persistentGameState.currentScenario;
+    if (!currentScenario) {
+      return res.status(400).json({ 
+        error: "No current scenario. Cannot save checkpoint." 
+      });
+    }
+
+    // Generate checkpoint name: scenario name + current date
+    const currentDate = new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const checkpointName = `${currentScenario.name} - ${currentDate}`;
+    const description = `Manual save at ${currentScenario.location}`;
+
+    const checkpointId = saveManualCheckpoint(
+      persistentGameState,
+      db,
+      checkpointName,
+      description
+    );
+
+    console.log(`[${new Date().toISOString()}] Checkpoint saved: ${checkpointName} (${checkpointId})`);
+
+    res.json({
+      success: true,
+      checkpointId: checkpointId,
+      checkpointName: checkpointName,
+      message: "存档成功",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error saving checkpoint:", error);
+    res.status(500).json({ error: "Failed to save checkpoint: " + (error as Error).message });
+  }
+});
+
+// GET /api/checkpoints/list - List all available checkpoints
+app.get("/api/checkpoints/list", (req, res) => {
+  try {
+    if (!db) {
+      return res.status(400).json({ error: "Database not initialized" });
+    }
+
+    const sessionId = req.query.sessionId as string;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    let checkpoints: any[] = [];
+
+    if (sessionId && sessionId !== "all") {
+      // List checkpoints for specific session
+      checkpoints = listAvailableCheckpoints(sessionId, db, limit);
+    } else {
+      // List all checkpoints from all sessions
+      const database = db.getDatabase();
+      const stmt = database.prepare(`
+        SELECT 
+          checkpoint_id, checkpoint_name, checkpoint_type, description,
+          game_day, game_time, current_scene_name, current_location,
+          player_hp, player_sanity, created_at, session_id
+        FROM game_checkpoints 
+        ORDER BY created_at DESC
+        LIMIT ?
+      `);
+      checkpoints = stmt.all(limit) as any[];
+    }
+
+    res.json({
+      success: true,
+      checkpoints: checkpoints,
+    });
+  } catch (error) {
+    console.error("Error listing checkpoints:", error);
+    res.status(500).json({ error: "Failed to list checkpoints: " + (error as Error).message });
+  }
+});
+
+// POST /api/checkpoints/load - Load a checkpoint and restore game state
+app.post("/api/checkpoints/load", async (req, res) => {
+  try {
+    if (!db) {
+      return res.status(400).json({ error: "Database not initialized" });
+    }
+
+    const { checkpointId } = req.body;
+    if (!checkpointId) {
+      return res.status(400).json({ error: "checkpointId is required" });
+    }
+
+    const gameState = loadCheckpoint(checkpointId, db);
+    if (!gameState) {
+      return res.status(404).json({ error: "Checkpoint not found" });
+    }
+
+    // Restore persistent game state
+    persistentGameState = gameState;
+
+    // Reinitialize graph and other components with the loaded game state
+    // We need to reinitialize the graph with the loaded mod
+    if (gameState.currentScenario) {
+      // Extract mod name from scenario if available, or use a default
+      // The mod should be loaded when the checkpoint was created
+      // For now, we'll just restore the state - the graph should work with existing state
+      console.log(`[${new Date().toISOString()}] Restoring game state from checkpoint: ${checkpointId}`);
+    }
+
+    console.log(`[${new Date().toISOString()}] Checkpoint loaded: ${checkpointId}`);
+
+    res.json({
+      success: true,
+      sessionId: gameState.sessionId,
+      gameState: gameState,
+      message: "存档加载成功",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error loading checkpoint:", error);
+    res.status(500).json({ error: "Failed to load checkpoint: " + (error as Error).message });
   }
 });
 

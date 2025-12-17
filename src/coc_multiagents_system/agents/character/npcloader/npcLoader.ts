@@ -540,6 +540,7 @@ export class NPCLoader {
       background: parsedData.background,
       goals: parsedData.goals || [],
       secrets: parsedData.secrets || [],
+      currentLocation: parsedData.currentLocation,
       clues,
       relationships,
       isNPC: true,
@@ -581,6 +582,7 @@ export class NPCLoader {
       background: npc.background,
       goals: npc.goals,
       secrets: npc.secrets,
+      currentLocation: npc.currentLocation,
       attributes: npc.attributes,
       status: npc.status,
       skills: npc.skills,
@@ -884,9 +886,9 @@ Return ONLY JSON array, no extra text.`;
       const stmt = database.prepare(`
                 INSERT OR REPLACE INTO characters (
                     character_id, name, attributes, status, inventory, skills, notes,
-                    is_npc, occupation, age, appearance, personality, background, goals, secrets,
+                    is_npc, occupation, age, appearance, personality, background, goals, secrets, current_location,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `);
 
       stmt.run(
@@ -904,7 +906,8 @@ Return ONLY JSON array, no extra text.`;
         npc.personality || null,
         npc.background || null,
         JSON.stringify(npc.goals),
-        JSON.stringify(npc.secrets)
+        JSON.stringify(npc.secrets),
+        npc.currentLocation || null
       );
 
       // Delete existing clues and relationships for this NPC
@@ -1020,6 +1023,7 @@ Return ONLY JSON array, no extra text.`;
       background: character.background,
       goals: JSON.parse(character.goals || "[]"),
       secrets: JSON.parse(character.secrets || "[]"),
+      currentLocation: character.current_location || undefined,
       clues: clues.map((c) => ({
         id: c.id,
         clueText: c.clue_text,

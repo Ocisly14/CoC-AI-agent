@@ -221,21 +221,45 @@ export class ModuleLoader {
       SELECT * FROM module_backgrounds ORDER BY created_at DESC
     `).all() as any[];
 
-    return modules.map((row) => ({
-      id: row.module_id,
-      title: row.title,
-      background: row.background,
-      storyOutline: row.story_outline,
-      moduleNotes: row.module_notes,
-      keeperGuidance: row.keeper_guidance,
-      storyHook: row.story_hook,
-      moduleLimitations: row.module_limitations,
-      initialScenario: row.initial_scenario,
-      initialGameTime: row.initial_game_time,
-      tags: JSON.parse(row.tags || '[]'),
-      source: row.source,
-      createdAt: row.created_at,
-    }));
+    return modules.map((row) => {
+      const module: ModuleBackground = {
+        id: row.module_id,
+        title: row.title,
+        background: row.background,
+        storyOutline: row.story_outline,
+        moduleNotes: row.module_notes,
+        keeperGuidance: row.keeper_guidance,
+        storyHook: row.story_hook,
+        moduleLimitations: row.module_limitations,
+        initialScenario: row.initial_scenario,
+        initialGameTime: row.initial_game_time,
+        tags: JSON.parse(row.tags || '[]'),
+        source: row.source,
+        createdAt: row.created_at,
+      };
+      
+      // Load introduction and characterGuidance if they exist in database
+      // (Note: These fields may not exist in older database schemas)
+      if (row.introduction) {
+        module.introduction = row.introduction;
+      }
+      if (row.character_guidance) {
+        module.characterGuidance = row.character_guidance;
+      }
+      
+      // Load initialScenarioNPCs if it exists in database
+      // (Note: This field may not exist in older database schemas)
+      if (row.initial_scenario_npcs) {
+        try {
+          module.initialScenarioNPCs = JSON.parse(row.initial_scenario_npcs);
+        } catch {
+          // If parsing fails, try to handle as comma-separated string or empty array
+          module.initialScenarioNPCs = [];
+        }
+      }
+      
+      return module;
+    });
   }
 
   /**
@@ -292,6 +316,7 @@ export class ModuleLoader {
     return moduleRecords;
   }
 
+
   private convertToModuleBackground(parsed: ParsedModuleData): ModuleBackground {
     const moduleId = this.generateModuleId(parsed.title);
 
@@ -306,9 +331,13 @@ export class ModuleLoader {
       moduleLimitations: parsed.moduleLimitations,
       initialScenario: parsed.initialScenario,
       initialGameTime: parsed.initialGameTime,
+      initialScenarioNPCs: parsed.initialScenarioNPCs || [],
       tags: parsed.tags || [],
       source: parsed.source,
       createdAt: new Date().toISOString(),
+      // Introduction and characterGuidance are generated during parsing
+      introduction: parsed.introduction,
+      characterGuidance: parsed.characterGuidance,
     };
   }
 
@@ -322,7 +351,69 @@ export class ModuleLoader {
     // Check if initial_game_time column exists
     const hasInitialGameTime = this.dbInstance.hasColumn("module_backgrounds", "initial_game_time");
 
-    if (hasInitialGameTime) {
+    // Check if introduction and character_guidance columns exist
+    const hasIntroduction = this.dbInstance.hasColumn("module_backgrounds", "introduction");
+    const hasCharacterGuidance = this.dbInstance.hasColumn("module_backgrounds", "character_guidance");
+
+    // Check if initial_scenario_npcs column exists
+    const hasInitialScenarioNPCs = this.dbInstance.hasColumn("module_backgrounds", "initial_scenario_npcs");
+
+    if (hasInitialGameTime && hasIntroduction && hasCharacterGuidance && hasInitialScenarioNPCs) {
+      // Full schema with all fields
+      const stmt = database.prepare(`
+              INSERT OR REPLACE INTO module_backgrounds (
+                  module_id, title, background, story_outline, module_notes,
+                  keeper_guidance, story_hook, module_limitations, initial_scenario, initial_game_time, 
+                  initial_scenario_npcs, introduction, character_guidance, tags, source, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+
+      stmt.run(
+        module.id,
+        module.title,
+        module.background || null,
+        module.storyOutline || null,
+        module.moduleNotes || null,
+        module.keeperGuidance || null,
+        module.storyHook || null,
+        module.moduleLimitations || null,
+        module.initialScenario || null,
+        module.initialGameTime || null,
+        module.initialScenarioNPCs ? JSON.stringify(module.initialScenarioNPCs) : null,
+        module.introduction || null,
+        module.characterGuidance || null,
+        JSON.stringify(module.tags || []),
+        module.source || null,
+        module.createdAt
+      );
+    } else if (hasInitialGameTime && hasInitialScenarioNPCs) {
+      // Schema with initial_game_time and initial_scenario_npcs but without introduction fields
+      const stmt = database.prepare(`
+              INSERT OR REPLACE INTO module_backgrounds (
+                  module_id, title, background, story_outline, module_notes,
+                  keeper_guidance, story_hook, module_limitations, initial_scenario, initial_game_time, 
+                  initial_scenario_npcs, tags, source, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+
+      stmt.run(
+        module.id,
+        module.title,
+        module.background || null,
+        module.storyOutline || null,
+        module.moduleNotes || null,
+        module.keeperGuidance || null,
+        module.storyHook || null,
+        module.moduleLimitations || null,
+        module.initialScenario || null,
+        module.initialGameTime || null,
+        module.initialScenarioNPCs ? JSON.stringify(module.initialScenarioNPCs) : null,
+        JSON.stringify(module.tags || []),
+        module.source || null,
+        module.createdAt
+      );
+    } else if (hasInitialGameTime) {
+      // Schema with initial_game_time but without introduction fields or initial_scenario_npcs
       const stmt = database.prepare(`
               INSERT OR REPLACE INTO module_backgrounds (
                   module_id, title, background, story_outline, module_notes,

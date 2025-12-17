@@ -243,22 +243,37 @@ export class TurnManager {
     }> = [];
 
     turns.reverse().forEach((turn) => {
-      // Add character input
-      conversation.push({
-        role: 'character',
-        content: turn.characterInput,
-        timestamp: turn.startedAt,
-        turnNumber: turn.turnNumber,
-      });
+      // For introduction turn (turnNumber 0 with empty characterInput), only add keeper narrative
+      if (turn.turnNumber === 0 && !turn.characterInput) {
+        if (turn.status === 'completed' && turn.keeperNarrative) {
+          conversation.push({
+            role: 'keeper',
+            content: turn.keeperNarrative,
+            timestamp: turn.completedAt || turn.startedAt,
+            turnNumber: turn.turnNumber,
+          });
+        }
+      } else {
+        // For normal turns, add character input and keeper narrative
+        // Add character input (skip if empty)
+        if (turn.characterInput) {
+          conversation.push({
+            role: 'character',
+            content: turn.characterInput,
+            timestamp: turn.startedAt,
+            turnNumber: turn.turnNumber,
+          });
+        }
 
-      // Add keeper narrative if completed
-      if (turn.status === 'completed' && turn.keeperNarrative) {
-        conversation.push({
-          role: 'keeper',
-          content: turn.keeperNarrative,
-          timestamp: turn.completedAt || turn.startedAt,
-          turnNumber: turn.turnNumber,
-        });
+        // Add keeper narrative if completed
+        if (turn.status === 'completed' && turn.keeperNarrative) {
+          conversation.push({
+            role: 'keeper',
+            content: turn.keeperNarrative,
+            timestamp: turn.completedAt || turn.startedAt,
+            turnNumber: turn.turnNumber,
+          });
+        }
       }
     });
 

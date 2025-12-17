@@ -5,7 +5,7 @@ import { CharacterSelector } from "./components/CharacterSelector";
 import { ModSelector } from "./components/ModSelector";
 
 type SkillEntry = { name: string; base: string; category: string };
-type AppPage = "home" | "sheet" | "game" | "character-select" | "mod-select";
+type AppPage = "home" | "sheet" | "game" | "character-select" | "mod-select" | "module-intro";
 
 const SKILLS: SkillEntry[] = [
   // Interpersonal & Social Skills
@@ -103,6 +103,13 @@ const App: React.FC = () => {
   const [characterName, setCharacterName] = useState<string>("Investigator");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
   const [selectedModName, setSelectedModName] = useState<string>("");
+  const [showCheckpointSelector, setShowCheckpointSelector] = useState(false);
+  const [checkpoints, setCheckpoints] = useState<any[]>([]);
+  const [loadingCheckpoints, setLoadingCheckpoints] = useState(false);
+  const [moduleIntroduction, setModuleIntroduction] = useState<{ introduction: string; characterGuidance: string } | null>(null);
+  const [showModuleIntro, setShowModuleIntro] = useState(false);
+  const [loadingModData, setLoadingModData] = useState(false);
+  const [modLoadProgress, setModLoadProgress] = useState<{ stage: string; progress: number; message: string } | null>(null);
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
@@ -111,10 +118,56 @@ const App: React.FC = () => {
     setPage("mod-select");
   };
 
-  // Handle mod selection
-  const handleSelectMod = (modName: string) => {
+  // Handle mod selection - load mod data, then fetch and show module introduction
+  const handleSelectMod = async (modName: string) => {
     setSelectedModName(modName);
-    setPage("character-select");
+    setLoadingModData(true);
+    setModLoadProgress({ stage: "初始化", progress: 0, message: "正在初始化..." });
+    
+    try {
+      // Step 1: Load mod data (scenarios, NPCs, modules)
+      setModLoadProgress({ stage: "加载场景", progress: 20, message: "正在加载场景数据..." });
+      const loadResponse = await fetch("http://localhost:3000/api/mod/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modName }),
+      });
+
+      const loadData = await loadResponse.json();
+
+      if (!loadResponse.ok) {
+        throw new Error(loadData.error || "加载模组数据失败");
+      }
+
+      setModLoadProgress({ stage: "加载完成", progress: 80, message: `已加载 ${loadData.scenariosLoaded || 0} 个场景，${loadData.npcsLoaded || 0} 个NPC，${loadData.modulesLoaded || 0} 个模块` });
+
+      // Step 2: Fetch module introduction
+      setModLoadProgress({ stage: "生成导入叙事", progress: 90, message: "正在生成模块导入叙事..." });
+      const introResponse = await fetch(`http://localhost:3000/api/module/introduction?modName=${encodeURIComponent(modName)}`);
+      const introData = await introResponse.json();
+
+      if (introResponse.ok && introData.success) {
+        setModuleIntroduction(introData.moduleIntroduction);
+        setModLoadProgress({ stage: "完成", progress: 100, message: "准备就绪" });
+        setTimeout(() => {
+          setLoadingModData(false);
+          setModLoadProgress(null);
+          setPage("module-intro"); // Show module introduction page
+        }, 500);
+      } else {
+        // If failed to get introduction, go directly to character select
+        console.error("Failed to get module introduction:", introData.error);
+        setLoadingModData(false);
+        setModLoadProgress(null);
+        setPage("character-select");
+      }
+    } catch (error) {
+      console.error("Error loading mod:", error);
+      setLoadingModData(false);
+      setModLoadProgress(null);
+      alert("加载模组失败: " + (error as Error).message);
+      setPage("mod-select");
+    }
   };
 
   // Handle character selection and start game
@@ -136,6 +189,8 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setSessionId(data.sessionId || `session-${Date.now()}`);
+        // Don't show module introduction again (already shown before character selection)
+        setShowModuleIntro(false);
         setPage("game");
       } else {
         alert("启动游戏失败: " + (data.error || "Unknown error"));
@@ -150,6 +205,66 @@ const App: React.FC = () => {
 
   const handleBackToHome = () => {
     setPage("home");
+  };
+
+  // Handle continue game - show checkpoint selector
+  const handleContinueGame = async () => {
+    setShowCheckpointSelector(true);
+    setLoadingCheckpoints(true);
+
+    try {
+      // Get all checkpoints (we'll filter by session later if needed)
+      // For now, we'll get checkpoints from a default session or all sessions
+      const response = await fetch(`http://localhost:3000/api/checkpoints/list?sessionId=all&limit=50`);
+      const data = await response.json();
+
+      if (data.success) {
+        setCheckpoints(data.checkpoints || []);
+      } else {
+        alert("加载存档列表失败: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error loading checkpoints:", error);
+      alert("网络错误，无法加载存档列表");
+    } finally {
+      setLoadingCheckpoints(false);
+    }
+  };
+
+  // Handle checkpoint selection and load
+  const handleLoadCheckpoint = async (checkpointId: string) => {
+    try {
+      const response = await fetch("http://localhost:3000/api/checkpoints/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkpointId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Restore game state
+        setSessionId(data.sessionId || `session-${Date.now()}`);
+        
+        // Extract character name from game state if available
+        if (data.gameState?.playerCharacter?.name) {
+          setCharacterName(data.gameState.playerCharacter.name);
+        }
+
+        // Don't show module introduction when loading checkpoint (only for new games)
+        setShowModuleIntro(false);
+        setModuleIntroduction(null);
+
+        // Close checkpoint selector and go to game
+        setShowCheckpointSelector(false);
+        setPage("game");
+      } else {
+        alert("加载存档失败: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error loading checkpoint:", error);
+      alert("网络错误，无法加载存档");
+    }
   };
 
   const onChange = (key: string, value: string) => {
@@ -240,8 +355,10 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setSaveMessage({ type: "success", text: data.message });
-        // Optional: Reset form after successful creation
-        // setForm({});
+        // Navigate back to character selection after successful creation
+        setTimeout(() => {
+          setPage("character-select");
+        }, 1000); // Wait 1 second to show success message
       } else {
         setSaveMessage({ type: "error", text: data.error || "创建角色失败" });
       }
@@ -627,15 +744,332 @@ const App: React.FC = () => {
   );
 
   if (page === "home") {
-    return <Homes onCreate={() => setPage("sheet")} onStartGame={handleShowCharacterSelector} />;
+    return (
+      <>
+        <Homes 
+          onCreate={() => setPage("sheet")} 
+          onStartGame={handleShowCharacterSelector}
+          onContinueGame={handleContinueGame}
+        />
+        {showCheckpointSelector && (
+          <div className="checkpoint-selector-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div className="checkpoint-selector" style={{
+              backgroundColor: '#f5f1e8',
+              padding: '30px',
+              borderRadius: '8px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              border: '3px solid #8b7355',
+              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)',
+            }}>
+              <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#3d2817' }}>📂 选择存档</h2>
+              
+              {loadingCheckpoints ? (
+                <p>加载存档列表中...</p>
+              ) : checkpoints.length === 0 ? (
+                <p style={{ color: '#666' }}>暂无存档</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {checkpoints.map((checkpoint: any) => (
+                    <div
+                      key={checkpoint.checkpointId}
+                      onClick={() => handleLoadCheckpoint(checkpoint.checkpointId)}
+                      style={{
+                        padding: '15px',
+                        border: '2px solid #8b7355',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        backgroundColor: '#fff',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0ebe0';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fff';
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#3d2817' }}>
+                        {checkpoint.checkpointName || '未命名存档'}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                        {checkpoint.currentSceneName && `场景: ${checkpoint.currentSceneName}`}
+                        {checkpoint.currentLocation && ` | 位置: ${checkpoint.currentLocation}`}
+                        {checkpoint.gameDay && ` | 第 ${checkpoint.gameDay} 天`}
+                        {checkpoint.gameTime && ` | ${checkpoint.gameTime}`}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '5px' }}>
+                        {checkpoint.createdAt && new Date(checkpoint.createdAt).toLocaleString('zh-CN')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <button
+                onClick={() => setShowCheckpointSelector(false)}
+                style={{
+                  marginTop: '20px',
+                  padding: '10px 20px',
+                  backgroundColor: '#8b7355',
+                  color: '#f5f1e8',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   if (page === "mod-select") {
     return (
-      <ModSelector
-        onSelectMod={handleSelectMod}
-        onCancel={handleBackToHome}
-      />
+      <>
+        <ModSelector
+          onSelectMod={handleSelectMod}
+          onCancel={handleBackToHome}
+        />
+        
+        {/* Loading Progress Modal */}
+        {loadingModData && (
+          <div className="mod-loading-overlay" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3000,
+            padding: '20px',
+          }}>
+            <div className="mod-loading-modal" style={{
+              backgroundColor: '#f5f1e8',
+              padding: '40px',
+              borderRadius: '8px',
+              maxWidth: '500px',
+              width: '90%',
+              border: '3px solid #8b7355',
+              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)',
+              fontFamily: 'serif',
+            }}>
+              <h2 style={{ 
+                marginTop: 0, 
+                marginBottom: '30px', 
+                color: '#3d2817',
+                fontSize: '1.8rem',
+                textAlign: 'center',
+              }}>
+                📦 正在加载模组数据
+              </h2>
+              
+              {modLoadProgress && (
+                <>
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '10px',
+                      fontSize: '0.9rem',
+                      color: '#5a4a3a',
+                    }}>
+                      <span>{modLoadProgress.stage}</span>
+                      <span>{modLoadProgress.progress}%</span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: '24px',
+                      backgroundColor: '#ddd',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '2px solid #8b7355',
+                    }}>
+                      <div style={{
+                        width: `${modLoadProgress.progress}%`,
+                        height: '100%',
+                        backgroundColor: '#8b7355',
+                        transition: 'width 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#f5f1e8',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                      }}>
+                        {modLoadProgress.progress >= 10 && `${modLoadProgress.progress}%`}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#5a4a3a',
+                    fontSize: '1rem',
+                    minHeight: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {modLoadProgress.message}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (page === "module-intro") {
+    return (
+      <>
+        <div className="module-intro-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          padding: '20px',
+        }}>
+          <div className="module-intro-modal" style={{
+            backgroundColor: '#f5f1e8',
+            padding: '40px',
+            borderRadius: '8px',
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            border: '3px solid #8b7355',
+            boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)',
+            fontFamily: 'serif',
+          }}>
+            <h2 style={{ 
+              marginTop: 0, 
+              marginBottom: '20px', 
+              color: '#3d2817',
+              fontSize: '1.8rem',
+              borderBottom: '2px solid #8b7355',
+              paddingBottom: '10px'
+            }}>
+              📖 模块导入
+            </h2>
+            
+            {moduleIntroduction && (
+              <>
+                <div style={{ marginBottom: '30px' }}>
+                  <h3 style={{ color: '#5a4a3a', marginBottom: '10px', fontSize: '1.2rem' }}>
+                    故事介绍
+                  </h3>
+                  <div style={{
+                    backgroundColor: '#fff',
+                    padding: '20px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    lineHeight: '1.8',
+                    color: '#2c2c2c',
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {moduleIntroduction.introduction}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '30px' }}>
+                  <h3 style={{ color: '#5a4a3a', marginBottom: '10px', fontSize: '1.2rem' }}>
+                    📝 角色创建指导
+                  </h3>
+                  <div style={{
+                    backgroundColor: '#fff',
+                    padding: '20px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    lineHeight: '1.8',
+                    color: '#2c2c2c',
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {moduleIntroduction.characterGuidance}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setPage("mod-select")}
+                style={{
+                  flex: 1,
+                  padding: '15px 20px',
+                  backgroundColor: '#6b5a45',
+                  color: '#f5f1e8',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#5a4a3a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#6b5a45';
+                }}
+              >
+                返回选择模组
+              </button>
+              <button
+                onClick={() => setPage("character-select")}
+                style={{
+                  flex: 2,
+                  padding: '15px 20px',
+                  backgroundColor: '#8b7355',
+                  color: '#f5f1e8',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#6b5a45';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#8b7355';
+                }}
+              >
+                下一步：选择角色
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -643,7 +1077,7 @@ const App: React.FC = () => {
     return (
       <CharacterSelector
         onSelectCharacter={handleSelectCharacter}
-        onCancel={() => setPage("mod-select")}
+        onCancel={() => setPage("module-intro")}
         onCreateNew={() => setPage("sheet")}
       />
     );
@@ -658,11 +1092,12 @@ const App: React.FC = () => {
             ← 返回首页
           </button>
         </div>
-        <GameChat 
-          sessionId={sessionId} 
-          apiBaseUrl="http://localhost:3000/api"
-          characterName={characterName}
-        />
+          <GameChat 
+            sessionId={sessionId} 
+            apiBaseUrl="http://localhost:3000/api"
+            characterName={characterName}
+            moduleIntroduction={moduleIntroduction}
+          />
       </div>
     );
   }

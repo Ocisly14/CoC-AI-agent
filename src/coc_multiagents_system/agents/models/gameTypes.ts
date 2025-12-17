@@ -128,6 +128,7 @@ export interface NPCProfile extends CharacterProfile {
   clues: NPCClue[];
   relationships: NPCRelationship[];
   isNPC: true; // flag to distinguish from player characters
+  currentLocation?: string; // NPC的当前地点
 }
 
 /**
@@ -149,4 +150,5 @@ export interface ParsedNPCData {
   clues?: Omit<NPCClue, "id" | "revealed">[];
   relationships?: Omit<NPCRelationship, "targetId">[];
   notes?: string;
+  currentLocation?: string; // NPC的当前地点
 }
