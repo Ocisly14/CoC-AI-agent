@@ -4,7 +4,7 @@
 export function getDirectorTemplate(): string {
     return `# Director Agent - Story Progression Analysis
 
-Monitor game progress and determine when to advance the story while respecting player agency.
+Monitor game progress and determine when to advance the story while respecting investigator agency.
 
 ## 🎬 Current Scene
 {{#if currentScenario}}
@@ -72,7 +72,7 @@ Monitor game progress and determine when to advance the story while respecting p
 **Stay When**:
 - Active investigation ongoing
 - Key clues remain undiscovered
-- Player has meaningful options
+- Investigator has meaningful options
 
 **Types**:
 - **scene_change**: Move to different location
@@ -144,8 +144,8 @@ Decide whether to transition to a new scene based on the current state and avail
 {{activitySummary}}
 
 ## Guidelines
-✅ **Transition**: Most clues discovered, story stalled, natural timing, player ready, OR action points exhausted, OR player insists on leaving
-❌ **Stay**: Many clues undiscovered (especially easy ones), just arrived, active investigation ongoing, player not expressing desire to leave
+✅ **Transition**: Most clues discovered, story stalled, natural timing, investigator ready, OR action points exhausted, OR investigator insists on leaving
+❌ **Stay**: Many clues undiscovered (especially easy ones), just arrived, active investigation ongoing, investigator not expressing desire to leave
 
 ## Response
 \`\`\`json

@@ -16,7 +16,7 @@ export class RAGEngine {
   private embedder: EmbeddingClient;
   private adapter: RagDatabaseAdapter;
   private knowledgeDir: string;
-  private readonly defaultThreshold = 0.85;
+  private readonly defaultThreshold = 0.6;
 
   constructor(db: CoCDatabase, knowledgeDir?: string) {
     this.store = new KnowledgeStore(db);
@@ -39,10 +39,25 @@ export class RAGEngine {
       [".txt", ".md", ".pdf", ".docx"].includes(path.extname(file).toLowerCase())
     );
 
+    let processedCount = 0;
+    let skippedCount = 0;
+
     for (const filePath of files) {
-      await this.processFile(filePath);
+      const relative = path.relative(this.knowledgeDir, filePath);
+      const shouldProcess = await this.shouldProcessFile(filePath, relative);
+      
+      if (shouldProcess) {
+        await this.processFile(filePath);
+        processedCount++;
+      } else {
+        skippedCount++;
+        console.log(`   ⏭️  跳过已处理的文件: ${relative}`);
+      }
     }
 
+    if (processedCount > 0 || skippedCount > 0) {
+      console.log(`   ✓ RAG处理完成: 处理 ${processedCount} 个文件, 跳过 ${skippedCount} 个文件`);
+    }
   }
 
   private walkFiles(dir: string): string[] {
@@ -59,6 +74,35 @@ export class RAGEngine {
     return files;
   }
 
+  /**
+   * Check if a file should be processed (not already processed or file has been modified)
+   */
+  private async shouldProcessFile(filePath: string, relative: string): Promise<boolean> {
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+
+    // Get file modification time
+    const stats = fs.statSync(filePath);
+    const fileMtime = stats.mtime;
+
+    // Check if source already exists in database
+    if (!this.store.hasSource(relative)) {
+      return true; // New file, should process
+    }
+
+    // Get the time when this source was last processed
+    const processedTime = this.store.getSourceProcessedTime(relative);
+    if (!processedTime) {
+      return true; // No processed time found, should reprocess
+    }
+
+    // Compare file modification time with processed time
+    // If file was modified after processing, need to reprocess
+    return fileMtime > processedTime;
+  }
+
   private async processFile(filePath: string) {
     const raw = await this.readFile(filePath);
     const preprocessed = preprocessText(raw);
@@ -66,6 +110,12 @@ export class RAGEngine {
     const chunks = splitText(preprocessed, 200, 20);
 
     const relative = path.relative(this.knowledgeDir, filePath);
+    
+    // Get file modification time to store in metadata
+    const stats = fs.statSync(filePath);
+    const fileMtime = stats.mtime.toISOString();
+
+    // Remove old records for this source before processing
     this.store.removeBySource(relative);
 
     for (const [index, chunk] of chunks.entries()) {
@@ -76,7 +126,10 @@ export class RAGEngine {
         text: chunk,
         embedding,
         chunkIndex: index,
-        metadata: { type: path.extname(filePath).replace(".", "") },
+        metadata: { 
+          type: path.extname(filePath).replace(".", ""),
+          fileMtime: fileMtime, // Store file modification time
+        },
       };
       this.store.upsert(record);
       await this.adapter.createKnowledge(record);

@@ -88,7 +88,7 @@ export class RagDatabaseAdapter {
       }
     >
   > {
-    const { embedding, match_threshold = 0.85, match_count = 16 } = params;
+    const { embedding, match_threshold = 0.6, match_count = 16 } = params;
     const all = await this.getKnowledge();
 
     const scored = all

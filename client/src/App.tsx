@@ -125,21 +125,92 @@ const App: React.FC = () => {
     setModLoadProgress({ stage: "初始化", progress: 0, message: "正在初始化..." });
     
     try {
-      // Step 1: Load mod data (scenarios, NPCs, modules)
-      setModLoadProgress({ stage: "加载场景", progress: 20, message: "正在加载场景数据..." });
-      const loadResponse = await fetch("http://localhost:3000/api/mod/load", {
+      // Step 1: Load mod data with SSE progress updates
+      let loadData: any = null;
+      
+      const loadResponse = await fetch("http://localhost:3000/api/mod/load?stream=true", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "text/event-stream"
+        },
         body: JSON.stringify({ modName }),
       });
 
-      const loadData = await loadResponse.json();
-
       if (!loadResponse.ok) {
-        throw new Error(loadData.error || "加载模组数据失败");
+        // Try to read error message from stream or JSON
+        const reader = loadResponse.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let errorBuffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            errorBuffer += decoder.decode(value, { stream: true });
+          }
+          try {
+            const errorData = JSON.parse(errorBuffer);
+            throw new Error(errorData.error || "加载模组数据失败");
+          } catch (e) {
+            throw new Error(errorBuffer || "加载模组数据失败");
+          }
+        } else {
+          throw new Error("加载模组数据失败");
+        }
       }
 
-      setModLoadProgress({ stage: "加载完成", progress: 80, message: `已加载 ${loadData.scenariosLoaded || 0} 个场景，${loadData.npcsLoaded || 0} 个NPC，${loadData.modulesLoaded || 0} 个模块` });
+      // Read SSE stream
+      const reader = loadResponse.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                // Check for errors
+                if (data.stage === "错误" && data.message) {
+                  throw new Error(data.message);
+                }
+                
+                // Update progress if this is a progress update
+                if (data.stage && typeof data.progress === "number" && data.message) {
+                  setModLoadProgress({ 
+                    stage: data.stage, 
+                    progress: data.progress, 
+                    message: data.message 
+                  });
+                }
+                
+                // Store final result data
+                if (data.success && data.scenariosLoaded !== undefined) {
+                  loadData = data;
+                }
+              } catch (e) {
+                // If it's an Error object we threw, re-throw it
+                if (e instanceof Error && e.message) {
+                  throw e;
+                }
+                console.error("Error parsing SSE data:", e, line);
+              }
+            }
+          }
+        }
+      }
+
+      if (!loadData) {
+        throw new Error("服务器未返回加载结果");
+      }
 
       // Step 2: Fetch module introduction
       setModLoadProgress({ stage: "生成导入叙事", progress: 90, message: "正在生成模块导入叙事..." });

@@ -412,6 +412,35 @@ export class GameStateManager {
         }
       }
     }
+    
+    // Update inventory if provided
+    if (updates.inventory !== undefined) {
+      if (!character.inventory) {
+        character.inventory = [];
+      }
+      
+      if (Array.isArray(updates.inventory)) {
+        // If it's an array, replace the entire inventory
+        character.inventory = [...updates.inventory];
+      } else if (typeof updates.inventory === 'object') {
+        // Support operations like { add: ["item1"], remove: ["item2"] }
+        if (updates.inventory.add && Array.isArray(updates.inventory.add)) {
+          // Add items (avoid duplicates)
+          updates.inventory.add.forEach((item: string) => {
+            if (item && !character.inventory.includes(item)) {
+              character.inventory.push(item);
+            }
+          });
+        }
+        
+        if (updates.inventory.remove && Array.isArray(updates.inventory.remove)) {
+          // Remove items
+          character.inventory = character.inventory.filter(
+            (item: string) => !updates.inventory.remove.includes(item)
+          );
+        }
+      }
+    }
   }
 
   /**

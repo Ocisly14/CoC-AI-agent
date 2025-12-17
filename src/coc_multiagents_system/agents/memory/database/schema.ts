@@ -527,6 +527,23 @@ export class CoCDatabase {
             END;
         `);
 
+    // Sessions table - tracks game sessions
+    this.db.exec(`
+            CREATE TABLE IF NOT EXISTS sessions (
+                session_id TEXT PRIMARY KEY,
+                mod_name TEXT,
+                character_id TEXT,
+                character_name TEXT,
+                started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                last_activity_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL DEFAULT 'active', -- 'active' | 'completed' | 'paused'
+                metadata TEXT, -- JSON blob for additional session data
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
+            CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at);
+        `);
+
     // Game Checkpoints table - unified checkpoint storage for save/load functionality
     this.db.exec(`
             CREATE TABLE IF NOT EXISTS game_checkpoints (
@@ -570,6 +587,47 @@ export class CoCDatabase {
   }
 
   /**
+   * Ensure a session exists in the sessions table, create it if it doesn't
+   * This is required before inserting checkpoints due to foreign key constraint
+   */
+  private ensureSessionExists(
+    sessionId: string,
+    gameState: any
+  ): void {
+    const database = this.db;
+    
+    // Check if session exists
+    const checkStmt = database.prepare(`
+      SELECT session_id FROM sessions WHERE session_id = ?
+    `);
+    const existing = checkStmt.get(sessionId);
+    
+    if (!existing) {
+      // Create session if it doesn't exist
+      const insertStmt = database.prepare(`
+        INSERT INTO sessions (
+          session_id, mod_name, character_id, character_name, status
+        ) VALUES (?, ?, ?, ?, 'active')
+      `);
+      
+      insertStmt.run(
+        sessionId,
+        null, // mod_name - can be extracted from gameState if available
+        gameState.playerCharacter?.id || null,
+        gameState.playerCharacter?.name || null
+      );
+    } else {
+      // Update last_activity_at if session exists
+      const updateStmt = database.prepare(`
+        UPDATE sessions 
+        SET last_activity_at = CURRENT_TIMESTAMP 
+        WHERE session_id = ?
+      `);
+      updateStmt.run(sessionId);
+    }
+  }
+
+  /**
    * Save a game checkpoint (complete game state snapshot)
    */
   saveCheckpoint(
@@ -581,6 +639,9 @@ export class CoCDatabase {
     description?: string
   ): void {
     const database = this.db;
+    
+    // Ensure session exists before inserting checkpoint (required by foreign key constraint)
+    this.ensureSessionExists(sessionId, gameState);
     
     // Extract metadata for quick queries
     const gameDay = gameState.gameDay || 1;

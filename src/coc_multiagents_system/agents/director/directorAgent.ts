@@ -414,16 +414,31 @@ export class DirectorAgent {
     // Search for target scenario
     console.log(`\n🔍 [查找目标场景]:`);
     console.log(`   正在搜索场景: "${targetSceneName}"...`);
-    const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
     
-    if (searchResult.scenarios.length === 0) {
-      console.error(`   ❌ 未找到匹配的场景: "${targetSceneName}"`);
-      console.error(`   💡 提示: 请检查场景名称是否正确，或场景是否已加载到数据库中`);
-      return;
+    // First try exact match (since Action Agent provides scene names from the list)
+    let targetScenarioProfile: ScenarioProfile | null = null;
+    const allScenarios = this.scenarioLoader.getAllScenarios();
+    const exactMatch = allScenarios.find(s => 
+      s.snapshot.name.toLowerCase().trim() === targetSceneName.toLowerCase().trim()
+    );
+    
+    if (exactMatch) {
+      console.log(`   ✓ 找到精确匹配的场景`);
+      targetScenarioProfile = exactMatch;
+    } else {
+      // Fallback to fuzzy search if exact match not found
+      console.log(`   ⚠️  未找到精确匹配，使用模糊搜索...`);
+      const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
+      
+      if (searchResult.scenarios.length === 0) {
+        console.error(`   ❌ 未找到匹配的场景: "${targetSceneName}"`);
+        console.error(`   💡 提示: 请检查场景名称是否正确，或场景是否已加载到数据库中`);
+        return;
+      }
+      
+      targetScenarioProfile = searchResult.scenarios[0];
     }
     
-    // Use the best matching scenario
-    const targetScenarioProfile = searchResult.scenarios[0];
     const targetSnapshot = targetScenarioProfile.snapshot;
     
     console.log(`   ✓ 找到匹配场景: ${targetScenarioProfile.name}`);

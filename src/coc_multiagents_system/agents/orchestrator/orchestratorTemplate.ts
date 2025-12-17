@@ -1,10 +1,10 @@
 /**
- * Action Analysis Agent Template - classify player input into action analysis only.
+ * Action Analysis Agent Template - classify investigator input into action analysis only.
  */
 export function getOrchestratorTemplate(): string {
   return `# Action Analysis Agent
 
-You classify the player's latest input into a structured action analysis. Do NOT route to other agents; only return the analysis JSON.
+You classify the investigator's latest input into a structured action analysis. Do NOT route to other agents; only return the analysis JSON.
 
 ## Input
 "{{input}}"

@@ -2,7 +2,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 import cors from "cors";
 import express from "express";
 import { CoCDatabase, seedDatabase } from "../src/coc_multiagents_system/agents/memory/database/index.js";
@@ -29,6 +29,26 @@ let turnManager: TurnManager | null = null;
 let persistentGameState: GameState | null = null;
 
 console.log("✅ Frontend server ready (nothing initialized yet)");
+
+/**
+ * Get client IP address from request
+ */
+function getClientIp(req: express.Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = forwarded
+    ? (typeof forwarded === "string" ? forwarded.split(",")[0] : forwarded[0])
+    : req.socket.remoteAddress || req.ip || "127.0.0.1";
+  return ip.trim();
+}
+
+/**
+ * Generate sessionId based on client IP address
+ */
+function generateSessionIdFromIp(ip: string): string {
+  // Create a hash of the IP address for consistent sessionId per IP
+  const hash = createHash("sha256").update(ip).digest("hex").slice(0, 16);
+  return `session-ip-${hash}`;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -179,16 +199,42 @@ app.post("/api/game/import-data", async (req, res) => {
   }
 });
 
-// API endpoint to load mod data with progress reporting
+// Helper function to send SSE progress update (only if SSE is enabled)
+function sendProgress(res: express.Response, useSSE: boolean, stage: string, progress: number, message: string) {
+  if (useSSE) {
+    res.write(`data: ${JSON.stringify({ stage, progress, message })}\n\n`);
+  }
+}
+
+// API endpoint to load mod data with SSE progress reporting
 app.post("/api/mod/load", async (req, res) => {
+  // Check if client wants SSE streaming (via Accept header or query param)
+  const useSSE = req.headers.accept?.includes('text/event-stream') || req.query.stream === 'true';
+  
+  if (useSSE) {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering in nginx
+  }
+
   try {
     const { modName } = req.body;
 
     if (!modName || typeof modName !== 'string') {
-      return res.status(400).json({ error: "modName is required" });
+      if (useSSE) {
+        sendProgress(res, useSSE, "错误", 0, "modName 参数必需");
+        res.end();
+      } else {
+        return res.status(400).json({ error: "modName is required" });
+      }
+      return;
     }
 
     console.log(`[${new Date().toISOString()}] Loading mod data: ${modName}`);
+
+    sendProgress(res, useSSE, "初始化", 5, "正在初始化数据库...");
 
     // Initialize database if not already initialized
     if (!db) {
@@ -201,22 +247,40 @@ app.post("/api/mod/load", async (req, res) => {
       console.log("Database initialized");
     }
 
+    sendProgress(res, useSSE, "初始化", 10, "正在初始化加载器...");
+
     const scenarioLoader = new ScenarioLoader(db);
     const npcLoader = new NPCLoader(db);
     const moduleLoader = new ModuleLoader(db);
 
     const modsDir = path.join(process.cwd(), "data", "Mods");
     if (!fs.existsSync(modsDir)) {
-      return res.status(404).json({ error: "Mods directory does not exist" });
+      const error = "Mods directory does not exist";
+      if (useSSE) {
+        sendProgress(res, useSSE, "错误", 0, error);
+        res.end();
+      } else {
+        return res.status(404).json({ error });
+      }
+      return;
     }
 
     const dirs = fs.readdirSync(modsDir);
     const modDir = dirs.find(d => d === modName);
     if (!modDir) {
-      return res.status(404).json({ error: `Mod "${modName}" not found` });
+      const error = `Mod "${modName}" not found`;
+      if (useSSE) {
+        sendProgress(res, useSSE, "错误", 0, error);
+        res.end();
+      } else {
+        return res.status(404).json({ error });
+      }
+      return;
     }
 
     const modPath = path.join(modsDir, modDir);
+
+    sendProgress(res, useSSE, "扫描", 15, "正在扫描模组文件夹...");
 
     // Scan subdirectories and match by name patterns
     const subdirs = fs.readdirSync(modPath, { withFileTypes: true })
@@ -245,9 +309,18 @@ app.post("/api/mod/load", async (req, res) => {
     let npcsLoaded = 0;
     let modulesLoaded = 0;
 
+    const totalSteps = (scenarioDirs.length > 0 ? 1 : 0) + 
+                       (npcDirs.length > 0 ? 1 : 0) + 
+                       (backgroundDirs.length > 0 ? 1 : 0) + 
+                       (knowledgeDirs.length > 0 ? 1 : 0);
+    let currentStep = 0;
+
     // Load scenarios
     if (scenarioDirs.length > 0) {
-      console.log(`\n📋 [1/3] 加载场景数据...`);
+      currentStep++;
+      const stepProgress = 15 + (currentStep / (totalSteps + 1)) * 65;
+      sendProgress(res, useSSE, "加载场景", stepProgress, "正在加载场景数据...");
+      console.log(`\n📋 [1/${totalSteps}] 加载场景数据...`);
       for (const scenarioDirName of scenarioDirs) {
         const scenariosDir = path.join(modPath, scenarioDirName);
         console.log(`   → 从文件夹加载场景: ${scenarioDirName}`);
@@ -255,17 +328,21 @@ app.post("/api/mod/load", async (req, res) => {
           const scenarios = await scenarioLoader.loadScenariosFromJSONDirectory(scenariosDir, false); // false = don't force reload
           scenariosLoaded += scenarios.length;
           console.log(`   ✓ 已加载 ${scenarios.length} 个场景`);
+          sendProgress(res, useSSE, "加载场景", stepProgress, `已加载 ${scenariosLoaded} 个场景`);
         } catch (error) {
           console.error(`   ✗ 加载场景失败 ${scenarioDirName}:`, error);
         }
       }
     } else {
-      console.log(`\n📋 [1/3] 未找到场景文件夹（包含"scenario"的文件夹）`);
+      console.log(`\n📋 [1/${totalSteps}] 未找到场景文件夹（包含"scenario"的文件夹）`);
     }
 
     // Load NPCs
     if (npcDirs.length > 0) {
-      console.log(`\n👥 [2/3] 加载NPC数据...`);
+      currentStep++;
+      const stepProgress = 15 + (currentStep / (totalSteps + 1)) * 65;
+      sendProgress(res, useSSE, "加载NPC", stepProgress, "正在加载NPC数据...");
+      console.log(`\n👥 [2/${totalSteps}] 加载NPC数据...`);
       for (const npcDirName of npcDirs) {
         const npcsDir = path.join(modPath, npcDirName);
         console.log(`   → 从文件夹加载NPC: ${npcDirName}`);
@@ -273,17 +350,21 @@ app.post("/api/mod/load", async (req, res) => {
           const npcs = await npcLoader.loadNPCsFromJSONDirectory(npcsDir, false); // false = don't force reload
           npcsLoaded += npcs.length;
           console.log(`   ✓ 已加载 ${npcs.length} 个NPC`);
+          sendProgress(res, useSSE, "加载NPC", stepProgress, `已加载 ${npcsLoaded} 个NPC`);
         } catch (error) {
           console.error(`   ✗ 加载NPC失败 ${npcDirName}:`, error);
         }
       }
     } else {
-      console.log(`\n👥 [2/3] 未找到NPC文件夹（包含"npc"的文件夹）`);
+      console.log(`\n👥 [2/${totalSteps}] 未找到NPC文件夹（包含"npc"的文件夹）`);
     }
 
       // Load modules/background
       if (backgroundDirs.length > 0) {
-        console.log(`\n📚 [3/4] 加载模块数据...`);
+        currentStep++;
+        const stepProgress = 15 + (currentStep / (totalSteps + 1)) * 65;
+        sendProgress(res, useSSE, "加载模块", stepProgress, "正在加载模块数据...");
+        console.log(`\n📚 [3/${totalSteps}] 加载模块数据...`);
         for (const backgroundDirName of backgroundDirs) {
           const moduleDir = path.join(modPath, backgroundDirName);
           console.log(`   → 从文件夹加载模块: ${backgroundDirName}`);
@@ -297,17 +378,21 @@ app.post("/api/mod/load", async (req, res) => {
             }
           modulesLoaded += modules.length;
           console.log(`   ✓ 已加载 ${modules.length} 个模块`);
+          sendProgress(res, useSSE, "加载模块", stepProgress, `已加载 ${modulesLoaded} 个模块`);
         } catch (error) {
           console.error(`   ✗ 加载模块失败 ${backgroundDirName}:`, error);
         }
       }
     } else {
-      console.log(`\n📚 [3/4] 未找到模块文件夹（包含"background"或"module"的文件夹）`);
+      console.log(`\n📚 [3/${totalSteps}] 未找到模块文件夹（包含"background"或"module"的文件夹）`);
     }
 
       // Load RAG knowledge from mod's knowledge directory
       if (knowledgeDirs.length > 0) {
-        console.log(`\n📖 [4/4] 处理模组 RAG 知识库...`);
+        currentStep++;
+        const stepProgress = 15 + (currentStep / (totalSteps + 1)) * 65;
+        sendProgress(res, useSSE, "处理知识库", stepProgress, "正在处理RAG知识库，这可能需要一些时间...");
+        console.log(`\n📖 [4/${totalSteps}] 处理模组 RAG 知识库...`);
         for (const knowledgeDirName of knowledgeDirs) {
           const modKnowledgeDir = path.join(modPath, knowledgeDirName);
           console.log(`   → 处理知识库文件夹: ${knowledgeDirName}`);
@@ -316,12 +401,13 @@ app.post("/api/mod/load", async (req, res) => {
             const modRagEngine = new RAGEngine(db, modKnowledgeDir);
             await modRagEngine.ingestFromDirectory();
             console.log(`   ✓ 已处理模组知识库: ${knowledgeDirName}`);
+            sendProgress(res, useSSE, "处理知识库", stepProgress + 5, "知识库处理完成");
           } catch (error) {
             console.error(`   ✗ 处理知识库失败 ${knowledgeDirName}:`, error);
           }
         }
       } else {
-        console.log(`\n📖 [4/4] 未找到知识库文件夹（"knowledge"文件夹）`);
+        console.log(`\n📖 [4/${totalSteps}] 未找到知识库文件夹（"knowledge"文件夹）`);
       }
 
     console.log(`\n${"=".repeat(60)}`);
@@ -332,17 +418,31 @@ app.post("/api/mod/load", async (req, res) => {
     console.log(`   - RAG知识库: ${knowledgeDirs.length > 0 ? "已处理" : "未找到"}`);
     console.log(`${"=".repeat(60)}\n`);
 
-    res.json({
+    const result = {
       success: true,
       message: `模组数据加载完成：${scenariosLoaded} 个场景，${npcsLoaded} 个NPC，${modulesLoaded} 个模块`,
       scenariosLoaded,
       npcsLoaded,
       modulesLoaded,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    if (useSSE) {
+      sendProgress(res, useSSE, "完成", 100, `已加载 ${scenariosLoaded} 个场景，${npcsLoaded} 个NPC，${modulesLoaded} 个模块`);
+      res.write(`data: ${JSON.stringify({ ...result, stage: "完成", progress: 100 })}\n\n`);
+      res.end();
+    } else {
+      res.json(result);
+    }
   } catch (error) {
     console.error("Error loading mod data:", error);
-    res.status(500).json({ error: "Failed to load mod data: " + (error as Error).message });
+    const errorMessage = "Failed to load mod data: " + (error as Error).message;
+    if (useSSE) {
+      sendProgress(res, useSSE, "错误", 0, errorMessage);
+      res.end();
+    } else {
+      res.status(500).json({ error: errorMessage });
+    }
   }
 });
 
@@ -619,8 +719,15 @@ app.post("/api/game/start", async (req, res) => {
       const parsedInventory = JSON.parse(character.inventory);
 
       console.log(`📝 [1/3] 创建基础游戏状态...`);
+      // Generate sessionId based on client IP
+      const clientIp = getClientIp(req);
+      const sessionId = generateSessionIdFromIp(clientIp);
+      console.log(`   - 客户端 IP: ${clientIp}`);
+      console.log(`   - Session ID: ${sessionId}`);
+      
       let gameState: GameState = {
         ...JSON.parse(JSON.stringify(initialGameState)),
+        sessionId: sessionId,
         playerCharacter: {
           id: character.character_id,
           name: character.name,
@@ -917,7 +1024,16 @@ app.post("/api/game/start", async (req, res) => {
       console.log(`${"=".repeat(60)}\n`);
 
       console.log(`📝 [1/3] 创建基础游戏状态...`);
-      let gameState: GameState = JSON.parse(JSON.stringify(initialGameState));
+      // Generate sessionId based on client IP
+      const clientIp = getClientIp(req);
+      const sessionId = generateSessionIdFromIp(clientIp);
+      console.log(`   - 客户端 IP: ${clientIp}`);
+      console.log(`   - Session ID: ${sessionId}`);
+      
+      let gameState: GameState = {
+        ...JSON.parse(JSON.stringify(initialGameState)),
+        sessionId: sessionId,
+      };
       console.log(`   ✓ 基础状态已创建`);
       console.log(`   - 角色: ${gameState.playerCharacter.name}`);
       console.log(`   - 阶段: ${gameState.phase}`);

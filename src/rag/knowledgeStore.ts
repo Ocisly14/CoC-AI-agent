@@ -81,4 +81,42 @@ export class KnowledgeStore {
       createdAt: row.created_at,
     }));
   }
+
+  /**
+   * Check if a source already exists in the knowledge store
+   */
+  hasSource(source: string): boolean {
+    const row = this.db
+      .prepare(`SELECT COUNT(*) as count FROM rag_knowledge WHERE source = ?`)
+      .get(source) as { count: number };
+    return (row?.count ?? 0) > 0;
+  }
+
+  /**
+   * Get the latest processing time for a source (from metadata or created_at)
+   */
+  getSourceProcessedTime(source: string): Date | null {
+    const row = this.db
+      .prepare(
+        `SELECT metadata, created_at FROM rag_knowledge WHERE source = ? ORDER BY created_at DESC LIMIT 1`
+      )
+      .get(source) as { metadata: string | null; created_at: string } | undefined;
+
+    if (!row) return null;
+
+    // Try to get file mtime from metadata first
+    if (row.metadata) {
+      try {
+        const metadata = JSON.parse(row.metadata) as Record<string, unknown>;
+        if (metadata.fileMtime && typeof metadata.fileMtime === "string") {
+          return new Date(metadata.fileMtime);
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+
+    // Fall back to created_at
+    return row.created_at ? new Date(row.created_at) : null;
+  }
 }

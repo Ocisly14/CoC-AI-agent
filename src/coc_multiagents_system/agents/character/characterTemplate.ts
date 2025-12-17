@@ -4,7 +4,7 @@
 export function getCharacterTemplate(): string {
   return `# Character Agent - NPC Response Analysis
 
-You are the **Character Agent**, responsible for analyzing whether NPCs in the current scene will respond to the player character's actions, and what type of response they will make.
+You are the **Character Agent**, responsible for analyzing whether NPCs in the current scene will respond to the investigator's actions, and what type of response they will make.
 
 ## Character Input
 "{{characterInput}}"
@@ -21,7 +21,7 @@ No action result available yet.
 
 ## Characters in Current Scene
 
-### Player Character
+### 调查员
 {{playerCharacterJson}}
 
 ### NPCs in Current Scene Location
@@ -63,7 +63,7 @@ For each NPC in the current scene, analyze:
 
 3. **Response Description**: A brief description of what the NPC will do
 
-4. **Target Character**: If the response is directed at a specific character (player character or another NPC), specify the target name. If the response is general or not directed at anyone, set to null
+4. **Target Character**: If the response is directed at a specific character (investigator or another NPC), specify the target name. If the response is general or not directed at anyone, set to null
 
 ## Output Format (JSON only)
 
@@ -76,7 +76,7 @@ Return an array of NPC response analyses, one for each NPC in the current scene:
       "willRespond": true,
       "responseType": "exploration|social|stealth|combat|chase|mental|environmental|narrative",
       "responseDescription": "Brief description of what the NPC will do",
-      "targetCharacter": "target character name (player character or another NPC) if the response is directed at someone, or null if general"
+      "targetCharacter": "target character name (investigator or another NPC) if the response is directed at someone, or null if general"
     }
   ]
 }
@@ -89,6 +89,6 @@ Return an array of NPC response analyses, one for each NPC in the current scene:
 - Be realistic about NPC awareness and reaction capabilities - NPCs may miss subtle actions or misinterpret what they see
 - NPCs may have different levels of awareness based on their position, attention, and sensory capabilities
 - If multiple NPCs could respond, analyze each one separately from their individual perspectives
-- The targetCharacter can be the player character or any other NPC in the scene
-- NPCs can respond to each other, not just to the player character`;
+- The targetCharacter can be the investigator or any other NPC in the scene
+- NPCs can respond to each other, not just to the investigator`;
 }

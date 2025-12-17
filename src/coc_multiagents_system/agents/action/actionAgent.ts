@@ -3,12 +3,18 @@ import { generateText } from "../../../models/index.js";
 import { GameStateManager, GameState, ActionResult, ActionAnalysis, SceneChangeRequest, NPCResponseAnalysis, ActionType } from "../../../state.js";
 import type { CharacterProfile, ActionLogEntry, NPCProfile } from "../models/gameTypes.js";
 import { actionTypeTemplates } from "./example.js";
+import type { ScenarioLoader } from "../memory/scenarioloader/scenarioLoader.js";
 
 
 /**
  * Action Agent class - handles action resolution and skill checks
  */
 export class ActionAgent {
+  private scenarioLoader?: ScenarioLoader;
+
+  constructor(scenarioLoader?: ScenarioLoader) {
+    this.scenarioLoader = scenarioLoader;
+  }
 
   /**
    * Process character action and resolve with dice rolls and state updates
@@ -36,6 +42,19 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 - clues: array of clue objects
 - permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
 
+INVENTORY UPDATES:
+If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
+- To add items: "inventory": { "add": ["item name 1", "item name 2"] }
+- To remove items: "inventory": { "remove": ["item name"] }
+- To replace entire inventory: "inventory": ["item1", "item2", "item3"]
+- For item transfers between characters: update BOTH the giver and receiver
+  * Giver: "inventory": { "remove": ["item name"] }
+  * Receiver: "inventory": { "add": ["item name"] }
+Examples:
+- Giving item to NPC: playerCharacter: { "inventory": { "remove": ["flashlight"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": ["flashlight"] } }]
+- Receiving item from NPC: playerCharacter: { "inventory": { "add": ["library key"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["library key"] } }]
+- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["item"] } }, { "id": "npc-2", "inventory": { "add": ["item"] } }]
+
 TIME ESTIMATION:
 Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:
 - Quick actions: 1-10 minutes (glancing, brief conversation, opening doors)
@@ -50,7 +69,9 @@ SCENE CHANGE DETECTION:
 1. Determine if player intends to move to a new location (entering/exiting rooms, moving between areas, climbing/crossing obstacles)
 2. If movement requires a skill check (locked door, difficult terrain, stealth entry), call roll_dice first and base scene change on the result
 3. If movement is unobstructed (open door, clear path), directly return sceneChange with shouldChange: true
-4. If no movement intent, return sceneChange with shouldChange: false
+4. If any movement intent like "i want to ","I will", "I'm going to", "I'm leaving", "I'm going to the XXX, "I'm going to the next area",return sceneChange with shouldChange: true
+
+IMPORTANT: When returning sceneChange with shouldChange: true, you MUST select the targetSceneName from the AVAILABLE SCENES list provided below. Use the EXACT scene name from that list. Do not make up scene names.
 `;
 
     const actionTypeTemplate = this.getActionTypeTemplate(gameState);
@@ -234,6 +255,40 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       context += JSON.stringify(scenarioInfo, null, 2);
     } else {
       context += "No current scenario";
+    }
+    
+    // Add all available scene names for scene change selection
+    if (this.scenarioLoader) {
+      const allScenarios = this.scenarioLoader.getAllScenarios();
+      if (allScenarios.length > 0) {
+        const sceneNames = allScenarios.map(s => s.snapshot.name).filter(name => name);
+        if (sceneNames.length > 0) {
+          context += "\n\n=== AVAILABLE SCENES FOR SCENE CHANGE ===";
+          context += "\nIf the player wants to move to a new location, you MUST select one of these scene names:";
+          context += "\n" + sceneNames.join(", ");
+          context += "\n=== END OF AVAILABLE SCENES ===\n";
+        }
+      }
+    }
+    
+    // Add last keeper narrative if available
+    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+      turnNumber: number;
+      characterInput: string;
+      keeperNarrative: string | null;
+    }>) || [];
+    
+    if (conversationHistory.length > 0) {
+      // Get the last completed turn with narrative
+      const lastTurnWithNarrative = [...conversationHistory]
+        .reverse()
+        .find(turn => turn.keeperNarrative);
+      
+      if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+        context += "\n\n=== PREVIOUS KEEPER NARRATIVE ===";
+        context += `\nThe Keeper's last narrative description:\n"${lastTurnWithNarrative.keeperNarrative}"`;
+        context += "\n=== END OF PREVIOUS NARRATIVE ===\n";
+      }
     }
     
     // Add temporary rules if any
@@ -551,6 +606,21 @@ Include "scenarioUpdate" if the action permanently changes the environment. "sce
 - exits: array of exit objects
 - clues: array of clue objects
 - permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
+
+INVENTORY UPDATES:
+If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
+- To add items: "inventory": { "add": ["item name 1", "item name 2"] }
+- To remove items: "inventory": { "remove": ["item name"] }
+- To replace entire inventory: "inventory": ["item1", "item2", "item3"]
+- For item transfers between characters: update BOTH the giver and receiver
+  * Giver: "inventory": { "remove": ["item name"] }
+  * Receiver: "inventory": { "add": ["item name"] }
+Examples:
+- Picking up a key: playerCharacter: { "inventory": { "add": ["rusty key"] } }
+- Dropping a weapon: playerCharacter: { "inventory": { "remove": ["pistol"] } }
+- Giving item to NPC: playerCharacter: { "inventory": { "remove": ["flashlight"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": ["flashlight"] } }]
+- Receiving item from NPC: playerCharacter: { "inventory": { "add": ["library key"] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["library key"] } }]
+- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": ["item"] } }, { "id": "npc-2", "inventory": { "add": ["item"] } }]
 
 TIME ESTIMATION:
 Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:

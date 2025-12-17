@@ -29,7 +29,7 @@ export interface GraphState {
 
 export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?: RAGEngine) => {
   const orchestrator = new OrchestratorAgent();
-  const actionAgent = new ActionAgent();
+  const actionAgent = new ActionAgent(scenarioLoader);
   const characterAgent = new CharacterAgent();
   const keeperAgent = new KeeperAgent();
   const directorAgent = new DirectorAgent(scenarioLoader, db);
@@ -86,7 +86,8 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     const gameState = state.gameState ?? initialGameState;
     const actionAnalysis =
       gameState.temporaryInfo.currentActionAnalysis as ActionAnalysis | null;
-    const enriched = await enrichMemoryContext(gameState, actionAnalysis, rag, db);
+    const characterInput = latestHumanMessage(state.messages);
+    const enriched = await enrichMemoryContext(gameState, actionAnalysis, rag, db, characterInput);
     console.log("✅ [Memory Agent] 上下文丰富完成");
 
     return { ...state, gameState: enriched };

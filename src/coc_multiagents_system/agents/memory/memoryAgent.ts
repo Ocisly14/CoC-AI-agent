@@ -12,6 +12,20 @@ import { actionRules } from "../../rules/index.js";
 import type { RAGEngine } from "../../../rag/engine.js";
 import type { CoCDatabase } from "./database/index.js";
 import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
+import { generateText } from "../../../models/index.js";
+import { ModelClass } from "../../../models/types.js";
+import { composeTemplate } from "../../../template.js";
+import { getRagQueryTemplate } from "./ragQueryTemplate.js";
+
+interface DirectorRuntime {
+  modelProvider: any;
+  getSetting: (key: string) => string | undefined;
+}
+
+const createRuntime = (): DirectorRuntime => ({
+  modelProvider: (process.env.MODEL_PROVIDER as any) || "openai",
+  getSetting: (key: string) => process.env[key],
+});
 
 /**
  * Inject action-type-specific rules into temporary rules so downstream agents can apply them.
@@ -40,32 +54,143 @@ export const injectActionTypeRules = (
 };
 
 /**
+ * Generate RAG queries using LLM based on action context
+ */
+const generateRagQueries = async (
+  actionAnalysis: ActionAnalysis,
+  gameState: GameState,
+  characterInput: string
+): Promise<string[]> => {
+  try {
+    const runtime = createRuntime();
+    const template = getRagQueryTemplate();
+    
+    const templateContext = {
+      sceneName: gameState.currentScenario?.name || "Unknown",
+      location: gameState.currentScenario?.location || "Unknown location",
+      sceneDescription: gameState.currentScenario?.description || "",
+      characterInput,
+      character: actionAnalysis.character,
+      actionType: actionAnalysis.actionType,
+      action: actionAnalysis.action,
+      targetName: actionAnalysis.target.name || "unknown",
+      targetIntent: actionAnalysis.target.intent || "unknown",
+    };
+    
+    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
+    
+    const response = await generateText({
+      runtime,
+      context: prompt,
+      modelClass: ModelClass.SMALL,
+    });
+    
+    // Parse JSON response
+    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/i) || 
+                     response.match(/\{[\s\S]*\}/);
+    
+    if (!jsonMatch) {
+      console.warn("Failed to extract JSON from RAG query generation response");
+      return [];
+    }
+    
+    const jsonStr = jsonMatch[1] || jsonMatch[0];
+    const parsed = JSON.parse(jsonStr);
+    
+    if (parsed.queries && Array.isArray(parsed.queries) && parsed.queries.length > 0) {
+      console.log(`🔍 [Memory Agent] 生成了 ${parsed.queries.length} 条 RAG 查询`);
+      return parsed.queries.slice(0, 3); // Ensure max 3 queries
+    }
+    
+    return [];
+  } catch (error) {
+    console.warn("Failed to generate RAG queries with LLM:", error);
+    return [];
+  }
+};
+
+/**
  * Fetch top-N RAG slices based on the current action analysis and scenario context.
+ * Now uses LLM to generate optimized queries.
  */
 export const fetchRagSlicesForAction = async (
   ragEngine: RAGEngine | undefined,
   actionAnalysis: ActionAnalysis | null,
   gameState: GameState,
+  characterInput: string,
   limit = 3
 ): Promise<string[]> => {
   if (!ragEngine || !actionAnalysis) return [];
 
-  const queryParts = [
-    actionAnalysis.character,
-    actionAnalysis.actionType,
-    actionAnalysis.action,
-    actionAnalysis.target.intent,
-    actionAnalysis.target.name ?? undefined,
-  ].filter(Boolean);
-  const query = queryParts.join(" ");
+  // Get characterInput from conversation history if not provided
+  let effectiveCharacterInput = characterInput;
+  if (!effectiveCharacterInput) {
+    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+      characterInput: string;
+    }>) || [];
+    if (conversationHistory.length > 0) {
+      effectiveCharacterInput = conversationHistory[conversationHistory.length - 1].characterInput;
+    }
+  }
+
+  // Generate queries using LLM
+  const queries = await generateRagQueries(actionAnalysis, gameState, effectiveCharacterInput || "");
+  
+  // Fallback to simple query if LLM generation fails
+  if (queries.length === 0) {
+    console.log("⚠️ [Memory Agent] LLM query generation failed, using fallback query");
+    const queryParts = [
+      actionAnalysis.character,
+      actionAnalysis.actionType,
+      actionAnalysis.action,
+      actionAnalysis.target.intent,
+      actionAnalysis.target.name ?? undefined,
+    ].filter(Boolean);
+    queries.push(queryParts.join(" "));
+  }
 
   const context = gameState.currentScenario
     ? `${gameState.currentScenario.name} ${gameState.currentScenario.location} ${gameState.currentScenario.description ?? ""}`
     : undefined;
 
+  // Search with each query and collect unique results
+  // Each query gets 'limit' results, then we merge and deduplicate
+  const allHits: Array<{ source: string; chunkIndex?: number; text: string; score: number }> = [];
+  const seenHits = new Set<string>();
+
   try {
-    const hits = await ragEngine.search(query, context, limit);
-    return hits.map(
+    console.log(`🔍 [Memory Agent] 使用 ${queries.length} 条 LLM 生成的查询进行 RAG 检索:`);
+    queries.forEach((q, idx) => {
+      console.log(`   Query ${idx + 1}: "${q}"`);
+    });
+
+    // Search with each query - each query gets 1 result
+    for (const query of queries) {
+      const hits = await ragEngine.search(query, context, 1);
+      
+      if (hits.length > 0) {
+        const hit = hits[0];
+        // Use source + chunkIndex as unique key for deduplication
+        const hitKey = `${hit.source}-${hit.chunkIndex ?? 0}`;
+        if (!seenHits.has(hitKey)) {
+          seenHits.add(hitKey);
+          allHits.push({
+            source: hit.source,
+            chunkIndex: hit.chunkIndex,
+            text: hit.text,
+            score: hit.similarity || 0,
+          });
+        }
+      }
+    }
+    
+    // Sort by score (descending) - we already have at most 3 results (one per query)
+    const topHits = allHits.sort((a, b) => b.score - a.score);
+    
+    console.log(`📚 [Memory Agent] 从 ${queries.length} 条查询中检索到 ${topHits.length} 条结果（每个查询 1 个切片）`);
+    
+    // Format results for injection into state
+    return topHits.map(
       (hit) => `(${hit.source} #${hit.chunkIndex ?? 0}) ${hit.text.slice(0, 320)}`
     );
   } catch (error) {
@@ -117,16 +242,29 @@ export const enrichMemoryContext = async (
   gameState: GameState,
   actionAnalysis: ActionAnalysis | null,
   ragEngine?: RAGEngine,
-  db?: CoCDatabase
+  db?: CoCDatabase,
+  characterInput?: string
 ): Promise<GameState> => {
   // First inject the action-type rules
   const withRules = injectActionTypeRules(gameState, actionAnalysis?.actionType);
+
+  // Get characterInput from conversation history if not provided
+  let effectiveCharacterInput = characterInput;
+  if (!effectiveCharacterInput) {
+    const conversationHistory = (withRules.temporaryInfo.contextualData?.conversationHistory as Array<{
+      characterInput: string;
+    }>) || [];
+    if (conversationHistory.length > 0) {
+      effectiveCharacterInput = conversationHistory[conversationHistory.length - 1].characterInput;
+    }
+  }
 
   // Then fetch RAG slices and write into temporaryInfo.ragResults
   const ragResults = await fetchRagSlicesForAction(
     ragEngine,
     actionAnalysis,
-    withRules
+    withRules,
+    effectiveCharacterInput || ""
   );
 
   // Extract recent conversation history (last 3 turns) and store in contextualData

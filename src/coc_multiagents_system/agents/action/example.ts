@@ -18,7 +18,8 @@ For example:
   "stateUpdate": {
     "playerCharacter": {
       "name": "Detective Smith",
-      "status": { "hp": 0 }
+      "status": { "hp": 0 },
+      "inventory": { "add": ["ancient tome"] }
     }
   },
   "scenarioUpdate": {
@@ -75,6 +76,91 @@ For example:
     "reason": "Smith is having a conversation,has nothing to do with the moving to another scene"
   },
   "log": ["Persuade 60% vs roll 45 = success", "Librarian becomes helpful"]
+}
+
+Example with receiving items (NPC gives item to player):
+{
+  "type": "result",
+  "summary": "The librarian trusts Detective Smith and hands over the library key",
+  "timeConsumption": "short",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Detective Smith",
+      "status": { "hp": 0 },
+      "inventory": { "add": ["library master key"] }
+    },
+    "npcCharacters": [
+      {
+        "id": "librarian-1",
+        "name": "Old Librarian",
+        "status": { "hp": 0 },
+        "inventory": { "remove": ["library master key"] }
+      }
+    ]
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Social interaction in current location"
+  },
+  "log": ["Persuade 60% vs roll 45 = success", "Received library master key"]
+}
+
+Example with giving items (player gives item to NPC):
+{
+  "type": "result",
+  "summary": "Detective Smith hands the flashlight to the librarian, who accepts it gratefully",
+  "timeConsumption": "instant",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Detective Smith",
+      "status": { "hp": 0 },
+      "inventory": { "remove": ["flashlight"] }
+    },
+    "npcCharacters": [
+      {
+        "id": "librarian-1",
+        "name": "Old Librarian",
+        "status": { "hp": 0 },
+        "inventory": { "add": ["flashlight"] }
+      }
+    ]
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Item transfer in current location"
+  },
+  "log": ["Item transferred: flashlight given to librarian"]
+}
+
+Example with NPC giving to NPC:
+{
+  "type": "result",
+  "summary": "The cultist leader passes a ritual dagger to his follower",
+  "timeConsumption": "instant",
+  "stateUpdate": {
+    "npcCharacters": [
+      {
+        "id": "cultist-leader-1",
+        "name": "Cultist Leader",
+        "status": { "hp": 0 },
+        "inventory": { "remove": ["ritual dagger"] }
+      },
+      {
+        "id": "cultist-follower-1",
+        "name": "Cultist Follower",
+        "status": { "hp": 0 },
+        "inventory": { "add": ["ritual dagger"] }
+      }
+    ]
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "NPC interaction in current location"
+  },
+  "log": ["Ritual dagger transferred between NPCs"]
 }`;
 
 export const stealthTemplate = `
@@ -101,6 +187,26 @@ TIME CONSUMPTION ANALYSIS:
     "reason": "Smith is executing a Stealth movement within the current area,not stealth movement to another scene"
   },
   "log": ["Stealth 35% vs roll 67 = failure", "Noise alerts enemies"]
+}
+
+Example with item pickup (stealing):
+{
+  "type": "result",
+  "summary": "Detective Smith successfully steals the key from the cultist's pocket without being noticed",
+  "timeConsumption": "short",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Detective Smith",
+      "status": { "hp": 0 },
+      "inventory": { "add": ["cultist's key"] }
+    }
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Stealth action completed in current location"
+  },
+  "log": ["Sleight of Hand 50% vs roll 32 = success", "Key stolen"]
 }`;
 
 export const combatTemplate = `
@@ -149,6 +255,30 @@ TIME CONSUMPTION ANALYSIS:
     "reason": "Combat occurs in current location"
   },
   "log": ["Fighting (Brawl) 50% vs roll 32 = success", "Damage 1d3+1 = 4", "Cultist HP: -4"]
+}
+
+Example with item drop (dropping weapon during combat):
+{
+  "type": "result",
+  "summary": "Detective Smith drops his pistol while dodging an attack, the weapon clatters to the floor",
+  "timeConsumption": "instant",
+  "stateUpdate": {
+    "playerCharacter": {
+      "name": "Detective Smith",
+      "status": { "hp": 0 },
+      "inventory": { "remove": ["pistol"] }
+    }
+  },
+  "scenarioUpdate": {
+    "description": "A pistol lies on the floor where it was dropped",
+    "events": ["Pistol dropped during combat"]
+  },
+  "sceneChange": {
+    "shouldChange": false,
+    "targetSceneName": null,
+    "reason": "Combat continues in current location"
+  },
+  "log": ["Dodge 50% vs roll 45 = success", "Pistol dropped"]
 }`;
 
 export const chaseTemplate = `
