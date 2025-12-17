@@ -6,26 +6,26 @@ export function getCharacterTemplate(): string {
 
 You are the **Character Agent**, responsible for analyzing whether NPCs in the current scene will respond to the investigator's actions, and what type of response they will make.
 
-## Character Input
-"{{characterInput}}"
-
-## Latest Action Result
-{{#if latestActionResult}}
-{{latestActionResultJson}}
-{{else}}
-No action result available yet.
-{{/if}}
-
 ## Current Scenario Information
 {{scenarioInfoJson}}
 
 ## Characters in Current Scene
 
-### 调查员
+### Investigator
 {{playerCharacterJson}}
 
 ### NPCs in Current Scene Location
 {{sceneNpcsJson}}
+
+## Investigator's Input
+"{{characterInput}}"
+
+## Latest Investigator's Action Result
+{{#if latestActionResult}}
+{{latestActionResultJson}}
+{{else}}
+No action result available yet.
+{{/if}}
 
 ## NPC Response Analysis Guidelines
 
@@ -83,11 +83,7 @@ Return an array of NPC response analyses, one for each NPC in the current scene:
 
 ## Important Notes
 
-- **NPC Perspective is Limited**: NPCs only know what they can observe. They don't have access to game mechanics, dice rolls, or hidden information
 - If an NPC is not aware of the action or it doesn't affect them, set willRespond to false and responseType to null
-- Consider NPC personality, goals, and relationships when determining response
-- Be realistic about NPC awareness and reaction capabilities - NPCs may miss subtle actions or misinterpret what they see
-- NPCs may have different levels of awareness based on their position, attention, and sensory capabilities
 - If multiple NPCs could respond, analyze each one separately from their individual perspectives
 - The targetCharacter can be the investigator or any other NPC in the scene
 - NPCs can respond to each other, not just to the investigator`;

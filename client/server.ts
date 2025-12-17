@@ -50,6 +50,64 @@ function generateSessionIdFromIp(ip: string): string {
   return `session-ip-${hash}`;
 }
 
+/**
+ * 标准化名称（用于模糊匹配）
+ */
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, " ")
+    .trim();
+}
+
+/**
+ * 计算两个字符串的Levenshtein距离（编辑距离）
+ */
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0)
+  );
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * 判断两个名称是否相似（相似度 >= 80%）
+ */
+function isNameSimilar(name1: string, name2: string): boolean {
+  const na = normalizeName(name1);
+  const nb = normalizeName(name2);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+
+  // 如果首词相同，认为相似
+  const tokensA = na.split(/\s+/);
+  const tokensB = nb.split(/\s+/);
+  if (tokensA[0] && tokensA[0] === tokensB[0]) return true;
+
+  // 计算Levenshtein距离并转换为相似度
+  const dist = levenshtein(na, nb);
+  const maxLen = Math.max(na.length, nb.length);
+  if (maxLen === 0) return false;
+  const similarity = 1 - dist / maxLen;
+  return similarity >= 0.8; // 80%相似度阈值
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -807,13 +865,9 @@ app.post("/api/game/start", async (req, res) => {
               const npcsToAdd: any[] = [];
               
               for (const npcName of module.initialScenarioNPCs) {
-                // Find matching NPC by name (case-insensitive, partial match)
+                // Find matching NPC by name (使用80%相似度的模糊匹配)
                 const matchingNpc = allNPCs.find(npc => {
-                  const npcNameLower = npc.name.toLowerCase();
-                  const targetNameLower = npcName.toLowerCase();
-                  return npcNameLower === targetNameLower ||
-                         npcNameLower.includes(targetNameLower) ||
-                         targetNameLower.includes(npcNameLower);
+                  return isNameSimilar(npc.name, npcName);
                 });
 
                 if (matchingNpc) {
@@ -1102,13 +1156,9 @@ app.post("/api/game/start", async (req, res) => {
               const npcsToAdd: any[] = [];
               
               for (const npcName of module.initialScenarioNPCs) {
-                // Find matching NPC by name (case-insensitive, partial match)
+                // Find matching NPC by name (使用80%相似度的模糊匹配)
                 const matchingNpc = allNPCs.find(npc => {
-                  const npcNameLower = npc.name.toLowerCase();
-                  const targetNameLower = npcName.toLowerCase();
-                  return npcNameLower === targetNameLower ||
-                         npcNameLower.includes(targetNameLower) ||
-                         targetNameLower.includes(npcNameLower);
+                  return isNameSimilar(npc.name, npcName);
                 });
 
                 if (matchingNpc) {

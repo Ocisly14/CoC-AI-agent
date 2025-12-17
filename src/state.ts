@@ -271,6 +271,64 @@ export class GameStateManager {
   }
 
   /**
+   * 标准化名称（用于模糊匹配）
+   */
+  private normalizeName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, " ")
+      .trim();
+  }
+
+  /**
+   * 计算两个字符串的Levenshtein距离（编辑距离）
+   */
+  private levenshtein(a: string, b: string): number {
+    const m = a.length;
+    const n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () =>
+      Array(n + 1).fill(0)
+    );
+
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[m][n];
+  }
+
+  /**
+   * 判断两个名称是否相似（相似度 >= 80%）
+   */
+  private isNameSimilar(name1: string, name2: string): boolean {
+    const na = this.normalizeName(name1);
+    const nb = this.normalizeName(name2);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+
+    // 如果首词相同，认为相似
+    const tokensA = na.split(/\s+/);
+    const tokensB = nb.split(/\s+/);
+    if (tokensA[0] && tokensA[0] === tokensB[0]) return true;
+
+    // 计算Levenshtein距离并转换为相似度
+    const dist = this.levenshtein(na, nb);
+    const maxLen = Math.max(na.length, nb.length);
+    if (maxLen === 0) return false;
+    const similarity = 1 - dist / maxLen;
+    return similarity >= 0.8; // 80%相似度阈值
+  }
+
+  /**
    * 根据场景中的角色列表，自动更新NPC的当前位置
    */
   private updateNpcLocationsForScenario(scenario: ScenarioSnapshot): void {
@@ -283,12 +341,9 @@ export class GameStateManager {
 
     // 遍历场景中的角色，更新匹配的NPC位置
     for (const scenarioChar of scenarioCharacters) {
-      // 在NPC列表中查找匹配的角色（通过名称匹配）
+      // 在NPC列表中查找匹配的角色（使用80%相似度的模糊匹配）
       const matchingNpc = this.gameState.npcCharacters.find(npc => {
-        // 精确匹配或包含匹配
-        return npc.name.toLowerCase() === scenarioChar.name.toLowerCase() ||
-               npc.name.toLowerCase().includes(scenarioChar.name.toLowerCase()) ||
-               scenarioChar.name.toLowerCase().includes(npc.name.toLowerCase());
+        return this.isNameSimilar(npc.name, scenarioChar.name);
       });
 
       if (matchingNpc) {
