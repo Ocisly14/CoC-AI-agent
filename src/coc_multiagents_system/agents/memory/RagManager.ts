@@ -590,8 +590,10 @@ class InMemoryChunkStore implements ChunkStore {
 
 class SqliteChunkStore implements ChunkStore {
   private db;
+  private checkpointId: string | null;
 
-  constructor(db: CoCDatabase) {
+  constructor(db: CoCDatabase, checkpointId: string | null = null) {
+    this.checkpointId = checkpointId;
     this.db = db.getDatabase();
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS rag_chunks (
@@ -605,9 +607,22 @@ class SqliteChunkStore implements ChunkStore {
         source_module TEXT,
         source_ref TEXT,
         anchors TEXT,
-        updated_at INTEGER
+        updated_at INTEGER,
+        checkpoint_id TEXT
       );
     `);
+    // Add checkpoint_id column if it doesn't exist (for existing databases)
+    try {
+      this.db.exec(`ALTER TABLE rag_chunks ADD COLUMN checkpoint_id TEXT`);
+    } catch (_) {
+      // Column already exists, ignore
+    }
+    // Create index for checkpoint_id lookups
+    try {
+      this.db.exec(`CREATE INDEX IF NOT EXISTS idx_rag_chunks_checkpoint ON rag_chunks(checkpoint_id)`);
+    } catch (_) {
+      // Index already exists, ignore
+    }
   }
 
   set(chunk: KnowledgeChunk): void {
@@ -615,8 +630,8 @@ class SqliteChunkStore implements ChunkStore {
       .prepare(
         `
         INSERT OR REPLACE INTO rag_chunks
-        (id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at, checkpoint_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
       .run(
@@ -630,7 +645,8 @@ class SqliteChunkStore implements ChunkStore {
         chunk.source?.module ?? null,
         chunk.source?.ref ?? null,
         JSON.stringify(chunk.anchors ?? {}),
-        chunk.updatedAt
+        chunk.updatedAt,
+        this.checkpointId
       );
   }
 
@@ -643,9 +659,9 @@ class SqliteChunkStore implements ChunkStore {
     const row = this.db
       .prepare(
         `SELECT id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at
-         FROM rag_chunks WHERE id = ?`
+         FROM rag_chunks WHERE id = ? AND (checkpoint_id = ? OR checkpoint_id IS NULL)`
       )
-      .get(id) as
+      .get(id, this.checkpointId) as
       | {
           id: string;
           type: ChunkType;
@@ -678,9 +694,10 @@ class SqliteChunkStore implements ChunkStore {
   values(): KnowledgeChunk[] {
     const rows = this.db
       .prepare(
-        `SELECT id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at FROM rag_chunks`
+        `SELECT id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at 
+         FROM rag_chunks WHERE checkpoint_id = ? OR checkpoint_id IS NULL`
       )
-      .all() as Array<{
+      .all(this.checkpointId) as Array<{
         id: string;
         type: ChunkType;
         node_id: string;
@@ -710,27 +727,38 @@ class SqliteChunkStore implements ChunkStore {
 
 class SqliteVectorStore implements VectorStore {
   private db;
+  private checkpointId: string | null;
 
-  constructor(db: CoCDatabase) {
+  constructor(db: CoCDatabase, checkpointId: string | null = null) {
+    this.checkpointId = checkpointId;
     this.db = db.getDatabase();
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS rag_vectors (
         id TEXT PRIMARY KEY,
         embedding TEXT NOT NULL,
         payload TEXT,
-        updated_at INTEGER
+        updated_at INTEGER,
+        checkpoint_id TEXT
       );
     `);
+    // Add checkpoint_id column if it doesn't exist
+    try {
+      this.db.exec(`ALTER TABLE rag_vectors ADD COLUMN checkpoint_id TEXT`);
+    } catch (_) {}
+    // Create index for checkpoint_id lookups
+    try {
+      this.db.exec(`CREATE INDEX IF NOT EXISTS idx_rag_vectors_checkpoint ON rag_vectors(checkpoint_id)`);
+    } catch (_) {}
   }
 
   async upsert(vectors: { id: string; embedding: number[]; payload?: any }[]): Promise<void> {
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO rag_vectors (id, embedding, payload, updated_at) VALUES (?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO rag_vectors (id, embedding, payload, updated_at, checkpoint_id) VALUES (?, ?, ?, ?, ?)`
     );
     const now = Date.now();
     this.db.transaction(() => {
       vectors.forEach((v) => {
-        stmt.run(v.id, JSON.stringify(v.embedding), v.payload ? JSON.stringify(v.payload) : null, now);
+        stmt.run(v.id, JSON.stringify(v.embedding), v.payload ? JSON.stringify(v.payload) : null, now, this.checkpointId);
       });
     })();
   }
@@ -742,8 +770,8 @@ class SqliteVectorStore implements VectorStore {
 
   async search(queryEmbedding: number[], topK: number, filter?: Record<string, any>): Promise<VectorHit[]> {
     const rows = this.db
-      .prepare(`SELECT id, embedding, payload FROM rag_vectors`)
-      .all() as Array<{ id: string; embedding: string; payload: string | null }>;
+      .prepare(`SELECT id, embedding, payload FROM rag_vectors WHERE checkpoint_id = ? OR checkpoint_id IS NULL`)
+      .all(this.checkpointId) as Array<{ id: string; embedding: string; payload: string | null }>;
     const hits: VectorHit[] = [];
     for (const row of rows) {
       const payload = row.payload ? JSON.parse(row.payload) : undefined;
@@ -756,13 +784,13 @@ class SqliteVectorStore implements VectorStore {
 
   async knnById(id: string, topK: number, filter?: Record<string, any>): Promise<VectorHit[]> {
     const row = this.db
-      .prepare(`SELECT id, embedding, payload FROM rag_vectors WHERE id = ?`)
-      .get(id) as { id: string; embedding: string; payload: string | null } | undefined;
+      .prepare(`SELECT id, embedding, payload FROM rag_vectors WHERE id = ? AND (checkpoint_id = ? OR checkpoint_id IS NULL)`)
+      .get(id, this.checkpointId) as { id: string; embedding: string; payload: string | null } | undefined;
     if (!row) return [];
     const sourceEmbedding = JSON.parse(row.embedding) as number[];
     const rows = this.db
-      .prepare(`SELECT id, embedding, payload FROM rag_vectors WHERE id != ?`)
-      .all(id) as Array<{ id: string; embedding: string; payload: string | null }>;
+      .prepare(`SELECT id, embedding, payload FROM rag_vectors WHERE id != ? AND (checkpoint_id = ? OR checkpoint_id IS NULL)`)
+      .all(id, this.checkpointId) as Array<{ id: string; embedding: string; payload: string | null }>;
     const hits: VectorHit[] = [];
     for (const other of rows) {
       const payload = other.payload ? JSON.parse(other.payload) : undefined;
@@ -776,10 +804,12 @@ class SqliteVectorStore implements VectorStore {
 
 class SqliteLexicalStore implements LexicalStore {
   private db;
+  private checkpointId: string | null;
   private readonly k1 = 1.5;
   private readonly b = 0.75;
 
-  constructor(db: CoCDatabase) {
+  constructor(db: CoCDatabase, checkpointId: string | null = null) {
+    this.checkpointId = checkpointId;
     this.db = db.getDatabase();
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS rag_lexical (
@@ -789,7 +819,8 @@ class SqliteLexicalStore implements LexicalStore {
         payload TEXT,
         tokens TEXT,
         length INTEGER,
-        updated_at INTEGER
+        updated_at INTEGER,
+        checkpoint_id TEXT
       );
     `);
     try {
@@ -798,11 +829,17 @@ class SqliteLexicalStore implements LexicalStore {
     try {
       this.db.exec(`ALTER TABLE rag_lexical ADD COLUMN length INTEGER`);
     } catch (_) {}
+    try {
+      this.db.exec(`ALTER TABLE rag_lexical ADD COLUMN checkpoint_id TEXT`);
+    } catch (_) {}
+    try {
+      this.db.exec(`CREATE INDEX IF NOT EXISTS idx_rag_lexical_checkpoint ON rag_lexical(checkpoint_id)`);
+    } catch (_) {}
   }
 
   async upsert(docs: { id: string; text: string; tags?: string[]; payload?: any }[]): Promise<void> {
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO rag_lexical (id, text, tags, payload, tokens, length, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO rag_lexical (id, text, tags, payload, tokens, length, updated_at, checkpoint_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const now = Date.now();
     this.db.transaction(() => {
@@ -820,7 +857,8 @@ class SqliteLexicalStore implements LexicalStore {
           doc.payload ? JSON.stringify(doc.payload) : null,
           JSON.stringify(freq),
           tokensArr.length || 1,
-          now
+          now,
+          this.checkpointId
         );
       });
     })();
@@ -833,8 +871,8 @@ class SqliteLexicalStore implements LexicalStore {
 
   async search(query: string, topK: number, filter?: Record<string, any>): Promise<LexHit[]> {
     const rows = this.db
-      .prepare(`SELECT id, text, tags, payload, tokens, length FROM rag_lexical`)
-      .all() as Array<{
+      .prepare(`SELECT id, text, tags, payload, tokens, length FROM rag_lexical WHERE checkpoint_id = ? OR checkpoint_id IS NULL`)
+      .all(this.checkpointId) as Array<{
         id: string;
         text: string;
         tags: string | null;
@@ -891,8 +929,10 @@ class SqliteLexicalStore implements LexicalStore {
 
 class SqliteGraphStore implements GraphStore {
   private db;
+  private checkpointId: string | null;
 
-  constructor(db: CoCDatabase) {
+  constructor(db: CoCDatabase, checkpointId: string | null = null) {
+    this.checkpointId = checkpointId;
     this.db = db.getDatabase();
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS rag_nodes (
@@ -903,7 +943,8 @@ class SqliteGraphStore implements GraphStore {
         meta TEXT,
         chunk_ids TEXT,
         embedding_key TEXT,
-        updated_at INTEGER
+        updated_at INTEGER,
+        checkpoint_id TEXT
       );
       CREATE TABLE IF NOT EXISTS rag_edges (
         from_id TEXT,
@@ -913,16 +954,31 @@ class SqliteGraphStore implements GraphStore {
         visibility TEXT,
         meta TEXT,
         updated_at INTEGER,
-        PRIMARY KEY (from_id, to_id, type)
+        checkpoint_id TEXT,
+        PRIMARY KEY (from_id, to_id, type, checkpoint_id)
       );
       CREATE INDEX IF NOT EXISTS idx_rag_edges_from ON rag_edges(from_id);
     `);
+    // Add checkpoint_id column if it doesn't exist
+    try {
+      this.db.exec(`ALTER TABLE rag_nodes ADD COLUMN checkpoint_id TEXT`);
+    } catch (_) {}
+    try {
+      this.db.exec(`ALTER TABLE rag_edges ADD COLUMN checkpoint_id TEXT`);
+    } catch (_) {}
+    // Create indexes for checkpoint_id lookups
+    try {
+      this.db.exec(`CREATE INDEX IF NOT EXISTS idx_rag_nodes_checkpoint ON rag_nodes(checkpoint_id)`);
+    } catch (_) {}
+    try {
+      this.db.exec(`CREATE INDEX IF NOT EXISTS idx_rag_edges_checkpoint ON rag_edges(checkpoint_id)`);
+    } catch (_) {}
   }
 
   private loadGraph(): KnowledgeGraph {
     const nodesRows = this.db
-      .prepare(`SELECT id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at FROM rag_nodes`)
-      .all() as Array<{
+      .prepare(`SELECT id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at FROM rag_nodes WHERE checkpoint_id = ? OR checkpoint_id IS NULL`)
+      .all(this.checkpointId) as Array<{
         id: string;
         type: NodeType;
         title: string;
@@ -947,8 +1003,8 @@ class SqliteGraphStore implements GraphStore {
     });
 
     const edgesRows = this.db
-      .prepare(`SELECT from_id, to_id, type, weight, visibility, meta FROM rag_edges`)
-      .all() as Array<{
+      .prepare(`SELECT from_id, to_id, type, weight, visibility, meta FROM rag_edges WHERE checkpoint_id = ? OR checkpoint_id IS NULL`)
+      .all(this.checkpointId) as Array<{
         from_id: string;
         to_id: string;
         type: EdgeType;
@@ -979,8 +1035,8 @@ class SqliteGraphStore implements GraphStore {
 
   upsertNodes(nodes: GraphNode[]): void {
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO rag_nodes (id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO rag_nodes (id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at, checkpoint_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const tx = this.db.transaction(() => {
       nodes.forEach((node) =>
@@ -992,7 +1048,8 @@ class SqliteGraphStore implements GraphStore {
           JSON.stringify(node.meta ?? {}),
           JSON.stringify(node.chunkIds ?? []),
           node.embeddingKey ?? null,
-          node.updatedAt ?? Date.now()
+          node.updatedAt ?? Date.now(),
+          this.checkpointId
         )
       );
     });
@@ -1001,8 +1058,8 @@ class SqliteGraphStore implements GraphStore {
 
   upsertEdges(edges: GraphEdge[]): void {
     const stmt = this.db.prepare(
-      `INSERT OR REPLACE INTO rag_edges (from_id, to_id, type, weight, visibility, meta, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT OR REPLACE INTO rag_edges (from_id, to_id, type, weight, visibility, meta, updated_at, checkpoint_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const now = Date.now();
     this.db.transaction(() => {
@@ -1014,7 +1071,8 @@ class SqliteGraphStore implements GraphStore {
           edge.weight ?? null,
           edge.visibility,
           edge.meta ? JSON.stringify(edge.meta) : null,
-          now
+          now,
+          this.checkpointId
         )
       );
     })();
@@ -1057,8 +1115,8 @@ class SqliteGraphStore implements GraphStore {
 
   neighbors(nodeId: string, opts?: { types?: EdgeType[]; visibility?: Visibility }): GraphEdge[] {
     const rows = this.db
-      .prepare(`SELECT from_id, to_id, type, weight, visibility, meta FROM rag_edges WHERE from_id = ?`)
-      .all(nodeId) as Array<{
+      .prepare(`SELECT from_id, to_id, type, weight, visibility, meta FROM rag_edges WHERE from_id = ? AND (checkpoint_id = ? OR checkpoint_id IS NULL)`)
+      .all(nodeId, this.checkpointId) as Array<{
         from_id: string;
         to_id: string;
         type: EdgeType;
@@ -1715,6 +1773,8 @@ export class RagManager {
   private npcIndex = new Map<string, string>();
   private clueIndex = new Map<string, string>();
   private logger: RagQueryLogger | null = null;
+  private currentCheckpointId: string | null = null; // null = current/active RAG
+  private db: CoCDatabase | null = null;
 
   constructor(
     options?: {
@@ -1727,6 +1787,7 @@ export class RagManager {
       db?: CoCDatabase;
       embedder?: EmbeddingProvider;
       enableQueryLogging?: boolean;  // 启用查询日志（默认 false）
+      checkpointId?: string | null;  // 指定要使用的 checkpoint_id (null = current)
     }
   ) {
     const defaultEmbedder = new CompositeEmbeddingProvider(
@@ -1734,14 +1795,16 @@ export class RagManager {
       new HashEmbeddingProvider()
     );
     this.embedder = options?.embedder ?? defaultEmbedder;
+    this.currentCheckpointId = options?.checkpointId ?? null;
     if (options?.db) {
+      this.db = options.db;
       this.chunkStore =
-        options.stores?.chunkStore ?? new SqliteChunkStore(options.db);
+        options.stores?.chunkStore ?? new SqliteChunkStore(options.db, this.currentCheckpointId);
       this.vector =
-        options.stores?.vector ?? new SqliteVectorStore(options.db);
-      this.lex = options.stores?.lex ?? new SqliteLexicalStore(options.db);
+        options.stores?.vector ?? new SqliteVectorStore(options.db, this.currentCheckpointId);
+      this.lex = options.stores?.lex ?? new SqliteLexicalStore(options.db, this.currentCheckpointId);
       this.graph =
-        options.stores?.graph ?? new SqliteGraphStore(options.db);
+        options.stores?.graph ?? new SqliteGraphStore(options.db, this.currentCheckpointId);
       // 初始化查询日志器（如果启用）
       if (options.enableQueryLogging) {
         this.logger = new RagQueryLogger(options.db, true);
@@ -1752,6 +1815,15 @@ export class RagManager {
       this.vector = options?.stores?.vector ?? new InMemoryVectorStore();
       this.lex = options?.stores?.lex ?? new InMemoryLexicalStore();
       this.graph = options?.stores?.graph ?? new InMemoryGraphStore();
+    }
+
+    // 如果知识库已构建但索引为空，从图中重建索引
+    // 这通常发生在从数据库恢复 RagManager 时
+    if (this.isKnowledgeBaseBuilt() && 
+        this.scenarioIndex.size === 0 && 
+        this.npcIndex.size === 0 && 
+        this.clueIndex.size === 0) {
+      this.rebuildIndices();
     }
   }
 
@@ -1769,6 +1841,170 @@ export class RagManager {
     chunkStore: ChunkStoreShape;
   } {
     return { vector: this.vector, lex: this.lex, graph: this.graph, chunkStore: this.chunkStore };
+  }
+
+  /**
+   * Check if knowledge base is already built (has nodes in database)
+   * Checks for base RAG (checkpoint_id IS NULL) or specific checkpoint
+   */
+  isKnowledgeBaseBuilt(): boolean {
+    try {
+      const graph = this.graph.getGraph();
+      const nodeCount = Object.keys(graph.nodes).length;
+      return nodeCount > 0;
+    } catch (error) {
+      console.warn("Failed to check knowledge base status:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if base RAG knowledge base exists (checkpoint_id IS NULL)
+   * This is the original/base knowledge base that can be reused for new games
+   */
+  static isBaseKnowledgeBaseBuilt(db: CoCDatabase): boolean {
+    try {
+      const database = db.getDatabase();
+      const result = database
+        .prepare(`SELECT COUNT(*) as count FROM rag_nodes WHERE checkpoint_id IS NULL`)
+        .get() as { count: number } | undefined;
+      return result ? result.count > 0 : false;
+    } catch (error) {
+      console.warn("Failed to check base knowledge base status:", error);
+      return false;
+    }
+  }
+
+  /**
+   * 从图中重建索引（scenarioIndex, npcIndex, clueIndex）
+   * 当从数据库恢复 RagManager 时，索引是空的，需要从图中重建
+   */
+  private rebuildIndices(): void {
+    const graph = this.graph.getGraph();
+    this.scenarioIndex.clear();
+    this.npcIndex.clear();
+    this.clueIndex.clear();
+
+    for (const [nodeId, node] of Object.entries(graph.nodes)) {
+      const normalizedTitle = normalizeText(node.title);
+      
+      if (node.type === "scenario") {
+        // 从 nodeId 提取场景ID（格式：scenario:xxx）
+        const scenarioId = nodeId.replace(/^scenario:/, "");
+        this.scenarioIndex.set(normalizedTitle, nodeId);
+        // 如果 meta 中有 scenarioId，也建立索引
+        if (node.meta?.scenarioId) {
+          this.scenarioIndex.set(normalizeText(node.meta.scenarioId), nodeId);
+        }
+      } else if (node.type === "npc") {
+        // 从 nodeId 提取NPC ID（格式：npc:xxx）
+        const npcId = nodeId.replace(/^npc:/, "");
+        this.npcIndex.set(normalizedTitle, nodeId);
+        // 如果 meta 中有 npcId，也建立索引
+        if (node.meta?.npcId) {
+          this.npcIndex.set(normalizeText(node.meta.npcId), nodeId);
+        }
+      } else if (node.type === "clue") {
+        // 从 nodeId 提取线索ID（格式：clue:xxx）
+        const clueId = nodeId.replace(/^clue:/, "");
+        this.clueIndex.set(clueId, nodeId);
+        // 如果 meta 中有 clueId，也建立索引
+        if (node.meta?.clueId) {
+          this.clueIndex.set(node.meta.clueId, nodeId);
+        }
+      }
+    }
+
+    console.log(`[RAG] 索引重建完成: 场景 ${this.scenarioIndex.size} 个, NPC ${this.npcIndex.size} 个, 线索 ${this.clueIndex.size} 个`);
+  }
+
+  /**
+   * Save current RAG state to a checkpoint
+   * Copies all RAG data (chunks, nodes, edges, vectors, lexical) and marks them with checkpoint_id
+   */
+  async saveToCheckpoint(checkpointId: string): Promise<void> {
+    if (!this.db) {
+      throw new Error("Cannot save RAG checkpoint: database not available");
+    }
+
+    const database = this.db.getDatabase();
+    console.log(`[RAG] Saving RAG state to checkpoint: ${checkpointId}`);
+
+    // Copy chunks (from current/active RAG where checkpoint_id IS NULL)
+    const copyChunks = database.prepare(`
+      INSERT INTO rag_chunks (id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at, checkpoint_id)
+      SELECT id, type, node_id, visibility, title, text, tags, source_module, source_ref, anchors, updated_at, ? as checkpoint_id
+      FROM rag_chunks WHERE checkpoint_id IS NULL
+    `);
+    copyChunks.run(checkpointId);
+
+    // Copy nodes
+    const copyNodes = database.prepare(`
+      INSERT INTO rag_nodes (id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at, checkpoint_id)
+      SELECT id, type, title, visibility, meta, chunk_ids, embedding_key, updated_at, ? as checkpoint_id
+      FROM rag_nodes WHERE checkpoint_id IS NULL
+    `);
+    copyNodes.run(checkpointId);
+
+    // Copy edges
+    const copyEdges = database.prepare(`
+      INSERT INTO rag_edges (from_id, to_id, type, weight, visibility, meta, updated_at, checkpoint_id)
+      SELECT from_id, to_id, type, weight, visibility, meta, updated_at, ? as checkpoint_id
+      FROM rag_edges WHERE checkpoint_id IS NULL
+    `);
+    copyEdges.run(checkpointId);
+
+    // Copy vectors
+    const copyVectors = database.prepare(`
+      INSERT INTO rag_vectors (id, embedding, payload, updated_at, checkpoint_id)
+      SELECT id, embedding, payload, updated_at, ? as checkpoint_id
+      FROM rag_vectors WHERE checkpoint_id IS NULL
+    `);
+    copyVectors.run(checkpointId);
+
+    // Copy lexical
+    const copyLexical = database.prepare(`
+      INSERT INTO rag_lexical (id, text, tags, payload, tokens, length, updated_at, checkpoint_id)
+      SELECT id, text, tags, payload, tokens, length, updated_at, ? as checkpoint_id
+      FROM rag_lexical WHERE checkpoint_id IS NULL
+    `);
+    copyLexical.run(checkpointId);
+
+    console.log(`[RAG] RAG state saved to checkpoint: ${checkpointId}`);
+  }
+
+  /**
+   * Restore RAG state from a checkpoint
+   * This creates a new RagManager instance with the checkpoint's data
+   */
+  static async restoreFromCheckpoint(
+    db: CoCDatabase,
+    checkpointId: string,
+    embedder?: EmbeddingProvider
+  ): Promise<RagManager> {
+    console.log(`[RAG] Restoring RAG state from checkpoint: ${checkpointId}`);
+    
+    // Create a new RagManager with checkpoint_id filter
+    const ragManager = new RagManager({
+      db,
+      embedder,
+      checkpointId: checkpointId,
+    });
+
+    // Verify that checkpoint data exists
+    const database = db.getDatabase();
+    const nodeCount = database
+      .prepare(`SELECT COUNT(*) as count FROM rag_nodes WHERE checkpoint_id = ?`)
+      .get(checkpointId) as { count: number } | undefined;
+
+    if (!nodeCount || nodeCount.count === 0) {
+      console.warn(`[RAG] No RAG data found for checkpoint: ${checkpointId}, using current/active RAG`);
+      // Fall back to current RAG (checkpoint_id IS NULL)
+      return new RagManager({ db, embedder, checkpointId: null });
+    }
+
+    console.log(`[RAG] Restored ${nodeCount.count} nodes from checkpoint: ${checkpointId}`);
+    return ragManager;
   }
 
   private async computeNodeEmbedding(node: GraphNode): Promise<number[]> {

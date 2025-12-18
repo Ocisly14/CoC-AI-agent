@@ -109,7 +109,7 @@ export class KeeperAgent {
       isTransition,
       previousScenarioInfo,
       sceneTransitionRejection,
-      conversationHistory,  // Recent conversation history (last 3 turns)
+      conversationHistory,  // Recent conversation history (last 1 turn)
       ragResults,  // RAG检索结果（已过滤，只包含 type, title, snippet, anchors, visibility）
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
       allActionResultsJson: this.safeStringify(allActionResults),  // 所有 action results 的 JSON
@@ -247,18 +247,23 @@ export class KeeperAgent {
       };
     }
 
+    // Simplified scenario info - only keep essential dynamic state
+    // Detailed content (description, conditions, events, exits, keeperNotes, permanentChanges, clue texts)
+    // can be retrieved via RAG when needed
     return {
       hasScenario: true,
       id: currentScenario.id,
       name: currentScenario.name,
       location: currentScenario.location,
-      description: currentScenario.description,
+      // Characters present in the scene (dynamic state)
       characters: currentScenario.characters || [],
-      clues: currentScenario.clues || [],
-      conditions: currentScenario.conditions || [],
-      events: currentScenario.events || [],
-      keeperNotes: currentScenario.keeperNotes || "",
-      permanentChanges: currentScenario.permanentChanges
+      // Only keep clue IDs and discovery status (clue texts are available via RAG)
+      clues: (currentScenario.clues || []).map(clue => ({
+        id: clue.id,
+        discovered: clue.discovered,
+        // Keep discovery details if the clue was discovered
+        ...(clue.discovered && clue.discoveryDetails ? { discoveryDetails: clue.discoveryDetails } : {})
+      }))
     };
   }
 

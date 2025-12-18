@@ -101,8 +101,11 @@ export const enrichMemoryContext = async (
       const duration = Date.now() - startTime;
       ragEvidence = evidence;
       console.log(`[Memory Agent] RAG检索完成: 找到 ${evidence.length} 条证据 (耗时: ${duration}ms)`);
-      if (debug?.executionTimeMs) {
-        console.log(`[Memory Agent] RAG详细统计: 语义检索 ${debug.semanticHitsCount || 0} 条, 关键词检索 ${debug.lexicalHitsCount || 0} 条, 图检索 ${debug.graphHitsCount || 0} 条`);
+      if (debug) {
+        const semanticCount = debug.semanticHits?.length ?? 0;
+        const lexicalCount = debug.lexicalHits?.length ?? 0;
+        const graphCount = debug.graphHits?.length ?? 0;
+        console.log(`[Memory Agent] RAG详细统计: 语义检索 ${semanticCount} 条, 关键词检索 ${lexicalCount} 条, 图检索 ${graphCount} 条`);
       }
     } catch (error) {
       console.warn("[Memory Agent] RAG retrieval failed:", error);

@@ -117,6 +117,12 @@ const App: React.FC = () => {
   const [showModuleIntro, setShowModuleIntro] = useState(false);
   const [loadingModData, setLoadingModData] = useState(false);
   const [modLoadProgress, setModLoadProgress] = useState<{ stage: string; progress: number; message: string } | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<Array<{
+    role: 'character' | 'keeper';
+    content: string;
+    timestamp: string;
+    turnNumber: number;
+  }> | null>(null);
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
@@ -331,6 +337,8 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setSessionId(data.sessionId || `session-${Date.now()}`);
+        // Clear conversation history for new game (will be loaded from API)
+        setConversationHistory(null);
         // Don't show module introduction again (already shown before character selection)
         setShowModuleIntro(false);
         setPage("game");
@@ -391,6 +399,14 @@ const App: React.FC = () => {
         // Extract character name from game state if available
         if (data.gameState?.playerCharacter?.name) {
           setCharacterName(data.gameState.playerCharacter.name);
+        }
+
+        // Load conversation history if provided
+        if (data.conversationHistory && Array.isArray(data.conversationHistory)) {
+          setConversationHistory(data.conversationHistory);
+          console.log(`Loaded ${data.conversationHistory.length} messages from checkpoint`);
+        } else {
+          setConversationHistory(null);
         }
 
         // Don't show module introduction when loading checkpoint (only for new games)
@@ -1697,6 +1713,7 @@ const App: React.FC = () => {
             apiBaseUrl="http://localhost:3000/api"
             characterName={characterName}
             moduleIntroduction={moduleIntroduction}
+            initialMessages={conversationHistory || undefined}
           />
           <GameSidebar
             sessionId={sessionId}

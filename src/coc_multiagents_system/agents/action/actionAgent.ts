@@ -814,16 +814,44 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       stateManager.applyActionUpdate(parsed.stateUpdate);
     }
 
-    // Handle scene change request (NPCs typically don't trigger scene changes, but handle it if needed)
-    if (parsed.sceneChange && parsed.sceneChange.shouldChange) {
-      const sceneChangeRequest: SceneChangeRequest = {
-        shouldChange: parsed.sceneChange.shouldChange || false,
-        targetSceneName: parsed.sceneChange.targetSceneName || null,
-        reason: parsed.sceneChange.reason || "NPC action-driven scene change",
-        timestamp: new Date()
-      };
-      stateManager.setSceneChangeRequest(sceneChangeRequest);
-      console.log(`Action Agent: NPC scene change request - `, sceneChangeRequest);
+    // Handle NPC scene change - only update NPC location, don't trigger Director scene transition
+    if (parsed.sceneChange && parsed.sceneChange.shouldChange && parsed.sceneChange.targetSceneName) {
+      const targetSceneName = parsed.sceneChange.targetSceneName;
+      console.log(`\n📍 [Action Agent] NPC ${npc.name} 请求场景转换: ${targetSceneName}`);
+      
+      // Find target scenario to get its location
+      if (this.scenarioLoader) {
+        const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
+        
+        if (searchResult.scenarios.length > 0) {
+          const targetScenario = searchResult.scenarios[0];
+          const targetLocation = targetScenario.snapshot.location;
+          
+          // Update NPC's currentLocation in gameState
+          const currentState = stateManager.getGameState();
+          const npcInState = currentState.npcCharacters.find(n => n.id === npc.id) as NPCProfile | undefined;
+          
+          if (npcInState) {
+            const oldLocation = npcInState.currentLocation || null;
+            npcInState.currentLocation = targetLocation;
+            
+            if (oldLocation !== targetLocation) {
+              console.log(`   ✓ NPC ${npc.name} 位置已更新: ${oldLocation || "Unknown"} → ${targetLocation}`);
+            } else {
+              console.log(`   - NPC ${npc.name} 已在目标位置 ${targetLocation}`);
+            }
+          } else {
+            console.warn(`   ⚠️  在 gameState 中未找到 NPC ${npc.name} (ID: ${npc.id})`);
+          }
+        } else {
+          console.warn(`   ⚠️  未找到场景 "${targetSceneName}"，无法更新NPC位置`);
+        }
+      } else {
+        console.warn(`   ⚠️  ScenarioLoader 未初始化，无法查找场景位置`);
+      }
+      
+      // Note: We do NOT set sceneChangeRequest for NPC scene changes
+      // This prevents Director from triggering a player scene transition
     }
 
     // Apply scenario updates if provided

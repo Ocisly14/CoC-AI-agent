@@ -19,10 +19,11 @@ interface GameChatProps {
   apiBaseUrl?: string;
   characterName?: string;
   moduleIntroduction?: { introduction: string; characterGuidance: string } | null;
+  initialMessages?: Message[];
 }
 
-export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator', moduleIntroduction }: GameChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator', moduleIntroduction, initialMessages }: GameChatProps) {
+  const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,10 +31,27 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { turn, isPolling, error, startPolling } = useTurnPolling(apiBaseUrl);
 
-  // Load conversation history on mount
+  // Load conversation history on mount or when sessionId changes
   useEffect(() => {
-    loadConversationHistory();
+    // If initialMessages are provided, use them; otherwise load from API
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    } else if (sessionId) {
+      loadConversationHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  // Update messages when initialMessages prop changes (e.g., when loading checkpoint)
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    } else if (!initialMessages && sessionId) {
+      // If initialMessages is cleared, reload from API
+      loadConversationHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

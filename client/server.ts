@@ -9,7 +9,7 @@ import { CoCDatabase, seedDatabase } from "../src/coc_multiagents_system/agents/
 import { NPCLoader } from "../src/coc_multiagents_system/agents/character/npcloader/index.js";
 import { ModuleLoader } from "../src/coc_multiagents_system/agents/memory/moduleloader/index.js";
 import { ScenarioLoader } from "../src/coc_multiagents_system/agents/memory/scenarioloader/index.js";
-import { createBgeSqliteRagManager, type RagManager } from "../src/coc_multiagents_system/agents/memory/RagManager.js";
+import { createBgeSqliteRagManager, RagManager } from "../src/coc_multiagents_system/agents/memory/RagManager.js";
 import { buildGraph, type GraphState } from "../src/graph.js";
 import { initialGameState, type GameState } from "../src/state.js";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
@@ -729,27 +729,40 @@ app.post("/api/game/start", async (req, res) => {
     if (!graph || !ragManager) {
       console.log(`[${new Date().toISOString()}] Initializing multi-agent system...`);
 
-      // Initialize RAG Manager and build KB from loaded data
+      // Initialize RAG Manager (using base RAG - checkpoint_id IS NULL)
       ragManager = createBgeSqliteRagManager(db);
-      const scenarioProfiles = scenarioLoader.getAllScenarios();
-      const npcProfiles = npcLoader.getAllNPCs();
-      await ragManager.buildKnowledgeBase(
-        {
-          scenarios: scenarioProfiles.map((s: any) => s.snapshot),
-          npcs: npcProfiles,
-          clues: [],
-          rules: [],
-          playerInventory: initialGameState.playerCharacter.inventory,
-          playerId: initialGameState.playerCharacter.id,
-          playerName: initialGameState.playerCharacter.name,
-        },
-        {
-          moduleName: "default-module",
-          mode: "keeper",
-          enableNodeEmbeddings: true,
-          enableKnnEdges: true,
-        }
-      );
+      
+      // Check if base knowledge base is already built (from previous game session)
+      const isBaseKbBuilt = RagManager.isBaseKnowledgeBaseBuilt(db);
+      
+      if (!isBaseKbBuilt) {
+        console.log(`[${new Date().toISOString()}] Base RAG knowledge base not found, building from loaded data...`);
+        console.log(`[${new Date().toISOString()}] This will be saved as the base knowledge base for future games.`);
+        // Build KB from loaded data only if base doesn't exist
+        const scenarioProfiles = scenarioLoader.getAllScenarios();
+        const npcProfiles = npcLoader.getAllNPCs();
+        await ragManager.buildKnowledgeBase(
+          {
+            scenarios: scenarioProfiles.map((s: any) => s.snapshot),
+            npcs: npcProfiles,
+            clues: [],
+            rules: [],
+            playerInventory: initialGameState.playerCharacter.inventory,
+            playerId: initialGameState.playerCharacter.id,
+            playerName: initialGameState.playerCharacter.name,
+          },
+          {
+            moduleName: "default-module",
+            mode: "keeper",
+            enableNodeEmbeddings: true,
+            enableKnnEdges: true,
+          }
+        );
+        console.log(`[${new Date().toISOString()}] Base RAG knowledge base built successfully (checkpoint_id IS NULL)`);
+        console.log(`[${new Date().toISOString()}] Future games will reuse this base knowledge base.`);
+      } else {
+        console.log(`[${new Date().toISOString()}] Base RAG knowledge base already exists, reusing it (no rebuild needed)`);
+      }
 
       // Build the multi-agent graph
       graph = buildGraph(db, scenarioLoader, ragManager);
@@ -1394,6 +1407,57 @@ app.post("/api/message", async (req, res) => {
       });
     }
 
+    // Ensure graph is initialized (needed for processing messages)
+    if (!graph || !ragManager) {
+      // Initialize graph and ragManager if not already initialized
+      if (!db) {
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        db = new CoCDatabase();
+        seedDatabase(db);
+      }
+      
+      const scenarioLoader = new ScenarioLoader(db);
+      const npcLoader = new NPCLoader(db);
+      
+      ragManager = createBgeSqliteRagManager(db);
+      
+      // Check if base knowledge base is already built (reusable for all games)
+      const isBaseKbBuilt = RagManager.isBaseKnowledgeBaseBuilt(db);
+      
+      if (!isBaseKbBuilt) {
+        console.log("Base RAG knowledge base not found, building from database...");
+        const scenarioProfiles = scenarioLoader.getAllScenarios();
+        const npcProfiles = npcLoader.getAllNPCs();
+        
+        await ragManager.buildKnowledgeBase(
+          {
+            scenarios: scenarioProfiles.map((s: any) => s.snapshot),
+            npcs: npcProfiles,
+            clues: [],
+            rules: [],
+            playerInventory: persistentGameState.playerCharacter?.inventory || [],
+            playerId: persistentGameState.playerCharacter?.id || '',
+            playerName: persistentGameState.playerCharacter?.name || 'Investigator',
+          },
+          {
+            moduleName: "default-module",
+            mode: "keeper",
+            enableNodeEmbeddings: true,
+            enableKnnEdges: true,
+          }
+        );
+        console.log("Base RAG knowledge base built successfully (will be reused for future games)");
+      } else {
+        console.log("Base RAG knowledge base already exists, reusing it (no rebuild needed)");
+      }
+
+      graph = buildGraph(db, scenarioLoader, ragManager);
+      console.log("Graph and RAG Manager initialized for message processing");
+    }
+
     const { message } = req.body;
 
     if (!message || typeof message !== "string") {
@@ -1658,10 +1722,74 @@ app.get("/api/characters", (req, res) => {
 // POST /api/turns - Create a new turn and start processing
 app.post("/api/turns", async (req, res) => {
   try {
-    if (!persistentGameState || !turnManager || !graph) {
+    if (!persistentGameState) {
       return res.status(400).json({ 
         error: "Game not started. Please start the game first by calling /api/game/start" 
       });
+    }
+
+    // Initialize TurnManager if not already initialized
+    if (!turnManager) {
+      if (!db) {
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        db = new CoCDatabase();
+        seedDatabase(db);
+      }
+      turnManager = new TurnManager(db);
+      console.log("TurnManager initialized for turn processing");
+    }
+
+    // Initialize graph and ragManager if not already initialized
+    if (!graph || !ragManager) {
+      if (!db) {
+        const dataDir = path.join(process.cwd(), "data");
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        db = new CoCDatabase();
+        seedDatabase(db);
+      }
+      
+      const scenarioLoader = new ScenarioLoader(db);
+      const npcLoader = new NPCLoader(db);
+      
+      ragManager = createBgeSqliteRagManager(db);
+      
+      // Check if base knowledge base is already built (reusable for all games)
+      const isBaseKbBuilt = RagManager.isBaseKnowledgeBaseBuilt(db);
+      
+      if (!isBaseKbBuilt) {
+        console.log("Base RAG knowledge base not found, building from database...");
+        const scenarioProfiles = scenarioLoader.getAllScenarios();
+        const npcProfiles = npcLoader.getAllNPCs();
+        
+        await ragManager.buildKnowledgeBase(
+          {
+            scenarios: scenarioProfiles.map((s: any) => s.snapshot),
+            npcs: npcProfiles,
+            clues: [],
+            rules: [],
+            playerInventory: persistentGameState.playerCharacter?.inventory || [],
+            playerId: persistentGameState.playerCharacter?.id || '',
+            playerName: persistentGameState.playerCharacter?.name || 'Investigator',
+          },
+          {
+            moduleName: "default-module",
+            mode: "keeper",
+            enableNodeEmbeddings: true,
+            enableKnnEdges: true,
+          }
+        );
+        console.log("Base RAG knowledge base built successfully (will be reused for future games)");
+      } else {
+        console.log("Base RAG knowledge base already exists, reusing it (no rebuild needed)");
+      }
+
+      graph = buildGraph(db, scenarioLoader, ragManager);
+      console.log("Graph and RAG Manager initialized for turn processing");
     }
 
     const { message } = req.body;
@@ -1891,9 +2019,20 @@ app.get("/api/messages", (req, res) => {
 // ==================== CHECKPOINT API ENDPOINTS ====================
 
 // POST /api/checkpoints/save - Save current game state as checkpoint
-app.post("/api/checkpoints/save", (req, res) => {
+app.post("/api/checkpoints/save", async (req, res) => {
   try {
-    if (!persistentGameState || !db) {
+    // Initialize database if not already initialized
+    if (!db) {
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized for checkpoint saving");
+    }
+
+    if (!persistentGameState) {
       return res.status(400).json({ 
         error: "Game not started. Please start the game first." 
       });
@@ -1922,6 +2061,17 @@ app.post("/api/checkpoints/save", (req, res) => {
       description
     );
 
+    // Save RAG state to checkpoint if RAG Manager is initialized
+    if (ragManager) {
+      try {
+        await ragManager.saveToCheckpoint(checkpointId);
+        console.log(`[${new Date().toISOString()}] RAG state saved to checkpoint: ${checkpointId}`);
+      } catch (error) {
+        console.warn(`[${new Date().toISOString()}] Failed to save RAG state to checkpoint:`, error);
+        // Don't fail the checkpoint save if RAG save fails
+      }
+    }
+
     console.log(`[${new Date().toISOString()}] Checkpoint saved: ${checkpointName} (${checkpointId})`);
 
     res.json({
@@ -1940,8 +2090,15 @@ app.post("/api/checkpoints/save", (req, res) => {
 // GET /api/checkpoints/list - List all available checkpoints
 app.get("/api/checkpoints/list", (req, res) => {
   try {
+    // Initialize database if not already initialized
     if (!db) {
-      return res.status(400).json({ error: "Database not initialized" });
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized for checkpoint listing");
     }
 
     const sessionId = req.query.sessionId as string;
@@ -1967,9 +2124,25 @@ app.get("/api/checkpoints/list", (req, res) => {
       checkpoints = stmt.all(limit) as any[];
     }
 
+    // Convert snake_case field names to camelCase for frontend compatibility
+    const normalizedCheckpoints = checkpoints.map((cp: any) => ({
+      checkpointId: cp.checkpoint_id || cp.checkpointId,
+      checkpointName: cp.checkpoint_name || cp.checkpointName,
+      checkpointType: cp.checkpoint_type || cp.checkpointType,
+      description: cp.description,
+      gameDay: cp.game_day || cp.gameDay,
+      gameTime: cp.game_time || cp.gameTime,
+      currentSceneName: cp.current_scene_name || cp.currentSceneName,
+      currentLocation: cp.current_location || cp.currentLocation,
+      playerHp: cp.player_hp || cp.playerHp,
+      playerSanity: cp.player_sanity || cp.playerSanity,
+      createdAt: cp.created_at || cp.createdAt,
+      sessionId: cp.session_id || cp.sessionId,
+    }));
+
     res.json({
       success: true,
-      checkpoints: checkpoints,
+      checkpoints: normalizedCheckpoints,
     });
   } catch (error) {
     console.error("Error listing checkpoints:", error);
@@ -1980,8 +2153,15 @@ app.get("/api/checkpoints/list", (req, res) => {
 // POST /api/checkpoints/load - Load a checkpoint and restore game state
 app.post("/api/checkpoints/load", async (req, res) => {
   try {
+    // Initialize database if not already initialized
     if (!db) {
-      return res.status(400).json({ error: "Database not initialized" });
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new CoCDatabase();
+      seedDatabase(db);
+      console.log("Database initialized for checkpoint loading");
     }
 
     const { checkpointId } = req.body;
@@ -1996,6 +2176,84 @@ app.post("/api/checkpoints/load", async (req, res) => {
 
     // Restore persistent game state
     persistentGameState = gameState;
+
+    // Initialize TurnManager if not already initialized (needed for fetching conversation history)
+    if (!turnManager) {
+      turnManager = new TurnManager(db);
+      console.log("TurnManager initialized for checkpoint loading");
+    }
+
+    // Fetch conversation history for this session
+    let conversationHistory: Array<{
+      role: 'character' | 'keeper';
+      content: string;
+      timestamp: string;
+      turnNumber: number;
+    }> = [];
+    
+    try {
+      conversationHistory = turnManager.getConversation(gameState.sessionId, 50);
+      console.log(`[${new Date().toISOString()}] Loaded ${conversationHistory.length} conversation messages from history`);
+    } catch (error) {
+      console.warn("Failed to load conversation history:", error);
+      // Continue without history - not a critical error
+    }
+
+    // Initialize graph and ragManager if not already initialized (needed for processing turns)
+    if (!graph || !ragManager) {
+      console.log(`[${new Date().toISOString()}] Initializing multi-agent system for loaded checkpoint...`);
+      
+      // Initialize loaders to get existing data from database
+      const scenarioLoader = new ScenarioLoader(db);
+      const npcLoader = new NPCLoader(db);
+      const moduleLoader = new ModuleLoader(db);
+      
+      // Try to restore RAG from checkpoint first
+      try {
+        ragManager = await RagManager.restoreFromCheckpoint(db, checkpointId);
+        console.log(`[${new Date().toISOString()}] RAG state restored from checkpoint: ${checkpointId}`);
+      } catch (error) {
+        console.warn(`[${new Date().toISOString()}] Failed to restore RAG from checkpoint, using base RAG:`, error);
+        // Fall back to base RAG (checkpoint_id IS NULL)
+        ragManager = createBgeSqliteRagManager(db);
+        
+        // Check if base knowledge base is already built (reusable for all games)
+        const isBaseKbBuilt = RagManager.isBaseKnowledgeBaseBuilt(db);
+        
+        if (!isBaseKbBuilt) {
+          console.log(`[${new Date().toISOString()}] Base RAG knowledge base not found, building from database...`);
+          // Only build if base knowledge base doesn't exist
+          const scenarioProfiles = scenarioLoader.getAllScenarios();
+          const npcProfiles = npcLoader.getAllNPCs();
+          
+          await ragManager.buildKnowledgeBase(
+            {
+              scenarios: scenarioProfiles.map((s: any) => s.snapshot),
+              npcs: npcProfiles,
+              clues: [],
+              rules: [],
+              playerInventory: gameState.playerCharacter?.inventory || [],
+              playerId: gameState.playerCharacter?.id || '',
+              playerName: gameState.playerCharacter?.name || 'Investigator',
+            },
+            {
+              moduleName: "default-module",
+              mode: "keeper",
+              enableNodeEmbeddings: true,
+              enableKnnEdges: true,
+            }
+          );
+          console.log(`[${new Date().toISOString()}] Base RAG knowledge base built successfully (will be reused for future games)`);
+        } else {
+          console.log(`[${new Date().toISOString()}] Base RAG knowledge base already exists, reusing it (no rebuild needed)`);
+        }
+      }
+
+      // Build the multi-agent graph
+      graph = buildGraph(db, scenarioLoader, ragManager);
+      
+      console.log(`[${new Date().toISOString()}] Multi-agent system initialized for checkpoint`);
+    }
 
     // Reinitialize graph and other components with the loaded game state
     // We need to reinitialize the graph with the loaded mod
@@ -2012,6 +2270,7 @@ app.post("/api/checkpoints/load", async (req, res) => {
       success: true,
       sessionId: gameState.sessionId,
       gameState: gameState,
+      conversationHistory: conversationHistory,
       message: "存档加载成功",
       timestamp: new Date().toISOString(),
     });

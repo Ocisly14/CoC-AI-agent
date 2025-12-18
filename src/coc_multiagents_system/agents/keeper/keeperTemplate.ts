@@ -105,7 +105,7 @@ NPCs whose current location matches the current scenario location (but not expli
 {{#if conversationHistory}}
 ## 📜 Recent Conversation History
 
-**Previous turns for context (last 3 completed turns):**
+**Previous turn for context (last completed turn):**
 {{#each conversationHistory}}
 ### Turn #{{turnNumber}}
 - **Character**: "{{characterInput}}"
