@@ -6,6 +6,8 @@ import {
   ModelClass,
   generateText,
 } from "../../../models/index.js";
+import type { CoCDatabase } from "../memory/database/index.js";
+import { extractRecentConversationHistory } from "../memory/memoryAgent.js";
 
 interface OrchestratorRuntime {
   modelProvider: ModelProviderName;
@@ -25,7 +27,7 @@ export class OrchestratorAgent {
   /**
    * Process input (user query, agent result, or instruction) and determine which agent to route to
    */
-  async processInput(input: string, gameStateManager: GameStateManager): Promise<string> {
+  async processInput(input: string, gameStateManager: GameStateManager, db?: CoCDatabase): Promise<string> {
     const runtime = createRuntime();
     const gameState = gameStateManager.getGameState();
     
@@ -37,21 +39,60 @@ export class OrchestratorAgent {
     const scenarioLocation = gameState.currentScenario?.location || "Unknown location";
     const npcNames = gameState.npcCharacters?.map(npc => npc.name).join(", ") || "None";
     
-    // Get conversation history to extract previous narrative
-    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
-      turnNumber: number;
-      characterInput: string;
-      keeperNarrative: string | null;
-    }>) || [];
-    
-    // Get previous round narrative (last completed turn with narrative)
+    // Get conversation history directly from database to extract previous narrative
+    // This ensures we get the latest completed turns even if memory agent hasn't run yet
     let previousNarrative: string | null = null;
-    if (conversationHistory.length > 0) {
-      const lastTurnWithNarrative = [...conversationHistory]
-        .reverse()
-        .find(turn => turn.keeperNarrative);
-      if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
-        previousNarrative = lastTurnWithNarrative.keeperNarrative;
+    if (db) {
+      try {
+        const conversationHistory = await extractRecentConversationHistory(
+          db,
+          gameState.sessionId,
+          1
+        );
+        
+        // Get previous round narrative (last completed turn with narrative)
+        if (conversationHistory.length > 0) {
+          const lastTurnWithNarrative = [...conversationHistory]
+            .reverse()
+            .find(turn => turn.keeperNarrative);
+          if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+            previousNarrative = lastTurnWithNarrative.keeperNarrative;
+            console.log(`📜 [Orchestrator Agent] 从数据库获取到上一轮的 Keeper Narrative (Turn #${lastTurnWithNarrative.turnNumber})`);
+          }
+        }
+      } catch (error) {
+        console.warn("[Orchestrator Agent] 从数据库获取对话历史失败:", error);
+        // Fallback to gameState if database access fails
+        const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+          turnNumber: number;
+          characterInput: string;
+          keeperNarrative: string | null;
+        }>) || [];
+        
+        if (conversationHistory.length > 0) {
+          const lastTurnWithNarrative = [...conversationHistory]
+            .reverse()
+            .find(turn => turn.keeperNarrative);
+          if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+            previousNarrative = lastTurnWithNarrative.keeperNarrative;
+          }
+        }
+      }
+    } else {
+      // Fallback to gameState if db is not provided
+      const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+        turnNumber: number;
+        characterInput: string;
+        keeperNarrative: string | null;
+      }>) || [];
+      
+      if (conversationHistory.length > 0) {
+        const lastTurnWithNarrative = [...conversationHistory]
+          .reverse()
+          .find(turn => turn.keeperNarrative);
+        if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+          previousNarrative = lastTurnWithNarrative.keeperNarrative;
+        }
       }
     }
     

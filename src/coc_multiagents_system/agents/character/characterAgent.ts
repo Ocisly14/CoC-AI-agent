@@ -38,13 +38,18 @@ export class CharacterAgent {
       return [];
     }
     
+    // 5. Get target information from action analysis to determine if action is targeted
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    const actionTarget = actionAnalysis?.target || null;
+    
     // Build template context
     const templateContext = {
       characterInput,
       latestActionResultJson: latestActionResult ? JSON.stringify(latestActionResult, null, 2) : "No action result available yet.",
       scenarioInfoJson: JSON.stringify(scenarioInfo, null, 2),
       playerCharacterJson: JSON.stringify(playerCharacter, null, 2),
-      sceneNpcsJson: JSON.stringify(sceneNpcs, null, 2)
+      sceneNpcsJson: JSON.stringify(sceneNpcs, null, 2),
+      actionTargetJson: actionTarget ? JSON.stringify(actionTarget, null, 2) : null
     };
     
     const context = composeTemplate(template, {}, templateContext, "handlebars");

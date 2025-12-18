@@ -9,7 +9,7 @@ import { CoCDatabase, seedDatabase } from "../src/coc_multiagents_system/agents/
 import { NPCLoader } from "../src/coc_multiagents_system/agents/character/npcloader/index.js";
 import { ModuleLoader } from "../src/coc_multiagents_system/agents/memory/moduleloader/index.js";
 import { ScenarioLoader } from "../src/coc_multiagents_system/agents/memory/scenarioloader/index.js";
-import { RAGEngine } from "../src/rag/engine.js";
+import { createBgeSqliteRagManager, type RagManager } from "../src/coc_multiagents_system/agents/memory/RagManager.js";
 import { buildGraph, type GraphState } from "../src/graph.js";
 import { initialGameState, type GameState } from "../src/state.js";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
@@ -23,7 +23,7 @@ const __dirname = path.dirname(__filename);
 // Lazy-loaded components (initialized only when needed)
 let db: CoCDatabase | null = null;
 let graph: any = null;
-let ragEngine: any = null;
+let ragManager: RagManager | null = null;
 let turnManager: TurnManager | null = null;
 
 // **PERSISTENT GAME STATE** - will be initialized when user starts the game
@@ -467,28 +467,7 @@ app.post("/api/mod/load", async (req, res) => {
       console.log(`\n📚 [3/${totalSteps}] 未找到模块文件夹（包含"background"或"module"的文件夹）`);
     }
 
-      // Load RAG knowledge from mod's knowledge directory
-      if (knowledgeDirs.length > 0) {
-        currentStep++;
-        const stepProgress = 15 + (currentStep / (totalSteps + 1)) * 65;
-        sendProgress(res, useSSE, "处理知识库", stepProgress, "正在处理RAG知识库，这可能需要一些时间...");
-        console.log(`\n📖 [4/${totalSteps}] 处理模组 RAG 知识库...`);
-        for (const knowledgeDirName of knowledgeDirs) {
-          const modKnowledgeDir = path.join(modPath, knowledgeDirName);
-          console.log(`   → 处理知识库文件夹: ${knowledgeDirName}`);
-          try {
-            // Create RAGEngine instance for this mod's knowledge directory
-            const modRagEngine = new RAGEngine(db, modKnowledgeDir);
-            await modRagEngine.ingestFromDirectory();
-            console.log(`   ✓ 已处理模组知识库: ${knowledgeDirName}`);
-            sendProgress(res, useSSE, "处理知识库", stepProgress + 5, "知识库处理完成");
-          } catch (error) {
-            console.error(`   ✗ 处理知识库失败 ${knowledgeDirName}:`, error);
-          }
-        }
-      } else {
-        console.log(`\n📖 [4/${totalSteps}] 未找到知识库文件夹（"knowledge"文件夹）`);
-      }
+      // RAG 知识库由 RagManager 构建，不再处理 legacy knowledge 目录
 
     console.log(`\n${"=".repeat(60)}`);
     console.log(`✅ 模组数据加载完成！`);
@@ -747,19 +726,33 @@ app.post("/api/game/start", async (req, res) => {
     console.log(`${"=".repeat(60)}\n`);
 
     // Lazy-load multi-agent system components (only when game starts)
-    if (!graph || !ragEngine) {
+    if (!graph || !ragManager) {
       console.log(`[${new Date().toISOString()}] Initializing multi-agent system...`);
 
-      // Initialize RAG engine
-      const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
-      if (!fs.existsSync(knowledgeDir)) {
-        fs.mkdirSync(knowledgeDir, { recursive: true });
-      }
-      ragEngine = new RAGEngine(db, knowledgeDir);
-      await ragEngine.ingestFromDirectory();
+      // Initialize RAG Manager and build KB from loaded data
+      ragManager = createBgeSqliteRagManager(db);
+      const scenarioProfiles = scenarioLoader.getAllScenarios();
+      const npcProfiles = npcLoader.getAllNPCs();
+      await ragManager.buildKnowledgeBase(
+        {
+          scenarios: scenarioProfiles.map((s: any) => s.snapshot),
+          npcs: npcProfiles,
+          clues: [],
+          rules: [],
+          playerInventory: initialGameState.playerCharacter.inventory,
+          playerId: initialGameState.playerCharacter.id,
+          playerName: initialGameState.playerCharacter.name,
+        },
+        {
+          moduleName: "default-module",
+          mode: "keeper",
+          enableNodeEmbeddings: true,
+          enableKnnEdges: true,
+        }
+      );
 
       // Build the multi-agent graph
-      graph = buildGraph(db, scenarioLoader, ragEngine);
+      graph = buildGraph(db, scenarioLoader, ragManager);
       
       // Initialize TurnManager
       turnManager = new TurnManager(db);
@@ -1646,6 +1639,7 @@ app.get("/api/characters", (req, res) => {
     const characters = database.prepare(`
       SELECT character_id, name, occupation, age, is_npc, appearance
       FROM characters
+      WHERE is_npc = 0 OR is_npc IS NULL
       ORDER BY updated_at DESC
     `).all();
 

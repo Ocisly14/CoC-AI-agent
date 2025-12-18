@@ -2,6 +2,7 @@ import type { CharacterProfile, InventoryItem } from "./coc_multiagents_system/a
 import { InventoryUtils } from "./coc_multiagents_system/agents/models/gameTypes.js";
 import type { ScenarioSnapshot } from "./coc_multiagents_system/agents/models/scenarioTypes.js";
 import { actionRules } from "./coc_multiagents_system/rules/index.js";
+import type { Evidence } from "./coc_multiagents_system/agents/memory/RagManager.js";
 
 export type AgentId = "keeper" | "memory" | "action";
 
@@ -70,7 +71,6 @@ export interface GameState {
   timeOfDay: string;  // 游戏时间 HH:MM 格式
   tension: number;
   keeperGuidance: string | null;  // 模组守秘人指导（永久信息）
-  openThreads: string[];
   discoveredClues: string[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
@@ -83,7 +83,7 @@ export interface GameState {
   };
   temporaryInfo: {
     rules: string[];
-    ragResults: string[];
+    ragResults: Evidence[];
     contextualData: Record<string, any>;
     actionResults: ActionResult[];
     currentActionAnalysis: ActionAnalysis | null;
@@ -140,7 +140,6 @@ export const initialGameState: GameState = {
   timeOfDay: "08:00",
   tension: 1,
   keeperGuidance: null,
-  openThreads: [],
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],

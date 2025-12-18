@@ -71,6 +71,15 @@ export class KeeperAgent {
       keeperNarrative: string | null;
     }>) || [];
     
+    // 8. 获取RAG检索结果，只保留需要的字段
+    const rawRagResults = (gameState.temporaryInfo.ragResults as any[]) || [];
+    const ragResults = rawRagResults.map((evidence: any) => ({
+      type: evidence.type,
+      title: evidence.title,
+      snippet: evidence.snippet,
+      visibility: evidence.visibility,
+    }));
+    
     // 获取模板
     const template = getKeeperTemplate();
     
@@ -100,8 +109,8 @@ export class KeeperAgent {
       isTransition,
       previousScenarioInfo,
       sceneTransitionRejection,
-      keeperGuidance: gameState.keeperGuidance,  // Module keeper guidance (permanent)
       conversationHistory,  // Recent conversation history (last 3 turns)
+      ragResults,  // RAG检索结果（已过滤，只包含 type, title, snippet, anchors, visibility）
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
       allActionResultsJson: this.safeStringify(allActionResults),  // 所有 action results 的 JSON
       latestActionResultJson: latestCompleteActionResult
@@ -115,6 +124,7 @@ export class KeeperAgent {
         ? this.safeStringify(previousScenarioInfo)
         : "null",
       conversationHistoryJson: this.safeStringify(conversationHistory),
+      ragResultsJson: this.safeStringify(ragResults),  // RAG结果的JSON
     };
 
     // 使用模板和LLM生成叙事和线索揭示

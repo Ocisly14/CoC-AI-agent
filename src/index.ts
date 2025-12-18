@@ -13,7 +13,7 @@ import { ScenarioLoader } from "./coc_multiagents_system/agents/memory/scenariol
 import { buildGraph } from "./graph.js";
 import type { GraphState } from "./graph.js";
 import { initialGameState } from "./state.js";
-import { RAGEngine } from "./rag/engine.js";
+import { createBgeSqliteRagManager } from "./coc_multiagents_system/agents/memory/RagManager.js";
 
 // Initialize database
 const dataDir = path.join(process.cwd(), "data");
@@ -91,14 +91,29 @@ if (fs.existsSync(cassandraScenariosDir)) {
   await scenarioLoader.loadScenariosFromDirectory(scenarioDir);
 }
 
-// Initialize RAG knowledge directory
-const knowledgeDir = path.join(process.cwd(), "data", "knowledge");
-if (!fs.existsSync(knowledgeDir)) {
-  fs.mkdirSync(knowledgeDir, { recursive: true });
-  console.log(`Created knowledge directory: ${knowledgeDir}`);
-}
-const ragEngine = new RAGEngine(db, knowledgeDir);
-await ragEngine.ingestFromDirectory();
+// Initialize RAG Manager (SQLite-backed, BGE embeddings with hash fallback)
+const ragManager = createBgeSqliteRagManager(db);
+
+// Build RAG knowledge base from loaded data
+const scenarioProfiles = scenarioLoader.getAllScenarios();
+const npcProfiles = npcLoader.getAllNPCs();
+await ragManager.buildKnowledgeBase(
+  {
+    scenarios: scenarioProfiles.map((s) => s.snapshot),
+    npcs: npcProfiles,
+    clues: [],
+    rules: [],
+    playerInventory: preparedGameState.playerCharacter.inventory,
+    playerId: preparedGameState.playerCharacter.id,
+    playerName: preparedGameState.playerCharacter.name,
+  },
+  {
+    moduleName: modules[0]?.title || "default-module",
+    mode: "keeper",
+    enableNodeEmbeddings: true,
+    enableKnnEdges: true,
+  }
+);
 
 const parseArgs = (argv: string[]): string => {
   const promptFlagIndex = argv.findIndex((arg) => arg === "--prompt");
@@ -123,7 +138,7 @@ const printTranscript = (messages: AIMessage[]) => {
 
 const main = async () => {
   const userPrompt = parseArgs(process.argv);
-  const app = buildGraph(db, scenarioLoader, ragEngine);
+  const app = buildGraph(db, scenarioLoader, ragManager);
 
   const initialMessages: BaseMessage[] = [new HumanMessage(userPrompt)];
 

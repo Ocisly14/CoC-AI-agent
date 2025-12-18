@@ -588,10 +588,8 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setSaveMessage({ type: "success", text: data.message });
-        // Navigate back to character selection after successful creation
-        setTimeout(() => {
-          setPage("character-select");
-        }, 1000); // Wait 1 second to show success message
+        // 角色创建成功，不自动跳转，让用户自己决定下一步
+        // 用户可以继续编辑、返回首页或选择角色开始游戏
       } else {
         setSaveMessage({ type: "error", text: data.error || "创建角色失败" });
       }

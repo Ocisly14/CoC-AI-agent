@@ -1,6 +1,6 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
 import type { CoCDatabase } from "./coc_multiagents_system/agents/memory/database/index.js";
-import type { RAGEngine } from "./rag/engine.js";
+import type { RagManager } from "./coc_multiagents_system/agents/memory/RagManager.js";
 import type { BaseMessage } from "@langchain/core/messages";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { OrchestratorAgent } from "./coc_multiagents_system/agents/orchestrator/orchestratorAgent.js";
@@ -27,7 +27,7 @@ export interface GraphState {
   turnId?: string;  // Optional: track the current turn being processed
 }
 
-export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?: RAGEngine) => {
+export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?: RagManager) => {
   const orchestrator = new OrchestratorAgent();
   const actionAgent = new ActionAgent(scenarioLoader);
   const characterAgent = new CharacterAgent();
@@ -49,7 +49,7 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     const gsm = new GameStateManager(state.gameState ?? initialGameState);
     const userInput = latestHumanMessage(state.messages);
     console.log(`🎯 [Orchestrator Agent] 用户输入: "${userInput.substring(0, 100)}${userInput.length > 100 ? '...' : ''}"`);
-    const result = await orchestrator.processInput(userInput, gsm);
+    const result = await orchestrator.processInput(userInput, gsm, db);
     console.log("✅ [Orchestrator Agent] 分析完成");
     
     // Log detailed action analysis

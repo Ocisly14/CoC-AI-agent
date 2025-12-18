@@ -210,6 +210,12 @@ export function CharacterSelector({
                   创建新角色
                 </button>
                 <button 
+                  onClick={onCancel} 
+                  className="tertiary"
+                >
+                  完成
+                </button>
+                <button 
                   onClick={handleConfirm} 
                   className="primary"
                   disabled={!selectedId || importing}
@@ -416,6 +422,15 @@ export function CharacterSelector({
         }
 
         .modal-actions button.secondary:hover {
+          background: #5a6268;
+        }
+
+        .modal-actions button.tertiary {
+          background: #6c757d;
+          color: white;
+        }
+
+        .modal-actions button.tertiary:hover {
           background: #5a6268;
         }
       `}</style>

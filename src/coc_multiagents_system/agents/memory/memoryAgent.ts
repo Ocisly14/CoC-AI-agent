@@ -9,9 +9,9 @@ import {
   type ActionAnalysis,
 } from "../../../state.js";
 import { actionRules } from "../../rules/index.js";
-import type { RAGEngine } from "../../../rag/engine.js";
 import type { CoCDatabase } from "./database/index.js";
 import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
+import type { Evidence, RagManager } from "./RagManager.js";
 
 
 /**
@@ -41,161 +41,12 @@ export const injectActionTypeRules = (
 };
 
 /**
- * Generate RAG queries using string concatenation
- * Completely removed template mode, using direct string concatenation instead
+ * Extract recent conversation history (last N completed turns) from database
  */
-const generateRagQueries = (
-  actionAnalysis: ActionAnalysis,
-  gameState: GameState,
-  characterInput: string
-): string[] => {
-  const queries: string[] = [];
-  
-  // Get investigator name
-  const investigatorName = actionAnalysis.character;
-  
-  // Check if target is an NPC
-  const targetName = actionAnalysis.target.name;
-  let npcName: string | null = null;
-  if (targetName) {
-    // Check if target name matches any NPC in the game state
-    const matchingNpc = gameState.npcCharacters.find(npc => 
-      npc.name.toLowerCase() === targetName.toLowerCase() ||
-      npc.name.toLowerCase().includes(targetName.toLowerCase()) ||
-      targetName.toLowerCase().includes(npc.name.toLowerCase())
-    );
-    if (matchingNpc) {
-      npcName = matchingNpc.name;
-    }
-  }
-  
-  // Get location name
-  const locationName = gameState.currentScenario?.location || null;
-  
-  // Generate queries based on available information
-  // 1. "investigator + npc name" (if NPC exists)
-  if (investigatorName && npcName) {
-    queries.push(`${investigatorName} ${npcName}`);
-  }
-  
-  // 2. "npc name" (if NPC exists)
-  if (npcName) {
-    queries.push(npcName);
-  }
-  
-  // 3. "location name" (if location exists)
-  if (locationName) {
-    queries.push(locationName);
-  }
-  
-  // 4. "input" (characterInput)
-  if (characterInput && characterInput.trim()) {
-    queries.push(characterInput.trim());
-  }
-  
-  console.log(`🔍 [Memory Agent] 生成了 ${queries.length} 条 RAG 查询（字符串拼接模式）`);
-  queries.forEach((q, idx) => {
-    console.log(`   Query ${idx + 1}: "${q}"`);
-  });
-  
-  return queries;
-};
-
-/**
- * Fetch top-N RAG slices based on the current action analysis and scenario context.
- * Uses string concatenation to generate queries.
- */
-export const fetchRagSlicesForAction = async (
-  ragEngine: RAGEngine | undefined,
-  actionAnalysis: ActionAnalysis | null,
-  gameState: GameState,
-  characterInput: string,
-  limit = 3
-): Promise<string[]> => {
-  if (!ragEngine || !actionAnalysis) return [];
-
-  // Get characterInput from conversation history if not provided
-  let effectiveCharacterInput = characterInput;
-  if (!effectiveCharacterInput) {
-    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
-      characterInput: string;
-    }>) || [];
-    if (conversationHistory.length > 0) {
-      effectiveCharacterInput = conversationHistory[conversationHistory.length - 1].characterInput;
-    }
-  }
-
-  // Generate queries using string concatenation
-  const queries = generateRagQueries(actionAnalysis, gameState, effectiveCharacterInput || "");
-  
-  // Fallback to simple query if no queries generated
-  if (queries.length === 0) {
-    console.log("⚠️ [Memory Agent] No queries generated, using fallback query");
-    const queryParts = [
-      actionAnalysis.character,
-      actionAnalysis.target.name ?? undefined,
-      gameState.currentScenario?.location ?? undefined,
-      effectiveCharacterInput || undefined,
-    ].filter(Boolean);
-    if (queryParts.length > 0) {
-      queries.push(queryParts.join(" "));
-    }
-  }
-
-  const context = gameState.currentScenario
-    ? `${gameState.currentScenario.name} ${gameState.currentScenario.location} ${gameState.currentScenario.description ?? ""}`
-    : undefined;
-
-  // Search with each query and collect unique results
-  // Each query gets 'limit' results, then we merge and deduplicate
-  const allHits: Array<{ source: string; chunkIndex?: number; text: string; score: number }> = [];
-  const seenHits = new Set<string>();
-
-  try {
-    console.log(`🔍 [Memory Agent] 使用 ${queries.length} 条查询进行 RAG 检索:`);
-
-    // Search with each query - each query gets 1 result
-    for (const query of queries) {
-      const hits = await ragEngine.search(query, context, 1);
-      
-      if (hits.length > 0) {
-        const hit = hits[0];
-        // Use source + chunkIndex as unique key for deduplication
-        const hitKey = `${hit.source}-${hit.chunkIndex ?? 0}`;
-        if (!seenHits.has(hitKey)) {
-          seenHits.add(hitKey);
-          allHits.push({
-            source: hit.source,
-            chunkIndex: hit.chunkIndex,
-            text: hit.text,
-            score: hit.similarity || 0,
-          });
-        }
-      }
-    }
-    
-    // Sort by score (descending) - we already have at most 3 results (one per query)
-    const topHits = allHits.sort((a, b) => b.score - a.score);
-    
-    console.log(`📚 [Memory Agent] 从 ${queries.length} 条查询中检索到 ${topHits.length} 条结果（每个查询 1 个切片）`);
-    
-    // Format results for injection into state
-    return topHits.map(
-      (hit) => `(${hit.source} #${hit.chunkIndex ?? 0}) ${hit.text.slice(0, 320)}`
-    );
-  } catch (error) {
-    console.warn("Memory agent RAG search failed:", error);
-    return [];
-  }
-};
-
-/**
- * Extract recent conversation history (last 3 completed turns) from database
- */
-const extractRecentConversationHistory = async (
+export const extractRecentConversationHistory = async (
   db: CoCDatabase | undefined,
   sessionId: string,
-  limit = 3
+  limit = 1
 ): Promise<Array<{ turnNumber: number; characterInput: string; keeperNarrative: string | null }>> => {
   if (!db) return [];
 
@@ -203,7 +54,7 @@ const extractRecentConversationHistory = async (
     // Get more turns to ensure we have enough completed ones
     const turns = db.getTurnHistory(sessionId, limit * 2);
     
-    // Filter only completed turns with keeper narrative, then take the last 3
+    // Filter only completed turns with keeper narrative, then take the last N
     const completedTurns = turns
       .filter(turn => turn.status === 'completed' && turn.keeperNarrative)
       .slice(0, limit)
@@ -231,44 +82,45 @@ const extractRecentConversationHistory = async (
 export const enrichMemoryContext = async (
   gameState: GameState,
   actionAnalysis: ActionAnalysis | null,
-  ragEngine?: RAGEngine,
+  ragManager?: RagManager,
   db?: CoCDatabase,
   characterInput?: string
 ): Promise<GameState> => {
   // First inject the action-type rules
   const withRules = injectActionTypeRules(gameState, actionAnalysis?.actionType);
 
-  // Get characterInput from conversation history if not provided
-  let effectiveCharacterInput = characterInput;
-  if (!effectiveCharacterInput) {
-    const conversationHistory = (withRules.temporaryInfo.contextualData?.conversationHistory as Array<{
-      characterInput: string;
-    }>) || [];
-    if (conversationHistory.length > 0) {
-      effectiveCharacterInput = conversationHistory[conversationHistory.length - 1].characterInput;
+  // Fetch RAG evidence using the new RagManager
+  let ragEvidence: Evidence[] = [];
+  if (ragManager) {
+    try {
+      console.log(`[Memory Agent] 开始RAG检索 (场景: ${gameState.currentScenario?.name || '未知'}, 动作类型: ${actionAnalysis?.actionType || '未知'})`);
+      const startTime = Date.now();
+      const { evidence, debug } = await ragManager.runRagForTurn(withRules, {
+        mode: "player",
+      });
+      const duration = Date.now() - startTime;
+      ragEvidence = evidence;
+      console.log(`[Memory Agent] RAG检索完成: 找到 ${evidence.length} 条证据 (耗时: ${duration}ms)`);
+      if (debug?.executionTimeMs) {
+        console.log(`[Memory Agent] RAG详细统计: 语义检索 ${debug.semanticHitsCount || 0} 条, 关键词检索 ${debug.lexicalHitsCount || 0} 条, 图检索 ${debug.graphHitsCount || 0} 条`);
+      }
+    } catch (error) {
+      console.warn("[Memory Agent] RAG retrieval failed:", error);
     }
   }
 
-  // Then fetch RAG slices and write into temporaryInfo.ragResults
-  const ragResults = await fetchRagSlicesForAction(
-    ragEngine,
-    actionAnalysis,
-    withRules,
-    effectiveCharacterInput || ""
-  );
-
-  // Extract recent conversation history (last 3 turns) and store in contextualData
+  // Extract recent conversation history (last 1 turn) and store in contextualData
   const conversationHistory = await extractRecentConversationHistory(
     db,
     gameState.sessionId,
-    3
+    1
   );
 
   return {
     ...withRules,
     temporaryInfo: {
       ...withRules.temporaryInfo,
-      ragResults,
+      ragResults: ragEvidence,
       contextualData: {
         ...withRules.temporaryInfo.contextualData,
         conversationHistory,

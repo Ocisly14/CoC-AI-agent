@@ -113,17 +113,31 @@ NPCs whose current location matches the current scenario location (but not expli
 
 {{/each}}
 
-**📝 NARRATIVE CONTEXT**: Use this conversation history to maintain continuity, reference previous events, and build upon established narrative threads. Ensure your narrative is consistent with what has happened before.
+**📝 NARRATIVE CONTEXT**: Use this conversation history to maintain continuity, reference previous events, and build upon established narrative threads. Ensure your narrative is consistent with what has happened before. **IMPORTANT**: Do NOT repeat or rephrase the previous keeper narratives. Instead, build upon them and describe new developments, reactions, or consequences based on the current action.
 
 {{/if}}
 
-{{#if keeperGuidance}}
-## 📖 Module Keeper Guidance
+{{#if ragResults}}
+## 🔍 RAG Evidence (Retrieved Knowledge)
 
-**Important Module-Specific Instructions:**
-{{keeperGuidance}}
+**Relevant knowledge retrieved from the knowledge base based on current context:**
+
+{{#each ragResults}}
+### Evidence #{{@index}} ({{this.type}}){{#if this.visibility}} [{{this.visibility}}]{{/if}}
+- **Title**: {{this.title}}
+- **Snippet**: {{this.snippet}}
+
+{{/each}}
+
+**📝 NARRATIVE GUIDANCE**: 
+- Use these retrieved evidence pieces to enrich your narrative with relevant details
+- Reference specific information from the evidence naturally within your description
+- The evidence provides context about scenarios, NPCs, clues, items, and rules that are relevant to the current situation
+- Pay attention to visibility: "player" means the investigator can see/know this, "keeper" means only you (the Keeper) know this - use keeper-only information to guide your narrative but don't reveal it directly unless appropriate
+- Integrate evidence seamlessly - don't just list facts, weave them into the narrative organically
 
 {{/if}}
+
 ## Narrative Generation Guidelines
 
 ### Core Principles
