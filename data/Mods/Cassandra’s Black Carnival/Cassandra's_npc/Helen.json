@@ -4,7 +4,7 @@
       "occupation": "Restaurant Owner and Chef (secretly a retired assassin)",
       "appearance": "A sexy Latina woman with a confident and alluring presence, well-groomed and stylish, blending the charm of a successful restaurateur with subtle hints of danger.",
       "personality": "Calm, observant, and socially adept; outwardly warm and sociable, but inwardly cautious, independent, and capable of lethal decisiveness.",
-      "background": "Helen is an ordinary friend of Aberforth Locefern. Publicly, she runs a restaurant as its beautiful owner and chef. In truth, she is a retired assassin enjoying a peaceful life. She and Locefern often go shopping together, yet neither knows the other's hidden identity. On the day of the Reindeer Bar incident, she was invited by a friend named Johnny to drink, but they parted on bad terms. Later, when she intended to invite Locefern out for a drink, she discovered that Locefern had been killed.",
+      "background": "Helen is an ordinary friend of berforth Locefern. Publicly, she runs a restaurant as its beautiful owner and chef. In truth, she is a retired assassin enjoying a peaceful life. She and Locefern often go shopping together, yet neither knows the other's hidden identity. On the day of the Reindeer Bar incident, she was invited by a friend named Johnny to drink, but they parted on bad terms. Later, when she intended to invite Locefern out for a drink, she discovered that Locefern had been killed.",
       "goals": [
         "Maintain her peaceful retired life without exposing her past",
         "Understand the circumstances behind Locefern's death"
@@ -46,7 +46,7 @@
       ],
       "relationships": [
         {
-          "targetName": "Aberforth Locefern",
+          "targetName": "berforth Locefern",
           "relationshipType": "friend",
           "attitude": 40,
           "description": "A casual shopping companion and ordinary friend, unaware of each other's true identities.",

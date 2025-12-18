@@ -49,7 +49,7 @@
       ],
       "relationships": [
         {
-          "targetName": "Bruno",
+          "targetName": "Bruno Galilei",
           "relationshipType": "friend",
           "attitude": 60,
           "description": "A trusted acquaintance who connects the group together.",

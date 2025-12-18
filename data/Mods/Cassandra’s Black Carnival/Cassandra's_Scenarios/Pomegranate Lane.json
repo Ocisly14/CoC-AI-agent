@@ -5,7 +5,7 @@
       "snapshot": {
         "name": "Pomegranate Lane",
         "location": "Cassandra – Pomegranate Lane",
-        "description": "Pomegranate Lane is a short, subdued street bordered by closely spaced residential buildings. The atmosphere is muted and restrained, giving the impression of a place where residents prefer not to draw attention. The most notable feature of the lane is Adolf’s house, which stands out as the primary destination here.",
+        "description": "Pomegranate Lane is a short, subdued street bordered by closely spaced residential buildings. The atmosphere is muted and restrained, giving the impression of a place where residents prefer not to draw attention. The most notable feature of the lane is Adolph's house, which stands out as the primary destination here.",
         "characters": [],
         "clues": [],
         "conditions": [
@@ -24,8 +24,8 @@
         "exits": [
           {
             "direction": "Residential entrance",
-            "destination": "Adolf’s House",
-            "description": "A private residence belonging to Adolf, located directly along Pomegranate Lane and serving as the main point of interest on the street.",
+            "destination": "Adolph's House",
+            "description": "A private residence belonging to Adolph, located directly along Pomegranate Lane and serving as the main point of interest on the street.",
             "condition": ""
           },
           {
@@ -35,15 +35,15 @@
             "condition": ""
           }
         ],
-        "keeperNotes": "Pomegranate Lane should feel intimate and exposed. Investigators visiting Adolf’s house are noticeable, and any activity here may quickly draw the attention of nearby residents.",
+        "keeperNotes": "Pomegranate Lane should feel intimate and exposed. Investigators visiting Adolph's house are noticeable, and any activity here may quickly draw the attention of nearby residents.",
         "permanentChanges": []
       },
       "tags": ["residential", "quiet", "narrow street"],
       "connections": [
         {
-          "scenarioName": "Adolf’s House",
+          "scenarioName": "Adolph's House",
           "relationshipType": "leads_to",
-          "description": "Pomegranate Lane primarily serves as access to Adolf’s residence."
+          "description": "Pomegranate Lane primarily serves as access to Adolph's residence."
         }
       ]
     }

@@ -1,14 +1,14 @@
 [
     {
       "name": "Mafia Headquarters",
-      "description": "A concealed Mafia headquarters hidden beneath Cassandra’s train station platform, accessed through a disguised dock. This location serves as the operational center for the local Mafia and the base of power for its leader, Ben.",
+      "description": "A concealed Mafia headquarters hidden beneath Cassandra's train station platform, accessed through a disguised dock. This location serves as the operational center for the local Mafia and the base of power for its leader, Ben Cleo.",
       "snapshot": {
         "name": "Hidden Dock and Mafia Base",
         "location": "Beneath the Cassandra Train Station Platform",
         "description": "Behind the false façade of a quiet train platform lies a secret dock area leading into the Mafia headquarters. The space is utilitarian and guarded, designed for clandestine meetings and illegal operations. Investigators who reach this location are immediately at risk of confrontation but may also gain crucial leverage through negotiation.",
         "characters": [
           {
-            "name": "Ben",
+            "name": "Ben Cleo",
             "role": "Mafia Boss",
             "status": "Alive",
             "location": "Inside the Mafia headquarters",
@@ -28,10 +28,10 @@
             ]
           },
           {
-            "clueText": "Ben claims that the real power behind Cassandra is a man named Padriche, and that Padriche’s actions threaten Mafia interests.",
+            "clueText": "Ben Cleo claims that the real power behind Cassandra is a man named Padriche, and that Padriche's actions threaten Mafia interests.",
             "category": "witness",
             "difficulty": "regular",
-            "location": "Conversation with Ben",
+            "location": "Conversation with Ben Cleo",
             "discoveryMethod": "Persuade or Credit Rating",
             "reveals": [
               "Padriche as a major hidden antagonist",
@@ -53,7 +53,7 @@
         ],
         "events": [
           "Investigators are confronted by Mafia members upon arrival.",
-          "Negotiation between Ben and the investigators regarding secrecy and mutual interests."
+          "Negotiation between Ben Cleo and the investigators regarding secrecy and mutual interests."
         ],
         "exits": [
           {
@@ -63,9 +63,9 @@
             "condition": "hidden"
           }
         ],
-        "keeperNotes": "This scene should emphasize tension rather than immediate violence. Ben is dangerous but rational; he prefers negotiation if it protects his interests. If investigators betray his trust or reveal the secret of the platform, the Mafia will become a persistent hostile force.",
+        "keeperNotes": "This scene should emphasize tension rather than immediate violence. Ben Cleo is dangerous but rational; he prefers negotiation if it protects his interests. If investigators betray his trust or reveal the secret of the platform, the Mafia will become a persistent hostile force.",
         "permanentChanges": [
-          "If investigators strike a deal with Ben, the Mafia may become a temporary ally.",
+          "If investigators strike a deal with Ben Cleo, the Mafia may become a temporary ally.",
           "If negotiations fail, the Mafia becomes openly hostile toward the investigators."
         ]
       },

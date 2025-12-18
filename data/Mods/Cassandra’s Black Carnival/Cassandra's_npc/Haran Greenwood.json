@@ -62,7 +62,7 @@
     ],
     "relationships": [
       {
-        "targetName": "Bruno",
+        "targetName": "Bruno Galilei",
         "relationshipType": "friend",
         "attitude": 30,
         "description": "A familiar local policeman who occasionally talks with Haran at the station.",

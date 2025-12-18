@@ -78,11 +78,11 @@
     ],
     "relationships": [
       {
-        "targetName": "Harlan Greenwood",
+        "targetName": "Haran Greenwood",
         "relationshipType": "employee",
         "attitude": 70,
         "description": "Trusted subordinate responsible for guarding the train station entrance.",
-        "history": "Harlan helped Ben secure power during earlier transitions within the Cleo family."
+        "history": "Haran helped Ben secure power during earlier transitions within the Cleo family."
       },
       {
         "targetName": "Adolph Carl",
@@ -92,6 +92,6 @@
         "history": "They have cooperated when interests aligned but maintain distance."
       }
     ],
-    "notes": "Ben rarely interacts directly with investigators unless provoked. Any harm done to Harlan will eventually provoke retaliation from Ben."
+    "notes": "Ben rarely interacts directly with investigators unless provoked. Any harm done to Haran will eventually provoke retaliation from Ben."
   }
 ]

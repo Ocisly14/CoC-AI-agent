@@ -20,7 +20,7 @@
           "Train Station Square",
           "Cursenday Inner Street",
           "Clock Shop",
-          "Sandra's Cottage",
+          "Shandra's Cabin",
           "Distillery",
           "Helen's Restaurant (Central Intersection)",
           "Cemetery",
@@ -73,7 +73,7 @@
         "orientation": "Diagonal / Connecting",
         "connected_to": ["Main Road", "Crescent Street A"],
         "locations_along_road": [
-          "Adolf's House"
+          "Adolph's House"
         ]
       },
       {

@@ -8,7 +8,7 @@
         "description": "A Buick car is parked quietly along Crescent Street B. Inside, Bruno’s body is slumped in the driver’s seat with the seatbelt still fastened. His corpse appears unnaturally desiccated, resembling a dried mummy rather than a recently deceased man. The scene is eerily still, with no signs of a conventional struggle or accident.",
         "characters": [
           {
-            "name": "Bruno",
+            "name": "Bruno Galilei",
             "role": "Victim",
             "status": "Dead",
             "location": "Driver's seat of the car",

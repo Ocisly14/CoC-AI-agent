@@ -29,14 +29,14 @@
           "notes": "A mafia boss and one of the bar’s real owners; visibly displeased about being implicated."
         },
         {
-          "name": "Adolf Karl",
+          "name": "Adolph Carl",
           "role": "Suspect",
           "status": "alive",
           "location": "Main hall",
           "notes": "Brought in by Bruno for a second interrogation."
         },
         {
-          "name": "Marcel Gemberlain",
+          "name": "Marcel Gwynplaine",
           "role": "Suspect",
           "status": "alive",
           "location": "Main hall",
@@ -57,7 +57,7 @@
           "notes": "The one who discovered the body; a habitual thief who secretly took the victim’s wallet."
         },
         {
-          "name": "Lux",
+          "name": "Lux Lynch",
           "role": "Police officer",
           "status": "alive",
           "location": "Main hall",

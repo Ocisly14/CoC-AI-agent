@@ -1,14 +1,14 @@
 [
     {
-      "name": "Adolf's House",
-      "description": "A private residence in Cassandra belonging to Adolf, a well-dressed social con man who trades in secrets. What begins as a tense conversation quickly turns violent when inhuman attackers strike the house.",
+      "name": "Adolph's House",
+      "description": "A private residence in Cassandra belonging to Adolph, a well-dressed social con man who trades in secrets. What begins as a tense conversation quickly turns violent when inhuman attackers strike the house.",
       "snapshot": {
-        "name": "Attack at Adolf's House",
+        "name": "Attack at Adolph's House",
         "location": "Residential area of Cassandra",
-        "description": "The investigators arrive at Adolf’s home for questioning. The house appears ordinary and respectable, reflecting Adolf’s carefully maintained image. During the conversation, windows suddenly shatter and robed figures descend from the roof and walls, revealing themselves as grotesque spider-human hybrids intent on killing everyone inside.",
+        "description": "The investigators arrive at Adolph’s home for questioning. The house appears ordinary and respectable, reflecting Adolph’s carefully maintained image. During the conversation, windows suddenly shatter and robed figures descend from the roof and walls, revealing themselves as grotesque spider-human hybrids intent on killing everyone inside.",
         "characters": [
           {
-            "name": "Adolf",
+            "name": "Adolph Carl",
             "role": "Witness / suspect",
             "status": "alive",
             "location": "Inside the house",
@@ -29,21 +29,21 @@
             "difficulty": "automatic",
             "location": "During the attack inside the house",
             "discoveryMethod": "",
-            "reveals": ["Inhuman forces are directly involved in events surrounding Adolf."]
+            "reveals": ["Inhuman forces are directly involved in events surrounding Adolph."]
           },
           {
-            "clueText": "If Adolf survives, he admits he is a fraud living off selling secrets and sensitive information about influential people in Cassandra.",
+            "clueText": "If Adolph survives, he admits he is a fraud living off selling secrets and sensitive information about influential people in Cassandra.",
             "category": "witness",
             "difficulty": "regular",
-            "location": "Conversation with Adolf after the attack",
+            "location": "Conversation with Adolph after the attack",
             "discoveryMethod": "Intimidate / Talk",
-            "reveals": ["Adolf knows many hidden secrets about key figures in Cassandra."]
+            "reveals": ["Adolph knows many hidden secrets about key figures in Cassandra."]
           },
           {
-            "clueText": "Adolf mentions the Redstone Lady and the hardware store as relevant to his information network.",
+            "clueText": "Adolph mentions the Redstone Lady and the hardware store as relevant to his information network.",
             "category": "witness",
             "difficulty": "regular",
-            "location": "Conversation with Adolf",
+            "location": "Conversation with Adolph",
             "discoveryMethod": "Talk",
             "reveals": ["Connections to the hardware store and the Redstone Lady."]
           }
@@ -61,10 +61,10 @@
           }
         ],
         "events": [
-          "Investigators begin questioning Adolf.",
+          "Investigators begin questioning Adolph.",
           "Black-robed attackers assault the house.",
           "The attackers are revealed to be spider-human hybrids.",
-          "Adolf may be rescued and provide information."
+          "Adolph may be rescued and provide information."
         ],
         "exits": [
           {
@@ -80,9 +80,9 @@
             "condition": "damaged"
           }
         ],
-        "keeperNotes": "This scene is designed as a sudden escalation into combat. Even if rescued, Adolf should remain unreliable and capable of betraying the investigators later.",
+        "keeperNotes": "This scene is designed as a sudden escalation into combat. Even if rescued, Adolph should remain unreliable and capable of betraying the investigators later.",
         "permanentChanges": [
-          "Adolf’s house is damaged during the attack.",
+          "Adolph’s house is damaged during the attack.",
           "The investigators are directly exposed to inhuman enemies."
         ]
       },
@@ -91,12 +91,12 @@
         {
           "scenarioName": "Hardware Store",
           "relationshipType": "leads_to",
-          "description": "Adolf provides information linking events to the hardware store owner."
+          "description": "Adolph provides information linking events to the hardware store owner."
         },
         {
           "scenarioName": "Redstone Lady",
           "relationshipType": "leads_to",
-          "description": "Adolf references the Redstone Lady as part of the hidden power structure in Cassandra."
+          "description": "Adolph references the Redstone Lady as part of the hidden power structure in Cassandra."
         }
       ]
     }

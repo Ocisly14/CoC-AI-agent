@@ -8,7 +8,7 @@
         "description": "The church features a four-meter-high main entrance that inspires awe before entry. Inside, the building forms a cross shape. At the deepest end stands a crucifix of Jesus Christ. Behind it rises a bell tower, backed by a massive stained-glass window. Above the tower is a domed ceiling that deepens the sense of depth and silence. The interior is usually quiet, with faint echoes and an unnatural stillness.",
         "characters": [
           {
-            "name": "Constantine",
+            "name": "Constantine Frollo",
             "role": "Priest / Cultist",
             "status": "Alive",
             "location": "Inside the church, usually near the altar or reading the Bible",
@@ -107,7 +107,7 @@
         {
           "scenarioName": "Clock Shop",
           "relationshipType": "alternate",
-          "description": "The clockmaker White provides insight into the abnormal bell mechanism."
+          "description": "The clockmaker Marks White provides insight into the abnormal bell mechanism."
         }
       ]
     }

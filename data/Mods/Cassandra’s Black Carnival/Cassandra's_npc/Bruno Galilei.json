@@ -75,11 +75,11 @@
     ],
     "clues": [
       {
-        "clueText": "He does not know Sandra's true identity but trusts her deeply.",
+        "clueText": "He does not know Shandra Hernandez's true identity but trusts her deeply.",
         "category": "knowledge",
         "difficulty": "regular",
         "relatedTo": [
-          "Sandra"
+          "Shandra Hernandez"
         ]
       },
       {
@@ -102,18 +102,18 @@
     ],
     "relationships": [
       {
-        "targetName": "Sandra",
+        "targetName": "Shandra Hernandez",
         "relationshipType": "friend",
         "attitude": 70,
         "description": "A close confidant and emotional refuge for Bruno.",
         "history": "Bruno often spent his free time at her shop, trusting her enough to confide his worries."
       },
       {
-        "targetName": "Lux",
+        "targetName": "Lux Lynch",
         "relationshipType": "ally",
         "attitude": 60,
         "description": "A trusted colleague within the police force.",
-        "history": "Lux respects Bruno and discreetly protects his investigation materials after his death."
+        "history": "Lux Lynch respects Bruno and discreetly protects his investigation materials after his death."
       },
       {
         "targetName": "Mayor Padrich",

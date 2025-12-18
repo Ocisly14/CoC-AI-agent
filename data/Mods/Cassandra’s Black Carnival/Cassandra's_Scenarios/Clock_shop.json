@@ -3,12 +3,12 @@
       "name": "Clock Shop",
       "description": "A small, old-fashioned clock shop located on Cassandra Old Street, packed tightly with clocks and pocket watches of exquisite craftsmanship. The shop has an unsettling reputation due to its owner's obsession with perfect timekeeping and his uncanny awareness of temporal anomalies in the town.",
       "snapshot": {
-        "name": "White's Clock Shop",
+        "name": "Marks White's Clock Shop",
         "location": "Cassandra Old Street (Old-Street)",
         "description": "The interior of the shop is cramped and quiet, filled wall-to-wall with ticking clocks of all sizes. Glass display cases hold finely crafted pocket watches, each engraved with the maker’s name. Time seems unnaturally precise here, almost oppressive. An old decorative oil painting hangs on the wall, its abstract form subtly disturbing.",
         "characters": [
           {
-            "name": "White",
+            "name": "Marks White",
             "role": "Shop owner / witness",
             "status": "alive",
             "location": "Inside the clock shop",
@@ -17,7 +17,7 @@
         ],
         "clues": [
           {
-            "clueText": "All clocks and pocket watches are engraved with White’s name and are unnaturally precise, never losing even a single second.",
+            "clueText": "All clocks and pocket watches are engraved with Marks White's name and are unnaturally precise, never losing even a single second.",
             "category": "observation",
             "difficulty": "automatic",
             "location": "Display cases and wall clocks",
@@ -25,10 +25,10 @@
             "reveals": ["The town’s time distortion is abnormal and possibly controlled or influenced."]
           },
           {
-            "clueText": "White claims the church’s grand clock was also made by him and considers it his greatest work.",
+            "clueText": "Marks White claims the church's grand clock was also made by him and considers it his greatest work.",
             "category": "witness",
             "difficulty": "regular",
-            "location": "Conversation with White",
+            "location": "Conversation with Marks White",
             "discoveryMethod": "Charm / Talk",
             "reveals": ["A connection between the clock shop and the church."]
           },
@@ -54,8 +54,8 @@
           }
         ],
         "events": [
-          "White explains his philosophy of being 'standard time'.",
-          "White refuses to aid investigators despite knowing the town’s secret."
+          "Marks White explains his philosophy of being 'standard time'.",
+          "Marks White refuses to aid investigators despite knowing the town's secret."
         ],
         "exits": [
           {
@@ -65,7 +65,7 @@
             "condition": ""
           }
         ],
-        "keeperNotes": "White is a passive but important lore character. He should not push the plot directly, but his dialogue reinforces the theme of distorted time and inevitability.",
+        "keeperNotes": "Marks White is a passive but important lore character. He should not push the plot directly, but his dialogue reinforces the theme of distorted time and inevitability.",
         "permanentChanges": []
       },
       "tags": ["time anomaly", "old street", "mythos foreshadowing", "witness NPC"],
@@ -73,7 +73,7 @@
         {
           "scenarioName": "Church",
           "relationshipType": "leads_to",
-          "description": "White built the church’s grand clock, linking the clock shop to the church and its secrets."
+          "description": "Marks White built the church's grand clock, linking the clock shop to the church and its secrets."
         }
       ]
     }

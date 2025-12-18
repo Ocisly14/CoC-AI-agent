@@ -12,7 +12,7 @@
       ],
       "secrets": [
         "He has accepted bribes and maintains records of people whose 'small problems' he has helped cover up",
-        "He was ordered by higher authorities to release Martin Qin (Ghost Hand), indirectly allowing Jenny Florence’s murderer to escape"
+        "He was ordered by higher authorities to release Martin Gin (Ghost Hand), indirectly allowing Jenny Florence's murderer to escape"
       ],
       "attributes": {
         "STR": 55,
@@ -54,10 +54,10 @@
           "relatedTo": ["Patrizio von Samsa"]
         },
         {
-          "clueText": "Martin Qin was deliberately released from custody under official orders despite being highly suspicious.",
+          "clueText": "Martin Gin was deliberately released from custody under official orders despite being highly suspicious.",
           "category": "secret",
           "difficulty": "extreme",
-          "relatedTo": ["Martin Qin", "Reindeer Bar"]
+          "relatedTo": ["Martin Gin", "Reindeer Bar"]
         }
       ],
       "relationships": [
@@ -69,7 +69,7 @@
           "history": "Lux secured his promotion by aligning himself closely with Patrizio, who later drew him into increasingly dangerous and unnatural affairs."
         },
         {
-          "targetName": "Jenny Florence (Aberforth Locefern)",
+          "targetName": "Jenny Florence (berforth Locefern)",
           "relationshipType": "enemy",
           "attitude": -20,
           "description": "A hacker whose death weighs on Lux’s conscience.",
