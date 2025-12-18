@@ -37,14 +37,7 @@
       "Fighting": 45,
       "Dodge": 25
     },
-    "inventory": [
-      {
-        "name": "N/A",
-        "properties": {
-          "note": "当前文档主体未提供深潜者的携带物品/掉落物条目（多为剧情提及）。"
-        }
-      }
-    ],
+    "inventory": [],
     "clues": [
       {
         "clueText": "Deep Ones can breathe both underwater and on land without assistance.",

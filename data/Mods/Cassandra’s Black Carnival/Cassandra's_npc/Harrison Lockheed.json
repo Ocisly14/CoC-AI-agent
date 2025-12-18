@@ -35,13 +35,13 @@
       {
         "name": "Illegal firearms stock (kept out of sight)",
         "properties": {
-          "clue": "明面五金店老板，实为枪支贩子；因存在不符合加州法令的枪支，武器只能暗处出售。"
+          "clue": "Publicly a hardware store owner, actually an arms dealer; because some firearms do not comply with California regulations, weapons can only be sold secretly."
         }
       },
       {
         "name": "Weapon modification tools / hobby gear",
         "properties": {
-          "note": "资料提到他是武器改装爱好者；若获得好感，可能帮调查员做简单改良或制作非常规武器（守秘人裁定）。"
+          "note": "The source material mentions he is a weapon modification enthusiast; if favorable relations are established, he may help investigators with simple modifications or create unconventional weapons (Keeper's discretion)."
         }
       }
     ],

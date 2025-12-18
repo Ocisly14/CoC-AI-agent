@@ -41,14 +41,7 @@
       "Listen": 50,
       "Fighting": 45
     },
-    "inventory": [
-      {
-        "name": "N/A",
-        "properties": {
-          "note": "当前文档主体未提供该生物的可掉落/携带物品条目（附录信息展示图在投稿版被移除）。"
-        }
-      }
-    ],
+    "inventory": [],
     "clues": [
       {
         "clueText": "Deep One hybrids age normally but will eventually undergo a complete transformation into Deep Ones.",

@@ -1,6 +1,6 @@
 [
   {
-    "name": "戈弗恩·胡帕德戈·莎布·尼古拉斯",
+    "name": "Gofern-Hupadego-Shub-Nicholas",
     "occupation": "Transformed cult creature (former human merchant)",
     "age": 45,
     "appearance": "A grotesque hybrid creature born from human flesh and the influence of Shub-Niggurath. Its body shows distorted humanoid features mixed with bestial traits such as claws, hooves, horns, or fangs. The skin is rough and unhealthy, often damp with mud from the forest swamps it inhabits.",
@@ -42,14 +42,7 @@
       "Stealth": 70,
       "Hide": 90
     },
-    "inventory": [
-      {
-        "name": "N/A",
-        "properties": {
-          "note": "资料提到两位富商被献祭后化为“戈弗恩-乎帕德戈-莎布-尼古拉斯”的污秽存在（栖于森林阴暗树丛靠近泥沼处）；未描述物品。"
-        }
-      }
-    ],
+    "inventory": [],
     "clues": [
       {
         "clueText": "These creatures were once wealthy merchants who vanished after forbidden rituals.",

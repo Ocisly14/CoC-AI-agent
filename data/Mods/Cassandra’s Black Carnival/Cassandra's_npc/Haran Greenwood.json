@@ -40,13 +40,13 @@
       {
         "name": "Cargo transaction records (train station business)",
         "properties": {
-          "clue": "为本打理火车站“业务”往来；对货物往来内部有记录（只做买卖不问背景），可作为追查走私/货流的线索切入点。"
+          "clue": "Manages train station 'business' transactions for Ben; maintains internal records of cargo movements (deals only, no questions about background), which can serve as an entry point for investigating smuggling/cargo flow."
         }
       },
       {
         "name": "Work shack access / guard post",
         "properties": {
-          "clue": "工作屋连接黑手党总部入口；哈兰作为警戒人，任何强闯需要过他这一关（意味着他掌握入口位置/通行规矩）。"
+          "clue": "The work shack connects to the Mafia headquarters entrance; Haran serves as a guard, and any forced entry must pass through him (meaning he knows the entrance location/access protocols)."
         }
       }
     ],

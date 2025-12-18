@@ -54,14 +54,14 @@
       ],
       "relationships": [
         {
-          "targetName": "冷蛛",
+          "targetName": "Cold Spider",
           "relationshipType": "ally",
           "attitude": 80,
           "description": "Created through cold spider infection and transformation.",
           "history": "Cold spiders parasitize humans; survivors may become spider-humans."
         },
         {
-          "targetName": "阿特拉克·纳克亚",
+          "targetName": "Atlach-Nacha",
           "relationshipType": "employer",
           "attitude": 100,
           "description": "Ultimate master of spider-humans.",

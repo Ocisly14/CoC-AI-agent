@@ -62,14 +62,14 @@
         "name": "Note/paper slip from victim's pocket",
         "quantity": 1,
         "properties": {
-          "clue": "死者口袋内纸条（具体内容在资料中未进一步展开，但被明确列为随身物品/物证）。"
+          "clue": "Note/paper slip from the victim's pocket (specific content not further detailed in the source material, but explicitly listed as a personal item/evidence)."
         }
       },
       {
         "name": "Folding knife (stuck in victim's back)",
         "quantity": 1,
         "properties": {
-          "clue": "案发现场物证：折刀插在死者背后。"
+          "clue": "Crime scene evidence: folding knife stuck in the victim's back."
         }
       }
     ],
