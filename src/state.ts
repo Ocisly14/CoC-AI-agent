@@ -38,8 +38,7 @@ export interface NPCResponseAnalysis {
   willRespond: boolean;  // Whether the NPC will respond
   responseType: NPCResponseType | null;  // Type of response if willRespond is true (one of the eight action types, or "none")
   responseDescription: string;  // Description of what the NPC will do
-  reasoning: string;  // Reasoning for the response decision
-  urgency: "low" | "medium" | "high";  // Urgency level of the response
+  executionOrder: number;  // Execution order (1, 2, 3, 4...) - determines the sequence of NPC actions
   targetCharacter?: string | null;  // Target character if response is directed
 }
 

@@ -96,7 +96,6 @@ export class KeeperAgent {
       conversationHistory,  // Recent conversation history（用于 {{#each}} 循环）
       // ragResults,  // TODO: 暂时注释掉RAG检索结果，因为正在修改RAG部分
       ragResults: [],  // 暂时设置为空数组
-      discoveredClues: gameState.discoveredClues || [],  // 全局已发现线索列表（用于 {{#each}} 循环）
       // JSON 字符串版本（模板中直接使用）
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
       playerCharacterJson: this.safeStringify(playerCharacterComplete),
@@ -225,9 +224,8 @@ export class KeeperAgent {
       };
     }
 
-    // Simplified scenario info - only keep essential dynamic state
-    // Detailed content (description, conditions, events, exits, keeperNotes, permanentChanges, clue texts)
-    // can be retrieved via RAG when needed
+    // Simplified scenario info - keep essential dynamic state
+    // Include clue text so Keeper can decide what to reveal
     return {
       hasScenario: true,
       id: currentScenario.id,
@@ -235,9 +233,14 @@ export class KeeperAgent {
       location: currentScenario.location,
       // Characters present in the scene (dynamic state)
       characters: currentScenario.characters || [],
-      // Only keep clue IDs and discovery status (clue texts are available via RAG)
+      // Provide clue details for Keeper decision-making
       clues: (currentScenario.clues || []).map(clue => ({
         id: clue.id,
+        clueText: clue.clueText,
+        location: clue.location,
+        category: clue.category,
+        difficulty: clue.difficulty,
+        reveals: clue.reveals,
         discovered: clue.discovered,
         // Keep discovery details if the clue was discovered
         ...(clue.discovered && clue.discoveryDetails ? { discoveryDetails: clue.discoveryDetails } : {})
@@ -280,20 +283,6 @@ export class KeeperAgent {
       ...result,
       diceRolls: result.diceRolls || []
     }));
-  }
-
-  /**
-   * 2.1. 获取最新的完整的action result（用于向后兼容）
-   */
-  private getLatestCompleteActionResult(gameState: GameState): ActionResult | null {
-    const allActionResults = this.getAllActionResults(gameState);
-    
-    if (allActionResults.length === 0) {
-      return null;
-    }
-    
-    // 返回最新的action result
-    return allActionResults[allActionResults.length - 1];
   }
 
   /**
@@ -461,7 +450,9 @@ export class KeeperAgent {
     if (clueRevelations.scenarioClues && clueRevelations.scenarioClues.length > 0) {
       const currentScenario = gameState.currentScenario;
       if (currentScenario && currentScenario.clues) {
-        clueRevelations.scenarioClues.forEach((clueId: string) => {
+        clueRevelations.scenarioClues.forEach((item: string | { clueId: string }) => {
+          const clueId = typeof item === "string" ? item : item?.clueId;
+          if (!clueId) return;
           const clue = currentScenario.clues.find(c => c.id === clueId);
           if (clue && !clue.discovered) {
             const discoveredAt = new Date().toISOString();

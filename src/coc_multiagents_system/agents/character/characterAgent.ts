@@ -125,8 +125,7 @@ export class CharacterAgent {
             willRespond: analysis.willRespond,
             responseType: responseType,
             responseDescription: analysis.responseDescription || "",
-            reasoning: analysis.reasoning || "",
-            urgency: analysis.urgency || "medium",
+            executionOrder: typeof analysis.executionOrder === 'number' ? analysis.executionOrder : 999,
             targetCharacter: analysis.targetCharacter || null
           };
           

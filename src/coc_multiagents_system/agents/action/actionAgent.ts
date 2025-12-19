@@ -17,30 +17,53 @@ export class ActionAgent {
   }
 
   /**
-   * Process character action and resolve with dice rolls and state updates
+   * Unified method to process any character's action (player or NPC)
    */
-  async processAction(runtime: any, gameState: GameState, userMessage: string): Promise<GameState> {
-    const baseSystemPrompt = `You are an action resolution specialist for Call of Cthulhu.
+  private async processCharacterAction(
+    runtime: any,
+    gameState: GameState,
+    character: CharacterProfile,
+    actionDescription: string,
+    options: {
+      isNPC: boolean;
+      npcResponse?: NPCResponseAnalysis;
+      targetCharacter?: CharacterProfile | null;
+    }
+  ): Promise<GameState> {
+    const { isNPC, npcResponse, targetCharacter } = options;
 
-Your job is to analyze character actions and resolve them step by step. You MUST respond with JSON in one of these formats:
+    // Pre-roll dice
+    const preRolledDice = this.preRollDice();
 
-FOR TOOL CALLS (when you need to roll dice):
-{
-  "type": "tool_call",
-  "tool": "roll_dice",
-  "parameters": {
-    "expression": "1d100"
-  }
-}
+    const baseSystemPrompt = `
 
-FOR FINAL RESULTS (when you have everything needed):
+PRE-ROLLED DICE AVAILABLE:
+${JSON.stringify(preRolledDice, null, 2)}
+
+USAGE:
+- 1d100: Use for single skill checks, attribute checks, luck rolls (compare against character's skill percentage)
+- 1d100_opposed: Use for opposed checks (the second character's roll)
+- 1d3, 1d4, 1d6, 2d6, 1d8, 1d10, 1d20: Use for damage, sanity loss, etc.
+- Dice with modifiers: You can add modifiers to pre-rolled dice (e.g., 1d3+1, 1d6+2 for damage bonus/STR bonus)
+- You can choose to use these dice OR not use any if the action doesn't require dice
+- When you use a die, record which die you used and the result in your response
+- Examples: "1d3: 2 + 1 (DB) = 3 (unarmed damage)", "1d6: 4 + 2 (STR bonus) = 6 (knife damage)"
+
+!!! Important: Always follow the 7th edition rules of Call of Cthulhu.
+
+DiceUsed field:
+- Record ONLY the dice you actually used from the pre-rolled dice
+- Format: "[dice_name]: [result] ([purpose] = [success/failure])"
+- Examples: "1d100: 67 (Brawl 50% = success)", "1d6: 4 (knife damage)", "1d100_opposed: 55 (opposed check)"
+- If no dice needed, use empty array: "diceUsed": []
+
 Include "scenarioUpdate" if the action permanently changes the environment. "scenarioUpdate" can include:
 - description: updated scene flavor text
 - conditions: array of environmental condition objects
 - events: array of event strings
 - exits: array of exit objects
-- clues: array of clue objects
 - permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
+${!isNPC ? '' : '\nDo NOT include clues here; the Keeper determines clue revelations.'}
 
 INVENTORY UPDATES:
 If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
@@ -51,10 +74,6 @@ If the action involves picking up, dropping, receiving, giving, or losing items,
 - For item transfers between characters: update BOTH the giver and receiver
   * Giver: "inventory": { "remove": [{ "name": "item name" }] }
   * Receiver: "inventory": { "add": [{ "name": "item name" }] }
-Examples:
-- Giving item to NPC: playerCharacter: { "inventory": { "remove": [{ "name": "flashlight" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": [{ "name": "flashlight" }] } }]
-- Receiving item from NPC: playerCharacter: { "inventory": { "add": [{ "name": "library key" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "library key" }] } }]
-- Picking up multiple items: playerCharacter: { "inventory": { "add": [{ "name": "pistol", "quantity": 1, "properties": { "ammo": 6 } }, { "name": "bullet", "quantity": 12 }] } }
 
 TIME ESTIMATION:
 Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:
@@ -67,126 +86,182 @@ Estimate how many minutes this action realistically takes in game time. Consider
 Be realistic and use your judgment. Include "timeElapsedMinutes" in your response.
 
 SCENE CHANGE DETECTION:
-1. Determine if player intends to move to a new location (entering/exiting rooms, moving between areas, climbing/crossing obstacles)
+1. Determine if the character intends to move to a new location (entering/exiting rooms, moving between areas, climbing/crossing obstacles)
 2. If movement requires a skill check (locked door, difficult terrain, stealth entry), call roll_dice first and base scene change on the result
 3. If movement is unobstructed (open door, clear path), directly return sceneChange with shouldChange: true
-4. If any movement intent like "i want to ","I will", "I'm going to", "I'm leaving", "I'm going to the XXX, "I'm going to the next area",return sceneChange with shouldChange: true
-
+4. If any movement intent detected, return sceneChange with shouldChange: true
 IMPORTANT: When returning sceneChange with shouldChange: true, you MUST select the targetSceneName from the AVAILABLE SCENES list provided below. Use the EXACT scene name from that list. Do not make up scene names.
+
+You MUST respond with a JSON result:
+
+RESPONSE FORMAT - Return a JSON object with this exact structure:
+Example:
+{
+  "summary": "Brief description of what happened (1-2 sentences)",
+
+  "diceUsed": [
+    // Array of dice you actually used (empty array if no dice needed)
+    // Format: "[dice_name]: [result] ([purpose/skill] [skill%] = [success/failure/N/A])"
+    "1d100: 67 (Fighting (Brawl) 50% = failure)",
+    "1d3: 2 + 1 (DB) = 3 (unarmed damage)"
+  ],
+
+  "stateUpdate": {
+    // Optional: Update character states (HP, sanity, inventory, etc.)
+    "playerCharacter": {
+      "name": "Character Name",  // MUST match the acting character's name
+      "status": {
+        "hp": -3,              // HP change (negative for damage, positive for healing)
+        "sanity": 0,           // Sanity change
+        "magic": 0,            // Magic points change
+        "luck": 0              // Luck change
+      },
+      "inventory": {           // Optional: only if inventory changes
+        "add": [{"name": "item name", "quantity": 1}],
+        "remove": [{"name": "item name", "quantity": 1}]
+      }
+    },
+    "npcCharacters": [         // Optional: only if NPC states change
+      {
+        "id": "npc-id",        // MUST use exact NPC id
+        "name": "NPC Name",
+        "status": {"hp": -4, "sanity": 0}
+      }
+    ]
+  },
+
+  "scenarioUpdate": {          // Optional: only if environment permanently changes
+    "description": "Updated scene description",
+    "conditions": [{"type": "lighting", "description": "...", "mechanicalEffect": "..."}],
+    "events": ["Event description"],
+    "exits": [{"direction": "north", "destination": "...", "description": "...", "condition": "open"}],
+    "permanentChanges": ["Permanent change description"]
+  },
+
+  "sceneChange": {
+    "shouldChange": false,     // true if moving to new location
+    "targetSceneName": null,   // Scene name from AVAILABLE SCENES or null
+    "reason": "Reason for scene change or staying"
+  },
+
+  "timeElapsedMinutes": 5,
+  "timeConsumption": "short"
+}
 `;
 
-    const actionTypeTemplate = this.getActionTypeTemplate(gameState);
+    const actionTypeTemplate = this.getActionTypeTemplate(gameState, isNPC, npcResponse);
 
-    const diceGuidelines = `
+    const systemPrompt = baseSystemPrompt + actionTypeTemplate;
 
-DICE ROLLING GUIDELINES:
-1. Use character skills from the provided character data to determine appropriate skill checks
-2. Apply environmental conditions and temporary rules as modifiers when calculating success thresholds
-3. For skill checks: Always use 1d100, compare against modified skill value
-4. For damage: Use weapon damage dice (1d3 for fist, 1d6 for knife, 2d6 for gun, etc.)
-5. For attribute checks: Use 1d100, compare against attribute value
-6. For luck rolls: Use 1d100, compare against Luck value
-7. Consider situational modifiers from scenario conditions and temporary rules
+    // Single call - no tool loop needed with pre-rolled dice
+    const context = this.buildContext(gameState, character, { isNPC, npcResponse, targetCharacter });
+    const fullPrompt = systemPrompt + context + `\n\nCharacter action: ${actionDescription}`;
 
-EXAMPLES:
-- Fighting (Brawl) skill 50% in darkness (-20%): Roll 1d100, succeed if ≤30
-- Damage from successful punch: Roll 1d3+STR bonus
-- Sanity loss from horror: Roll 1d4, 1d8, etc. based on threat level
-- Dodge in difficult terrain: Roll 1d100, compare against modified Dodge skill
+    const response = await generateText({
+      runtime,
+      context: fullPrompt,
+      modelClass: ModelClass.SMALL,
+    });
 
-Always analyze the current situation, character capabilities, environmental conditions, and applicable rules before determining what dice to roll.
+    // Parse JSON response
+    let parsed;
+    try {
+      let jsonText = response.trim();
 
-IMPORTANT: You MUST respond with valid JSON format only. Do not include any text outside the JSON structure.`;
-
-    const systemPrompt = baseSystemPrompt + actionTypeTemplate + diceGuidelines;
-
-    // Tool call loop
-    const toolLogs: string[] = [];
-    let conversation = [`Character action: ${userMessage}`];
-    let maxIterations = 10;
-    
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const characterContext = this.buildCharacterContext(gameState);
-      const contextWithHistory = systemPrompt + characterContext + "\n\nConversation so far:\n" + conversation.join("\n");
-      
-      const response = await generateText({
-        runtime,
-        context: contextWithHistory,
-        modelClass: ModelClass.SMALL,
-      });
-
-      // Parse JSON response - handle markdown code blocks
-      let parsed;
-      try {
-        // Extract JSON from markdown code blocks if present
-        let jsonText = response.trim();
-        
-        // Try to extract JSON from markdown code blocks (```json ... ``` or ``` ... ```)
-        const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        if (codeBlockMatch) {
-          jsonText = codeBlockMatch[1].trim();
-          console.log(`📝 [Action Agent] 检测到 markdown 代码块，已提取 JSON 内容`);
-        }
-        
-        // Try to extract JSON object if wrapped in other text
-        if (!jsonText.startsWith('{') && !jsonText.startsWith('[')) {
-          const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
-          if (jsonObjectMatch) {
-            jsonText = jsonObjectMatch[0];
-            console.log(`📝 [Action Agent] 从文本中提取 JSON 对象`);
-          }
-        }
-        
-        parsed = JSON.parse(jsonText);
-      } catch (error) {
-        console.error(`❌ [Action Agent] JSON 解析错误:`, error);
-        console.error(`   错误类型: ${error instanceof Error ? error.constructor.name : typeof error}`);
-        console.error(`   错误消息: ${error instanceof Error ? error.message : String(error)}`);
-        console.error(`   原始响应 (前500字符): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
-        console.error(`   原始响应长度: ${response.length} 字符`);
-        return this.buildErrorResult(gameState, `Invalid JSON response from model: ${error instanceof Error ? error.message : String(error)}`, toolLogs);
+      const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1].trim();
+        console.log(`📝 [Action Agent] 检测到 markdown 代码块，已提取 JSON 内容`);
       }
 
-      if (parsed.type === "tool_call") {
-        // Execute tool call
-        if (parsed.tool === "roll_dice" && parsed.parameters?.expression) {
-          const rollResult = this.executeDiceRoll(parsed.parameters.expression);
-          if (rollResult.error) {
-            console.error(`❌ [Action Agent] 骰子投掷错误: ${rollResult.error}`);
-            return this.buildErrorResult(gameState, `Dice roll error: ${rollResult.error}`, toolLogs);
-          }
-          conversation.push(`AI: ${JSON.stringify(parsed)}`);
-          conversation.push(`Tool result: ${JSON.stringify(rollResult)}`);
-          toolLogs.push(`${parsed.parameters.expression} -> ${rollResult.breakdown}`);
-        } else {
-          console.error(`❌ [Action Agent] 无效的工具调用格式:`, parsed);
-          return this.buildErrorResult(gameState, `Invalid tool call format: ${JSON.stringify(parsed)}`, toolLogs);
+      if (!jsonText.startsWith('{') && !jsonText.startsWith('[')) {
+        const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          jsonText = jsonObjectMatch[0];
+          console.log(`📝 [Action Agent] 从文本中提取 JSON 对象`);
         }
-      } else if (parsed.type === "result") {
-        // Final result
-        return this.buildFinalResult(gameState, parsed, toolLogs);
-      } else {
-        console.error(`❌ [Action Agent] 无效的响应类型:`, parsed);
-        return this.buildErrorResult(gameState, `Invalid response type: ${parsed.type || 'unknown'}`, toolLogs);
       }
+
+      parsed = JSON.parse(jsonText);
+    } catch (error) {
+      console.error(`❌ [Action Agent] JSON 解析错误:`, error);
+      console.error(`   错误类型: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   错误消息: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`   原始响应 (前500字符): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
+      console.error(`   原始响应长度: ${response.length} 字符`);
+      return this.buildErrorResult(gameState, character, `Invalid JSON response from model: ${error instanceof Error ? error.message : String(error)}`, [], isNPC);
     }
-    
-    console.error(`❌ [Action Agent] 达到最大迭代次数 (${maxIterations})`);
-    return this.buildErrorResult(gameState, "Maximum iterations reached", toolLogs);
+
+    // Extract dice usage from response
+    const diceUsed = parsed.diceUsed || [];
+
+    // Return final result
+    return this.buildFinalResult(gameState, character, parsed, diceUsed, { isNPC, npcResponse });
+  }
+
+  /**
+   * Process character action and resolve with dice rolls and state updates
+   */
+  async processAction(runtime: any, gameState: GameState, userMessage: string): Promise<GameState> {
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    const targetCharacter = this.findTargetCharacter(gameState, actionAnalysis);
+
+    return this.processCharacterAction(
+      runtime,
+      gameState,
+      gameState.playerCharacter,
+      userMessage,
+      {
+        isNPC: false,
+        targetCharacter
+      }
+    );
+  }
+
+  /**
+   * Pre-roll common dice expressions
+   */
+  private preRollDice() {
+    const rollDice = (sides: number, count: number = 1): number[] => {
+      return Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+    };
+
+    // Pre-roll all common dice types
+    const d100_1 = rollDice(100)[0];
+    const d100_2 = rollDice(100)[0];
+    const d20 = rollDice(20)[0];
+    const d10 = rollDice(10)[0];
+    const d8 = rollDice(8)[0];
+    const d6_1 = rollDice(6)[0];
+    const d6_2 = rollDice(6)[0];
+    const d4 = rollDice(4)[0];
+    const d3 = rollDice(3)[0];
+
+    return {
+      "1d100": d100_1,        // For single skill checks
+      "1d100_opposed": d100_2, // For opposed checks (second roll)
+      "1d20": d20,
+      "1d10": d10,
+      "1d8": d8,
+      "1d6": d6_1,
+      "2d6": d6_1 + d6_2,
+      "1d4": d4,
+      "1d3": d3
+    };
   }
 
   private executeDiceRoll(expression: string) {
     try {
       const { count, sides, modifier } = this.parseDiceExpression(expression);
-      
+
       const rolls = Array.from(
         { length: count },
         () => Math.floor(Math.random() * sides) + 1
       );
-      
+
       const rollTotal = rolls.reduce((a, b) => a + b, 0);
       const finalTotal = rollTotal + modifier;
-      
+
       return {
         expression,
         rolls,
@@ -217,10 +292,57 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     return { count, sides, modifier };
   }
 
-  private getActionTypeTemplate(gameState: GameState): string {
-    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
-    
-    if (!actionAnalysis || !actionAnalysis.actionType) {
+  /**
+   * Find target character based on action analysis or NPC response
+   */
+  private findTargetCharacter(
+    gameState: GameState,
+    actionAnalysis?: ActionAnalysis | null,
+    npcResponse?: NPCResponseAnalysis
+  ): CharacterProfile | null {
+    let targetName: string | null = null;
+
+    if (npcResponse?.targetCharacter) {
+      targetName = npcResponse.targetCharacter;
+    } else if (actionAnalysis?.target?.name) {
+      targetName = actionAnalysis.target.name;
+    }
+
+    if (!targetName) {
+      return null;
+    }
+
+    const targetLower = targetName.toLowerCase();
+
+    // Check if target is player
+    if (gameState.playerCharacter.name.toLowerCase().includes(targetLower)) {
+      return gameState.playerCharacter;
+    }
+
+    // Check NPCs
+    const targetNpc = gameState.npcCharacters.find(npc =>
+      npc.name.toLowerCase().includes(targetLower) ||
+      npc.id.toLowerCase().includes(targetLower)
+    );
+
+    return targetNpc || null;
+  }
+
+  private getActionTypeTemplate(
+    gameState: GameState,
+    isNPC: boolean = false,
+    npcResponse?: NPCResponseAnalysis
+  ): string {
+    let actionType: string | undefined;
+
+    if (isNPC && npcResponse?.responseType) {
+      actionType = npcResponse.responseType;
+    } else {
+      const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+      actionType = actionAnalysis?.actionType;
+    }
+
+    if (!actionType) {
       return `
 {
   "type": "result",
@@ -236,13 +358,25 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     }
 
     const template =
-      actionTypeTemplates[actionAnalysis.actionType as keyof typeof actionTypeTemplates];
+      actionTypeTemplates[actionType as keyof typeof actionTypeTemplates];
     return template || actionTypeTemplates.exploration; // fallback to exploration
   }
 
-  private buildCharacterContext(gameState: GameState): string {
-    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
-    
+  /**
+   * Unified method to build context for any character action
+   */
+  private buildContext(
+    gameState: GameState,
+    character: CharacterProfile,
+    options: {
+      isNPC: boolean;
+      npcResponse?: NPCResponseAnalysis;
+      targetCharacter?: CharacterProfile | null;
+    }
+  ): string {
+    const { isNPC, npcResponse } = options;
+    let { targetCharacter } = options;
+
     let context = "\n\nCurrent Scenario:\n";
     if (gameState.currentScenario) {
       const scenarioInfo = {
@@ -257,7 +391,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     } else {
       context += "No current scenario";
     }
-    
+
     // Add all available scene names for scene change selection
     if (this.scenarioLoader) {
       const allScenarios = this.scenarioLoader.getAllScenarios();
@@ -265,33 +399,34 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
         const sceneNames = allScenarios.map(s => s.snapshot.name).filter(name => name);
         if (sceneNames.length > 0) {
           context += "\n\n=== AVAILABLE SCENES FOR SCENE CHANGE ===";
-          context += "\nIf the player wants to move to a new location, you MUST select one of these scene names:";
+          context += `\nIf the ${isNPC ? 'NPC' : 'player'} wants to move to a new location, you MUST select one of these scene names:`;
           context += "\n" + sceneNames.join(", ");
           context += "\n=== END OF AVAILABLE SCENES ===\n";
         }
       }
     }
-    
-    // Add last keeper narrative if available
-    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
-      turnNumber: number;
-      characterInput: string;
-      keeperNarrative: string | null;
-    }>) || [];
-    
-    if (conversationHistory.length > 0) {
-      // Get the last completed turn with narrative
-      const lastTurnWithNarrative = [...conversationHistory]
-        .reverse()
-        .find(turn => turn.keeperNarrative);
-      
-      if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
-        context += "\n\n=== PREVIOUS KEEPER NARRATIVE ===";
-        context += `\nThe Keeper's last narrative description:\n"${lastTurnWithNarrative.keeperNarrative}"`;
-        context += "\n=== END OF PREVIOUS NARRATIVE ===\n";
+
+    // Add last keeper narrative if available (only for player actions)
+    if (!isNPC) {
+      const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+        turnNumber: number;
+        characterInput: string;
+        keeperNarrative: string | null;
+      }>) || [];
+
+      if (conversationHistory.length > 0) {
+        const lastTurnWithNarrative = [...conversationHistory]
+          .reverse()
+          .find(turn => turn.keeperNarrative);
+
+        if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
+          context += "\n\n=== PREVIOUS KEEPER NARRATIVE ===";
+          context += `\nThe Keeper's last narrative description:\n"${lastTurnWithNarrative.keeperNarrative}"`;
+          context += "\n=== END OF PREVIOUS NARRATIVE ===\n";
+        }
       }
     }
-    
+
     // Add temporary rules if any
     if (gameState.temporaryInfo.rules.length > 0) {
       context += "\n\nTemporary Rules:\n";
@@ -299,25 +434,43 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
         context += `${index + 1}. ${rule}\n`;
       });
     }
-    
-    context += "\n\nCharacter:\n" + JSON.stringify(gameState.playerCharacter, null, 2);
-    
-    // Add target NPC if applicable
-    if (actionAnalysis?.target.name) {
-      const targetNpc = gameState.npcCharacters.find(npc => 
-        npc.name.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase()) ||
-        npc.id.toLowerCase().includes(actionAnalysis.target.name!.toLowerCase())
-      );
-      
-      if (targetNpc) {
-        context += "\n\nTarget NPC:\n" + JSON.stringify(targetNpc, null, 2);
-      }
+
+    // Add acting character
+    context += `\n\n${isNPC ? 'NPC (acting character)' : 'Character'}:\n` + JSON.stringify(character, null, 2);
+
+    // Add target character if applicable
+    if (targetCharacter) {
+      const isPlayerTarget = targetCharacter.id === gameState.playerCharacter.id ||
+        targetCharacter.name === gameState.playerCharacter.name;
+      context += `\n\nTarget ${isPlayerTarget ? 'Character (Player)' : 'NPC'}:\n` + JSON.stringify(targetCharacter, null, 2);
     }
-    
+
+    // Add NPC response context if NPC action
+    if (isNPC && npcResponse) {
+      context += "\n\nNPC Response Context:\n";
+      context += JSON.stringify({
+        responseDescription: npcResponse.responseDescription,
+        executionOrder: npcResponse.executionOrder
+      }, null, 2);
+    }
+
     return context;
   }
 
-  private buildFinalResult(gameState: GameState, parsed: any, toolLogs: string[]): GameState {
+  /**
+   * Unified method to build final result for any character action
+   */
+  private buildFinalResult(
+    gameState: GameState,
+    character: CharacterProfile,
+    parsed: any,
+    toolLogs: string[],
+    options: {
+      isNPC: boolean;
+      npcResponse?: NPCResponseAnalysis;
+    }
+  ): GameState {
+    const { isNPC, npcResponse } = options;
     const stateManager = new GameStateManager(gameState);
     
     // Apply the state update from LLM result
@@ -327,58 +480,103 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
 
     // Handle scene change request
     if (parsed.sceneChange) {
-      const sceneChangeRequest: SceneChangeRequest = {
-        shouldChange: parsed.sceneChange.shouldChange || false,
-        targetSceneName: parsed.sceneChange.targetSceneName || null,
-        reason: parsed.sceneChange.reason || "Action-driven scene change",
-        timestamp: new Date()
-      };
-      stateManager.setSceneChangeRequest(sceneChangeRequest);
-      
-      console.log(`Action Agent: Scene change request - `, sceneChangeRequest);
+      if (isNPC && parsed.sceneChange.shouldChange && parsed.sceneChange.targetSceneName) {
+        // NPC scene change: update NPC location
+        const targetSceneName = parsed.sceneChange.targetSceneName;
+        console.log(`\n📍 [Action Agent] NPC ${character.name} 请求场景转换: ${targetSceneName}`);
+
+        if (this.scenarioLoader) {
+          const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
+
+          if (searchResult.scenarios.length > 0) {
+            const targetScenario = searchResult.scenarios[0];
+            const targetLocation = targetScenario.snapshot.location;
+
+            const currentState = stateManager.getGameState();
+            const npcInState = currentState.npcCharacters.find(n => n.id === character.id) as NPCProfile | undefined;
+
+            if (npcInState) {
+              const oldLocation = npcInState.currentLocation || null;
+              npcInState.currentLocation = targetLocation;
+
+              if (oldLocation !== targetLocation) {
+                console.log(`   ✓ NPC ${character.name} 位置已更新: ${oldLocation || "Unknown"} → ${targetLocation}`);
+              } else {
+                console.log(`   - NPC ${character.name} 已在目标位置 ${targetLocation}`);
+              }
+            } else {
+              console.warn(`   ⚠️  在 gameState 中未找到 NPC ${character.name} (ID: ${character.id})`);
+            }
+          } else {
+            console.warn(`   ⚠️  未找到场景 "${targetSceneName}"，无法更新NPC位置`);
+          }
+        } else {
+          console.warn(`   ⚠️  ScenarioLoader 未初始化，无法查找场景位置`);
+        }
+
+        // If NPC targets player, trigger scene change for player too
+        const isPlayerTarget = npcResponse?.targetCharacter &&
+          gameState.playerCharacter.name.toLowerCase().includes(npcResponse.targetCharacter.toLowerCase());
+
+        if (isPlayerTarget) {
+          const sceneChangeRequest: SceneChangeRequest = {
+            shouldChange: true,
+            targetSceneName,
+            reason: `NPC ${character.name} moved the investigator`,
+            timestamp: new Date()
+          };
+          stateManager.setSceneChangeRequest(sceneChangeRequest);
+          console.log(`   ✓ NPC triggered player scene change:`, sceneChangeRequest);
+        }
+      } else {
+        // Player scene change: direct scene change request
+        const sceneChangeRequest: SceneChangeRequest = {
+          shouldChange: parsed.sceneChange.shouldChange || false,
+          targetSceneName: parsed.sceneChange.targetSceneName || null,
+          reason: parsed.sceneChange.reason || "Action-driven scene change",
+          timestamp: new Date()
+        };
+        stateManager.setSceneChangeRequest(sceneChangeRequest);
+
+        console.log(`Action Agent: Scene change request - `, sceneChangeRequest);
+      }
     }
 
-    // Apply scenario updates if provided
+    // Apply scenario updates if provided (clues handled by Keeper)
     const scenarioChanges: string[] = [];
-    if (parsed.scenarioUpdate) {
-      stateManager.updateScenarioState(parsed.scenarioUpdate);
+    const scenarioUpdate = parsed.scenarioUpdate ? { ...parsed.scenarioUpdate } : null;
+    if (scenarioUpdate && "clues" in scenarioUpdate) {
+      delete scenarioUpdate.clues;
+    }
+    if (scenarioUpdate) {
+      stateManager.updateScenarioState(scenarioUpdate);
       
       // Generate scenario change descriptions for action results
-      if (parsed.scenarioUpdate.description) {
+      if (scenarioUpdate.description) {
         scenarioChanges.push("Environment description updated");
       }
       
-      if (parsed.scenarioUpdate.conditions && parsed.scenarioUpdate.conditions.length > 0) {
-        scenarioChanges.push(`Environmental conditions changed: ${parsed.scenarioUpdate.conditions.map((c: any) => c.description).join(', ')}`);
+      if (scenarioUpdate.conditions && scenarioUpdate.conditions.length > 0) {
+        scenarioChanges.push(`Environmental conditions changed: ${scenarioUpdate.conditions.map((c: any) => c.description).join(', ')}`);
       }
       
-      if (parsed.scenarioUpdate.events && parsed.scenarioUpdate.events.length > 0) {
-        scenarioChanges.push(`New events recorded: ${parsed.scenarioUpdate.events.join(', ')}`);
+      if (scenarioUpdate.events && scenarioUpdate.events.length > 0) {
+        scenarioChanges.push(`New events recorded: ${scenarioUpdate.events.join(', ')}`);
       }
       
-      if (parsed.scenarioUpdate.permanentChanges && parsed.scenarioUpdate.permanentChanges.length > 0) {
-        parsed.scenarioUpdate.permanentChanges.forEach((change: string) => {
+      if (scenarioUpdate.permanentChanges && scenarioUpdate.permanentChanges.length > 0) {
+        scenarioUpdate.permanentChanges.forEach((change: string) => {
           scenarioChanges.push(`Permanent change: ${change}`);
           stateManager.addPermanentScenarioChange(change);
         });
       }
 
-      if (parsed.scenarioUpdate.exits && parsed.scenarioUpdate.exits.length > 0) {
-        parsed.scenarioUpdate.exits.forEach((exit: any) => {
+      if (scenarioUpdate.exits && scenarioUpdate.exits.length > 0) {
+        scenarioUpdate.exits.forEach((exit: any) => {
           const changeDesc = `Exit ${exit.direction} to ${exit.destination}: ${exit.condition || 'modified'}`;
           scenarioChanges.push(changeDesc);
           // Record structural changes as permanent
           stateManager.addPermanentScenarioChange(`${parsed.stateUpdate?.playerCharacter?.name || 'Character'} modified ${exit.direction} exit - ${changeDesc}`);
-        });
-      }
-      
-      if (parsed.scenarioUpdate.clues && parsed.scenarioUpdate.clues.length > 0) {
-        parsed.scenarioUpdate.clues.forEach((clue: any) => {
-          if (clue.discovered) {
-            scenarioChanges.push(`Clue discovered: ${clue.id}`);
-          } else {
-            scenarioChanges.push(`Clue modified: ${clue.id}`);
-          }
         });
       }
     }
@@ -388,9 +586,9 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       timestamp: new Date(),
       gameTime: gameState.timeOfDay || "Unknown time",
       timeElapsedMinutes: parsed.timeElapsedMinutes || 0,
-      location: gameState.currentScenario?.location || "Unknown location", 
-      character: parsed.stateUpdate?.playerCharacter?.name || gameState.playerCharacter.name,
-      result: parsed.summary || "performed an action",
+      location: gameState.currentScenario?.location || "Unknown location",
+      character: character.name,
+      result: parsed.summary || (isNPC && npcResponse?.responseDescription) || "performed an action",
       diceRolls: toolLogs.map(log => log), // toolLogs already contain "expression -> result" format
       timeConsumption: parsed.timeConsumption || "instant", // Default to instant if not specified
       scenarioChanges: scenarioChanges.length > 0 ? scenarioChanges : undefined
@@ -400,22 +598,30 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     stateManager.addActionResult(actionResult);
 
     // Log detailed action result
-    console.log("\n📊 [Action Result] 详细执行结果:");
-    console.log(`   Character: ${actionResult.character}`);
-    console.log(`   Location: ${actionResult.location}`);
-    console.log(`   Game Time: ${actionResult.gameTime}`);
-    console.log(`   Time Elapsed: ${actionResult.timeElapsedMinutes || 0} minutes`);
-    console.log(`   Time Consumption: ${actionResult.timeConsumption}`);
+    const logPrefix = isNPC ? `📊 [NPC Action Result] ${character.name}` : `📊 [Action Result] 详细执行结果`;
+    console.log(`\n${logPrefix}:`);
+    if (!isNPC) {
+      console.log(`   Character: ${actionResult.character}`);
+      console.log(`   Location: ${actionResult.location}`);
+      console.log(`   Game Time: ${actionResult.gameTime}`);
+      console.log(`   Time Elapsed: ${actionResult.timeElapsedMinutes || 0} minutes`);
+      console.log(`   Time Consumption: ${actionResult.timeConsumption}`);
+    }
     console.log(`   Result: ${actionResult.result}`);
+    if (isNPC && npcResponse) {
+      console.log(`   Type: ${npcResponse.responseType}`);
+    }
     if (actionResult.diceRolls && actionResult.diceRolls.length > 0) {
-      console.log(`   Dice Rolls (${actionResult.diceRolls.length}):`);
-      actionResult.diceRolls.forEach((roll, index) => {
-        console.log(`     [${index + 1}] ${roll}`);
-      });
-    } else {
+      console.log(`   Dice Rolls${isNPC ? '' : ` (${actionResult.diceRolls.length})`}: ${isNPC ? actionResult.diceRolls.join(', ') : ''}`);
+      if (!isNPC) {
+        actionResult.diceRolls.forEach((roll, index) => {
+          console.log(`     [${index + 1}] ${roll}`);
+        });
+      }
+    } else if (!isNPC) {
       console.log(`   Dice Rolls: None`);
     }
-    if (actionResult.scenarioChanges && actionResult.scenarioChanges.length > 0) {
+    if (actionResult.scenarioChanges && actionResult.scenarioChanges.length > 0 && !isNPC) {
       console.log(`   Scenario Changes (${actionResult.scenarioChanges.length}):`);
       actionResult.scenarioChanges.forEach((change, index) => {
         console.log(`     [${index + 1}] ${change}`);
@@ -448,8 +654,6 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
       location: actionResult.location,
       summary: actionResult.result,
     };
-    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
-    const targetName = actionAnalysis?.target?.name;
     const updatedState = stateManager.getGameState() as GameState;
 
     const appendLog = (character: CharacterProfile | undefined) => {
@@ -461,17 +665,13 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     };
 
     // Acting character (player or NPC)
-    const actorNameLower = actionResult.character.toLowerCase();
-    if (updatedState.playerCharacter.name.toLowerCase() === actorNameLower) {
-      appendLog(updatedState.playerCharacter);
-    } else {
-      const actorNpc = updatedState.npcCharacters.find(
-        (npc) => npc.name.toLowerCase() === actorNameLower
-      );
-      appendLog(actorNpc);
-    }
+    const actorInState = isNPC
+      ? updatedState.npcCharacters.find(npc => npc.id === character.id)
+      : updatedState.playerCharacter;
+    appendLog(actorInState);
 
     // Target character (if present)
+    const targetName = isNPC ? npcResponse?.targetCharacter : gameState.temporaryInfo.currentActionAnalysis?.target?.name;
     if (targetName) {
       const targetLower = targetName.toLowerCase();
       if (updatedState.playerCharacter.name.toLowerCase().includes(targetLower)) {
@@ -490,44 +690,50 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
 
 
   /**
-   * Build error result as a valid GameState with error information recorded in action results
+   * Unified method to build error result for any character action
    */
-  private buildErrorResult(gameState: GameState, errorMessage: string, toolLogs: string[]): GameState {
-    console.error(`\n❌ [Action Agent] 错误处理: ${errorMessage}`);
+  private buildErrorResult(
+    gameState: GameState,
+    character: CharacterProfile,
+    errorMessage: string,
+    toolLogs: string[],
+    isNPC: boolean
+  ): GameState {
+    const logPrefix = isNPC ? `NPC 动作处理错误 (${character.name})` : `错误处理`;
+    console.error(`\n❌ [Action Agent] ${logPrefix}: ${errorMessage}`);
     console.error(`   当前游戏状态: Day ${gameState.gameDay}, ${gameState.timeOfDay}`);
     console.error(`   位置: ${gameState.currentScenario?.location || "Unknown"}`);
-    console.error(`   角色: ${gameState.playerCharacter.name}`);
+    console.error(`   角色: ${character.name}`);
     if (toolLogs.length > 0) {
       console.error(`   已执行的工具调用 (${toolLogs.length}):`);
       toolLogs.forEach((log, index) => {
         console.error(`     [${index + 1}] ${log}`);
       });
     }
-    
+
     const stateManager = new GameStateManager(gameState);
-    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
-    
+
     // Create an error action result to record the failure
     const errorActionResult: ActionResult = {
       timestamp: new Date(),
       gameTime: gameState.timeOfDay || "Unknown time",
       timeElapsedMinutes: 0, // No time elapsed on error
       location: gameState.currentScenario?.location || "Unknown location",
-      character: actionAnalysis?.character || gameState.playerCharacter.name,
-      result: `[错误] 动作处理失败: ${errorMessage}`,
+      character: character.name,
+      result: `[错误] ${isNPC ? 'NPC ' : ''}动作处理失败: ${errorMessage}`,
       diceRolls: toolLogs.length > 0 ? toolLogs : [],
       timeConsumption: "instant",
       scenarioChanges: [`错误: ${errorMessage}`]
     };
-    
+
     // Add error result to action results
     stateManager.addActionResult(errorActionResult);
-    
+
     console.error(`\n📊 [Action Result] 错误结果已记录:`);
     console.error(`   Character: ${errorActionResult.character}`);
     console.error(`   Location: ${errorActionResult.location}`);
     console.error(`   Error: ${errorActionResult.result}`);
-    
+
     // Return valid GameState with error recorded
     return stateManager.getGameState() as GameState;
   }
@@ -538,20 +744,22 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
    */
   async processNPCActions(runtime: any, gameState: GameState): Promise<GameState> {
     const npcResponseAnalyses = gameState.temporaryInfo.npcResponseAnalyses || [];
-    
-    // Filter NPCs that will respond
-    const respondingNPCs = npcResponseAnalyses.filter(analysis => analysis.willRespond && analysis.responseType && analysis.responseType !== "none");
-    
+
+    // Filter NPCs that will respond and sort by executionOrder
+    const respondingNPCs = npcResponseAnalyses
+      .filter(analysis => analysis.willRespond && analysis.responseType && analysis.responseType !== "none")
+      .sort((a, b) => a.executionOrder - b.executionOrder);
+
     if (respondingNPCs.length === 0) {
       console.log("📝 [Action Agent] No NPCs will respond, skipping NPC action processing");
       return gameState;
     }
-    
-    console.log(`\n🎭 [Action Agent] Processing ${respondingNPCs.length} NPC actions...`);
-    
+
+    console.log(`\n🎭 [Action Agent] Processing ${respondingNPCs.length} NPC actions in order...`);
+
     let currentState = gameState;
-    
-    // Process each NPC action sequentially
+
+    // Process each NPC action sequentially in executionOrder
     for (const npcResponse of respondingNPCs) {
       const npc = currentState.npcCharacters.find(n => 
         n.name.toLowerCase() === npcResponse.npcName.toLowerCase()
@@ -562,7 +770,7 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
         continue;
       }
       
-      console.log(`\n🎭 [Action Agent] Processing NPC action: ${npcResponse.npcName} (${npcResponse.responseType})`);
+      console.log(`\n🎭 [Action Agent] Processing NPC action [${npcResponse.executionOrder}]: ${npcResponse.npcName} (${npcResponse.responseType})`);
       
       // Process this NPC's action
       currentState = await this.processSingleNPCAction(
@@ -587,415 +795,19 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     npc: CharacterProfile,
     npcResponse: NPCResponseAnalysis
   ): Promise<GameState> {
-    const baseSystemPrompt = `You are an action resolution specialist for Call of Cthulhu.
+    const npcActionDescription = npcResponse.responseDescription || `${npc.name} performs a ${npcResponse.responseType} action`;
+    const targetCharacter = this.findTargetCharacter(gameState, null, npcResponse);
 
-You are processing an NPC's action. The NPC will perform an action based on their response to a previous character action.
-
-Your job is to resolve the NPC's action step by step. You MUST respond with JSON in one of these formats:
-
-FOR TOOL CALLS (when you need to roll dice):
-{
-  "type": "tool_call",
-  "tool": "roll_dice",
-  "parameters": {
-    "expression": "1d100"
-  }
-}
-
-FOR FINAL RESULTS (when you have everything needed):
-Include "scenarioUpdate" if the action permanently changes the environment. "scenarioUpdate" can include:
-- description: updated scene flavor text
-- conditions: array of environmental condition objects
-- events: array of event strings
-- exits: array of exit objects
-- clues: array of clue objects
-- permanentChanges: array of strings describing lasting structural/environment changes (these will be stored permanently)
-
-INVENTORY UPDATES:
-If the action involves picking up, dropping, receiving, giving, or losing items, include "inventory" in stateUpdate.playerCharacter or stateUpdate.npcCharacters:
-- Inventory items are objects with: { name: string, quantity?: number, properties?: Record<string, any> }
-- To add items: "inventory": { "add": [{ "name": "item name 1", "quantity": 1 }, { "name": "item name 2" }] }
-- To remove items: "inventory": { "remove": [{ "name": "item name", "quantity": 1 }] }
-- To replace entire inventory: "inventory": [{ "name": "item1" }, { "name": "item2", "quantity": 3, "properties": { "weight": 2.5 } }]
-- For item transfers between characters: update BOTH the giver and receiver
-  * Giver: "inventory": { "remove": [{ "name": "item name" }] }
-  * Receiver: "inventory": { "add": [{ "name": "item name" }] }
-Examples:
-- Picking up a key: playerCharacter: { "inventory": { "add": [{ "name": "rusty key" }] } }
-- Dropping a weapon: playerCharacter: { "inventory": { "remove": [{ "name": "pistol" }] } }
-- Giving item to NPC: playerCharacter: { "inventory": { "remove": [{ "name": "flashlight" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "add": [{ "name": "flashlight" }] } }]
-- Receiving item from NPC: playerCharacter: { "inventory": { "add": [{ "name": "library key" }] } }, npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "library key" }] } }]
-- NPC giving to NPC: npcCharacters: [{ "id": "npc-1", "inventory": { "remove": [{ "name": "item" }] } }, { "id": "npc-2", "inventory": { "add": [{ "name": "item" }] } }]
-
-TIME ESTIMATION:
-Estimate how many minutes this action realistically takes in game time. Consider the nature and complexity of the action:
-- Quick actions: 1-10 minutes (glancing, brief conversation, opening doors)
-- Standard actions: 10-30 minutes (searching, examining, skill checks)
-- Extended actions: 30-120 minutes (combat, lengthy conversations, research)
-- Long activities: 2-8 hours (travel, surveillance, extended tasks)
-- Very long activities: 8+ hours (sleeping, all-day journeys)
-
-Be realistic and use your judgment. Include "timeElapsedMinutes" in your response.
-
-SCENE CHANGE DETECTION:
-1. Determine if NPC intends to move to a new location
-2. If movement requires a skill check, call roll_dice first and base scene change on the result
-3. If movement is unobstructed, directly return sceneChange with shouldChange: true
-4. If no movement intent, return sceneChange with shouldChange: false
-`;
-
-    // Get action type template based on responseType
-    const actionType = npcResponse.responseType as ActionType;
-    const actionTypeTemplate = actionTypeTemplates[actionType] || actionTypeTemplates.narrative;
-    
-    const diceGuidelines = `
-
-DICE ROLLING GUIDELINES:
-1. Use NPC skills from the provided NPC data to determine appropriate skill checks
-2. Apply environmental conditions and temporary rules as modifiers when calculating success thresholds
-3. For skill checks: Always use 1d100, compare against modified skill value
-4. For damage: Use weapon damage dice (1d3 for fist, 1d6 for knife, 2d6 for gun, etc.)
-5. For attribute checks: Use 1d100, compare against attribute value
-6. For luck rolls: Use 1d100, compare against Luck value
-7. Consider situational modifiers from scenario conditions and temporary rules
-
-EXAMPLES:
-- Fighting (Brawl) skill 50% in darkness (-20%): Roll 1d100, succeed if ≤30
-- Damage from successful punch: Roll 1d3+STR bonus
-- Sanity loss from horror: Roll 1d4, 1d8, etc. based on threat level
-- Dodge in difficult terrain: Roll 1d100, compare against modified Dodge skill
-
-Always analyze the current situation, NPC capabilities, environmental conditions, and applicable rules before determining what dice to roll.
-
-IMPORTANT: You MUST respond with valid JSON format only. Do not include any text outside the JSON structure.`;
-
-    const systemPrompt = baseSystemPrompt + actionTypeTemplate + diceGuidelines;
-
-    // Build NPC action description
-    const npcActionDescription = npcResponse.responseDescription || `${npc.name} performs a ${actionType} action`;
-
-    // Tool call loop
-    const toolLogs: string[] = [];
-    let conversation = [`NPC action: ${npcActionDescription}`];
-    let maxIterations = 10;
-    
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const npcContext = this.buildNPCContext(gameState, npc, npcResponse);
-      const contextWithHistory = systemPrompt + npcContext + "\n\nConversation so far:\n" + conversation.join("\n");
-      
-      const response = await generateText({
-        runtime,
-        context: contextWithHistory,
-        modelClass: ModelClass.SMALL,
-      });
-
-      // Parse JSON response - handle markdown code blocks
-      let parsed;
-      try {
-        let jsonText = response.trim();
-        
-        const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        if (codeBlockMatch) {
-          jsonText = codeBlockMatch[1].trim();
-          console.log(`📝 [Action Agent] 检测到 markdown 代码块，已提取 JSON 内容`);
-        }
-        
-        if (!jsonText.startsWith('{') && !jsonText.startsWith('[')) {
-          const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
-          if (jsonObjectMatch) {
-            jsonText = jsonObjectMatch[0];
-            console.log(`📝 [Action Agent] 从文本中提取 JSON 对象`);
-          }
-        }
-        
-        parsed = JSON.parse(jsonText);
-      } catch (error) {
-        console.error(`❌ [Action Agent] JSON 解析错误:`, error);
-        console.error(`   原始响应 (前500字符): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
-        return this.buildNPCErrorResult(gameState, npc, `Invalid JSON response from model: ${error instanceof Error ? error.message : String(error)}`, toolLogs);
+    return this.processCharacterAction(
+      runtime,
+      gameState,
+      npc,
+      npcActionDescription,
+      {
+        isNPC: true,
+        npcResponse,
+        targetCharacter
       }
-
-      if (parsed.type === "tool_call") {
-        // Execute tool call
-        if (parsed.tool === "roll_dice" && parsed.parameters?.expression) {
-          const rollResult = this.executeDiceRoll(parsed.parameters.expression);
-          if (rollResult.error) {
-            console.error(`❌ [Action Agent] 骰子投掷错误: ${rollResult.error}`);
-            return this.buildNPCErrorResult(gameState, npc, `Dice roll error: ${rollResult.error}`, toolLogs);
-          }
-          conversation.push(`AI: ${JSON.stringify(parsed)}`);
-          conversation.push(`Tool result: ${JSON.stringify(rollResult)}`);
-          toolLogs.push(`${parsed.parameters.expression} -> ${rollResult.breakdown}`);
-        } else {
-          console.error(`❌ [Action Agent] 无效的工具调用格式:`, parsed);
-          return this.buildNPCErrorResult(gameState, npc, `Invalid tool call format: ${JSON.stringify(parsed)}`, toolLogs);
-        }
-      } else if (parsed.type === "result") {
-        // Final result
-        return this.buildNPCFinalResult(gameState, parsed, toolLogs, npc, npcResponse);
-      } else {
-        console.error(`❌ [Action Agent] 无效的响应类型:`, parsed);
-        return this.buildNPCErrorResult(gameState, npc, `Invalid response type: ${parsed.type || 'unknown'}`, toolLogs);
-      }
-    }
-    
-    console.error(`❌ [Action Agent] 达到最大迭代次数 (${maxIterations})`);
-    return this.buildNPCErrorResult(gameState, npc, "Maximum iterations reached", toolLogs);
-  }
-
-  /**
-   * Build context for NPC action processing
-   */
-  private buildNPCContext(gameState: GameState, npc: CharacterProfile, npcResponse: NPCResponseAnalysis): string {
-    let context = "\n\nCurrent Scenario:\n";
-    if (gameState.currentScenario) {
-      const scenarioInfo = {
-        name: gameState.currentScenario.name,
-        location: gameState.currentScenario.location,
-        description: gameState.currentScenario.description,
-        conditions: gameState.currentScenario.conditions,
-        permanentChanges: gameState.currentScenario.permanentChanges,
-        exits: gameState.currentScenario.exits || []
-      };
-      context += JSON.stringify(scenarioInfo, null, 2);
-    } else {
-      context += "No current scenario";
-    }
-    
-    // Add temporary rules if any
-    if (gameState.temporaryInfo.rules.length > 0) {
-      context += "\n\nTemporary Rules:\n";
-      gameState.temporaryInfo.rules.forEach((rule, index) => {
-        context += `${index + 1}. ${rule}\n`;
-      });
-    }
-    
-    context += "\n\nNPC (acting character):\n" + JSON.stringify(npc, null, 2);
-    
-    // Add target character if applicable
-    if (npcResponse.targetCharacter) {
-      const targetLower = npcResponse.targetCharacter.toLowerCase();
-      const targetNpc = gameState.npcCharacters.find(n => 
-        n.name.toLowerCase().includes(targetLower)
-      );
-      const targetPlayer = gameState.playerCharacter.name.toLowerCase().includes(targetLower) 
-        ? gameState.playerCharacter 
-        : null;
-      
-      if (targetNpc) {
-        context += "\n\nTarget NPC:\n" + JSON.stringify(targetNpc, null, 2);
-      } else if (targetPlayer) {
-        context += "\n\nTarget Character (Player):\n" + JSON.stringify(targetPlayer, null, 2);
-      }
-    }
-    
-    // Add NPC response context
-    context += "\n\nNPC Response Context:\n";
-    context += JSON.stringify({
-      responseDescription: npcResponse.responseDescription,
-      reasoning: npcResponse.reasoning,
-      urgency: npcResponse.urgency
-    }, null, 2);
-    
-    return context;
-  }
-
-  /**
-   * Build final result for NPC action
-   */
-  private buildNPCFinalResult(
-    gameState: GameState,
-    parsed: any,
-    toolLogs: string[],
-    npc: CharacterProfile,
-    npcResponse: NPCResponseAnalysis
-  ): GameState {
-    const stateManager = new GameStateManager(gameState);
-    
-    // Apply the state update from LLM result
-    if (parsed.stateUpdate) {
-      stateManager.applyActionUpdate(parsed.stateUpdate);
-    }
-
-    // Handle NPC scene change - only update NPC location, don't trigger Director scene transition
-    if (parsed.sceneChange && parsed.sceneChange.shouldChange && parsed.sceneChange.targetSceneName) {
-      const targetSceneName = parsed.sceneChange.targetSceneName;
-      console.log(`\n📍 [Action Agent] NPC ${npc.name} 请求场景转换: ${targetSceneName}`);
-      
-      // Find target scenario to get its location
-      if (this.scenarioLoader) {
-        const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
-        
-        if (searchResult.scenarios.length > 0) {
-          const targetScenario = searchResult.scenarios[0];
-          const targetLocation = targetScenario.snapshot.location;
-          
-          // Update NPC's currentLocation in gameState
-          const currentState = stateManager.getGameState();
-          const npcInState = currentState.npcCharacters.find(n => n.id === npc.id) as NPCProfile | undefined;
-          
-          if (npcInState) {
-            const oldLocation = npcInState.currentLocation || null;
-            npcInState.currentLocation = targetLocation;
-            
-            if (oldLocation !== targetLocation) {
-              console.log(`   ✓ NPC ${npc.name} 位置已更新: ${oldLocation || "Unknown"} → ${targetLocation}`);
-            } else {
-              console.log(`   - NPC ${npc.name} 已在目标位置 ${targetLocation}`);
-            }
-          } else {
-            console.warn(`   ⚠️  在 gameState 中未找到 NPC ${npc.name} (ID: ${npc.id})`);
-          }
-        } else {
-          console.warn(`   ⚠️  未找到场景 "${targetSceneName}"，无法更新NPC位置`);
-        }
-      } else {
-        console.warn(`   ⚠️  ScenarioLoader 未初始化，无法查找场景位置`);
-      }
-      
-      // Note: We do NOT set sceneChangeRequest for NPC scene changes
-      // This prevents Director from triggering a player scene transition
-    }
-
-    // Apply scenario updates if provided
-    const scenarioChanges: string[] = [];
-    if (parsed.scenarioUpdate) {
-      stateManager.updateScenarioState(parsed.scenarioUpdate);
-      
-      if (parsed.scenarioUpdate.description) {
-        scenarioChanges.push("Environment description updated");
-      }
-      
-      if (parsed.scenarioUpdate.conditions && parsed.scenarioUpdate.conditions.length > 0) {
-        scenarioChanges.push(`Environmental conditions changed: ${parsed.scenarioUpdate.conditions.map((c: any) => c.description).join(', ')}`);
-      }
-      
-      if (parsed.scenarioUpdate.events && parsed.scenarioUpdate.events.length > 0) {
-        scenarioChanges.push(`New events recorded: ${parsed.scenarioUpdate.events.join(', ')}`);
-      }
-      
-      if (parsed.scenarioUpdate.permanentChanges && parsed.scenarioUpdate.permanentChanges.length > 0) {
-        parsed.scenarioUpdate.permanentChanges.forEach((change: string) => {
-          scenarioChanges.push(`Permanent change: ${change}`);
-          stateManager.addPermanentScenarioChange(change);
-        });
-      }
-
-      if (parsed.scenarioUpdate.exits && parsed.scenarioUpdate.exits.length > 0) {
-        parsed.scenarioUpdate.exits.forEach((exit: any) => {
-          const changeDesc = `Exit ${exit.direction} to ${exit.destination}: ${exit.condition || 'modified'}`;
-          scenarioChanges.push(changeDesc);
-          stateManager.addPermanentScenarioChange(`${npc.name} modified ${exit.direction} exit - ${changeDesc}`);
-        });
-      }
-      
-      if (parsed.scenarioUpdate.clues && parsed.scenarioUpdate.clues.length > 0) {
-        parsed.scenarioUpdate.clues.forEach((clue: any) => {
-          if (clue.discovered) {
-            scenarioChanges.push(`Clue discovered: ${clue.id}`);
-          } else {
-            scenarioChanges.push(`Clue modified: ${clue.id}`);
-          }
-        });
-      }
-    }
-    
-    // Create structured action result for NPC
-    const actionResult: ActionResult = {
-      timestamp: new Date(),
-      gameTime: gameState.timeOfDay || "Unknown time",
-      timeElapsedMinutes: parsed.timeElapsedMinutes || 0,
-      location: gameState.currentScenario?.location || "Unknown location",
-      character: npc.name,
-      result: parsed.summary || npcResponse.responseDescription || "NPC performed an action",
-      diceRolls: toolLogs.map(log => log),
-      timeConsumption: parsed.timeConsumption || "instant",
-      scenarioChanges: scenarioChanges.length > 0 ? scenarioChanges : undefined
-    };
-    
-    // Add to action results
-    stateManager.addActionResult(actionResult);
-
-    // Log detailed action result
-    console.log(`\n📊 [NPC Action Result] ${npc.name}:`);
-    console.log(`   Result: ${actionResult.result}`);
-    console.log(`   Type: ${npcResponse.responseType}`);
-    if (actionResult.diceRolls && actionResult.diceRolls.length > 0) {
-      console.log(`   Dice Rolls: ${actionResult.diceRolls.join(', ')}`);
-    }
-
-    // Update game time based on elapsed time
-    if (actionResult.timeElapsedMinutes && actionResult.timeElapsedMinutes > 0) {
-      stateManager.updateGameTime(actionResult.timeElapsedMinutes);
-    }
-
-    // Append summary to action logs
-    // Use full game time from state manager
-    const fullTime = stateManager.getFullGameTime();
-    const logEntry: ActionLogEntry = {
-      time: fullTime,
-      location: actionResult.location,
-      summary: actionResult.result,
-    };
-    
-    const updatedState = stateManager.getGameState() as GameState;
-    
-    if (!npc.actionLog) {
-      npc.actionLog = [];
-    }
-    npc.actionLog.push(logEntry);
-    
-    // If target character exists, add log to target as well
-    if (npcResponse.targetCharacter) {
-      const targetLower = npcResponse.targetCharacter.toLowerCase();
-      if (updatedState.playerCharacter.name.toLowerCase().includes(targetLower)) {
-        if (!updatedState.playerCharacter.actionLog) {
-          updatedState.playerCharacter.actionLog = [];
-        }
-        updatedState.playerCharacter.actionLog.push(logEntry);
-      } else {
-        const targetNpc = updatedState.npcCharacters.find(n =>
-          n.name.toLowerCase().includes(targetLower)
-        );
-        if (targetNpc) {
-          if (!targetNpc.actionLog) {
-            targetNpc.actionLog = [];
-          }
-          targetNpc.actionLog.push(logEntry);
-        }
-      }
-    }
-    
-    return stateManager.getGameState() as GameState;
-  }
-
-  /**
-   * Build error result for NPC action
-   */
-  private buildNPCErrorResult(
-    gameState: GameState,
-    npc: CharacterProfile,
-    errorMessage: string,
-    toolLogs: string[]
-  ): GameState {
-    console.error(`\n❌ [Action Agent] NPC 动作处理错误 (${npc.name}): ${errorMessage}`);
-    
-    const stateManager = new GameStateManager(gameState);
-    
-    const errorActionResult: ActionResult = {
-      timestamp: new Date(),
-      gameTime: gameState.timeOfDay || "Unknown time",
-      timeElapsedMinutes: 0,
-      location: gameState.currentScenario?.location || "Unknown location",
-      character: npc.name,
-      result: `[错误] NPC 动作处理失败: ${errorMessage}`,
-      diceRolls: toolLogs.length > 0 ? toolLogs : [],
-      timeConsumption: "instant",
-      scenarioChanges: [`错误: ${errorMessage}`]
-    };
-    
-    stateManager.addActionResult(errorActionResult);
-    
-    return stateManager.getGameState() as GameState;
+    );
   }
 }

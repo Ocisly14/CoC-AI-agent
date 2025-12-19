@@ -76,13 +76,6 @@ export function getKeeperTemplate(): string {
   {{directorNarrativeDirection}}
   {{/if}}
   
-  {{#if discoveredClues}}
-  Already Discovered Clues (DO NOT RE-REVEAL):
-  {{#each discoveredClues}}
-  - {{this.text}} ({{this.type}})
-  {{/each}}
-  {{/if}}
-  
   ==================================================
   SECTION 2 — KEEPER DECISION LOGIC
   ==================================================
@@ -160,7 +153,9 @@ export function getKeeperTemplate(): string {
     "narrative": "Immersive in-world narrative text...",
     "tensionLevel": <number 1-10>,
     "clueRevelations": {
-      "scenarioClues": ["clue-id"],
+      "scenarioClues": [
+        { "clueId": "clue-id" }
+      ],
       "npcClues": [
         { "npcId": "npc-id", "clueId": "clue-id" }
       ],

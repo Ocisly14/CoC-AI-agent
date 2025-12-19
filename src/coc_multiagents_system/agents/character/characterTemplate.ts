@@ -87,7 +87,11 @@ For each NPC in the current scene, analyze:
 
 3. **Response Description**: A brief description of what the NPC will do
 
-4. **Target Character**: If the response is directed at a specific character (investigator or another NPC), specify the target name. If the response is general or not directed at anyone, set to null
+4. **Execution Order**: Assign a unique sequential number (1, 2, 3, 4...) to each responding NPC to determine execution order.
+   - Lower numbers execute first (1 executes before 2, 2 before 3, etc.)
+   - Consider narrative flow and cause-effect relationships when assigning order
+
+5. **Target Character**: If the response is directed at a specific character (investigator or another NPC), specify the target name. If the response is general or not directed at anyone, set to null
 
 ## Output Format (JSON only)
 
@@ -100,6 +104,7 @@ Return an array of NPC response analyses, one for each NPC in the current scene:
       "willRespond": true,
       "responseType": "exploration|social|stealth|combat|chase|mental|environmental|narrative",
       "responseDescription": "Brief description of what the NPC will do",
+      "executionOrder": 1,
       "targetCharacter": "target character name (investigator or another NPC) if the response is directed at someone, or null if general"
     }
   ]
