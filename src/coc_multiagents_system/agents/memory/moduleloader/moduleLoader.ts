@@ -129,6 +129,54 @@ export class ModuleLoader {
   }
 
   /**
+   * Load module from a single JSON file (skip document parsing)
+   */
+  async loadModuleFromJSON(filePath: string, forceReload = false): Promise<ModuleBackground[]> {
+    console.log(`\n=== Loading Module from JSON file: ${filePath} ===`);
+
+    if (!fs.existsSync(filePath)) {
+      console.log(`File does not exist: ${filePath}`);
+      return [];
+    }
+
+    try {
+      console.log(`📦 正在加载 JSON 文件...`);
+      const fileContent = fs.readFileSync(filePath, "utf-8");
+      const jsonData = JSON.parse(fileContent);
+
+      // Handle both array of modules and single module object
+      const modules: ParsedModuleData[] = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+      if (modules.length === 0) {
+        console.log("⚠️  JSON 文件中未找到模块数据。");
+        return [];
+      }
+
+      // Convert and store each module
+      console.log(`💾 开始保存 ${modules.length} 个模块到数据库...`);
+      const moduleRecords: ModuleBackground[] = [];
+      for (let i = 0; i < modules.length; i++) {
+        const parsed = modules[i];
+        try {
+          console.log(`  [${i + 1}/${modules.length}] 正在保存模块: ${parsed.title}`);
+          const moduleRecord = this.convertToModuleBackground(parsed);
+          this.saveModuleToDatabase(moduleRecord);
+          moduleRecords.push(moduleRecord);
+          console.log(`    ✓ 已保存模块: ${moduleRecord.title}`);
+        } catch (error) {
+          console.error(`    ✗ 保存模块失败 ${parsed.title}:`, error);
+        }
+      }
+
+      console.log(`\n=== Successfully loaded ${moduleRecords.length} modules from JSON file ===\n`);
+      return moduleRecords;
+    } catch (error) {
+      console.error(`✗ 加载 JSON 文件失败 ${filePath}:`, error);
+      return [];
+    }
+  }
+
+  /**
    * Load modules from JSON files in a directory (skip document parsing)
    */
   async loadModulesFromJSONDirectory(dirPath: string, forceReload = false): Promise<ModuleBackground[]> {
@@ -218,7 +266,7 @@ export class ModuleLoader {
   getAllModules(): ModuleBackground[] {
     const database = this.db.getDatabase();
     const modules = database.prepare(`
-      SELECT * FROM module_backgrounds ORDER BY created_at DESC
+      SELECT * FROM module_backgrounds
     `).all() as any[];
 
     return modules.map((row) => {
@@ -229,33 +277,16 @@ export class ModuleLoader {
         storyOutline: row.story_outline,
         moduleNotes: row.module_notes,
         keeperGuidance: row.keeper_guidance,
-        storyHook: row.story_hook,
         moduleLimitations: row.module_limitations,
-        initialScenario: row.initial_scenario,
         initialGameTime: row.initial_game_time,
+        initialScenarioNPCs: row.initial_scenario_npcs ? JSON.parse(row.initial_scenario_npcs) : [],
         tags: JSON.parse(row.tags || '[]'),
-        source: row.source,
-        createdAt: row.created_at,
       };
       
-      // Load introduction and characterGuidance if they exist in database
-      // (Note: These fields may not exist in older database schemas)
+      // Load introduction if it exists in database
+      // (Note: This field may not exist in older database schemas)
       if (row.introduction) {
         module.introduction = row.introduction;
-      }
-      if (row.character_guidance) {
-        module.characterGuidance = row.character_guidance;
-      }
-      
-      // Load initialScenarioNPCs if it exists in database
-      // (Note: This field may not exist in older database schemas)
-      if (row.initial_scenario_npcs) {
-        try {
-          module.initialScenarioNPCs = JSON.parse(row.initial_scenario_npcs);
-        } catch {
-          // If parsing fails, try to handle as comma-separated string or empty array
-          module.initialScenarioNPCs = [];
-        }
       }
       
       return module;
@@ -327,17 +358,12 @@ export class ModuleLoader {
       storyOutline: parsed.storyOutline,
       moduleNotes: parsed.moduleNotes,
       keeperGuidance: parsed.keeperGuidance,
-      storyHook: parsed.storyHook,
       moduleLimitations: parsed.moduleLimitations,
-      initialScenario: parsed.initialScenario,
       initialGameTime: parsed.initialGameTime,
       initialScenarioNPCs: parsed.initialScenarioNPCs || [],
       tags: parsed.tags || [],
-      source: parsed.source,
-      createdAt: new Date().toISOString(),
-      // Introduction and characterGuidance are generated during parsing
+      // Introduction is used as story introduction for players
       introduction: parsed.introduction,
-      characterGuidance: parsed.characterGuidance,
     };
   }
 
@@ -351,21 +377,20 @@ export class ModuleLoader {
     // Check if initial_game_time column exists
     const hasInitialGameTime = this.dbInstance.hasColumn("module_backgrounds", "initial_game_time");
 
-    // Check if introduction and character_guidance columns exist
+    // Check if introduction column exists
     const hasIntroduction = this.dbInstance.hasColumn("module_backgrounds", "introduction");
-    const hasCharacterGuidance = this.dbInstance.hasColumn("module_backgrounds", "character_guidance");
 
     // Check if initial_scenario_npcs column exists
     const hasInitialScenarioNPCs = this.dbInstance.hasColumn("module_backgrounds", "initial_scenario_npcs");
 
-    if (hasInitialGameTime && hasIntroduction && hasCharacterGuidance && hasInitialScenarioNPCs) {
-      // Full schema with all fields
+    if (hasInitialGameTime && hasIntroduction && hasInitialScenarioNPCs) {
+      // Full schema with all current fields
       const stmt = database.prepare(`
               INSERT OR REPLACE INTO module_backgrounds (
                   module_id, title, background, story_outline, module_notes,
-                  keeper_guidance, story_hook, module_limitations, initial_scenario, initial_game_time, 
-                  initial_scenario_npcs, introduction, character_guidance, tags, source, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  keeper_guidance, module_limitations, initial_game_time, 
+                  initial_scenario_npcs, introduction, tags
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
 
       stmt.run(
@@ -375,25 +400,20 @@ export class ModuleLoader {
         module.storyOutline || null,
         module.moduleNotes || null,
         module.keeperGuidance || null,
-        module.storyHook || null,
         module.moduleLimitations || null,
-        module.initialScenario || null,
         module.initialGameTime || null,
         module.initialScenarioNPCs ? JSON.stringify(module.initialScenarioNPCs) : null,
         module.introduction || null,
-        module.characterGuidance || null,
-        JSON.stringify(module.tags || []),
-        module.source || null,
-        module.createdAt
+        JSON.stringify(module.tags || [])
       );
     } else if (hasInitialGameTime && hasInitialScenarioNPCs) {
-      // Schema with initial_game_time and initial_scenario_npcs but without introduction fields
+      // Schema with initial_game_time and initial_scenario_npcs but without introduction
       const stmt = database.prepare(`
               INSERT OR REPLACE INTO module_backgrounds (
                   module_id, title, background, story_outline, module_notes,
-                  keeper_guidance, story_hook, module_limitations, initial_scenario, initial_game_time, 
-                  initial_scenario_npcs, tags, source, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  keeper_guidance, module_limitations, initial_game_time, 
+                  initial_scenario_npcs, tags
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
 
       stmt.run(
@@ -403,22 +423,18 @@ export class ModuleLoader {
         module.storyOutline || null,
         module.moduleNotes || null,
         module.keeperGuidance || null,
-        module.storyHook || null,
         module.moduleLimitations || null,
-        module.initialScenario || null,
         module.initialGameTime || null,
         module.initialScenarioNPCs ? JSON.stringify(module.initialScenarioNPCs) : null,
-        JSON.stringify(module.tags || []),
-        module.source || null,
-        module.createdAt
+        JSON.stringify(module.tags || [])
       );
     } else if (hasInitialGameTime) {
-      // Schema with initial_game_time but without introduction fields or initial_scenario_npcs
+      // Schema with initial_game_time but without introduction or initial_scenario_npcs
       const stmt = database.prepare(`
               INSERT OR REPLACE INTO module_backgrounds (
                   module_id, title, background, story_outline, module_notes,
-                  keeper_guidance, story_hook, module_limitations, initial_scenario, initial_game_time, tags, source, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  keeper_guidance, module_limitations, initial_game_time, tags
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           `);
 
       stmt.run(
@@ -428,21 +444,17 @@ export class ModuleLoader {
         module.storyOutline || null,
         module.moduleNotes || null,
         module.keeperGuidance || null,
-        module.storyHook || null,
         module.moduleLimitations || null,
-        module.initialScenario || null,
         module.initialGameTime || null,
-        JSON.stringify(module.tags || []),
-        module.source || null,
-        module.createdAt
+        JSON.stringify(module.tags || [])
       );
     } else {
       // Fallback for older schema
       const stmt = database.prepare(`
               INSERT OR REPLACE INTO module_backgrounds (
                   module_id, title, background, story_outline, module_notes,
-                  keeper_guidance, story_hook, module_limitations, initial_scenario, tags, source, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  keeper_guidance, module_limitations, tags
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           `);
 
       stmt.run(
@@ -452,12 +464,8 @@ export class ModuleLoader {
         module.storyOutline || null,
         module.moduleNotes || null,
         module.keeperGuidance || null,
-        module.storyHook || null,
         module.moduleLimitations || null,
-        module.initialScenario || null,
-        JSON.stringify(module.tags || []),
-        module.source || null,
-        module.createdAt
+        JSON.stringify(module.tags || [])
       );
     }
   }

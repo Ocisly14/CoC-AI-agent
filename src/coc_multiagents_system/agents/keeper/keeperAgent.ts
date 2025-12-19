@@ -1,8 +1,8 @@
 import { getKeeperTemplate } from "./keeperTemplate.js";
 import { composeTemplate } from "../../../template.js";
-import type { GameState, ActionResult, ActionAnalysis } from "../../../state.js";
+import type { GameState, ActionResult, ActionAnalysis, DiscoveredClue } from "../../../state.js";
 import { GameStateManager } from "../../../state.js";
-import type { CharacterProfile, NPCProfile } from "../models/gameTypes.js";
+import type { CharacterProfile, NPCProfile, ActionLogEntry } from "../models/gameTypes.js";
 import {
   ModelProviderName,
   ModelClass,
@@ -35,27 +35,16 @@ export class KeeperAgent {
     const completeScenarioInfo = this.extractCompleteScenarioInfo(gameState);
     
     // 2. 获取所有的 action results（包括玩家和 NPC 的）
-    const allActionResults = this.getAllActionResults(gameState);
+    const allActionResultsRaw = this.getAllActionResults(gameState);
+    
+    // 过滤掉 diceRolls 字段（模板中不使用）
+    const allActionResults: Omit<ActionResult, 'diceRolls'>[] = allActionResultsRaw.map(({ diceRolls, ...result }) => result);
     
     // 2.1. 获取最新的完整的action result（用于向后兼容）
     const latestCompleteActionResult = allActionResults.length > 0 ? allActionResults[allActionResults.length - 1] : null;
     
-    // 3. 获取场景中所有角色的完整属性
-    const allSceneCharacters = this.extractAllSceneCharactersWithCompleteAttributes(gameState);
-    
-    // 4. 获取action result中涉及的NPC完整属性（与场景角色去重）
-    const actionRelatedNpcs = this.extractActionRelatedNpcsWithDeduplication(
-      gameState, 
-      latestCompleteActionResult, 
-      allSceneCharacters
-    );
-    
-    // 4.5. 获取当前位置与场景位置相同的NPC（与场景角色和action相关NPC去重）
-    const locationMatchingNpcs = this.extractLocationMatchingNpcsWithDeduplication(
-      gameState,
-      allSceneCharacters,
-      actionRelatedNpcs
-    );
+    // 3. 获取action result中涉及的NPC完整属性
+    const actionRelatedNpcs = this.extractActionRelatedNpcs(gameState, allActionResults);
     
     // 5. 检测场景变化，如果有变化则获取前一个场景的信息
     const isTransition = gameState.temporaryInfo.transition;
@@ -72,59 +61,50 @@ export class KeeperAgent {
     }>) || [];
     
     // 8. 获取RAG检索结果，只保留需要的字段
-    const rawRagResults = (gameState.temporaryInfo.ragResults as any[]) || [];
-    const ragResults = rawRagResults.map((evidence: any) => ({
-      type: evidence.type,
-      title: evidence.title,
-      snippet: evidence.snippet,
-      visibility: evidence.visibility,
-    }));
+    // TODO: 暂时注释掉RAG注入，因为正在修改RAG部分
+    // const rawRagResults = (gameState.temporaryInfo.ragResults as any[]) || [];
+    // const ragResults = rawRagResults.map((evidence: any) => ({
+    //   type: evidence.type,
+    //   title: evidence.title,
+    //   snippet: evidence.snippet,
+    //   visibility: evidence.visibility,
+    // }));
+    const ragResults: any[] = []; // 暂时设置为空数组
     
     // 获取模板
     const template = getKeeperTemplate();
     
     // Prepare template context (JSON-packed to keep template concise)
-    const playerCharacterComplete = this.extractCompletePlayerCharacter(gameState.playerCharacter);
+    const currentLocation = gameState.currentScenario?.location || null;
+    const playerCharacterComplete = this.extractCompletePlayerCharacter(gameState.playerCharacter, currentLocation);
     
-    // Get time description
+    // Get full game time
     const stateManager = new GameStateManager(gameState);
-    const timeDescription = stateManager.getTimeOfDayDescription();
     const fullGameTime = stateManager.getFullGameTime();
+    
+    // Get narrative direction from state (set by Director Agent)
+    const directorNarrativeDirection = gameState.temporaryInfo.narrativeDirection || null;
     
     const templateContext = {
       characterInput,
-      completeScenarioInfo,
-      allActionResults,  // 所有 action results
-      latestCompleteActionResult,
-      playerCharacterComplete,
-      allSceneCharacters,
-      actionRelatedNpcs,
-      locationMatchingNpcs,
-      gameDay: gameState.gameDay,
-      timeOfDay: gameState.timeOfDay,
-      timeDescription: timeDescription,  // Human-readable time (Morning, Evening, etc.)
+      allActionResults,  // 所有 action results（用于 {{#each}} 循环）
       fullGameTime: fullGameTime,  // Complete display: "Day 1, 08:00 (Morning)"
       tension: gameState.tension,
       phase: gameState.phase,
       isTransition,
-      previousScenarioInfo,
-      sceneTransitionRejection,
-      conversationHistory,  // Recent conversation history (last 1 turn)
-      ragResults,  // RAG检索结果（已过滤，只包含 type, title, snippet, anchors, visibility）
+      sceneTransitionRejection,  // 对象（用于访问 .reasoning 属性）
+      conversationHistory,  // Recent conversation history（用于 {{#each}} 循环）
+      // ragResults,  // TODO: 暂时注释掉RAG检索结果，因为正在修改RAG部分
+      ragResults: [],  // 暂时设置为空数组
+      discoveredClues: gameState.discoveredClues || [],  // 全局已发现线索列表（用于 {{#each}} 循环）
+      // JSON 字符串版本（模板中直接使用）
       scenarioContextJson: this.safeStringify(completeScenarioInfo),
-      allActionResultsJson: this.safeStringify(allActionResults),  // 所有 action results 的 JSON
-      latestActionResultJson: latestCompleteActionResult
-        ? this.safeStringify(latestCompleteActionResult)
-        : "null",
       playerCharacterJson: this.safeStringify(playerCharacterComplete),
-      sceneCharactersJson: this.safeStringify(allSceneCharacters),
       actionRelatedNpcsJson: this.safeStringify(actionRelatedNpcs),
-      locationMatchingNpcsJson: this.safeStringify(locationMatchingNpcs),
-      previousScenarioJson: previousScenarioInfo 
+      previousScenarioJson: previousScenarioInfo
         ? this.safeStringify(previousScenarioInfo)
         : "null",
-      conversationHistoryJson: this.safeStringify(conversationHistory),
-      ragResultsJson: this.safeStringify(ragResults),  // RAG结果的JSON
+      directorNarrativeDirection: directorNarrativeDirection,  // Director 生成的叙事方向指导（从 state 读取）
     };
 
     // 使用模板和LLM生成叙事和线索揭示
@@ -167,11 +147,6 @@ export class KeeperAgent {
     // 更新游戏状态中的线索状态
     const updatedGameState = this.updateClueStates(gameState, parsedResponse.clueRevelations, gameStateManager);
 
-    // 更新NPC位置（如果LLM提供了）
-    if (parsedResponse.npcLocationUpdates && Array.isArray(parsedResponse.npcLocationUpdates)) {
-      this.updateNpcLocations(updatedGameState, parsedResponse.npcLocationUpdates, gameStateManager);
-    }
-
     // 更新紧张度（如果LLM提供了）
     if (parsedResponse.tensionLevel && typeof parsedResponse.tensionLevel === 'number') {
       const oldTension = gameState.tension;
@@ -181,6 +156,9 @@ export class KeeperAgent {
         console.log(`🎭 Tension changed: ${oldTension} → ${newTension}`);
       }
     }
+
+    // 清除 narrative direction（已在本次叙事中使用）
+    gameStateManager.clearNarrativeDirection();
 
     // 清除 transition 标志（已经在叙事中处理过了）
     if (gameState.temporaryInfo.transition) {
@@ -319,74 +297,59 @@ export class KeeperAgent {
   }
 
   /**
-   * 3. 提取场景中所有角色的完整属性
+   * 3. 提取所有 action results 中涉及的 NPC 完整属性
    */
-  private extractAllSceneCharactersWithCompleteAttributes(gameState: GameState) {
-    return gameState.npcCharacters.map(npc => ({
-      source: 'scene',
-      character: this.extractCompleteCharacterAttributes(npc)
-    }));
-  }
-
-  /**
-   * 4. 提取action result中涉及的NPC完整属性（与场景角色去重）
-   */
-  private extractActionRelatedNpcsWithDeduplication(
-    gameState: GameState, 
-    latestActionResult: ActionResult | null,
-    allSceneCharacters: any[]
-  ) {
-    if (!latestActionResult) {
+  private extractActionRelatedNpcs(gameState: GameState, allActionResults: Omit<ActionResult, 'diceRolls'>[]) {
+    if (!allActionResults || allActionResults.length === 0) {
       return [];
     }
 
-    // 从action result中识别涉及的角色
-    const actionCharacterName = latestActionResult.character;
-    const actionResult = latestActionResult.result;
-    
-    // 从action analysis中获取目标角色
-    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
-    const targetName = actionAnalysis?.target?.name;
-
-    // 收集相关的NPC名称
+    // 收集所有 action results 中相关的 NPC 名称（去重）
     const relatedNpcNames = new Set<string>();
+    const playerName = gameState.playerCharacter.name;
     
-    // 添加action result中的角色（如果是NPC）
-    if (actionCharacterName && actionCharacterName !== gameState.playerCharacter.name) {
-      relatedNpcNames.add(actionCharacterName);
-    }
-    
-    // 添加目标角色
-    if (targetName) {
-      relatedNpcNames.add(targetName);
-    }
-    
-    // 从action result文本中提取可能的NPC名称（简单匹配）
-    gameState.npcCharacters.forEach(npc => {
-      if (actionResult.toLowerCase().includes(npc.name.toLowerCase())) {
-        relatedNpcNames.add(npc.name);
+    // 从所有 action results 中提取相关 NPC
+    for (const actionResult of allActionResults) {
+      // 添加 action result 中的角色（如果是 NPC）
+      if (actionResult.character && actionResult.character !== playerName) {
+        relatedNpcNames.add(actionResult.character);
       }
-    });
+      
+      // 从 action result 文本中提取可能的 NPC 名称（简单匹配）
+      if (actionResult.result) {
+        gameState.npcCharacters.forEach(npc => {
+          if (actionResult.result.toLowerCase().includes(npc.name.toLowerCase())) {
+            relatedNpcNames.add(npc.name);
+          }
+        });
+      }
+    }
 
-    // 找到相关的NPC并获取完整属性
+    // 从 action analysis 中获取目标角色
+    const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
+    if (actionAnalysis?.target?.name) {
+      relatedNpcNames.add(actionAnalysis.target.name);
+    }
+
+    // 找到相关的 NPC 并获取完整属性
     const actionRelatedNpcs = [];
-    const sceneCharacterNames = new Set(allSceneCharacters.map(sc => sc.character.name));
+    const addedNpcIds = new Set<string>();
     
     for (const npcName of relatedNpcNames) {
-      // 查找NPC
+      // 查找 NPC
       const npc = gameState.npcCharacters.find(n => 
         n.name.toLowerCase() === npcName.toLowerCase() ||
         n.name.toLowerCase().includes(npcName.toLowerCase())
       );
       
-      if (npc) {
-        // 检查是否已在场景角色中（去重）
-        if (!sceneCharacterNames.has(npc.name)) {
-          actionRelatedNpcs.push({
-            source: 'action_related',
-            character: this.extractCompleteCharacterAttributes(npc)
-          });
-        }
+      if (npc && !addedNpcIds.has(npc.id)) {
+        // 避免重复添加同一个 NPC
+        addedNpcIds.add(npc.id);
+        const currentLocation = gameState.currentScenario?.location || null;
+        actionRelatedNpcs.push({
+          source: 'action_related',
+          character: this.extractCompleteCharacterAttributes(npc, currentLocation)
+        });
       }
     }
 
@@ -394,52 +357,26 @@ export class KeeperAgent {
   }
 
   /**
-   * 5. 提取当前位置与场景位置相同的NPC完整属性（与场景角色和action相关NPC去重）
+   * 提取角色的完整属性信息
+   * @param character 角色信息
+   * @param currentLocation 当前场景位置（用于过滤 action log）
    */
-  private extractLocationMatchingNpcsWithDeduplication(
-    gameState: GameState,
-    allSceneCharacters: any[],
-    actionRelatedNpcs: any[]
-  ) {
-    const currentScenario = gameState.currentScenario;
-    if (!currentScenario || !currentScenario.location) {
-      return [];
-    }
-
-    const scenarioLocation = currentScenario.location;
-    const sceneCharacterNames = new Set(allSceneCharacters.map(sc => sc.character.name));
-    const actionRelatedNpcNames = new Set(actionRelatedNpcs.map(an => an.character.name));
-
-    const locationMatchingNpcs = [];
-
-    for (const npc of gameState.npcCharacters) {
-      const npcProfile = npc as NPCProfile;
-      
-      // 检查NPC是否有当前位置，且与场景位置相同
-      if (npcProfile.currentLocation && 
-          npcProfile.currentLocation.toLowerCase() === scenarioLocation.toLowerCase()) {
-        
-        // 检查是否已在场景角色中（去重）
-        if (!sceneCharacterNames.has(npc.name)) {
-          // 检查是否已在action相关NPC中（去重）
-          if (!actionRelatedNpcNames.has(npc.name)) {
-            locationMatchingNpcs.push({
-              source: 'location_match',
-              character: this.extractCompleteCharacterAttributes(npc)
-            });
-          }
-        }
+  private extractCompleteCharacterAttributes(character: CharacterProfile, currentLocation: string | null = null) {
+    const npcData = character as NPCProfile;
+    
+    // 过滤 action log：只保留当前地点的 action log
+    let filteredActionLog: ActionLogEntry[] = [];
+    if (character.actionLog && character.actionLog.length > 0) {
+      if (currentLocation) {
+        // 只保留 location 匹配当前场景的 action log
+        filteredActionLog = character.actionLog.filter(log => 
+          log.location && log.location.toLowerCase() === currentLocation.toLowerCase()
+        );
+      } else {
+        // 如果没有当前场景位置，不包含任何 action log
+        filteredActionLog = [];
       }
     }
-
-    return locationMatchingNpcs;
-  }
-
-  /**
-   * 提取角色的完整属性信息
-   */
-  private extractCompleteCharacterAttributes(character: CharacterProfile) {
-    const npcData = character as NPCProfile;
     
     return {
       // 基本信息
@@ -487,6 +424,9 @@ export class KeeperAgent {
       // 物品
       inventory: character.inventory || [],
       
+      // Action Log（只包含当前地点的）
+      actionLog: filteredActionLog,
+      
       // 线索（如果是NPC）
       clues: npcData.clues || [],
       
@@ -503,33 +443,11 @@ export class KeeperAgent {
 
   /**
    * 提取玩家角色完整信息
+   * @param player 玩家角色信息
+   * @param currentLocation 当前场景位置（用于过滤 action log）
    */
-  private extractCompletePlayerCharacter(player: CharacterProfile) {
-    return this.extractCompleteCharacterAttributes(player);
-  }
-
-  /**
-   * 更新NPC位置
-   */
-  private updateNpcLocations(gameState: GameState, locationUpdates: Array<{npcId: string, currentLocation: string}>, gameStateManager: GameStateManager): void {
-    if (!locationUpdates || locationUpdates.length === 0) return;
-
-    for (const update of locationUpdates) {
-      // 跳过无效的位置更新
-      if (!update.currentLocation || !update.npcId) {
-        continue;
-      }
-
-      const npc = gameState.npcCharacters.find(n => n.id === update.npcId) as NPCProfile;
-      if (npc) {
-        const oldLocation = npc.currentLocation || null;
-        npc.currentLocation = update.currentLocation;
-        if (oldLocation !== update.currentLocation) {
-          const oldLocationDisplay = oldLocation || "Unknown";
-          console.log(`📍 NPC ${npc.name} location updated: ${oldLocationDisplay} → ${update.currentLocation}`);
-        }
-      }
-    }
+  private extractCompletePlayerCharacter(player: CharacterProfile, currentLocation: string | null = null) {
+    return this.extractCompleteCharacterAttributes(player, currentLocation);
   }
 
   /**
@@ -537,8 +455,8 @@ export class KeeperAgent {
    */
   private updateClueStates(gameState: GameState, clueRevelations: any, gameStateManager: GameStateManager): GameState {
     const stateManager = new GameStateManager(gameState);
-    const newDiscoveredClues: string[] = [];
-    
+    const newDiscoveredClues: DiscoveredClue[] = [];
+
     // 更新场景线索状态
     if (clueRevelations.scenarioClues && clueRevelations.scenarioClues.length > 0) {
       const currentScenario = gameState.currentScenario;
@@ -546,13 +464,25 @@ export class KeeperAgent {
         clueRevelations.scenarioClues.forEach((clueId: string) => {
           const clue = currentScenario.clues.find(c => c.id === clueId);
           if (clue && !clue.discovered) {
+            const discoveredAt = new Date().toISOString();
             clue.discovered = true;
             clue.discoveryDetails = {
               discoveredBy: gameState.playerCharacter.name,
-              discoveredAt: new Date().toISOString(),
+              discoveredAt,
               method: "Keeper revelation"
             };
-            newDiscoveredClues.push(clue.clueText);
+
+            // Create detailed clue info
+            newDiscoveredClues.push({
+              text: clue.clueText,
+              type: "scenario",
+              sourceName: currentScenario.name,
+              discoveredBy: gameState.playerCharacter.name,
+              discoveredAt,
+              category: clue.category,
+              difficulty: clue.difficulty,
+              method: "Keeper revelation"
+            });
           }
         });
       }
@@ -566,7 +496,18 @@ export class KeeperAgent {
           const clue = npc.clues.find(c => c.id === item.clueId);
           if (clue && !clue.revealed) {
             clue.revealed = true;
-            newDiscoveredClues.push(clue.clueText);
+
+            // Create detailed clue info
+            newDiscoveredClues.push({
+              text: clue.clueText,
+              type: "npc",
+              sourceName: npc.name,
+              discoveredBy: gameState.playerCharacter.name,
+              discoveredAt: new Date().toISOString(),
+              category: clue.category as any,
+              difficulty: clue.difficulty as any,
+              method: "Social interaction"
+            });
           }
         }
       });
@@ -578,15 +519,26 @@ export class KeeperAgent {
         const npc = gameState.npcCharacters.find(n => n.id === item.npcId) as NPCProfile;
         if (npc && npc.secrets && npc.secrets[item.secretIndex]) {
           const secret = npc.secrets[item.secretIndex];
-          newDiscoveredClues.push(`Secret: ${secret}`);
+
+          // Create detailed secret info
+          newDiscoveredClues.push({
+            text: `Secret: ${secret}`,
+            type: "secret",
+            sourceName: npc.name,
+            discoveredBy: gameState.playerCharacter.name,
+            discoveredAt: new Date().toISOString(),
+            method: "Secret revelation"
+          });
         }
       });
     }
 
     // 将新发现的线索添加到全局发现列表
-    newDiscoveredClues.forEach(clueText => {
-      if (!gameState.discoveredClues.includes(clueText)) {
-        gameState.discoveredClues.push(clueText);
+    newDiscoveredClues.forEach(discoveredClue => {
+      // Check if clue text already exists
+      const exists = gameState.discoveredClues.some(c => c.text === discoveredClue.text);
+      if (!exists) {
+        gameState.discoveredClues.push(discoveredClue);
       }
     });
 

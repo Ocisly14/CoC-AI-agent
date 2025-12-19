@@ -18,17 +18,19 @@ interface GameChatProps {
   sessionId: string;
   apiBaseUrl?: string;
   characterName?: string;
-  moduleIntroduction?: { introduction: string; characterGuidance: string } | null;
+  moduleIntroduction?: { introduction: string; moduleNotes: string } | null;
   initialMessages?: Message[];
+  onNarrativeComplete?: () => void;
 }
 
-export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator', moduleIntroduction, initialMessages }: GameChatProps) {
+export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', characterName = 'Investigator', moduleIntroduction, initialMessages, onNarrativeComplete }: GameChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const processedTurnIdsRef = useRef<Set<string>>(new Set());
   const { turn, isPolling, error, startPolling } = useTurnPolling(apiBaseUrl);
 
   // Load conversation history on mount or when sessionId changes
@@ -36,6 +38,9 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
     // If initialMessages are provided, use them; otherwise load from API
     if (initialMessages && initialMessages.length > 0) {
       setMessages(initialMessages);
+      // Mark all existing turnNumbers as processed
+      const existingTurnNumbers = new Set(initialMessages.map(msg => msg.turnNumber));
+      processedTurnIdsRef.current = new Set(Array.from(existingTurnNumbers).map(n => `turn-${n}`));
     } else if (sessionId) {
       loadConversationHistory();
     }
@@ -46,6 +51,9 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
       setMessages(initialMessages);
+      // Mark all existing turnNumbers as processed
+      const existingTurnNumbers = new Set(initialMessages.map(msg => msg.turnNumber));
+      processedTurnIdsRef.current = new Set(Array.from(existingTurnNumbers).map(n => `turn-${n}`));
     } else if (!initialMessages && sessionId) {
       // If initialMessages is cleared, reload from API
       loadConversationHistory();
@@ -60,26 +68,70 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
 
   // Update messages when turn completes
   useEffect(() => {
-    if (turn && turn.status === 'completed' && turn.keeperNarrative) {
+    if (turn && turn.status === 'completed') {
+      // Check if we've already processed this turn to avoid duplicates
+      const turnKey = turn.turnId || `turn-${turn.turnNumber}`;
+      if (processedTurnIdsRef.current.has(turnKey)) {
+        console.log(`[GameChat] Turn ${turnKey} already processed, skipping...`);
+        return;
+      }
+
+      // Log turn details for debugging
+      console.log(`[GameChat] Processing completed turn:`, {
+        turnId: turn.turnId,
+        turnNumber: turn.turnNumber,
+        hasKeeperNarrative: !!turn.keeperNarrative,
+        keeperNarrativeLength: turn.keeperNarrative?.length || 0,
+        characterInput: turn.characterInput?.substring(0, 50) + '...',
+      });
+
+      // Mark this turn as processed
+      processedTurnIdsRef.current.add(turnKey);
+
       // Add both character input and keeper response
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'character',
-          content: turn.characterInput,
-          timestamp: turn.startedAt,
-          turnNumber: turn.turnNumber,
-        },
-        {
-          role: 'keeper',
-          content: turn.keeperNarrative,
-          timestamp: turn.completedAt || turn.startedAt,
-          turnNumber: turn.turnNumber,
+      setMessages(prev => {
+        // Double-check to avoid duplicates in case of race conditions
+        const existingTurnNumbers = new Set(prev.map(msg => msg.turnNumber));
+        if (existingTurnNumbers.has(turn.turnNumber)) {
+          console.log(`[GameChat] Turn ${turn.turnNumber} already exists in messages, skipping...`);
+          return prev;
         }
-      ]);
+
+        const newMessages: Message[] = [
+          {
+            role: 'character',
+            content: turn.characterInput || '',
+            timestamp: turn.startedAt,
+            turnNumber: turn.turnNumber,
+          }
+        ];
+
+        // Only add keeper message if narrative exists
+        if (turn.keeperNarrative) {
+          newMessages.push({
+            role: 'keeper',
+            content: turn.keeperNarrative,
+            timestamp: turn.completedAt || turn.startedAt,
+            turnNumber: turn.turnNumber,
+          });
+        } else {
+          console.warn(`[GameChat] Turn ${turn.turnNumber} completed but keeperNarrative is empty`);
+        }
+
+        return [...prev, ...newMessages];
+      });
+      setIsSending(false);
+
+      // Trigger sidebar refresh when narrative is complete
+      if (onNarrativeComplete) {
+        onNarrativeComplete();
+      }
+    } else if (turn && turn.status === 'error') {
+      // Handle error case
+      console.error(`[GameChat] Turn ${turn.turnId || turn.turnNumber} failed:`, turn.errorMessage);
       setIsSending(false);
     }
-  }, [turn]);
+  }, [turn, onNarrativeComplete]);
 
   const loadConversationHistory = async () => {
     try {
@@ -88,12 +140,17 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
 
       if (data.success && data.conversation) {
         setMessages(data.conversation);
+        // Mark all existing turnNumbers as processed
+        const existingTurnNumbers = new Set(data.conversation.map((msg: Message) => msg.turnNumber));
+        processedTurnIdsRef.current = new Set(Array.from(existingTurnNumbers).map(n => `turn-${n}`));
       } else {
         setMessages([]);
+        processedTurnIdsRef.current.clear();
       }
     } catch (err) {
       console.error('Failed to load conversation history:', err);
       setMessages([]);
+      processedTurnIdsRef.current.clear();
     }
   };
 
@@ -277,5 +334,3 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
     </div>
   );
 }
-
-

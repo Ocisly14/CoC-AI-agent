@@ -113,7 +113,7 @@ const App: React.FC = () => {
   const [showCheckpointSelector, setShowCheckpointSelector] = useState(false);
   const [checkpoints, setCheckpoints] = useState<any[]>([]);
   const [loadingCheckpoints, setLoadingCheckpoints] = useState(false);
-  const [moduleIntroduction, setModuleIntroduction] = useState<{ introduction: string; characterGuidance: string } | null>(null);
+  const [moduleIntroduction, setModuleIntroduction] = useState<{ introduction: string; moduleNotes: string } | null>(null);
   const [showModuleIntro, setShowModuleIntro] = useState(false);
   const [loadingModData, setLoadingModData] = useState(false);
   const [modLoadProgress, setModLoadProgress] = useState<{ stage: string; progress: number; message: string } | null>(null);
@@ -123,6 +123,7 @@ const App: React.FC = () => {
     timestamp: string;
     turnNumber: number;
   }> | null>(null);
+  const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState(0);
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
@@ -1628,7 +1629,7 @@ const App: React.FC = () => {
                     color: '#2c2c2c',
                     whiteSpace: 'pre-wrap',
                   }}>
-                    {moduleIntroduction.characterGuidance}
+                    {moduleIntroduction.moduleNotes}
                   </div>
                 </div>
               </>
@@ -1714,10 +1715,12 @@ const App: React.FC = () => {
             characterName={characterName}
             moduleIntroduction={moduleIntroduction}
             initialMessages={conversationHistory || undefined}
+            onNarrativeComplete={() => setSidebarRefreshTrigger(prev => prev + 1)}
           />
           <GameSidebar
             sessionId={sessionId}
             apiBaseUrl="http://localhost:3000/api"
+            refreshTrigger={sidebarRefreshTrigger}
           />
         </div>
       </div>

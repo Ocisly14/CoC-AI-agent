@@ -109,7 +109,7 @@ export class OrchestratorAgent {
     const response = await generateText({
       runtime,
       context: prompt,
-      modelClass: ModelClass.MEDIUM,
+      modelClass: ModelClass.SMALL,
     });
 
     // Parse the response and store action analysis

@@ -62,6 +62,28 @@ export interface VisitedScenarioBasic {
   location: string;
 }
 
+/**
+ * Detailed information about a discovered clue
+ */
+export interface DiscoveredClue {
+  /** Clue text content */
+  text: string;
+  /** Clue type: scenario clue, NPC clue, or secret */
+  type: "scenario" | "npc" | "secret";
+  /** Source name (scenario name or NPC name) */
+  sourceName: string;
+  /** Who discovered this clue */
+  discoveredBy: string;
+  /** When discovered (ISO format) */
+  discoveredAt: string;
+  /** Clue category (scenario clues only) */
+  category?: "physical" | "witness" | "document" | "environment" | "knowledge" | "observation";
+  /** Clue difficulty (scenario clues only) */
+  difficulty?: "automatic" | "regular" | "hard" | "extreme";
+  /** Discovery method */
+  method?: string;
+}
+
 export interface GameState {
   sessionId: string;
   phase: Phase;
@@ -71,7 +93,8 @@ export interface GameState {
   timeOfDay: string;  // 游戏时间 HH:MM 格式
   tension: number;
   keeperGuidance: string | null;  // 模组守秘人指导（永久信息）
-  discoveredClues: string[];
+  moduleLimitations: string | null;  // 模组限制条件（永久信息）
+  discoveredClues: DiscoveredClue[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
   scenarioTimeState: {
@@ -92,8 +115,15 @@ export interface GameState {
     sceneChangeRequest: SceneChangeRequest | null;
     transition: boolean;  // Indicates if a scene change just occurred
     sceneTransitionRejection: SceneTransitionRejection | null;  // Director rejected scene transition
+    narrativeDirection: string | null;  // Narrative direction instruction from Director Agent
   };
 }
+
+/**
+ * CoC State type for template composition
+ * Can be a GameState directly or an object containing gameState
+ */
+export type CoCState = GameState | { gameState?: GameState; [key: string]: any };
 
 const defaultPlayerCharacter: CharacterProfile = {
   id: "investigator-1",
@@ -140,6 +170,7 @@ export const initialGameState: GameState = {
   timeOfDay: "08:00",
   tension: 1,
   keeperGuidance: null,
+  moduleLimitations: null,
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
@@ -158,6 +189,7 @@ export const initialGameState: GameState = {
     sceneChangeRequest: null,
     transition: false,
     sceneTransitionRejection: null,
+    narrativeDirection: null,
   },
 };
 
@@ -753,6 +785,20 @@ export class GameStateManager {
    */
   clearSceneTransitionRejection(): void {
     this.gameState.temporaryInfo.sceneTransitionRejection = null;
+  }
+
+  /**
+   * Set narrative direction instruction from Director Agent
+   */
+  setNarrativeDirection(direction: string | null): void {
+    this.gameState.temporaryInfo.narrativeDirection = direction;
+  }
+
+  /**
+   * Clear narrative direction
+   */
+  clearNarrativeDirection(): void {
+    this.gameState.temporaryInfo.narrativeDirection = null;
   }
 
   /**

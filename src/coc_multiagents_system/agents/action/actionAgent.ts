@@ -441,8 +441,11 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     }
 
     // Append summary to action logs for actor and target (if any)
+    // Use full game time from state manager
+    const fullTime = stateManager.getFullGameTime();
     const logEntry: ActionLogEntry = {
-      time: actionResult.gameTime,
+      time: fullTime,
+      location: actionResult.location,
       summary: actionResult.result,
     };
     const actionAnalysis = gameState.temporaryInfo.currentActionAnalysis;
@@ -927,8 +930,11 @@ IMPORTANT: You MUST respond with valid JSON format only. Do not include any text
     }
 
     // Append summary to action logs
+    // Use full game time from state manager
+    const fullTime = stateManager.getFullGameTime();
     const logEntry: ActionLogEntry = {
-      time: actionResult.gameTime,
+      time: fullTime,
+      location: actionResult.location,
       summary: actionResult.result,
     };
     

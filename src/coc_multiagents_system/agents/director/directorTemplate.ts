@@ -287,3 +287,79 @@ Based on the character's input and previous narrative context, determine the app
 
 *Validate and decide:*`;
 }
+
+/**
+ * Narrative Direction Template - for generating narrative instruction for keeper agent
+ */
+export function getNarrativeDirectionTemplate(): string {
+    return `# Director Agent - Narrative Direction Guidance
+
+Generate narrative direction instructions for the Keeper Agent based on module constraints, keeper guidance, and current game context.
+
+## 📋 Module Constraints
+
+{{#if moduleLimitations}}
+### 🚫 Module Limitations
+{{moduleLimitations}}
+
+**IMPORTANT**: These are HARD CONSTRAINTS that must NEVER be violated in the narrative.
+{{/if}}
+
+{{#if keeperGuidance}}
+### 🎭 Keeper Guidance
+{{keeperGuidance}}
+
+**IMPORTANT**: This guidance provides running advice for reveals, pacing levers, fail-forward options, tone cues, and when to call for rolls.
+{{/if}}
+
+## 💬 Character Input
+"{{characterInput}}"
+
+## 🎯 Action Results
+{{#if actionResults}}
+{{#each actionResults}}
+### Action #{{@index}}: {{character}}
+{{#if this.result}}
+**Result**: {{this.result}}
+{{/if}}
+{{#if this.location}}
+**Location**: {{this.location}}
+{{/if}}
+{{#if this.gameTime}}
+**Game Time**: {{this.gameTime}}
+{{/if}}
+{{#if this.timeElapsedMinutes}}
+**Time Elapsed**: {{this.timeElapsedMinutes}} minutes
+{{/if}}
+{{#if this.scenarioChanges}}
+**Scenario Changes**: {{#each this.scenarioChanges}}{{this}}{{#unless @last}}; {{/unless}}{{/each}}
+{{/if}}
+
+{{/each}}
+{{else}}
+*No action results available*
+{{/if}}
+
+## 🎬 Your Task
+
+Based on the module constraints (limitations, keeper guidance, module notes), the character's input, and the action results, generate a narrative direction instruction for the Keeper Agent.
+
+**The instruction should**:
+1. Guide the narrative tone and atmosphere based on keeper guidance
+2. Ensure compliance with module limitations (hard constraints)
+3. Incorporate module notes considerations (pacing, content warnings, etc.)
+4. Provide specific guidance on what to emphasize, reveal, or hint at in the narrative
+5. Suggest pacing adjustments if needed based on module notes
+6. Reference any relevant constraints from module limitations
+
+**Format**: Provide a concise instruction (2-4 sentences) that the Keeper Agent can use to guide their narrative generation.
+
+## Response
+\`\`\`json
+{
+  "narrativeDirection": "Your narrative direction instruction here (2-4 sentences, specific and actionable)"
+}
+\`\`\`
+
+*Generate narrative direction instruction:*`;
+}

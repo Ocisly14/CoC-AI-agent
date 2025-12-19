@@ -1,10 +1,12 @@
-import { getDirectorTemplate, getActionDrivenSceneChangeTemplate } from "./directorTemplate.js";
+import { getDirectorTemplate, getActionDrivenSceneChangeTemplate, getNarrativeDirectionTemplate } from "./directorTemplate.js";
 import { composeTemplate } from "../../../template.js";
 import type { GameState, GameStateManager, VisitedScenarioBasic, DirectorDecision } from "../../../state.js";
 import type { ScenarioProfile, ScenarioSnapshot } from "../models/scenarioTypes.js";
 import { ScenarioLoader } from "../memory/scenarioloader/scenarioLoader.js";
 import { updateCurrentScenarioWithCheckpoint } from "../memory/index.js";
 import type { CoCDatabase } from "../memory/database/index.js";
+import { ModuleLoader } from "../memory/moduleloader/index.js";
+import type { ActionResult } from "../../../state.js";
 import {
   ModelProviderName,
   ModelClass,
@@ -117,7 +119,7 @@ export class DirectorAgent {
     const response = await generateText({
       runtime,
       context: prompt,
-      modelClass: ModelClass.MEDIUM,
+      modelClass: ModelClass.SMALL,
     });
 
     // 解析LLM的JSON响应
@@ -202,8 +204,11 @@ export class DirectorAgent {
 
     // 从全局发现列表获取
     const globalClues = gameState.discoveredClues.map(clue => ({
-      source: "global",
-      clueText: clue
+      type: clue.type,
+      source: clue.sourceName,
+      clueText: clue.text,
+      discoveredBy: clue.discoveredBy,
+      discoveredAt: clue.discoveredAt
     }));
     discoveredClues.push(...globalClues);
 
@@ -567,7 +572,7 @@ export class DirectorAgent {
       const response = await generateText({
         runtime,
         context: prompt,
-        modelClass: ModelClass.MEDIUM,
+        modelClass: ModelClass.SMALL,
       });
       
       // Parse LLM response
@@ -735,7 +740,7 @@ export class DirectorAgent {
     const response = await generateText({
       runtime,
       context: prompt,
-      modelClass: ModelClass.LARGE,
+      modelClass: ModelClass.SMALL,
     });
 
     console.log("\n=== Director Response ===");
@@ -874,6 +879,69 @@ export class DirectorAgent {
         transitioned: false,
         message: `Transition failed: ${error instanceof Error ? error.message : "Unknown error"}`
       };
+    }
+  }
+
+  /**
+   * 生成叙事方向指导
+   * 基于模块约束、keeper指导、模块笔记、角色输入和行动结果，生成给 Keeper Agent 的叙事方向指导
+   */
+  async generateNarrativeDirection(
+    gameStateManager: GameStateManager,
+    characterInput: string,
+    actionResults: ActionResult[]
+  ): Promise<string> {
+    const runtime = createRuntime();
+    const gameState = gameStateManager.getGameState();
+    
+    // 获取模块信息
+    const moduleLoader = new ModuleLoader(this.db);
+    const modules = moduleLoader.getAllModules();
+    const module = modules.length > 0 ? modules[0] : null;
+    
+    // 获取模板
+    const template = getNarrativeDirectionTemplate();
+    
+    // 准备模板上下文
+    const templateContext = {
+      moduleLimitations: gameState.moduleLimitations || null,
+      keeperGuidance: gameState.keeperGuidance || null,
+      moduleNotes: module?.moduleNotes || null,
+      characterInput,
+      actionResults: actionResults || []
+    };
+    
+    // 使用模板和LLM生成叙事方向指导
+    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
+    
+    try {
+      const response = await generateText({
+        runtime,
+        context: prompt,
+        modelClass: ModelClass.SMALL,
+      });
+      
+      // 解析LLM的JSON响应
+      let parsedResponse;
+      try {
+        // 尝试从响应中提取JSON
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedResponse = JSON.parse(jsonMatch[0]);
+        } else {
+          parsedResponse = JSON.parse(response);
+        }
+      } catch (error) {
+        console.error("Failed to parse narrative direction response as JSON:", error);
+        console.error("Raw response:", response);
+        // 如果解析失败，返回原始响应（去掉可能的代码块标记）
+        return response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      }
+      
+      return parsedResponse.narrativeDirection || "Generate narrative based on current context while respecting module constraints.";
+    } catch (error) {
+      console.error("Failed to generate narrative direction:", error);
+      return "Generate narrative based on current context while respecting module constraints.";
     }
   }
 }

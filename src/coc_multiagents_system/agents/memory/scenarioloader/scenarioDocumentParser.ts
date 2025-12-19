@@ -30,12 +30,12 @@ export class ScenarioDocumentParser {
       const openaiApiKey = process.env.OPENAI_API_KEY;
       
       if (geminiApiKey) {
-        // Use LARGE model for better scenario extraction and multi-scenario handling
-        this.llm = createChatModel(ModelProviderName.GOOGLE, ModelClass.LARGE);
-        console.log("✓ Using Gemini 2.5 Pro (Large model) for scenario parsing");
+        // Use SMALL model for scenario extraction (cost optimization)
+        this.llm = createChatModel(ModelProviderName.GOOGLE, ModelClass.SMALL);
+        console.log("✓ Using small model for scenario parsing");
       } else if (openaiApiKey) {
-        this.llm = createChatModel(ModelProviderName.OPENAI, ModelClass.LARGE);
-        console.log("✓ Using GPT-4o (Large model) for scenario parsing");
+        this.llm = createChatModel(ModelProviderName.OPENAI, ModelClass.SMALL);
+        console.log("✓ Using small model for scenario parsing");
       } else {
         throw new Error("No API key found. Please set either GOOGLE_API_KEY or OPENAI_API_KEY environment variable.");
       }

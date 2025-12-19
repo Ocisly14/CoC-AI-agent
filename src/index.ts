@@ -44,23 +44,39 @@ if (fs.existsSync(cassandraNPCsDir)) {
   await npcLoader.loadNPCsFromDirectory(npcDir);
 }
 
-// Initialize module background directory
-const moduleDir = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "background");
-if (!fs.existsSync(moduleDir)) {
-  // Fallback to old location
-  const fallbackModuleDir = path.join(process.cwd(), "data", "background");
-  if (!fs.existsSync(fallbackModuleDir)) {
-    fs.mkdirSync(fallbackModuleDir, { recursive: true });
-    console.log(`Created module background directory: ${fallbackModuleDir}`);
-    console.log(
-      `Place your module .docx or .pdf files in this directory to load background/outlines automatically.\n`
-    );
-  }
-}
-
-// Load module briefings from documents
+// Initialize module loader
 const moduleLoader = new ModuleLoader(db);
-const modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
+
+// Try to load module from module_digest.json first
+const moduleDigestPath = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "module_digest.json");
+let modules: any[] = [];
+
+console.log(`\n=== Module Loading ===`);
+console.log(`Current working directory: ${process.cwd()}`);
+console.log(`Looking for module_digest.json at: ${moduleDigestPath}`);
+console.log(`File exists: ${fs.existsSync(moduleDigestPath)}`);
+
+if (fs.existsSync(moduleDigestPath)) {
+  console.log(`✓ Found module_digest.json, loading module directly...`);
+  modules = await moduleLoader.loadModuleFromJSON(moduleDigestPath);
+} else {
+  // Fallback to loading from directory
+  const moduleDir = path.join(process.cwd(), "data", "Mods", "Cassandra's Black Carnival", "background");
+  if (!fs.existsSync(moduleDir)) {
+    // Fallback to old location
+    const fallbackModuleDir = path.join(process.cwd(), "data", "background");
+    if (!fs.existsSync(fallbackModuleDir)) {
+      fs.mkdirSync(fallbackModuleDir, { recursive: true });
+      console.log(`Created module background directory: ${fallbackModuleDir}`);
+      console.log(
+        `Place your module .docx or .pdf files in this directory to load background/outlines automatically.\n`
+      );
+    }
+  }
+
+  console.log(`module_digest.json not found, falling back to document parsing...`);
+  modules = await moduleLoader.loadModulesFromDirectory(moduleDir);
+}
 
 // Prepare initial game state (will be used in main function)
 let preparedGameState = { ...initialGameState };
@@ -94,26 +110,33 @@ if (fs.existsSync(cassandraScenariosDir)) {
 // Initialize RAG Manager (SQLite-backed, BGE embeddings with hash fallback)
 const ragManager = createBgeSqliteRagManager(db);
 
+// TODO: 暂时跳过RAG环节
+const SKIP_RAG = true; // 设置为 false 以启用 RAG
+
 // Build RAG knowledge base from loaded data
-const scenarioProfiles = scenarioLoader.getAllScenarios();
-const npcProfiles = npcLoader.getAllNPCs();
-await ragManager.buildKnowledgeBase(
-  {
-    scenarios: scenarioProfiles.map((s) => s.snapshot),
-    npcs: npcProfiles,
-    clues: [],
-    rules: [],
-    playerInventory: preparedGameState.playerCharacter.inventory,
-    playerId: preparedGameState.playerCharacter.id,
-    playerName: preparedGameState.playerCharacter.name,
-  },
-  {
-    moduleName: modules[0]?.title || "default-module",
-    mode: "keeper",
-    enableNodeEmbeddings: true,
-    enableKnnEdges: true,
-  }
-);
+if (!SKIP_RAG) {
+  const scenarioProfiles = scenarioLoader.getAllScenarios();
+  const npcProfiles = npcLoader.getAllNPCs();
+  await ragManager.buildKnowledgeBase(
+    {
+      scenarios: scenarioProfiles.map((s) => s.snapshot),
+      npcs: npcProfiles,
+      clues: [],
+      rules: [],
+      playerInventory: preparedGameState.playerCharacter.inventory,
+      playerId: preparedGameState.playerCharacter.id,
+      playerName: preparedGameState.playerCharacter.name,
+    },
+    {
+      moduleName: modules[0]?.title || "default-module",
+      mode: "keeper",
+      enableNodeEmbeddings: true,
+      enableKnnEdges: true,
+    }
+  );
+} else {
+  console.log("RAG知识库构建已跳过 (SKIP_RAG = true)");
+}
 
 const parseArgs = (argv: string[]): string => {
   const promptFlagIndex = argv.findIndex((arg) => arg === "--prompt");

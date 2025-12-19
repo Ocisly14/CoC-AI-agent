@@ -90,8 +90,10 @@ export const enrichMemoryContext = async (
   const withRules = injectActionTypeRules(gameState, actionAnalysis?.actionType);
 
   // Fetch RAG evidence using the new RagManager
+  // TODO: 暂时跳过RAG环节
+  const SKIP_RAG = true; // 设置为 false 以启用 RAG
   let ragEvidence: Evidence[] = [];
-  if (ragManager) {
+  if (ragManager && !SKIP_RAG) {
     try {
       console.log(`[Memory Agent] 开始RAG检索 (场景: ${gameState.currentScenario?.name || '未知'}, 动作类型: ${actionAnalysis?.actionType || '未知'})`);
       const startTime = Date.now();
@@ -110,6 +112,8 @@ export const enrichMemoryContext = async (
     } catch (error) {
       console.warn("[Memory Agent] RAG retrieval failed:", error);
     }
+  } else if (SKIP_RAG) {
+    console.log(`[Memory Agent] RAG环节已跳过 (SKIP_RAG = true)`);
   }
 
   // Extract recent conversation history (last 1 turn) and store in contextualData

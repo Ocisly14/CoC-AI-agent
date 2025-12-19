@@ -423,16 +423,11 @@ export class CoCDatabase {
                 story_outline TEXT,
                 module_notes TEXT,
                 keeper_guidance TEXT,
-                story_hook TEXT,
                 module_limitations TEXT,
-                initial_scenario TEXT,
                 initial_game_time TEXT,
                 initial_scenario_npcs TEXT, -- JSON array of NPC names
                 introduction TEXT,
-                character_guidance TEXT,
-                tags TEXT, -- JSON array
-                source TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                tags TEXT -- JSON array
             );
         `);
     // Backfill for module_limitations if table already existed
@@ -440,16 +435,6 @@ export class CoCDatabase {
       if (!this.hasColumn("module_backgrounds", "module_limitations")) {
         this.db.exec(
           "ALTER TABLE module_backgrounds ADD COLUMN module_limitations TEXT;"
-        );
-      }
-    } catch {
-      // ignore if column already exists or cannot be added
-    }
-    // Backfill for initial_scenario if table already existed
-    try {
-      if (!this.hasColumn("module_backgrounds", "initial_scenario")) {
-        this.db.exec(
-          "ALTER TABLE module_backgrounds ADD COLUMN initial_scenario TEXT;"
         );
       }
     } catch {
@@ -475,16 +460,6 @@ export class CoCDatabase {
     } catch {
       // ignore if column already exists or cannot be added
     }
-    // Backfill for character_guidance if table already existed
-    try {
-      if (!this.hasColumn("module_backgrounds", "character_guidance")) {
-        this.db.exec(
-          "ALTER TABLE module_backgrounds ADD COLUMN character_guidance TEXT;"
-        );
-      }
-    } catch {
-      // ignore if column already exists or cannot be added
-    }
     // Backfill for initial_scenario_npcs if table already existed
     try {
       if (!this.hasColumn("module_backgrounds", "initial_scenario_npcs")) {
@@ -505,15 +480,14 @@ export class CoCDatabase {
                 story_outline,
                 module_notes,
                 keeper_guidance,
-                story_hook,
                 module_limitations,
                 content='module_backgrounds',
                 content_rowid='rowid'
             );
 
             CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_insert AFTER INSERT ON module_backgrounds BEGIN
-                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, story_hook, module_limitations)
-                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.story_hook, new.module_limitations);
+                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, module_limitations)
+                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.module_limitations);
             END;
 
             CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_delete AFTER DELETE ON module_backgrounds BEGIN
@@ -522,8 +496,8 @@ export class CoCDatabase {
 
             CREATE TRIGGER IF NOT EXISTS module_backgrounds_fts_update AFTER UPDATE ON module_backgrounds BEGIN
                 DELETE FROM module_backgrounds_fts WHERE module_id = old.module_id;
-                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, story_hook, module_limitations)
-                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.story_hook, new.module_limitations);
+                INSERT INTO module_backgrounds_fts(module_id, title, background, story_outline, module_notes, keeper_guidance, module_limitations)
+                VALUES (new.module_id, new.title, new.background, new.story_outline, new.module_notes, new.keeper_guidance, new.module_limitations);
             END;
         `);
 

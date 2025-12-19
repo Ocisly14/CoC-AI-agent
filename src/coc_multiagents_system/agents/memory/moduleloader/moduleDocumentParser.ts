@@ -30,9 +30,9 @@ export class ModuleDocumentParser {
       const openaiApiKey = process.env.OPENAI_API_KEY;
 
       if (geminiApiKey) {
-        this.llm = createChatModel(ModelProviderName.GOOGLE, ModelClass.LARGE);
+        this.llm = createChatModel(ModelProviderName.GOOGLE, ModelClass.SMALL);
       } else if (openaiApiKey) {
-        this.llm = createChatModel(ModelProviderName.OPENAI, ModelClass.LARGE);
+        this.llm = createChatModel(ModelProviderName.OPENAI, ModelClass.SMALL);
       } else {
         throw new Error(
           "No API key found. Please set either GOOGLE_API_KEY or OPENAI_API_KEY environment variable."
@@ -87,7 +87,6 @@ export class ModuleDocumentParser {
         const moduleData = await this.parseDocument(filePath);
         results.push(moduleData);
         console.log(`\n  ✓ [${i + 1}/${moduleFiles.length}] 解析完成: ${moduleData.title}`);
-        console.log(`     - 初始场景: ${moduleData.initialScenario || "未指定"}`);
         console.log(`     - 初始游戏时间: ${moduleData.initialGameTime || "未指定"}`);
         console.log(`     - 初始NPC数: ${moduleData.initialScenarioNPCs?.length || 0}`);
         if (moduleData.initialScenarioNPCs && moduleData.initialScenarioNPCs.length > 0) {
@@ -152,24 +151,21 @@ Return a JSON object with exactly these fields:
   "storyOutline": "Ordered scene/beat list with concise specifics: time markers, locations, key NPCs, triggers, consequences, and transitions",
   "moduleNotes": "Concise must-know constraints: safety/content warnings, prerequisites, props/handouts, pacing/clock notes (summarize but keep all key points)",
   "keeperGuidance": "Running advice: reveals, pacing levers, fail-forward options, tone cues, when to call for rolls",
-  "storyHook": "Player-facing entry: who contacts them, what they see/hear, immediate actionable choices, why they care",
   "moduleLimitations": "Concise hard constraints: scope limits, time caps, locked areas, forbidden actions, bounded outcomes (summarize but keep all key points)",
-  "initialScenario": "Name or identifier of the starting scenario/location where the game begins (e.g., 'Reindeer Bar', 'Train Station Platform'). ",
   "initialGameTime": "Initial game time when the scenario starts, in format 'HH:MM' (e.g., '08:00', '14:30') or 'Day X HH:MM' (e.g., 'Day 1 08:00'). If it is vague, give a estimate time",
   "initialScenarioNPCs": ["NPC Name 1", "NPC Name 2"],
   "tags": ["keyword1", "keyword2"],
-  "introduction": "An immersive, atmospheric introduction narrative (2-4 paragraphs) that sets the cosmic horror tone, hooks players, creates anticipation, and hints at the mystery without spoiling it. Written in second person or narrative style.",
-  "characterGuidance": "Character creation guidance (1-2 paragraphs) that helps players understand what kind of investigator fits this module, suggests appropriate occupations, skills, and backgrounds. Should be practical and actionable."
+  "introduction": "An immersive, atmospheric introduction narrative (2-4 paragraphs) that sets the cosmic horror tone, hooks players, creates anticipation, and hints at the mystery without spoiling it. Written in second person or narrative style."
 }
 
 Rules:
 - You MUST return ONLY these fields—no extra keys, no nested objects beyond what is shown, no code fences.
 - Values must be plain strings or string arrays exactly as specified. If absent, use an empty string or empty array.
 - Preserve chronology in storyOutline; include triggers, gating clues, and consequences (summarize lightly if needed, but keep key facts).
-- Background/storyHook/keeperGuidance can be lightly summarized for clarity, but must stay faithful to the source.
+- Background/keeperGuidance can be lightly summarized for clarity, but must stay faithful to the source.
 - ModuleNotes and moduleLimitations should be concise but include every key constraint; summarize without omitting important limits.
 - Do NOT fabricate missing information; leave the field empty if absent.
-- StoryHook, background, and keeperGuidance must be actionable, not generic platitudes.
+- Background and keeperGuidance must be actionable, not generic platitudes.
 - initialScenarioNPCs: List all NPC names (as they appear in the document) that are present with the player at the initial scenario location. These are NPCs who start the game at the same location as the player. If no NPCs are present initially, use an empty array [].
 
 Document content:
@@ -211,7 +207,6 @@ Return ONLY the JSON object, nothing else.`;
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
         console.log(`📌 基本信息:`);
         console.log(`   Title: ${moduleData.title}`);
-        console.log(`   Initial Scenario: ${moduleData.initialScenario || "未指定"}`);
         console.log(`   Initial Game Time: ${moduleData.initialGameTime || "未指定"}`);
         if (moduleData.initialScenarioNPCs && moduleData.initialScenarioNPCs.length > 0) {
           console.log(`   Initial Scenario NPCs (${moduleData.initialScenarioNPCs.length}):`);
@@ -227,12 +222,10 @@ Return ONLY the JSON object, nothing else.`;
         console.log(`\n📖 内容摘要 (前100字符):`);
         console.log(`   Background: ${moduleData.background ? `${moduleData.background.substring(0, 100)}...` : "无"}`);
         console.log(`   Story Outline: ${moduleData.storyOutline ? `${moduleData.storyOutline.substring(0, 100)}...` : "无"}`);
-        console.log(`   Story Hook: ${moduleData.storyHook ? `${moduleData.storyHook.substring(0, 100)}...` : "无"}`);
         console.log(`   Keeper Guidance: ${moduleData.keeperGuidance ? `${moduleData.keeperGuidance.substring(0, 100)}...` : "无"}`);
         console.log(`   Module Notes: ${moduleData.moduleNotes ? `${moduleData.moduleNotes.substring(0, 100)}...` : "无"}`);
         console.log(`   Module Limitations: ${moduleData.moduleLimitations ? `${moduleData.moduleLimitations.substring(0, 100)}...` : "无"}`);
         console.log(`   Introduction: ${moduleData.introduction ? `${moduleData.introduction.substring(0, 100)}...` : "无"}`);
-        console.log(`   Character Guidance: ${moduleData.characterGuidance ? `${moduleData.characterGuidance.substring(0, 100)}...` : "无"}`);
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
         return moduleData;

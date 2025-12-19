@@ -55,7 +55,7 @@ export class MemoryAgent {
   public getModuleBackgrounds(limit = 5): ModuleBackground[] {
     const rows = this.db
       .prepare(
-        `SELECT * FROM module_backgrounds ORDER BY datetime(created_at) DESC LIMIT ?`
+        `SELECT * FROM module_backgrounds LIMIT ?`
       )
       .all(limit) as any[];
 
@@ -68,7 +68,7 @@ export class MemoryAgent {
   public getLatestModuleBackground(): ModuleBackground | null {
     const row = this.db
       .prepare(
-        `SELECT * FROM module_backgrounds ORDER BY datetime(created_at) DESC LIMIT 1`
+        `SELECT * FROM module_backgrounds LIMIT 1`
       )
       .get() as any;
 
@@ -130,12 +130,11 @@ export class MemoryAgent {
       storyOutline: row.story_outline || undefined,
       moduleNotes: row.module_notes || undefined,
       keeperGuidance: row.keeper_guidance || undefined,
-      storyHook: row.story_hook || undefined,
       moduleLimitations: row.module_limitations || undefined,
-      initialScenario: row.initial_scenario || undefined,
+      initialGameTime: row.initial_game_time || undefined,
+      initialScenarioNPCs: row.initial_scenario_npcs ? JSON.parse(row.initial_scenario_npcs) : [],
       tags: row.tags ? JSON.parse(row.tags) : [],
-      source: row.source || undefined,
-      createdAt: row.created_at,
+      introduction: row.introduction || undefined,
     };
   }
 

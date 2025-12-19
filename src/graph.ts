@@ -345,6 +345,26 @@ export const buildGraph = (db: CoCDatabase, scenarioLoader: ScenarioLoader, rag?
     // Clear the request
     gsm.clearSceneChangeRequest();
     
+    // Generate narrative direction instruction for Keeper Agent
+    const currentGameState = gsm.getGameState();
+    const characterInput = latestHumanMessage(state.messages);
+    const actionResults = currentGameState.temporaryInfo.actionResults || [];
+    
+    try {
+      console.log("\n🎬 [Director Agent] 开始生成叙事方向指导...");
+      const narrativeDirection = await directorAgent.generateNarrativeDirection(
+        gsm,
+        characterInput,
+        actionResults
+      );
+      gsm.setNarrativeDirection(narrativeDirection);
+      console.log(`✅ [Director Agent] 叙事方向指导已生成: ${narrativeDirection.substring(0, 100)}${narrativeDirection.length > 100 ? '...' : ''}`);
+    } catch (error) {
+      console.error("❌ [Director Agent] 生成叙事方向指导失败:", error);
+      // Set null if generation fails
+      gsm.setNarrativeDirection(null);
+    }
+    
     // Update turn with director decision if turnId exists
     if (state.turnId) {
       try {

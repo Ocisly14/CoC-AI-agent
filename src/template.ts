@@ -1,5 +1,5 @@
 import handlebars from "handlebars";
-import { type CoCState, initialGameState } from "./state.js";
+import { type CoCState, type GameState, initialGameState } from "./state.js";
 import { names, uniqueNamesGenerator } from "unique-names-generator";
 
 type TemplateContext = Record<string, unknown>;
@@ -44,9 +44,14 @@ export const composeTemplate = (
   extraContext: TemplateContext = {},
   templatingEngine?: "handlebars"
 ): string => {
+  // Handle both GameState directly and { gameState: GameState } object
+  const gameState = 'gameState' in state && state.gameState 
+    ? state.gameState 
+    : (state as GameState);
+  
   const context: TemplateContext = {
     ...state,
-    gameState: state.gameState ?? initialGameState,
+    gameState: gameState ?? initialGameState,
     ...extraContext,
   };
 

@@ -67,6 +67,7 @@ export interface CharacterStatus {
 
 export interface ActionLogEntry {
   time: string;
+  location: string;
   summary: string;
 }
 

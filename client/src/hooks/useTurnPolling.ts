@@ -73,6 +73,15 @@ export function useTurnPolling(
         throw new Error(data.error || 'Failed to fetch turn status');
       }
 
+      // Log turn data for debugging
+      console.log(`[useTurnPolling] Received turn data:`, {
+        turnId: data.turn?.turnId,
+        turnNumber: data.turn?.turnNumber,
+        status: data.turn?.status,
+        hasKeeperNarrative: !!data.turn?.keeperNarrative,
+        keeperNarrativeLength: data.turn?.keeperNarrative?.length || 0,
+      });
+
       setTurn(data.turn);
       
       if (data.turn.status === 'error') {

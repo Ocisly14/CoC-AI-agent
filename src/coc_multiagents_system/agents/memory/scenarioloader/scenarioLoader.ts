@@ -578,6 +578,66 @@ export class ScenarioLoader {
   }
 
   /**
+   * Find initial scenario by scanning scenario directory for files containing "initial_scenario" in filename
+   */
+  findInitialScenarioByFileName(scenarioDir: string): ScenarioProfile | null {
+    if (!fs.existsSync(scenarioDir)) {
+      return null;
+    }
+
+    const files = fs.readdirSync(scenarioDir);
+    const jsonFiles = files.filter((f) => f.toLowerCase().endsWith(".json"));
+
+    // Find file containing "initial_scenario" in filename (case-insensitive)
+    const initialScenarioFile = jsonFiles.find((file) =>
+      file.toLowerCase().includes("initial_scenario")
+    );
+
+    if (!initialScenarioFile) {
+      return null;
+    }
+
+    try {
+      const filePath = path.join(scenarioDir, initialScenarioFile);
+      const fileContent = fs.readFileSync(filePath, "utf-8");
+      const jsonData = JSON.parse(fileContent);
+
+      // Handle both array of scenarios and single scenario object
+      const scenarios: ParsedScenarioData[] = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+      if (scenarios.length === 0) {
+        return null;
+      }
+
+      // Get the first scenario from the file
+      const initialScenarioData = scenarios[0];
+      const scenarioName = initialScenarioData.name || initialScenarioData.snapshot?.name;
+
+      if (!scenarioName) {
+        console.warn(`⚠️  初始场景文件 "${initialScenarioFile}" 中未找到场景名称`);
+        return null;
+      }
+
+      // Find the scenario in loaded scenarios by name
+      const allScenarios = this.getAllScenarios();
+      const foundScenario = allScenarios.find(
+        (s) => s.name.toLowerCase().trim() === scenarioName.toLowerCase().trim()
+      );
+
+      if (foundScenario) {
+        console.log(`   ✓ 根据文件名找到初始场景: ${foundScenario.name} (来自文件: ${initialScenarioFile})`);
+        return foundScenario;
+      } else {
+        console.warn(`⚠️  在已加载的场景中未找到名为 "${scenarioName}" 的场景（来自文件: ${initialScenarioFile}）`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`   ✗ 读取初始场景文件失败 "${initialScenarioFile}":`, error);
+      return null;
+    }
+  }
+
+  /**
    * Search scenarios based on query with fuzzy matching
    * Returns only the best matching scenario
    */

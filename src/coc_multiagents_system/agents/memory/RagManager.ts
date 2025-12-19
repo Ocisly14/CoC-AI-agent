@@ -1528,7 +1528,7 @@ export const buildRagQuery = (state: GameState, mode: Visibility): RagQuery => {
     state.currentScenario?.location,
     action?.target.name,
     intent,
-    state.discoveredClues?.join(" "),
+    state.discoveredClues?.map(c => c.text).join(" "),
   ]
     .filter(Boolean)
     .join(" ");
@@ -1543,7 +1543,7 @@ export const buildRagQuery = (state: GameState, mode: Visibility): RagQuery => {
       currentScenarioId: state.currentScenario?.id,
       location: state.currentScenario?.location,
       npcsInScene,
-      discoveredClues: state.discoveredClues ?? [],
+      discoveredClues: state.discoveredClues?.map(c => c.text) ?? [],
       recentScenes: state.visitedScenarios?.map((scene) => scene.name) ?? [],
     },
     constraints: {

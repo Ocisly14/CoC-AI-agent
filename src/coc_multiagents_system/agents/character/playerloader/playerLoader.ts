@@ -261,7 +261,11 @@ export class PlayerLoader {
       name: parsedData.name,
       attributes,
       status,
-      inventory: InventoryUtils.normalizeInventory(parsedData.inventory),
+      inventory: InventoryUtils.normalizeInventory(
+        parsedData.inventory?.map((item) => 
+          typeof item === 'string' ? { name: item } : item
+        ) as InventoryItem[]
+      ),
       skills: parsedData.skills || {},
       notes: [
         parsedData.notes,
