@@ -1,6 +1,7 @@
 # CoC Multi-Agent System
 
 > AI-powered Call of Cthulhu (7th Edition) game master using LangGraph multi-agent architecture.
+
 **Note: This documentation is for the `weaktime` branch only.**
 ## What is This?
 
