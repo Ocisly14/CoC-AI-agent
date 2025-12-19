@@ -926,6 +926,59 @@ textarea {
   min-height: 100px;
 }
 
+/* Skills Grid in Sidebar */
+.skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.skill-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.skill-item:hover {
+  background: #f9f9f9;
+  border-color: var(--accent);
+}
+
+/* Occupational skills highlighted with paper-yellow background */
+.skill-item.occupational {
+  background: #f5e6d3;
+  border-color: #d4a574;
+  font-weight: 500;
+}
+
+.skill-item.occupational:hover {
+  background: #f0ddc4;
+  border-color: #c49563;
+}
+
+.skill-name {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  color: var(--ink);
+  flex: 1;
+}
+
+.skill-value {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--title);
+  min-width: 40px;
+  text-align: right;
+}
+
 /* Responsive adjustments for smaller screens */
 @media (max-width: 1200px) {
   .game-main-layout {

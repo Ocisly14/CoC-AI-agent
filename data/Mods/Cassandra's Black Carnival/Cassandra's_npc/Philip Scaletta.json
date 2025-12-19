@@ -17,7 +17,8 @@
         "He lost his folding knife during a fight at the Reindeer Bar, and this knife was later found stuck in Lucifero's back",
         "He is left-handed but tries to hide this fact",
         "He is a habitual thief with a compulsion for stealing",
-        "The woman he tried to flirt with at the bar was Helen, who is not actually with her fiancé"
+        "The woman he tried to flirt with at the bar was Helen, who is not actually with her fiancé",
+        "He was THE FIRST PERSON to publicly discover and report the victim's body. He noticed Marcel returning from the restroom looking nervous and suspicious, suspected Marcel might be hiding something or involved in drug dealing. Concerned about what had just happened (the victim seeking help), he went to check the restroom and discovered the body, then shouted - which caught Marcel before he could escape"
       ],
       "attributes": {
         "STR": 65,
@@ -102,6 +103,12 @@
           "category": "secret",
           "difficulty": "hard",
           "relatedTo": ["Cult Activities"]
+        },
+        {
+          "clueText": "Philip was THE FIRST PERSON to publicly discover and report the victim's body at the Reindeer Bar. He noticed Marcel returning from the restroom looking nervous and suspicious, suspected Marcel might be hiding something or involved in drug dealing. Concerned about what had just happened (the victim seeking help), he went to check the restroom and discovered the body, then shouted - which caught Marcel before he could escape. However, Marcel had actually discovered the body first but was too afraid to report it.",
+          "category": "witness",
+          "difficulty": "regular",
+          "relatedTo": ["2003 Reindeer Bar murder", "Marcel Gwynplaine"]
         }
       ],
       "relationships": [
@@ -113,6 +120,6 @@
           "history": "Worked together on smuggling and intimidation jobs."
         }
       ],
-      "notes": "Philip avoids prolonged exposure to crime scenes involving abnormal creatures. His SAN loss history suggests prior encounters with the unnatural."
+      "notes": "Philip avoids prolonged exposure to crime scenes involving abnormal creatures. His SAN loss history suggests prior encounters with the unnatural. CRITICALLY: He was THE FIRST PERSON to publicly discover and report the victim's body at the Reindeer Bar on December 22, 2003. He noticed Marcel returning from the restroom looking nervous and suspicious, suspected Marcel might be hiding something or involved in drug dealing. Concerned about what had just happened (the victim seeking help), he went to check the restroom and discovered the body, then shouted - which caught Marcel before he could escape. However, Marcel had actually discovered the body first but was too afraid to report it, making Philip the first person to publicly discover and report the body."
     }
   ]

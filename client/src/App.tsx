@@ -915,36 +915,44 @@ const App: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {groupSkills.map((skill) => (
-                        <tr key={skill.name}>
-                          <td className="skill-name-cell">
-                            <span>{skill.name}</span>
-                            <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
-                          </td>
-                          <td className="skill-value-cell">
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              placeholder="0"
-                              value={skill.occupationalValue}
-                              onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </td>
-                          <td className="skill-value-cell">
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              placeholder="0"
-                              value={skill.interestValue}
-                              onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      {groupSkills.map((skill) => {
+                        const isOccupationalSkill = selectedOccupation?.suggested_skills?.includes(skill.name);
+                        return (
+                          <tr
+                            key={skill.name}
+                            style={{
+                              backgroundColor: isOccupationalSkill ? '#f5e6d3' : 'transparent'
+                            }}
+                          >
+                            <td className="skill-name-cell">
+                              <span>{skill.name}</span>
+                              <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
+                            </td>
+                            <td className="skill-value-cell">
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                placeholder="0"
+                                value={skill.occupationalValue}
+                                onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
+                                style={{ width: '100%' }}
+                              />
+                            </td>
+                            <td className="skill-value-cell">
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                placeholder="0"
+                                value={skill.interestValue}
+                                onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
+                                style={{ width: '100%' }}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -974,36 +982,44 @@ const App: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {groupSkills.map((skill) => (
-                        <tr key={skill.name}>
-                          <td className="skill-name-cell">
-                            <span>{skill.name}</span>
-                            <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
-                          </td>
-                          <td className="skill-value-cell">
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              placeholder="0"
-                              value={skill.occupationalValue}
-                              onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </td>
-                          <td className="skill-value-cell">
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              placeholder="0"
-                              value={skill.interestValue}
-                              onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
-                              style={{ width: '100%' }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      {groupSkills.map((skill) => {
+                        const isOccupationalSkill = selectedOccupation?.suggested_skills?.includes(skill.name);
+                        return (
+                          <tr
+                            key={skill.name}
+                            style={{
+                              backgroundColor: isOccupationalSkill ? '#f5e6d3' : 'transparent'
+                            }}
+                          >
+                            <td className="skill-name-cell">
+                              <span>{skill.name}</span>
+                              <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
+                            </td>
+                            <td className="skill-value-cell">
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                placeholder="0"
+                                value={skill.occupationalValue}
+                                onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
+                                style={{ width: '100%' }}
+                              />
+                            </td>
+                            <td className="skill-value-cell">
+                              <input
+                                type="number"
+                                min="0"
+                                max="99"
+                                placeholder="0"
+                                value={skill.interestValue}
+                                onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
+                                style={{ width: '100%' }}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

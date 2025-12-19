@@ -40,7 +40,7 @@
           "role": "Witness / Suspect",
           "status": "alive",
           "location": "Main hall",
-          "notes": "Witnessed THE SECOND CASE—discovered the body of 21-year-old Lucifero in the restroom. An important figure connected to the case."
+          "notes": "Witnessed THE SECOND CASE—was THE FIRST PERSON to discover the body of 21-year-old Lucifero in the restroom. When he went to use the restroom, he noticed the women's restroom door was open, saw blood flowing out, pushed the door open and found the victim's body. However, he was afraid of being implicated and pretended not to see anything, trying to leave quietly before Philip discovered the body and shouted. An important figure connected to the case."
         },
         {
           "name": "Simon Laplace",
@@ -54,7 +54,7 @@
           "role": "Witness",
           "status": "alive",
           "location": "Leaning against a wall decorated with reindeer antlers",
-          "notes": "Witnessed THE SECOND CASE and discovered the body; a habitual thief who secretly took THE SECOND CASE VICTIM's (21-year-old Lucifero) wallet."
+          "notes": "Witnessed THE SECOND CASE and was THE FIRST PERSON to publicly discover and report the body. He noticed Marcel returning from the restroom looking nervous and suspicious, suspected Marcel might be hiding something or involved in drug dealing. Concerned about what had just happened (the victim seeking help), he went to check the restroom and discovered the body, then shouted—which caught Marcel before he could escape. However, Marcel had actually discovered the body first but was too afraid to report it. A habitual thief who secretly took THE SECOND CASE VICTIM's (21-year-old Lucifero) wallet."
         },
         {
           "name": "Lux Lynch",
@@ -96,15 +96,28 @@
           ]
         },
         {
-          "clueText": "Marcel discovered THE SECOND CASE VICTIM's body (21-year-old Lucifero) in the restroom. He saw her alive and talking on the phone just before finding her dead.",
+          "clueText": "Marcel was THE FIRST PERSON to discover THE SECOND CASE VICTIM's body (21-year-old Lucifero) in the restroom. When he went to use the restroom, he noticed the women's restroom door was open, saw blood flowing out, pushed the door open and found the victim's body. He saw her alive and talking on the phone just before finding her dead. However, he was afraid of being implicated and pretended not to see anything, trying to leave quietly before Philip discovered the body and shouted.",
           "category": "witness",
           "difficulty": "regular",
           "location": "Conversation with Marcel",
           "discoveryMethod": "Talk or Persuade",
           "reveals": [
-            "Marcel was present at the SECOND CASE murder scene",
+            "Marcel was THE FIRST PERSON to discover the body at the SECOND CASE murder scene",
+            "Marcel was too afraid to report the discovery",
             "The victim was alive shortly before death",
             "This is the SECOND CASE, distinct from the FIRST CASE (19-year-old, December 22, 2002)"
+          ]
+        },
+        {
+          "clueText": "Philip was THE FIRST PERSON to publicly discover and report THE SECOND CASE VICTIM's body. He noticed Marcel returning from the restroom looking nervous and suspicious, suspected Marcel might be hiding something or involved in drug dealing. Concerned about what had just happened (the victim seeking help), he went to check the restroom and discovered the body, then shouted—which caught Marcel before he could escape.",
+          "category": "witness",
+          "difficulty": "regular",
+          "location": "Conversation with Philip",
+          "discoveryMethod": "Talk or Persuade",
+          "reveals": [
+            "Philip was the first person to publicly discover and report the body",
+            "Marcel had actually discovered the body first but was too afraid to report it",
+            "The sequence of discovery: Marcel first (private), then Philip (public report)"
           ]
         },
         {
@@ -158,6 +171,7 @@
         "December 22, 2003: THE SECOND MURDER CASE occurs inside Reindeer Bar—exactly one year after the first case",
         "The victim is Aberforth Locefern (Jenny Florence), a 21-year-old Black girl, killed by gunshot (.357 caliber) and stabbed with a folding knife",
         "This is DISTINCT from the first case: different victim (21 vs 19 years old), different location (bar restroom vs hotel freezer), different method (gunshot/stab vs frozen in ice)",
+        "Body discovery sequence: Marcel Gwynplaine was THE FIRST PERSON to discover the body in the restroom (he saw blood flowing out, pushed the door open and found the victim), but he was afraid of being implicated and pretended not to see anything, trying to leave quietly. Philip Scaletta noticed Marcel's nervous expression, went to check the restroom, also discovered the body, and shouted—making Philip the first person to publicly discover and report the body",
         "After the incident, suspects are gathered here for further questioning",
         "At night, certain individuals such as Vincent and Philip may still visit for drinks"
       ],
@@ -173,7 +187,7 @@
           "description": "Leads to the surrounding private booths on the upper floor"
         }
       ],
-      "keeperNotes": "Reindeer Bar is the site of THE SECOND MURDER CASE (December 22, 2003), occurring exactly one year after the first case at Paradil Grand Hotel. CRITICALLY DISTINCT: The second victim is Aberforth Locefern (Jenny Florence), 21 years old, killed by gunshot (.357 caliber) and stabbed with a folding knife in the restroom. This is COMPLETELY DIFFERENT from the first case (19-year-old girl, frozen in ice in hotel freezer). Emphasize that these are TWO SEPARATE CASES with TWO DIFFERENT BODIES, exactly one year apart. Multiple suspects, conflicting testimonies, and the surveillance blind spots allow the Keeper to apply pressure and escalate tension.",
+      "keeperNotes": "Reindeer Bar is the site of THE SECOND MURDER CASE (December 22, 2003), occurring exactly one year after the first case at Paradil Grand Hotel. CRITICALLY DISTINCT: The second victim is Aberforth Locefern (Jenny Florence), 21 years old, killed by gunshot (.357 caliber) and stabbed with a folding knife in the restroom. This is COMPLETELY DIFFERENT from the first case (19-year-old girl, frozen in ice in hotel freezer). Emphasize that these are TWO SEPARATE CASES with TWO DIFFERENT BODIES, exactly one year apart. IMPORTANT: Body discovery sequence—Marcel Gwynplaine was THE FIRST PERSON to discover the body (he saw blood flowing out, pushed the door open and found the victim), but he was afraid of being implicated and pretended not to see anything, trying to leave quietly. Philip Scaletta noticed Marcel's nervous expression, went to check the restroom, also discovered the body, and shouted—making Philip the first person to publicly discover and report the body. Multiple suspects, conflicting testimonies, and the surveillance blind spots allow the Keeper to apply pressure and escalate tension.",
       "permanentChanges": [
         "The bar's reputation in town is permanently affected by THE SECOND CASE murder",
         "Investigators' actions may influence whether the bar reopens smoothly"
