@@ -1,3 +1,7 @@
+# CoC Multi-Agent System
+
+> AI-powered Call of Cthulhu (7th Edition) game master using LangGraph multi-agent architecture.
+**Note: This documentation is for the `weaktime` branch only.**
 ## What is This?
 
 CoC Multi-Agent System is an AI framework that runs complete Call of Cthulhu tabletop RPG sessions. Instead of a human game master, **7 specialized AI agents** work together to:
