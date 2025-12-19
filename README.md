@@ -478,6 +478,44 @@ PORT=3000
 Only the **Keeper** agent use MEDIUM models—everything else uses SMALL for cost efficiency.
 
 ---
+## Current Limitations & Future Improvements
+
+### Known Limitations
+
+**Single Player Only**
+- The current version supports **single-player gameplay only**
+- Multiplayer functionality (multiple human players in one session) is **under development**
+- Planned features include:
+  - Multiple player characters in one game session
+  - Turn-based coordination between players
+  - Shared investigation and collaborative problem-solving
+
+**RAG System Under Improvement**
+- The Retrieval-Augmented Generation (RAG) system for knowledge retrieval is **currently being redesigned**
+- Current status: RAG is disabled by default (`SKIP_RAG = true`)
+- Improvements in progress:
+  - Better semantic search for scenario clues and NPC knowledge
+  - Optimized graph traversal for relationship discovery
+  - Enhanced context retrieval for more accurate rule application
+
+**Frontend UI Improvements**
+- The web interface user experience is **currently being enhanced**
+- Improvements in progress:
+  - Better game state visualization
+  - Improved character sheet and inventory management
+  - Enhanced clue tracking and relationship displays
+  - More intuitive action input and command suggestions
+
+### Roadmap
+
+We're actively working on:
+1. **Multiplayer Support** - Multiple players sharing one investigation
+2. **Enhanced RAG** - Smarter context retrieval and clue connections
+3. **Frontend UI/UX** - More intuitive and immersive web interface
+4. **Autonomous AI Players** - LLM agents that can play alongside or instead of humans
+5. **Additional Modules** - More Call of Cthulhu scenarios and mysteries
+
+---
 
 ## Troubleshooting
 
