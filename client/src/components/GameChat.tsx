@@ -224,7 +224,7 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
       }, 3000);
     } catch (err) {
       console.error('Failed to save checkpoint:', err);
-      setSaveMessage('存档失败: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      setSaveMessage('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSaving(false);
     }
@@ -247,9 +247,9 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
             className="save-checkpoint-btn"
             onClick={handleSaveCheckpoint}
             disabled={isSaving}
-            title="保存当前游戏进度"
+            title="Save current game progress"
           >
-            {isSaving ? '💾 保存中...' : '💾 存档'}
+            {isSaving ? '💾 Saving...' : '💾 Save'}
           </button>
           {saveMessage && (
             <span className="save-message" style={{ 

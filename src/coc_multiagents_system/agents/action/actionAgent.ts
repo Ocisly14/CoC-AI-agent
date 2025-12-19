@@ -171,24 +171,24 @@ Example:
       const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
       if (codeBlockMatch) {
         jsonText = codeBlockMatch[1].trim();
-        console.log(`📝 [Action Agent] 检测到 markdown 代码块，已提取 JSON 内容`);
+        console.log(`📝 [Action Agent] Detected markdown code block, extracted JSON content`);
       }
 
       if (!jsonText.startsWith('{') && !jsonText.startsWith('[')) {
         const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
         if (jsonObjectMatch) {
           jsonText = jsonObjectMatch[0];
-          console.log(`📝 [Action Agent] 从文本中提取 JSON 对象`);
+          console.log(`📝 [Action Agent] Extracted JSON object from text`);
         }
       }
 
       parsed = JSON.parse(jsonText);
     } catch (error) {
-      console.error(`❌ [Action Agent] JSON 解析错误:`, error);
-      console.error(`   错误类型: ${error instanceof Error ? error.constructor.name : typeof error}`);
-      console.error(`   错误消息: ${error instanceof Error ? error.message : String(error)}`);
-      console.error(`   原始响应 (前500字符): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
-      console.error(`   原始响应长度: ${response.length} 字符`);
+      console.error(`❌ [Action Agent] JSON parsing error:`, error);
+      console.error(`   Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   Error message: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`   Original response (first 500 chars): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
+      console.error(`   Original response length: ${response.length} characters`);
       return this.buildErrorResult(gameState, character, `Invalid JSON response from model: ${error instanceof Error ? error.message : String(error)}`, [], isNPC);
     }
 
@@ -483,7 +483,7 @@ Example:
       if (isNPC && parsed.sceneChange.shouldChange && parsed.sceneChange.targetSceneName) {
         // NPC scene change: update NPC location
         const targetSceneName = parsed.sceneChange.targetSceneName;
-        console.log(`\n📍 [Action Agent] NPC ${character.name} 请求场景转换: ${targetSceneName}`);
+        console.log(`\n📍 [Action Agent] NPC ${character.name} requested scene transition: ${targetSceneName}`);
 
         if (this.scenarioLoader) {
           const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
@@ -500,18 +500,18 @@ Example:
               npcInState.currentLocation = targetLocation;
 
               if (oldLocation !== targetLocation) {
-                console.log(`   ✓ NPC ${character.name} 位置已更新: ${oldLocation || "Unknown"} → ${targetLocation}`);
+                console.log(`   ✓ NPC ${character.name} location updated: ${oldLocation || "Unknown"} → ${targetLocation}`);
               } else {
-                console.log(`   - NPC ${character.name} 已在目标位置 ${targetLocation}`);
+                console.log(`   - NPC ${character.name} already at target location ${targetLocation}`);
               }
             } else {
-              console.warn(`   ⚠️  在 gameState 中未找到 NPC ${character.name} (ID: ${character.id})`);
+              console.warn(`   ⚠️  NPC ${character.name} (ID: ${character.id}) not found in gameState`);
             }
           } else {
-            console.warn(`   ⚠️  未找到场景 "${targetSceneName}"，无法更新NPC位置`);
+            console.warn(`   ⚠️  Scene "${targetSceneName}" not found, unable to update NPC location`);
           }
         } else {
-          console.warn(`   ⚠️  ScenarioLoader 未初始化，无法查找场景位置`);
+          console.warn(`   ⚠️  ScenarioLoader not initialized, unable to find scene location`);
         }
 
         // If NPC targets player, trigger scene change for player too
@@ -598,7 +598,7 @@ Example:
     stateManager.addActionResult(actionResult);
 
     // Log detailed action result
-    const logPrefix = isNPC ? `📊 [NPC Action Result] ${character.name}` : `📊 [Action Result] 详细执行结果`;
+    const logPrefix = isNPC ? `📊 [NPC Action Result] ${character.name}` : `📊 [Action Result] Detailed execution result`;
     console.log(`\n${logPrefix}:`);
     if (!isNPC) {
       console.log(`   Character: ${actionResult.character}`);
@@ -699,13 +699,13 @@ Example:
     toolLogs: string[],
     isNPC: boolean
   ): GameState {
-    const logPrefix = isNPC ? `NPC 动作处理错误 (${character.name})` : `错误处理`;
+    const logPrefix = isNPC ? `NPC action processing error (${character.name})` : `Error handling`;
     console.error(`\n❌ [Action Agent] ${logPrefix}: ${errorMessage}`);
-    console.error(`   当前游戏状态: Day ${gameState.gameDay}, ${gameState.timeOfDay}`);
-    console.error(`   位置: ${gameState.currentScenario?.location || "Unknown"}`);
-    console.error(`   角色: ${character.name}`);
+    console.error(`   Current game state: Day ${gameState.gameDay}, ${gameState.timeOfDay}`);
+    console.error(`   Location: ${gameState.currentScenario?.location || "Unknown"}`);
+    console.error(`   Character: ${character.name}`);
     if (toolLogs.length > 0) {
-      console.error(`   已执行的工具调用 (${toolLogs.length}):`);
+      console.error(`   Executed tool calls (${toolLogs.length}):`);
       toolLogs.forEach((log, index) => {
         console.error(`     [${index + 1}] ${log}`);
       });
@@ -720,16 +720,16 @@ Example:
       timeElapsedMinutes: 0, // No time elapsed on error
       location: gameState.currentScenario?.location || "Unknown location",
       character: character.name,
-      result: `[错误] ${isNPC ? 'NPC ' : ''}动作处理失败: ${errorMessage}`,
+      result: `[Error] ${isNPC ? 'NPC ' : ''}action processing failed: ${errorMessage}`,
       diceRolls: toolLogs.length > 0 ? toolLogs : [],
       timeConsumption: "instant",
-      scenarioChanges: [`错误: ${errorMessage}`]
+      scenarioChanges: [`Error: ${errorMessage}`]
     };
 
     // Add error result to action results
     stateManager.addActionResult(errorActionResult);
 
-    console.error(`\n📊 [Action Result] 错误结果已记录:`);
+    console.error(`\n📊 [Action Result] Error result recorded:`);
     console.error(`   Character: ${errorActionResult.character}`);
     console.error(`   Location: ${errorActionResult.location}`);
     console.error(`   Error: ${errorActionResult.result}`);

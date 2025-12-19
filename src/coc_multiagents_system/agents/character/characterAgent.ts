@@ -75,7 +75,7 @@ export class CharacterAgent {
       const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
       if (codeBlockMatch) {
         jsonText = codeBlockMatch[1].trim();
-        console.log(`📝 [Character Agent] 检测到 markdown 代码块，已提取 JSON 内容`);
+        console.log(`📝 [Character Agent] Detected markdown code block, extracted JSON content`);
       }
       
       // Try to extract JSON object if wrapped in other text
@@ -83,14 +83,14 @@ export class CharacterAgent {
         const jsonObjectMatch = jsonText.match(/\{[\s\S]*\}/);
         if (jsonObjectMatch) {
           jsonText = jsonObjectMatch[0];
-          console.log(`📝 [Character Agent] 从文本中提取 JSON 对象`);
+          console.log(`📝 [Character Agent] Extracted JSON object from text`);
         }
       }
       
       parsed = JSON.parse(jsonText);
     } catch (error) {
-      console.error(`❌ [Character Agent] JSON 解析错误:`, error);
-      console.error(`   原始响应 (前500字符): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
+      console.error(`❌ [Character Agent] JSON parsing error:`, error);
+      console.error(`   Original response (first 500 chars): ${response.substring(0, 500)}${response.length > 500 ? '...' : ''}`);
       return [];
     }
     
@@ -207,7 +207,7 @@ export class CharacterAgent {
   }
   
   /**
-   * 标准化名称（用于模糊匹配）
+   * Normalize name (for fuzzy matching)
    */
   private normalizeName(name: string): string {
     return name
@@ -217,7 +217,7 @@ export class CharacterAgent {
   }
 
   /**
-   * 计算两个字符串的Levenshtein距离（编辑距离）
+   * Calculate Levenshtein distance (edit distance) between two strings
    */
   private levenshtein(a: string, b: string): number {
     const m = a.length;
@@ -243,7 +243,7 @@ export class CharacterAgent {
   }
 
   /**
-   * 判断两个名称是否相似（相似度 >= 80%）
+   * Determine if two names are similar (similarity >= 80%)
    */
   private isNameSimilar(name1: string, name2: string): boolean {
     const na = this.normalizeName(name1);
@@ -251,17 +251,17 @@ export class CharacterAgent {
     if (!na || !nb) return false;
     if (na === nb) return true;
 
-    // 如果首词相同，认为相似
+    // If first word is the same, consider similar
     const tokensA = na.split(/\s+/);
     const tokensB = nb.split(/\s+/);
     if (tokensA[0] && tokensA[0] === tokensB[0]) return true;
 
-    // 计算Levenshtein距离并转换为相似度
+    // Calculate Levenshtein distance and convert to similarity
     const dist = this.levenshtein(na, nb);
     const maxLen = Math.max(na.length, nb.length);
     if (maxLen === 0) return false;
     const similarity = 1 - dist / maxLen;
-    return similarity >= 0.8; // 80%相似度阈值
+    return similarity >= 0.8; // 80% similarity threshold
   }
 
   /**
@@ -282,7 +282,7 @@ export class CharacterAgent {
       (currentScenario.characters || []).map(c => c.name.toLowerCase())
     );
     
-    // First, add NPCs explicitly listed in scenario (使用80%相似度的模糊匹配)
+    // First, add NPCs explicitly listed in scenario (using 80% similarity fuzzy matching)
     for (const scenarioChar of currentScenario.characters || []) {
       const matchingNpc = gameState.npcCharacters.find(npc =>
         this.isNameSimilar(npc.name, scenarioChar.name)

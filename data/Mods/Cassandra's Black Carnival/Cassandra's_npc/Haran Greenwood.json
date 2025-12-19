@@ -10,7 +10,11 @@
       "Finish his remaining years quietly at the train station",
       "Avoid involvement in town affairs or dangerous secrets"
     ],
-    "secrets": [],
+    "secrets": [
+      "He witnessed and handled Sanchez Cleo's urgent request to send Martin away before his disappearance, though he didn't understand the reason",
+      "He knows about the Cleo family's business operations and cargo movements through the train station",
+      "His work shack connects to the Mafia headquarters entrance, and he serves as a guard"
+    ],
     "attributes": {
       "STR": 40,
       "CON": 55,

@@ -1,30 +1,44 @@
 [
     {
       "name": "Paradil Grand Hotel",
-      "description": "A local hotel in Cassandra that became the site of an unexplained death the previous year. The hotel is known to locals but is not currently under active investigation by authorities. Its past incident is largely forgotten, recorded only as an anonymous death with no clear resolution.",
+      "description": "A local hotel in Cassandra that became the site of the FIRST murder case on December 22, 2002—exactly one year before the Reindeer Bar murder. The hotel is known to locals but is not currently under active investigation by authorities. Its past incident is largely forgotten, recorded only as an anonymous death with no clear resolution.",
       "snapshot": {
         "name": "Paradil Grand Hotel",
         "location": "A standard mid-sized hotel in the town of Cassandra",
-        "description": "The hotel appears ordinary and functional, serving travelers and visitors. Beneath its mundane appearance, it carries the shadow of an unresolved incident: the death of an unidentified individual the year before, which never developed into a formal missing person case.",
+        "description": "The hotel appears ordinary and functional, serving travelers and visitors. Beneath its mundane appearance, it carries the shadow of an unresolved incident: THE FIRST MURDER CASE occurred here on December 22, 2002—exactly one year before the Reindeer Bar murder. A 19-year-old Black girl was found dead in a freezer in the hotel kitchen's basement, her body completely naked and encased in a massive block of ice. The case was never fully investigated and never developed into a formal missing person case.",
         "characters": [
           {
-            "name": "Unknown Deceased Woman",
+            "name": "Unknown Deceased Woman (First Case Victim)",
             "role": "victim",
             "status": "deceased",
-            "location": "Paradil Grand Hotel (historical incident)",
-            "notes": "Not a local resident of Cassandra. There was no local missing person report filed for her."
+            "location": "Paradil Grand Hotel kitchen basement freezer (December 22, 2002)",
+            "notes": "A 19-year-old Black girl, not a local resident of Cassandra. Her body was found completely naked, encased in a massive block of ice in the hotel kitchen's basement freezer. There was no local missing person report filed for her. This is THE FIRST MURDER CASE, occurring exactly one year before the Reindeer Bar murder (December 22, 2003)."
           }
         ],
         "clues": [
           {
-            "clueText": "Record of an unidentified death that occurred in the Paradil Grand Hotel the previous year.",
+            "clueText": "Record of the FIRST murder case: an unidentified 19-year-old Black girl found dead in the Paradil Grand Hotel on December 22, 2002—exactly one year before the Reindeer Bar murder.",
             "category": "document",
             "difficulty": "regular",
             "location": "Hotel records or local archives",
             "discoveryMethod": "Library Use or investigation of hotel records",
             "reveals": [
               "The victim was not from Cassandra",
-              "The case was never fully investigated"
+              "The case was never fully investigated",
+              "This is the FIRST of two murder cases, separated by exactly one year",
+              "The body was found in a freezer, encased in ice—distinct from the second case"
+            ]
+          },
+          {
+            "clueText": "The victim's body was discovered in the hotel kitchen's basement freezer, completely naked and encased in a massive block of ice—a distinctive method that differs from the second murder case.",
+            "category": "physical",
+            "difficulty": "regular",
+            "location": "Hotel kitchen basement (if accessible) or case files",
+            "discoveryMethod": "Investigation of hotel basement or police records",
+            "reveals": [
+              "The first case involved freezing the body in ice",
+              "This method is completely different from the second case (gunshot and knife)",
+              "The two cases may be connected but use different killing methods"
             ]
           },
           {
@@ -35,13 +49,17 @@
             "discoveryMethod": "Interviews or research",
             "reveals": [
               "Her sister disappeared after traveling to Cassandra",
-              "A possible connection to cult activities"
+              "A possible connection to cult activities",
+              "The first victim was investigating a disappearance before her own death"
             ]
           }
         ],
         "conditions": [],
         "events": [
-          "An anonymous death occurred at the hotel in the previous year"
+          "December 22, 2002: THE FIRST MURDER CASE—A 19-year-old Black girl found dead in the hotel kitchen basement freezer, her body encased in ice",
+          "The case was quickly shelved due to lack of evidence and official support",
+          "Bruno attempted to reopen the case but was denied",
+          "Exactly one year later, on December 22, 2003, a similar but different murder occurred at the Reindeer Bar"
         ],
         "exits": [
           {
@@ -50,7 +68,7 @@
             "description": "The primary entrance and exit for guests and staff"
           }
         ],
-        "keeperNotes": "The Paradil Grand Hotel serves as a background location tying past events to the current investigation. The unidentified death can be used to foreshadow cult activity and reinforce the theme that outsiders who investigate Cassandra often meet grim ends.",
+        "keeperNotes": "The Paradil Grand Hotel is the site of THE FIRST MURDER CASE (December 22, 2002). This case is CRITICALLY DISTINCT from the second case: the first victim was a 19-year-old Black girl found in a freezer, completely naked and encased in a massive block of ice. The second case (December 22, 2003) involved a 21-year-old Black girl (Lucifero) killed by gunshot and knife in the Reindeer Bar restroom. Emphasize that these are TWO SEPARATE CASES, exactly one year apart, with DIFFERENT BODIES and DIFFERENT METHODS. The first case serves as background foreshadowing and connects to Bruno's determination to solve both cases.",
         "permanentChanges": []
       },
       "tags": ["hotel", "past crime", "unresolved death", "outsider victim"],

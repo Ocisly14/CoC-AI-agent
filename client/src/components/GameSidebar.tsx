@@ -107,13 +107,13 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
           className={`sidebar-tab ${activeTab === 'status' ? 'active' : ''}`}
           onClick={() => setActiveTab('status')}
         >
-          角色状态
+          Character Status
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'clues' ? 'active' : ''}`}
           onClick={() => setActiveTab('clues')}
         >
-          已获得的线索
+          Discovered Clues
         </button>
       </div>
 
@@ -128,7 +128,7 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
             ) : gameState ? (
               <>
                 <div className="status-section">
-                  <h3>基本属性</h3>
+                  <h3>Basic Attributes</h3>
                   <div className="status-grid">
                     <div className="status-item">
                       <span className="status-label">HP:</span>
@@ -176,7 +176,7 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
                 </div>
 
                 <div className="status-section">
-                  <h3>状态效果</h3>
+                  <h3>Status Effects</h3>
                   <div className="status-effects">
                     {gameState.playerCharacter.status.conditions.length > 0 ? (
                       <ul style={{ margin: 0, paddingLeft: '20px' }}>
@@ -185,13 +185,13 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
                         ))}
                       </ul>
                     ) : (
-                      <p className="empty-state">暂无状态效果</p>
+                      <p className="empty-state">No status effects</p>
                     )}
                   </div>
                 </div>
               </>
             ) : (
-              <p className="empty-state">暂无数据</p>
+              <p className="empty-state">No data</p>
             )}
           </div>
         )}
@@ -199,12 +199,12 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
         {activeTab === 'clues' && (
           <div className="tab-panel clues-panel">
             {loading ? (
-              <p className="empty-state">加载中...</p>
+              <p className="empty-state">Loading...</p>
             ) : error ? (
-              <p className="empty-state" style={{ color: '#c41e3a' }}>加载失败: {error}</p>
+              <p className="empty-state" style={{ color: '#c41e3a' }}>Load failed: {error}</p>
             ) : gameState ? (
               <div className="clues-section">
-                <h3>重要线索</h3>
+                <h3>Important Clues</h3>
                 <div className="clues-list">
                   {gameState.discoveredClues.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -228,27 +228,27 @@ export function GameSidebar({ sessionId, apiBaseUrl = 'http://localhost:3000/api
                                 fontWeight: 'normal',
                               }}
                             >
-                              ({clue.type === 'scenario' ? '场景线索' : clue.type === 'npc' ? 'NPC线索' : '秘密'})
+                              ({clue.type === 'scenario' ? 'Scenario Clue' : clue.type === 'npc' ? 'NPC Clue' : 'Secret'})
                             </span>
                           </div>
                           <div style={{ fontSize: '0.9rem', color: '#333', marginBottom: '5px' }}>
                             {clue.text}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: '#999' }}>
-                            发现者: {clue.discoveredBy}
-                            {clue.method && ` | 方法: ${clue.method}`}
-                            {clue.difficulty && ` | 难度: ${clue.difficulty}`}
+                            Discovered by: {clue.discoveredBy}
+                            {clue.method && ` | Method: ${clue.method}`}
+                            {clue.difficulty && ` | Difficulty: ${clue.difficulty}`}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="empty-state">暂无线索</p>
+                    <p className="empty-state">No clues</p>
                   )}
                 </div>
               </div>
             ) : (
-              <p className="empty-state">暂无数据</p>
+              <p className="empty-state">No data</p>
             )}
           </div>
         )}

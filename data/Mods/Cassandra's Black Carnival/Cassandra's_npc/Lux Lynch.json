@@ -12,7 +12,12 @@
       ],
       "secrets": [
         "He has accepted bribes and maintains records of people whose 'small problems' he has helped cover up",
-        "He was ordered by higher authorities to release Martin Gin (Ghost Hand), indirectly allowing Jenny Florence's murderer to escape"
+        "He was ordered by higher authorities to release Martin Gin (Ghost Hand), indirectly allowing Jenny Florence's murderer to escape",
+        "He was the 'acquaintance' Adolph met at the Reindeer Bar on the day of the murder (2003.12.22), though Adolph doesn't know why Lux was there",
+        "He planted the folding knife (which belonged to Philip) on Lucifero's body on Martin's orders to confuse the investigation",
+        "He transported Lucifero's body to Star Hospital and later to the crematorium under orders",
+        "He knows Martin (Ghost Hand) works for the government/Patrizio but doesn't know his true identity",
+        "He is terrified of Patrizio's inhuman powers and cannot betray him"
       ],
       "attributes": {
         "STR": 55,
@@ -42,9 +47,24 @@
         "Stealth": 40
       },
       "inventory": [
-        "Police badge and identification",
-        "Notebook recording illicit favors",
-        "Service handgun"
+        {
+          "name": "Police badge and identification",
+          "properties": {
+            "note": "Official police credentials."
+          }
+        },
+        {
+          "name": "Notebook recording illicit favors",
+          "properties": {
+            "clue": "A small notebook documenting people whose 'small problems' he has helped cover up. This is both leverage against others and evidence that could be used against him."
+          }
+        },
+        {
+          "name": "Service handgun",
+          "properties": {
+            "note": "Standard police-issued firearm."
+          }
+        }
       ],
       "clues": [
         {

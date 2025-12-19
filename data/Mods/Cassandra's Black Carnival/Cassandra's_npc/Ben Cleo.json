@@ -12,7 +12,12 @@
     ],
     "secrets": [
       "Has long-standing knowledge of illicit trades passing through the train station",
-      "Knows more about past family dealings and disappearances than he publicly admits"
+      "Knows more about past family dealings and disappearances than he publicly admits",
+      "He has a gold-inlaid Desert Eagle .357 caliber pistol (1981 custom edition, MRI internal members only) that matches the caliber of the weapon used in the 2003 Reindeer Bar murder case",
+      "He was actually attending a secret gambling session at the church basement during the time of the 2003 Reindeer Bar murder, not praying as he claimed",
+      "The Reindeer Bar is his property, and the surveillance system was installed by his people, but the system was broken by Martin, not by Ben",
+      "He knows someone called 'Ghost Hand' works for Patrizio, but doesn't know Ghost Hand is Martin Cleo",
+      "He has a safe containing his father Karong's notes and books related to Nyogtha and other Mythos entities"
     ],
     "attributes": {
       "STR": 65,
@@ -50,10 +55,10 @@
         }
       },
       {
-        "name": "Desert Eagle (1981 custom, gold-inlaid edition)",
+        "name": "Desert Eagle (1981 custom, gold-inlaid edition, .357 caliber)",
         "quantity": 1,
         "properties": {
-          "note": "Special customized gold version; he loves it and carries it, but rarely uses unless necessary."
+          "clue": "Special customized gold version by MRI, internal members only. .357 caliber, matching the caliber of the weapon used in the 2003 Reindeer Bar murder case. Ben loves it and carries it everywhere, but rarely uses unless absolutely necessary."
         }
       }
     ],
@@ -73,6 +78,26 @@
         "difficulty": "regular",
         "relatedTo": [
           "Cleo Family"
+        ]
+      },
+      {
+        "clueText": "Ben has a .357 caliber Desert Eagle that matches the caliber of the weapon used in the 2003 Reindeer Bar murder case, but he was actually at a secret gambling session during the murder, not at the church as he claimed.",
+        "category": "observation",
+        "difficulty": "hard",
+        "relatedTo": [
+          "2003 Reindeer Bar murder",
+          "Desert Eagle",
+          ".357 caliber"
+        ]
+      },
+      {
+        "clueText": "The Reindeer Bar surveillance system was installed by Ben's people, but it was broken by Martin (Ghost Hand), not by Ben.",
+        "category": "knowledge",
+        "difficulty": "hard",
+        "relatedTo": [
+          "Reindeer Bar",
+          "Martin Gin",
+          "Surveillance"
         ]
       }
     ],

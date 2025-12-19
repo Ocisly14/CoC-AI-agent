@@ -41,12 +41,16 @@
             "reveals": ["Bruno was trying to identify or warn someone about Lucifero"]
           },
           {
-            "clueText": "Case files and physical evidence from the Reindeer Bar murder placed on the front passenger seat",
+            "clueText": "Case files and physical evidence from the Reindeer Bar murder (THE SECOND CASE, December 22, 2003) placed on the front passenger seat. Also contains references to the FIRST CASE (December 22, 2002) at Paradil Grand Hotel.",
             "category": "document",
             "difficulty": "regular",
             "location": "Front passenger seat",
             "discoveryMethod": "Search",
-            "reveals": ["Bruno was actively investigating the Reindeer Bar case before his death"]
+            "reveals": [
+              "Bruno was actively investigating BOTH cases before his death",
+              "Bruno believed the two cases were connected despite being exactly one year apart",
+              "The first case (19-year-old, frozen in ice) and second case (21-year-old, gunshot/stab) are distinct but related"
+            ]
           }
         ],
         "conditions": [
@@ -68,7 +72,7 @@
             "condition": ""
           }
         ],
-        "keeperNotes": "The unnatural state of the body should immediately unsettle investigators. Police NPCs will deny knowledge of Bruno returning to the station, increasing suspicion and isolation.",
+        "keeperNotes": "Bruno was investigating BOTH MURDER CASES: FIRST CASE (December 22, 2002)—19-year-old Black girl, frozen in ice at Paradil Grand Hotel. SECOND CASE (December 22, 2003)—21-year-old Black girl (Lucifero), gunshot and knife at Reindeer Bar. Exactly one year apart, TWO DIFFERENT BODIES, different methods. The unnatural state of Bruno's body should immediately unsettle investigators. Police NPCs will deny knowledge of Bruno returning to the station, increasing suspicion and isolation.",
         "permanentChanges": []
       },
       "tags": ["crime scene", "vehicle", "unnatural death", "investigation"],

@@ -12,7 +12,10 @@
       ],
       "secrets": [
         "He conducted human experiments to transform people into Cthulhu-related beings",
-        "His wife was resurrected as a ghoul and later committed suicide due to unbearable mental anguish"
+        "His wife was resurrected as a ghoul and later committed suicide due to unbearable mental anguish",
+        "He personally transported Lucifero's body from the hospital morgue to the crematorium under orders",
+        "He knows Martin Gin (Ghost Hand) works for Patrizio and uses the hospital's pharmaceutical storage room, but doesn't know Ghost Hand is Martin",
+        "The hospital ID card he uses actually belongs to Martin Gin"
       ],
       "attributes": {
         "STR": 55,
@@ -68,6 +71,18 @@
           "category": "observation",
           "difficulty": "hard",
           "relatedTo": ["Martin Gin"]
+        },
+        {
+          "clueText": "He personally transported Lucifero's body from the hospital morgue to the crematorium under orders, causing the body to disappear from the morgue.",
+          "category": "secret",
+          "difficulty": "hard",
+          "relatedTo": ["Jenny Florence (Lucifero)", "2003 Reindeer Bar murder", "Crematorium"]
+        },
+        {
+          "clueText": "He knows Martin Gin (Ghost Hand) works for Patrizio and uses hospital resources, but doesn't realize Ghost Hand is the murderer of both the 2002 and 2003 cases.",
+          "category": "knowledge",
+          "difficulty": "extreme",
+          "relatedTo": ["Martin Gin", "2002 Paradil Hotel murder", "2003 Reindeer Bar murder"]
         }
       ],
       "relationships": [

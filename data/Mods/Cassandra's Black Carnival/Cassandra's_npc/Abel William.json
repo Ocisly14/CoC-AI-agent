@@ -11,8 +11,10 @@
       "Understand the strange events plaguing his workplace"
     ],
     "secrets": [
-      "The spider infestation and his own death are connected to unnatural forces",
-      "He was already dead earlier than it appeared to investigators"
+      "The spider infestation and his own death are connected to unnatural forces (cold spiders from Constantine's church)",
+      "He was already dead earlier than it appeared to investigators",
+      "He was infected by a cold spider bite, similar to Nancy Charlotte's infection",
+      "His father's death in 2002 may be connected to Patrizio von Samsa's human experiments"
     ],
     "attributes": {
       "STR": 50,
@@ -57,19 +59,24 @@
     ],
     "clues": [
       {
-        "clueText": "Abel complained about a growing spider infestation in and around the distillery.",
+        "clueText": "Abel complained about a growing spider infestation in and around the distillery (cold spiders from Constantine's church).",
         "category": "observation",
         "difficulty": "regular",
         "relatedTo": [
-          "William Distillery"
+          "William Distillery",
+          "Cold spiders",
+          "Constantine Frollo"
         ]
       },
       {
-        "clueText": "A black spider emerged from Abel’s neck, killing him instantly.",
+        "clueText": "A black spider (cold spider) emerged from Abel's neck, killing him instantly. This is the same type of infection that Nancy Charlotte suffers from.",
         "category": "observation",
         "difficulty": "regular",
         "relatedTo": [
-          "William Distillery"
+          "William Distillery",
+          "Cold spider",
+          "Spider infection",
+          "Nancy Charlotte"
         ]
       },
       {
@@ -77,7 +84,17 @@
         "category": "knowledge",
         "difficulty": "regular",
         "relatedTo": [
-          "Marcel"
+          "Marcel Gwynplaine"
+        ]
+      },
+      {
+        "clueText": "His father's death in 2002 may be connected to Patrizio von Samsa's human experiments.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": [
+          "Peter William",
+          "Patrizio von Samsa",
+          "Human experiments"
         ]
       }
     ],

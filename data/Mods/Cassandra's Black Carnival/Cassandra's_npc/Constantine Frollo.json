@@ -12,7 +12,12 @@
     ],
     "secrets": [
       "He is involved in occult practices disguised as religious rites",
-      "He collaborates with other hidden powers in Cassandra, including the mayor"
+      "He collaborates with Patrizio von Samsa, including helping him eliminate threats like Bruno Galilei",
+      "He helped Patrizio deal with Bruno by distracting investigators when Patrizio killed Bruno",
+      "He knows Vincent Galenus's secrets from his confession and helps him deal with spider-infected people",
+      "The church basement contains Atlach-Nacha's web connecting to the Dreamlands, with cold spiders coming and going",
+      "He can control spider-people and decide the fate of those taken away in cocoons",
+      "He serves Atlach-Nacha and wants to bring the deity into the world, though this is not what Atlach-Nacha wants"
     ],
     "attributes": {
       "STR": 45,
@@ -73,12 +78,33 @@
         ]
       },
       {
-        "clueText": "He is cooperating with Mayor Padrich to prepare a ritual involving an ancient entity.",
-        "category": "knowledge",
+        "clueText": "He is cooperating with Patrizio von Samsa and helped him eliminate Bruno Galilei by distracting investigators.",
+        "category": "secret",
         "difficulty": "extreme",
         "relatedTo": [
-          "Mayor Padrich",
-          "Cassandra"
+          "Patrizio von Samsa",
+          "Bruno Galilei"
+        ]
+      },
+      {
+        "clueText": "He knows Vincent Galenus's secrets from his confession and helps him deal with spider-infected people, working with Patrizio to cover up these cases.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": [
+          "Vincent Galenus",
+          "Spider infection",
+          "Cold spiders"
+        ]
+      },
+      {
+        "clueText": "The church basement contains Atlach-Nacha's web connecting to the Dreamlands, and he can control spider-people through magic.",
+        "category": "secret",
+        "difficulty": "extreme",
+        "relatedTo": [
+          "Atlach-Nacha",
+          "Dreamlands",
+          "Cold spiders",
+          "Spider-people"
         ]
       }
     ],

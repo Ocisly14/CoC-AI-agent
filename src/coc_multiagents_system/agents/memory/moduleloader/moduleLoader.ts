@@ -140,7 +140,7 @@ export class ModuleLoader {
     }
 
     try {
-      console.log(`📦 正在加载 JSON 文件...`);
+      console.log(`📦 Loading JSON file...`);
       const fileContent = fs.readFileSync(filePath, "utf-8");
       const jsonData = JSON.parse(fileContent);
 
@@ -148,30 +148,30 @@ export class ModuleLoader {
       const modules: ParsedModuleData[] = Array.isArray(jsonData) ? jsonData : [jsonData];
 
       if (modules.length === 0) {
-        console.log("⚠️  JSON 文件中未找到模块数据。");
+        console.log("⚠️  No module data found in JSON file.");
         return [];
       }
 
       // Convert and store each module
-      console.log(`💾 开始保存 ${modules.length} 个模块到数据库...`);
+      console.log(`💾 Starting to save ${modules.length} modules to database...`);
       const moduleRecords: ModuleBackground[] = [];
       for (let i = 0; i < modules.length; i++) {
         const parsed = modules[i];
         try {
-          console.log(`  [${i + 1}/${modules.length}] 正在保存模块: ${parsed.title}`);
+          console.log(`  [${i + 1}/${modules.length}] Saving module: ${parsed.title}`);
           const moduleRecord = this.convertToModuleBackground(parsed);
           this.saveModuleToDatabase(moduleRecord);
           moduleRecords.push(moduleRecord);
-          console.log(`    ✓ 已保存模块: ${moduleRecord.title}`);
+          console.log(`    ✓ Saved module: ${moduleRecord.title}`);
         } catch (error) {
-          console.error(`    ✗ 保存模块失败 ${parsed.title}:`, error);
+          console.error(`    ✗ Failed to save module ${parsed.title}:`, error);
         }
       }
 
       console.log(`\n=== Successfully loaded ${moduleRecords.length} modules from JSON file ===\n`);
       return moduleRecords;
     } catch (error) {
-      console.error(`✗ 加载 JSON 文件失败 ${filePath}:`, error);
+      console.error(`✗ Failed to load JSON file ${filePath}:`, error);
       return [];
     }
   }
@@ -315,28 +315,28 @@ export class ModuleLoader {
       }
     }
 
-    console.log(`📦 开始从目录加载模块: ${dirPath}`);
+    console.log(`📦 Starting to load modules from directory: ${dirPath}`);
 
     const parsedModules = await this.parser.parseDirectory(dirPath);
 
     if (parsedModules.length === 0) {
-      console.log("⚠️  目录中未找到模块文档。");
+      console.log("⚠️  No module documents found in directory.");
       this.updateLastLoadTimestamp(dirPath);
       return [];
     }
 
-    console.log(`💾 开始保存 ${parsedModules.length} 个模块到数据库...`);
+    console.log(`💾 Starting to save ${parsedModules.length} modules to database...`);
     const moduleRecords: ModuleBackground[] = [];
     for (let i = 0; i < parsedModules.length; i++) {
       const parsed = parsedModules[i];
       try {
-        console.log(`  [${i + 1}/${parsedModules.length}] 正在保存模块: ${parsed.title}`);
+        console.log(`  [${i + 1}/${parsedModules.length}] Saving module: ${parsed.title}`);
         const moduleRecord = this.convertToModuleBackground(parsed);
         this.saveModuleToDatabase(moduleRecord);
         moduleRecords.push(moduleRecord);
-        console.log(`    ✓ 已保存模块: ${moduleRecord.title}`);
+        console.log(`    ✓ Saved module: ${moduleRecord.title}`);
       } catch (error) {
-        console.error(`    ✗ 保存模块失败 ${parsed.title}:`, error);
+        console.error(`    ✗ Failed to save module ${parsed.title}:`, error);
       }
     }
 

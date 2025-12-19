@@ -200,7 +200,7 @@ const App: React.FC = () => {
   const handleSelectMod = async (modName: string) => {
     setSelectedModName(modName);
     setLoadingModData(true);
-    setModLoadProgress({ stage: "初始化", progress: 0, message: "正在初始化..." });
+    setModLoadProgress({ stage: "Initializing", progress: 0, message: "Initializing..." });
     
     try {
       // Step 1: Load mod data with SSE progress updates
@@ -228,12 +228,12 @@ const App: React.FC = () => {
           }
           try {
             const errorData = JSON.parse(errorBuffer);
-            throw new Error(errorData.error || "加载模组数据失败");
+            throw new Error(errorData.error || "Failed to load module data");
           } catch (e) {
-            throw new Error(errorBuffer || "加载模组数据失败");
+            throw new Error(errorBuffer || "Failed to load module data");
           }
         } else {
-          throw new Error("加载模组数据失败");
+          throw new Error("Failed to load module data");
         }
       }
 
@@ -257,7 +257,7 @@ const App: React.FC = () => {
                 const data = JSON.parse(line.slice(6));
                 
                 // Check for errors
-                if (data.stage === "错误" && data.message) {
+                if (data.stage === "Error" && data.message) {
                   throw new Error(data.message);
                 }
                 
@@ -287,17 +287,17 @@ const App: React.FC = () => {
       }
 
       if (!loadData) {
-        throw new Error("服务器未返回加载结果");
+        throw new Error("Server did not return load result");
       }
 
       // Step 2: Fetch module introduction
-      setModLoadProgress({ stage: "生成导入叙事", progress: 90, message: "正在生成模块导入叙事..." });
+      setModLoadProgress({ stage: "Generating Introduction Narrative", progress: 90, message: "Generating module introduction narrative..." });
       const introResponse = await fetch(`http://localhost:3000/api/module/introduction?modName=${encodeURIComponent(modName)}`);
       const introData = await introResponse.json();
 
       if (introResponse.ok && introData.success) {
         setModuleIntroduction(introData.moduleIntroduction);
-        setModLoadProgress({ stage: "完成", progress: 100, message: "准备就绪" });
+        setModLoadProgress({ stage: "Complete", progress: 100, message: "Ready" });
         setTimeout(() => {
           setLoadingModData(false);
           setModLoadProgress(null);
@@ -314,7 +314,7 @@ const App: React.FC = () => {
       console.error("Error loading mod:", error);
       setLoadingModData(false);
       setModLoadProgress(null);
-      alert("加载模组失败: " + (error as Error).message);
+      alert("Failed to load module: " + (error as Error).message);
       setPage("mod-select");
     }
   };
@@ -344,12 +344,12 @@ const App: React.FC = () => {
         setShowModuleIntro(false);
         setPage("game");
       } else {
-        alert("启动游戏失败: " + (data.error || "Unknown error"));
+        alert("Failed to start game: " + (data.error || "Unknown error"));
         setPage("character-select");
       }
     } catch (error) {
       console.error("Error starting game:", error);
-      alert("网络错误，无法连接到服务器");
+      alert("Network error, unable to connect to server");
       setPage("character-select");
     }
   };
@@ -372,11 +372,11 @@ const App: React.FC = () => {
       if (data.success) {
         setCheckpoints(data.checkpoints || []);
       } else {
-        alert("加载存档列表失败: " + (data.error || "Unknown error"));
+        alert("Failed to load checkpoint list: " + (data.error || "Unknown error"));
       }
     } catch (error) {
       console.error("Error loading checkpoints:", error);
-      alert("网络错误，无法加载存档列表");
+      alert("Network error, unable to load checkpoint list");
     } finally {
       setLoadingCheckpoints(false);
     }
@@ -418,11 +418,11 @@ const App: React.FC = () => {
         setShowCheckpointSelector(false);
         setPage("game");
       } else {
-        alert("加载存档失败: " + (data.error || "Unknown error"));
+        alert("Failed to load checkpoint: " + (data.error || "Unknown error"));
       }
     } catch (error) {
       console.error("Error loading checkpoint:", error);
-      alert("网络错误，无法加载存档");
+      alert("Network error, unable to load checkpoint");
     }
   };
 
@@ -499,8 +499,8 @@ const App: React.FC = () => {
       name: skill.name,
       base: skill.base,
       category: skill.category,
-      value: form[`skill_${skill.name}`] || "",
-      checked: form[`skillcheck_${skill.name}`] === "on",
+      occupationalValue: form[`skill_occ_${skill.name}`] || "",
+      interestValue: form[`skill_int_${skill.name}`] || "",
     }));
   }, [form]);
 
@@ -510,17 +510,11 @@ const App: React.FC = () => {
     let interestUsed = 0;
 
     skillsState.forEach((skill) => {
-      const baseValue = parseInt(skill.base.replace("%", "")) || 0;
-      const currentValue = parseInt(skill.value) || 0;
-      const pointsAdded = Math.max(0, currentValue - baseValue);
+      const occupationalValue = parseInt(skill.occupationalValue) || 0;
+      const interestValue = parseInt(skill.interestValue) || 0;
 
-      if (skill.checked) {
-        // Checked skills use occupational points
-        occupationalUsed += pointsAdded;
-      } else {
-        // Unchecked skills use interest points
-        interestUsed += pointsAdded;
-      }
+      occupationalUsed += occupationalValue;
+      interestUsed += interestValue;
     });
 
     return {
@@ -566,7 +560,15 @@ const App: React.FC = () => {
         ARMOR: form.ARMOR,
       },
       skills: skillsState.reduce(
-        (acc, s) => ({ ...acc, [s.name]: { value: Number(s.value) || 0, checked: s.checked } }),
+        (acc, s) => ({
+          ...acc,
+          [s.name]: {
+            base: parseInt(s.base.replace("%", "")) || 0,
+            occupationalPoints: Number(s.occupationalValue) || 0,
+            interestPoints: Number(s.interestValue) || 0,
+            total: (parseInt(s.base.replace("%", "")) || 0) + (Number(s.occupationalValue) || 0) + (Number(s.interestValue) || 0)
+          }
+        }),
         {}
       ),
       weapons: weapons.filter((w) => w.name || w.skill || w.damage),
@@ -585,7 +587,7 @@ const App: React.FC = () => {
     e.preventDefault();
 
     if (!characterData.identity.name) {
-      setSaveMessage({ type: "error", text: "请填写角色姓名！" });
+      setSaveMessage({ type: "error", text: "Please fill in character name!" });
       return;
     }
 
@@ -629,7 +631,7 @@ const App: React.FC = () => {
             onClick={() => setPage("home")}
             style={{ background: "#eee" }}
           >
-            返回首页
+            Return to Home
           </button>
         </div>
         <div className="section-title">Identity</div>
@@ -638,11 +640,11 @@ const App: React.FC = () => {
             <tr>
               <th>Era</th>
               <td>
-                <input name="era" placeholder="1920s 调查员" value={form.era || ""} onChange={(e) => onChange("era", e.target.value)} />
+                <input name="era" placeholder="1920s Investigator" value={form.era || ""} onChange={(e) => onChange("era", e.target.value)} />
               </td>
               <th>Name</th>
               <td>
-                <input name="name" placeholder="尼伦顿" value={form.name || ""} onChange={(e) => onChange("name", e.target.value)} />
+                <input name="name" placeholder="Name" value={form.name || ""} onChange={(e) => onChange("name", e.target.value)} />
               </td>
               <th>Occupation</th>
               <td>
@@ -659,7 +661,7 @@ const App: React.FC = () => {
                   }}
                   style={{ width: "100%", padding: "4px" }}
                 >
-                  <option value="">选择职业...</option>
+                  <option value="">Select occupation...</option>
                   {occupations.map((occ) => (
                     <option key={occ.id} value={occ.name_zh}>
                       {occ.name_zh} ({occ.name_en})
@@ -699,7 +701,7 @@ const App: React.FC = () => {
             onClick={handleRandomizeAttributes}
             style={{ background: "#8b7355", color: "#f5f1e8" }}
           >
-            🎲 随机生成属性
+            🎲 Randomize Attributes
           </button>
         </div>
         <table>
@@ -858,7 +860,7 @@ const App: React.FC = () => {
           fontSize: "0.85rem",
           color: "#2c5f75"
         }}>
-          <strong>💡 提示:</strong> 勾选的技能使用<strong>职业技能点数</strong>，未勾选的技能使用<strong>兴趣技能点数</strong>
+          <strong>💡 提示:</strong> 每个技能可以分别使用<strong>职业加点</strong>和<strong>兴趣加点</strong>进行提升，最终技能值 = 基础值 + 职业加点 + 兴趣加点
         </div>
 
         {selectedOccupation && selectedOccupation.suggested_skills && selectedOccupation.suggested_skills.length > 0 && (
@@ -870,7 +872,7 @@ const App: React.FC = () => {
             borderRadius: "4px"
           }}>
             <strong style={{ color: "#8b7355" }}>
-              {selectedOccupation.name_zh} ({selectedOccupation.name_en}) 推荐技能:
+              {selectedOccupation.name_zh} ({selectedOccupation.name_en}) Recommended Skills:
             </strong>
             <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {selectedOccupation.suggested_skills.map((skill: string, index: number) => (
@@ -890,61 +892,124 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        <div className="skills-three-columns">
-          {["Social", "Knowledge", "Investigation", "Physical", "Stealth", "Technical", "Medical", "Combat", "Criminal", "Language", "Status", "Mythos"].map((category) => {
-            const categorySkills = skillsState.filter((s) => s.category === category);
-            if (categorySkills.length === 0) return null;
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* Left Column */}
+          <div>
+            {[
+              { key: "social-knowledge", label: "Social & Knowledge Skills", categories: ["Social", "Knowledge", "Language"] },
+              { key: "investigation", label: "Investigation & Criminal Skills", categories: ["Investigation", "Criminal"] },
+              { key: "combat", label: "Combat Skills", categories: ["Combat"] }
+            ].map((group) => {
+              const groupSkills = skillsState.filter((s) => group.categories.includes(s.category));
+              if (groupSkills.length === 0) return null;
 
-            const categoryNames: Record<string, string> = {
-              Social: "Interpersonal & Social",
-              Knowledge: "Knowledge & Academic",
-              Investigation: "Perception & Investigation",
-              Physical: "Physical & Movement",
-              Stealth: "Stealth & Deception",
-              Technical: "Mechanical & Technical",
-              Medical: "Medical & Survival",
-              Combat: "Combat",
-              Criminal: "Criminal & Subterfuge",
-              Language: "Communication & Language",
-              Status: "Financial & Status",
-              Mythos: "Cthulhu Mythos"
-            };
-
-            return (
-              <div key={category} className="skill-category">
-                <h4 className="skill-category-title">{categoryNames[category]}</h4>
-                <table className="skills-table">
-                  <tbody>
-                    {categorySkills.map((skill) => (
-                      <tr key={skill.name}>
-                        <td className="skill-name-cell">
-                          <label className="skill-label">
-                            <input
-                              type="checkbox"
-                              checked={skill.checked}
-                              onChange={(e) => onChange(`skillcheck_${skill.name}`, e.target.checked ? "on" : "")}
-                            />
-                            <span>{skill.name}</span>
-                            <span className="skill-base">({skill.base})</span>
-                          </label>
-                        </td>
-                        <td className="skill-value-cell">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            placeholder={skill.base.replace("%", "")}
-                            value={skill.value}
-                            onChange={(e) => onChange(`skill_${skill.name}`, e.target.value)}
-                          />
-                        </td>
+              return (
+                <div key={group.key} className="skill-category" style={{ marginBottom: '20px' }}>
+                  <h4 className="skill-category-title">{group.label}</h4>
+                  <table className="skills-table">
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Skill Name</th>
+                        <th style={{ width: '80px' }}>Occupational</th>
+                        <th style={{ width: '80px' }}>Interest</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })}
+                    </thead>
+                    <tbody>
+                      {groupSkills.map((skill) => (
+                        <tr key={skill.name}>
+                          <td className="skill-name-cell">
+                            <span>{skill.name}</span>
+                            <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
+                          </td>
+                          <td className="skill-value-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              max="99"
+                              placeholder="0"
+                              value={skill.occupationalValue}
+                              onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
+                              style={{ width: '100%' }}
+                            />
+                          </td>
+                          <td className="skill-value-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              max="99"
+                              placeholder="0"
+                              value={skill.interestValue}
+                              onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
+                              style={{ width: '100%' }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right Column */}
+          <div>
+            {[
+              { key: "physical", label: "Physical & Stealth Skills", categories: ["Physical", "Stealth"] },
+              { key: "technical-medical", label: "Technical & Medical Skills", categories: ["Technical", "Medical"] },
+              { key: "special", label: "Special Skills", categories: ["Status", "Mythos"] }
+            ].map((group) => {
+              const groupSkills = skillsState.filter((s) => group.categories.includes(s.category));
+              if (groupSkills.length === 0) return null;
+
+              return (
+                <div key={group.key} className="skill-category" style={{ marginBottom: '20px' }}>
+                  <h4 className="skill-category-title">{group.label}</h4>
+                  <table className="skills-table">
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Skill Name</th>
+                        <th style={{ width: '80px' }}>Occupational</th>
+                        <th style={{ width: '80px' }}>Interest</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupSkills.map((skill) => (
+                        <tr key={skill.name}>
+                          <td className="skill-name-cell">
+                            <span>{skill.name}</span>
+                            <span className="skill-base" style={{ marginLeft: '8px', color: '#999' }}>({skill.base})</span>
+                          </td>
+                          <td className="skill-value-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              max="99"
+                              placeholder="0"
+                              value={skill.occupationalValue}
+                              onChange={(e) => onChange(`skill_occ_${skill.name}`, e.target.value)}
+                              style={{ width: '100%' }}
+                            />
+                          </td>
+                          <td className="skill-value-cell">
+                            <input
+                              type="number"
+                              min="0"
+                              max="99"
+                              placeholder="0"
+                              value={skill.interestValue}
+                              onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
+                              style={{ width: '100%' }}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="section-title">Weapons</div>
@@ -963,7 +1028,7 @@ const App: React.FC = () => {
                 <td>
                   <input
                     name={`weapon_${i}_name`}
-                    placeholder={i === 0 ? ".38 口径左轮手枪" : "武器"}
+                    placeholder={i === 0 ? ".38 Revolver" : "Weapon"}
                     value={w.name}
                     onChange={(e) => onChange(`weapon_${i}_name`, e.target.value)}
                   />
@@ -971,7 +1036,7 @@ const App: React.FC = () => {
                 <td>
                   <input
                     name={`weapon_${i}_skill`}
-                    placeholder={i === 0 ? "手枪" : "技能"}
+                    placeholder={i === 0 ? "Handgun" : "Skill"}
                     value={w.skill}
                     onChange={(e) => onChange(`weapon_${i}_skill`, e.target.value)}
                   />
@@ -1024,7 +1089,7 @@ const App: React.FC = () => {
                 <td>
                   <textarea
                     name="appearance"
-                    placeholder="描绘形象、装束、伤疤、举止..."
+                    placeholder="Describe appearance, attire, scars, mannerisms..."
                     value={form.appearance || ""}
                     onChange={(e) => onChange("appearance", e.target.value)}
                   />
@@ -1041,7 +1106,7 @@ const App: React.FC = () => {
                 <td>
                   <textarea
                     name="ideology"
-                    placeholder="信念、政治、宗教、性格癖好..."
+                    placeholder="Beliefs, politics, religion, personality quirks..."
                     value={form.ideology || ""}
                     onChange={(e) => onChange("ideology", e.target.value)}
                   />
@@ -1058,7 +1123,7 @@ const App: React.FC = () => {
                 <td>
                   <textarea
                     name="people"
-                    placeholder="重要之人、导师、家族、联系人..."
+                    placeholder="Important people, mentors, family, contacts..."
                     value={form.people || ""}
                     onChange={(e) => onChange("people", e.target.value)}
                   />
@@ -1075,7 +1140,7 @@ const App: React.FC = () => {
                 <td>
                   <textarea
                     name="gear"
-                    placeholder="装备、物品、资产、资金..."
+                    placeholder="Equipment, items, assets, funds..."
                     value={form.gear || ""}
                     onChange={(e) => onChange("gear", e.target.value)}
                   />
@@ -1092,7 +1157,7 @@ const App: React.FC = () => {
               <td>
                 <textarea
                   name="backstory"
-                  placeholder="背景故事、案件、动机、恐惧、秘密..."
+                  placeholder="Background story, cases, motivations, fears, secrets..."
                   value={form.backstory || ""}
                   onChange={(e) => onChange("backstory", e.target.value)}
                 />
@@ -1123,11 +1188,11 @@ const App: React.FC = () => {
               onClick={() => setSaveMessage(null)}
               style={{ background: "#8b7355", borderColor: "#8b7355", color: "#f5f1e8" }}
             >
-              清空消息
+              Clear Message
             </button>
           )}
           <button className="pill-btn" type="submit" disabled={saving}>
-            {saving ? "创建中..." : "🎲 创建角色"}
+            {saving ? "Creating..." : "🎲 Create Character"}
           </button>
         </div>
       </form>

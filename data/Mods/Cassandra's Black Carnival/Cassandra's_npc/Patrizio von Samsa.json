@@ -12,7 +12,10 @@
       ],
       "secrets": [
         "His interest in psychiatry was driven by a desire to control and experiment on others rather than to heal",
-        "His political ambitions are rooted in knowledge gained from unnatural encounters in Arkham"
+        "His political ambitions are rooted in knowledge gained from unnatural encounters in Arkham",
+        "He employs Martin Gin (Ghost Hand) as a hacker and courier, and knows Ghost Hand is the murderer of both the 2002 and 2003 murder cases",
+        "He ordered the killing of Lucifero because she intercepted the Borrachero package and was mistakenly identified as the hacker who stole his secrets",
+        "He is preparing a ritual to awaken Cthulhu and other Great Old Ones, which will actually summon Ghatanothoa instead"
       ],
       "attributes": {
         "STR": 45,
@@ -57,6 +60,18 @@
           "category": "secret",
           "difficulty": "extreme",
           "relatedTo": ["Arkham Exchange Program"]
+        },
+        {
+          "clueText": "He employs Martin Gin (Ghost Hand) who is the murderer of both the 2002 Paradil Hotel murder case and the 2003 Reindeer Bar murder case.",
+          "category": "secret",
+          "difficulty": "extreme",
+          "relatedTo": ["Martin Gin", "2002 Paradil Hotel murder", "2003 Reindeer Bar murder"]
+        },
+        {
+          "clueText": "He ordered Lucifero's death because she intercepted the Borrachero package and was mistakenly identified as the hacker who stole his secrets.",
+          "category": "secret",
+          "difficulty": "extreme",
+          "relatedTo": ["Jenny Florence (Lucifero)", "2003 Reindeer Bar murder"]
         }
       ],
       "relationships": [

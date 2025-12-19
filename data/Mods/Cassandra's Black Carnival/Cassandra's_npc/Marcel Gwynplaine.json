@@ -10,7 +10,13 @@
         "Find a way to survive day to day without real work",
         "Ventr his resentment and frustrations on others"
       ],
-      "secrets": [],
+      "secrets": [
+        "He witnessed a man with a distinctive scar/ birthmark emerging from the sewer on Crescent Street B around December 17 (this was Martin checking Lucifero's hideout)",
+        "He saw the victim (Lucifero) making a phone call in the restroom before she was killed",
+        "He saw a man in formal wear (Adolph) passing by on the way to the restroom, but the lighting was too dim to be certain",
+        "He discovered that the waiter mixed up the drink orders - he received Lucifero's expensive drink, and Lucifero's drink contained strong hallucinogenic drugs (which he didn't report to avoid trouble)",
+        "He had seen the victim before - earlier that afternoon at the bar, a tall slender man bumped into her and they had an argument"
+      ],
       "attributes": {
         "STR": 50,
         "CON": 45,
@@ -50,13 +56,31 @@
           "relatedTo": ["Winery"]
         },
         {
-          "clueText": "At the time of the incident, Marcel was seen sitting alone in a corner of the bar, visibly nervous and worried.",
+          "clueText": "At the time of the 2003 Reindeer Bar incident, Marcel was seen sitting alone in a corner of the bar, visibly nervous and worried.",
           "category": "observation",
           "difficulty": "regular",
-          "relatedTo": ["Reindeer Bar"]
+          "relatedTo": ["Reindeer Bar", "2003 Reindeer Bar murder"]
+        },
+        {
+          "clueText": "Around December 17, Marcel witnessed a man with a distinctive scar/birthmark emerging from the sewer on Crescent Street B (this was Martin checking Lucifero's hideout).",
+          "category": "observation",
+          "difficulty": "hard",
+          "relatedTo": ["Martin Gin", "Sewer", "Crescent Street B"]
+        },
+        {
+          "clueText": "Marcel saw the victim (Lucifero) making a phone call in the restroom before she was killed, and saw a man in formal wear (Adolph) passing by.",
+          "category": "observation",
+          "difficulty": "regular",
+          "relatedTo": ["Jenny Florence (Lucifero)", "2003 Reindeer Bar murder", "Adolph Carl"]
+        },
+        {
+          "clueText": "The waiter mixed up drink orders - Marcel received Lucifero's expensive drink, and Lucifero's drink contained strong hallucinogenic drugs (Devil's Breath/Borrachero).",
+          "category": "knowledge",
+          "difficulty": "hard",
+          "relatedTo": ["2003 Reindeer Bar murder", "Devil's Breath", "Borrachero"]
         }
       ],
       "relationships": [],
-      "notes": "Marcel is more useful as a nervous witness and atmospheric NPC than as a reliable source of information. He is easily intimidated and unlikely to act bravely."
+      "notes": "Marcel is a key witness to the 2003 Reindeer Bar murder case. He discovered the victim's body in the restroom and witnessed several important details: Martin emerging from the sewer on December 17, the victim making a phone call before death, and Adolph passing by. He also discovered the drink order mix-up that revealed the hallucinogenic drugs. However, he is easily intimidated and may not reveal all information unless pressured. He is more useful as a nervous witness and atmospheric NPC than as a reliable source of information."
     }
   ]

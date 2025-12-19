@@ -10,6 +10,9 @@
         "Do his job and assist the local police",
         "Maintain peace and order in Cassandra"
       ],
+      "secrets": [
+        "Last year before Christmas, he met the unknown Black girl (victim of the 2002 Paradil Hotel murder case) who asked him if there were any cheap rooms for rent. He said no, and the next day she was murdered. He forgot about this after the case was shelved."
+      ],
       "attributes": {
         "STR": 60,
         "CON": 65,
@@ -40,6 +43,20 @@
         "Service handgun",
         "Notebook"
       ],
-      "notes": "Vito is described as a good-hearted but unsophisticated auxiliary officer, useful as minor support or local contact rather than a true investigator."
+      "clues": [
+      {
+        "clueText": "Last year before Christmas, he met the unknown Black girl (victim of the 2002 Paradil Hotel murder case) who asked him if there were any cheap rooms for rent. He said no, and the next day she was murdered.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["2002 Paradil Hotel murder", "Unknown victim"]
+      },
+      {
+        "clueText": "His girlfriend Helen was the woman Philip tried to flirt with at the Reindeer Bar on the day of the 2003 murder case.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["Helen", "Philip Scaletta", "2003 Reindeer Bar murder"]
+      }
+    ],
+    "notes": "Vito is a good-hearted but unsophisticated auxiliary officer. He met the victim of the 2002 murder case the day before she was killed, but forgot about this after the case was shelved. His girlfriend Helen was involved in the 2003 Reindeer Bar incident when Philip tried to flirt with her."
     }
   ]

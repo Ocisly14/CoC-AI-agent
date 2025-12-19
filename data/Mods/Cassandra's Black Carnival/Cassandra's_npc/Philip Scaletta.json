@@ -12,7 +12,12 @@
       ],
       "secrets": [
         "He has personally disposed of multiple bodies connected to ritual-related crimes",
-        "He suspects the organization is involved with something inhuman, but chooses not to ask questions"
+        "He suspects the organization is involved with something inhuman, but chooses not to ask questions",
+        "He stole Lucifero's wallet at the Reindeer Bar on the day of the murder (2003.12.22)",
+        "He lost his folding knife during a fight at the Reindeer Bar, and this knife was later found stuck in Lucifero's back",
+        "He is left-handed but tries to hide this fact",
+        "He is a habitual thief with a compulsion for stealing",
+        "The woman he tried to flirt with at the bar was Helen, who is not actually with her fiancé"
       ],
       "attributes": {
         "STR": 65,
@@ -42,11 +47,48 @@
         "Psychology": 40
       },
       "inventory": [
-        "Concealed handgun",
-        "Switchblade",
-        "Leather gloves",
-        "Cigarettes",
-        "Cash roll"
+        {
+          "name": "Concealed handgun",
+          "properties": {
+            "note": "Carried for protection."
+          }
+        },
+        {
+          "name": "Folding knife (lost at Reindeer Bar)",
+          "properties": {
+            "clue": "Philip lost this folding knife during a fight at Reindeer Bar on the day of the murder (2003.12.22) when he tried to flirt with a woman who turned out to have a boyfriend. This knife was later found stuck in Lucifero's back. Martin (Ghost Hand) picked it up and gave it to Lux to plant on the body to confuse the investigation."
+          }
+        },
+        {
+          "name": "Leather gloves",
+          "properties": {
+            "note": "Worn even in inappropriate weather."
+          }
+        },
+        {
+          "name": "Cigarettes",
+          "properties": {
+            "note": "Personal item."
+          }
+        },
+        {
+          "name": "Cash roll",
+          "properties": {
+            "note": "Money from various activities."
+          }
+        },
+        {
+          "name": "Stolen wallet from Lucifero",
+          "properties": {
+            "clue": "Philip stole Lucifero's wallet when she left her seat. It contained a thick wad of cash and a note listing various 'jobs' (including one involving Adolph). He did not report this theft and kept the money."
+          }
+        },
+        {
+          "name": "Old family photo",
+          "properties": {
+            "note": "The only surviving photo of Philip with his parents."
+          }
+        }
       ],
       "clues": [
         {

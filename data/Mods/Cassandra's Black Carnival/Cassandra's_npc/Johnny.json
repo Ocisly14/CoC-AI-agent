@@ -5,7 +5,7 @@
       "age": 35,
       "appearance": "A physically fit man with a rugged outdoorsman look, accustomed to hunting and physical activity.",
       "personality": "Hot-tempered, possessive, impulsive, easily angered when provoked, especially regarding romantic rivals.",
-      "background": "A hunting enthusiast who has long harbored romantic feelings for Helen. He resents Vito, believing himself no inferior. After arranging a date with Helen at a bar to confess his feelings, Johnny got into a violent altercation with Philip, who was harassing her. Although Johnny drove Philip off, the interruption ruined his chance to confess, and Helen left early, leaving Johnny furious and frustrated.",
+      "background": "A hunting enthusiast who has long harbored romantic feelings for Helen. He resents Vito, believing himself no inferior. On December 22, 2003, he arranged a date with Helen at the Reindeer Bar to confess his feelings, but got into a violent altercation with Philip Scaletta, who was harassing her. Although Johnny drove Philip off, the interruption ruined his chance to confess, and Helen left early, leaving Johnny furious and frustrated. This happened on the same day as the Reindeer Bar murder case.",
       "goals": [
         "Win Helen’s affection",
         "Prove himself superior to Vito"
@@ -46,14 +46,14 @@
         "Hunting shotgun",
         "Hunting gear"
       ],
-      "clues": [
-        {
-          "clueText": "Johnny violently confronted Philip at the bar for harassing Helen.",
-          "category": "observation",
-          "difficulty": "regular",
-          "relatedTo": ["Helen", "Philip"]
-        }
-      ],
+    "clues": [
+      {
+        "clueText": "Johnny violently confronted Philip Scaletta at the Reindeer Bar on December 22, 2003 (the day of the murder) for harassing Helen.",
+        "category": "observation",
+        "difficulty": "regular",
+        "relatedTo": ["Helen", "Philip Scaletta", "2003 Reindeer Bar murder"]
+      }
+    ],
       "relationships": [
         {
           "targetName": "Helen",

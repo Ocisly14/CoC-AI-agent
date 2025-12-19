@@ -25,29 +25,29 @@ const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame, onContinueGame }) =
 
         <div className="home-actions">
           <button className="primary" onClick={handleStartGame}>
-            🎮 新游戏
+            🎮 New Game
           </button>
           <button className="secondary" onClick={onContinueGame}>
-            📂 继续游戏
+            📂 Continue Game
           </button>
           <button onClick={onCreate}>
-            创建角色
+            Create Character
           </button>
         </div>
       </div>
 
       <div className="home-panels">
         <div className="home-card">
-          <h3>流程</h3>
-          <p>Orchestrator → Memory → Action → Keeper，线性执行。</p>
+          <h3>Flow</h3>
+          <p>Orchestrator → Memory → Action → Keeper, linear execution.</p>
         </div>
         <div className="home-card">
-          <h3>角色卡</h3>
-          <p>使用表格化的调查员卡，生成 JSON 以供后端保存。</p>
+          <h3>Character Sheet</h3>
+          <p>Use tabular investigator sheet, generate JSON for backend storage.</p>
         </div>
         <div className="home-card">
-          <h3>数据</h3>
-          <p>后端使用 SQLite，前端可按需对接 API（未连接）。</p>
+          <h3>Data</h3>
+          <p>Backend uses SQLite, frontend can connect to API as needed (not connected).</p>
         </div>
       </div>
     </div>

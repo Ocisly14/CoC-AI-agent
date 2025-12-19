@@ -70,7 +70,7 @@ export function CharacterSelector({
 
     try {
       setImporting(true);
-      setImportMessage("正在导入游戏数据...");
+      setImportMessage("Importing game data...");
       
       // Step 1: Import game data
       const importResponse = await fetch(`${apiBaseUrl}/game/import-data`, {
@@ -81,21 +81,21 @@ export function CharacterSelector({
       const importData = await importResponse.json();
 
       if (!importResponse.ok) {
-        throw new Error(importData.error || "数据导入失败");
+        throw new Error(importData.error || "Data import failed");
       }
 
-      setImportMessage(`数据导入完成：${importData.scenariosLoaded} 个场景，${importData.npcsLoaded} 个NPC`);
+      setImportMessage(`Data import completed: ${importData.scenariosLoaded} scenarios, ${importData.npcsLoaded} NPCs`);
       
       // Small delay to show the message
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setImportMessage("正在启动游戏...");
+      setImportMessage("Starting game...");
       
       // Step 2: Call the parent handler which will start the game
       onSelectCharacter(selectedId, selectedChar.name);
     } catch (err) {
       console.error("Error importing data:", err);
-      setError(err instanceof Error ? err.message : "数据导入失败");
+      setError(err instanceof Error ? err.message : "Data import failed");
       setImporting(false);
       setImportMessage(null);
     }
@@ -123,17 +123,17 @@ export function CharacterSelector({
     <div className="character-selector-overlay">
       <div className="character-selector-modal">
         <div className="modal-header">
-          <h2>选择调查员</h2>
+          <h2>Select Investigator</h2>
           <button className="close-button" onClick={onCancel}>×</button>
         </div>
 
         <div className="modal-content">
           {(loading || importing) && (
             <div className="loading-state">
-              <p>{importing ? (importMessage || "正在处理...") : "加载角色中..."}</p>
+              <p>{importing ? (importMessage || "Processing...") : "Loading characters..."}</p>
               {importing && (
                 <div style={{ marginTop: "10px", fontSize: "0.9rem", color: "#666" }}>
-                  请稍候，这可能需要几秒钟...
+                  Please wait, this may take a few seconds...
                 </div>
               )}
             </div>
@@ -142,15 +142,15 @@ export function CharacterSelector({
           {error && !importing && (
             <div className="error-state">
               <p style={{ color: '#dc3545' }}>{error}</p>
-              <button onClick={loadCharacters}>重试</button>
+              <button onClick={loadCharacters}>Retry</button>
             </div>
           )}
 
           {!loading && !error && characters.length === 0 && (
             <div className="empty-state">
-              <p>还没有创建任何角色</p>
+              <p>No characters created yet</p>
               <button className="primary" onClick={onCreateNew}>
-                创建第一个调查员
+                Create First Investigator
               </button>
             </div>
           )}
@@ -171,12 +171,12 @@ export function CharacterSelector({
                       <div className="character-card-header">
                         <h3>{char.name}</h3>
                         <span className="character-occupation">
-                          {char.occupation || '未知职业'}
+                          {char.occupation || 'Unknown Occupation'}
                         </span>
                       </div>
                       
                       <div className="character-card-body">
-                        {char.age && <p>年龄: {char.age}</p>}
+                        {char.age && <p>Age: {char.age}</p>}
                         
                         {status && (
                           <div className="character-status">
@@ -207,20 +207,20 @@ export function CharacterSelector({
 
               <div className="modal-actions">
                 <button onClick={onCreateNew} className="secondary">
-                  创建新角色
+                  Create New Character
                 </button>
                 <button 
                   onClick={onCancel} 
                   className="tertiary"
                 >
-                  完成
+                  Done
                 </button>
                 <button 
                   onClick={handleConfirm} 
                   className="primary"
                   disabled={!selectedId || importing}
                 >
-                  {importing ? "正在导入数据..." : "使用此角色开始游戏"}
+                  {importing ? "Importing data..." : "Start Game with This Character"}
                 </button>
               </div>
             </>

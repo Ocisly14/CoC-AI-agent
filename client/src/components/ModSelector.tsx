@@ -42,7 +42,7 @@ export function ModSelector({
       }
     } catch (err) {
       console.error('Error fetching mods:', err);
-      setError('网络错误，无法连接到服务器');
+      setError('Network error, unable to connect to server');
     } finally {
       setLoading(false);
     }
@@ -60,11 +60,11 @@ export function ModSelector({
         <div className="mod-selector-overlay">
           <div className="mod-selector-modal">
             <div className="modal-header">
-              <h2>选择模组</h2>
+              <h2>Select Module</h2>
             </div>
             <div className="modal-content">
               <div className="loading-state">
-                <p>加载模组列表中...</p>
+                <p>Loading module list...</p>
               </div>
             </div>
           </div>
@@ -106,7 +106,7 @@ export function ModSelector({
         <div className="mod-selector-overlay">
           <div className="mod-selector-modal">
             <div className="modal-header">
-              <h2>选择模组</h2>
+              <h2>Select Module</h2>
               <button onClick={onCancel} className="close-button">×</button>
             </div>
             <div className="modal-content">
@@ -115,8 +115,8 @@ export function ModSelector({
                   {error}
                 </div>
                 <div className="modal-actions">
-                  <button onClick={onCancel} className="secondary">取消</button>
-                  <button onClick={fetchMods} className="primary">重试</button>
+                  <button onClick={onCancel} className="secondary">Cancel</button>
+                  <button onClick={fetchMods} className="primary">Retry</button>
                 </div>
               </div>
             </div>
@@ -159,13 +159,13 @@ export function ModSelector({
         <div className="mod-selector-overlay">
           <div className="mod-selector-modal">
             <div className="modal-header">
-              <h2>选择模组</h2>
+              <h2>Select Module</h2>
               <button onClick={onCancel} className="close-button">×</button>
             </div>
             <div className="modal-content">
               <div className="empty-state">
-                <p>未找到可用的模组。请确保在 <code>data/Mods/</code> 目录下有模组文件夹。</p>
-                <button onClick={onCancel} className="secondary" style={{ marginTop: '16px' }}>返回</button>
+                <p>No available modules found. Please ensure there are module folders in the <code>data/Mods/</code> directory.</p>
+                <button onClick={onCancel} className="secondary" style={{ marginTop: '16px' }}>Back</button>
               </div>
             </div>
           </div>
@@ -206,11 +206,11 @@ export function ModSelector({
       <div className="mod-selector-overlay">
         <div className="mod-selector-modal">
           <div className="modal-header">
-            <h2>选择模组</h2>
+            <h2>Select Module</h2>
             <button onClick={onCancel} className="close-button">×</button>
           </div>
           <div className="modal-content">
-            <p style={{ marginBottom: '20px', color: 'var(--ink)' }}>请选择要加载的模组</p>
+            <p style={{ marginBottom: '20px', color: 'var(--ink)' }}>Please select the module to load</p>
             <div className="mod-list">
               {mods.map((mod) => (
                 <div
@@ -234,13 +234,13 @@ export function ModSelector({
               ))}
             </div>
             <div className="modal-actions">
-              <button onClick={onCancel} className="secondary">取消</button>
+              <button onClick={onCancel} className="secondary">Cancel</button>
               <button 
                 onClick={handleSelect} 
                 className="primary"
                 disabled={!selectedMod}
               >
-                确认选择
+                Confirm Selection
               </button>
             </div>
           </div>

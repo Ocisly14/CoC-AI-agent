@@ -45,7 +45,7 @@ No specific target (non-targeted action).
 
 **CRITICAL: Targeted vs Non-Targeted Actions**
 
-1. **Targeted Actions (指向型动作)**: If the action target information shows a specific target (target.name is not null), this is a TARGETED action.
+1. **Targeted Actions**: If the action target information shows a specific target (target.name is not null), this is a TARGETED action.
    - **PRIMARY RULE**: In the vast majority of cases, ONLY the targeted NPC should analyze whether to respond
    - The targeted NPC should analyze based on: their personality, relationship with the investigator, current state, and how the action affects them
    - Other NPCs should ONLY respond if:
@@ -53,7 +53,7 @@ No specific target (non-targeted action).
      - The action is highly visible/audible and directly relates to their goals or concerns
    - **Default behavior**: For targeted actions, set willRespond: false for all NPCs EXCEPT the target (unless there's a strong reason for others to respond)
 
-2. **Non-Targeted Actions (非指向型行为)**: If the action has no specific target (target.name is null), this is a NON-TARGETED action.
+2. **Non-Targeted Actions**: If the action has no specific target (target.name is null), this is a NON-TARGETED action.
    - Use LLM judgment to determine which NPCs will respond based on:
      - NPC personality traits and how they would react to such actions
      - NPC relationships with the investigator and other NPCs

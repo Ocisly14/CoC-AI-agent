@@ -10,10 +10,16 @@
         "To achieve greater success and recognition as a lawyer",
         "To repay her adoptive father's kindness and live up to his expectations"
       ],
-      "secrets": [
-        "She is unaware that her adoptive father is a non-human entity with horrific motives",
-        "Her upbringing was part of a larger, inhuman scheme rather than an act of pure charity"
-      ],
+    "secrets": [
+      "She is unaware that her adoptive father is a non-human entity with horrific motives",
+      "Her upbringing was part of a larger, inhuman scheme rather than an act of pure charity",
+      "She worked under the alias 'Susan' as a nurse at Star Hospital to investigate Patrizio's activities",
+      "On December 26, 2003, she disguised herself as Isabela Smith after Isabela left with her mentally disturbed fiancé",
+      "She knows 'Shore Master' (Adolph Carl) and conducted business with Lucifero through him",
+      "She asked Lucifero to intercept some of the Borrachero that Lux was transporting to the hospital",
+      "She is skilled in disguise and can help investigators if they gain her trust",
+      "The ruby brooch she wears comes from moon-beasts in the Dreamlands, and her adoptive father can exchange her through it if she becomes useless"
+    ],
       "attributes": {
         "STR": 40,
         "CON": 50,
@@ -45,14 +51,32 @@
         "Legal documents",
         "Handbag with personal effects"
       ],
-      "clues": [
-        {
-          "clueText": "Her adoptive father ran an orphanage that selectively took in intelligent children.",
-          "category": "knowledge",
-          "difficulty": "regular",
-          "relatedTo": ["Albert Shiny", "Shiny Orphanage"]
-        }
-      ],
+    "clues": [
+      {
+        "clueText": "Her adoptive father ran an orphanage that selectively took in intelligent children.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["Albert Shiny", "Shiny Orphanage"]
+      },
+      {
+        "clueText": "She worked under the alias 'Susan' at Star Hospital and knows about Patrizio's experiments there. After December 26, 2003, she disguised herself as Isabela Smith.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": ["Star Hospital", "Patrizio von Samsa", "Isabela Smith"]
+      },
+      {
+        "clueText": "She conducted business with Lucifero through Adolph Carl (Shore Master), asking her to intercept Borrachero shipments.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": ["Jenny Florence (Lucifero)", "Adolph Carl", "Lux Lynch", "Borrachero"]
+      },
+      {
+        "clueText": "She helped Ben Cleo escape conviction for murdering a judge five years ago, which she now deeply regrets.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["Ben Cleo"]
+      }
+    ],
       "relationships": [
         {
           "targetName": "Albert Shiny",

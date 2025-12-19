@@ -48,9 +48,9 @@
           }
         ],
         "events": [
-          "The hacker known as Lucifero traced a rival hacker's signal to this cabin.",
-          "A destroyed computer was recovered and partially restored elsewhere.",
-          "The cabin later became contextually linked to Bruno's death nearby."
+          "The hacker known as Lucifero (THE SECOND CASE VICTIM, 21-year-old, killed December 22, 2003) traced a rival hacker's signal to this cabin before her death",
+          "A destroyed computer was recovered and partially restored elsewhere",
+          "The cabin later became contextually linked to Bruno's death nearby—Bruno was investigating both the first case (2002) and second case (2003) when he died"
         ],
         "exits": [
           {
@@ -60,7 +60,7 @@
             "condition": ""
           }
         ],
-        "keeperNotes": "This location is primarily a background investigative site. It provides context rather than direct confrontation. Emphasize its role as a deliberate blind spot in the town's surveillance network and its importance in the cyber conflict between NPCs.",
+        "keeperNotes": "This location is primarily a background investigative site connected to THE SECOND CASE VICTIM (Lucifero, 21-year-old, December 22, 2003). Lucifero was investigating hackers before her death at Reindeer Bar. This cabin was her safe house. Bruno's body was found nearby in his car—he was investigating BOTH cases: the FIRST CASE (19-year-old, frozen in ice, December 22, 2002) and the SECOND CASE (Lucifero, gunshot/stab, December 22, 2003). Emphasize its role as a deliberate blind spot in the town's surveillance network and its importance in the cyber conflict between NPCs.",
         "permanentChanges": [
           "The cabin is no longer actively used as a safe house.",
           "Its role as a former hacker hideout can be discovered permanently."

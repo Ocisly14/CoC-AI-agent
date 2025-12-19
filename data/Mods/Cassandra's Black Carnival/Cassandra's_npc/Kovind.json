@@ -10,7 +10,13 @@
         "Maintain his position and influence within the local criminal circles",
         "Profit through gambling and underworld dealings"
       ],
-      "secrets": [],
+      "secrets": [
+      "He holds compromising photos of Nancy Charlotte taken as collateral for her gambling debt",
+      "He trapped Nancy in a gambling scheme and demanded payment or sexual favors",
+      "He sent Lucifero (Jenny Florence) to collect Nancy's debt, but kept some of the photos",
+      "His nickname is 'Tiger' and he works with Tallinn at the underground casino",
+      "He is annoyed by Tallinn calling him 'little mouse'"
+    ],
       "attributes": {
         "STR": 45,
         "CON": 55,
@@ -47,7 +53,20 @@
         "Cash from gambling",
         "Cigarettes"
       ],
-      "clues": [],
+      "clues": [
+      {
+        "clueText": "He holds compromising photos of Nancy Charlotte and sent Lucifero to collect her gambling debt. Some photos are still missing.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": ["Nancy Charlotte", "Jenny Florence (Lucifero)", "Gambling"]
+      },
+      {
+        "clueText": "His nickname is 'Tiger' and he works at the underground casino in the church basement with Tallinn.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["Underground casino", "Tallinn", "Church basement"]
+      }
+    ],
       "relationships": [
         {
           "targetName": "Tallinn",

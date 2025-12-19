@@ -10,7 +10,12 @@
         "Maintain smooth operation of the bar",
         "Avoid becoming entangled in dangerous affairs"
       ],
-      "secrets": [],
+      "secrets": [
+      "The Reindeer Bar surveillance system was installed by Ben Cleo's people, not by the brothers",
+      "There are surveillance blind spots that only Ben and his people know about",
+      "The surveillance system was broken by Martin (Ghost Hand), not by Ben",
+      "He witnessed the incident at the Reindeer Bar on December 22, 2003"
+    ],
       "attributes": {
         "STR": 50,
         "CON": 55,
@@ -45,7 +50,20 @@
         "Cash register",
         "Bar ledger"
       ],
-      "clues": [],
+      "clues": [
+      {
+        "clueText": "The Reindeer Bar surveillance system was broken by Martin (Ghost Hand), not by Ben Cleo. The system has blind spots known only to Ben and his people.",
+        "category": "knowledge",
+        "difficulty": "regular",
+        "relatedTo": ["Reindeer Bar", "Surveillance", "Martin Gin", "Ben Cleo"]
+      },
+      {
+        "clueText": "He witnessed Simon (Anatole) having an argument with the victim (Lucifero) at the bar on the day of the murder.",
+        "category": "observation",
+        "difficulty": "regular",
+        "relatedTo": ["Simon Laplace", "Jenny Florence (Lucifero)", "2003 Reindeer Bar murder"]
+      }
+    ],
       "relationships": [
         {
           "targetName": "Lutz Emilion",

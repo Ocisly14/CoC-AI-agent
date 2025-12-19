@@ -57,11 +57,11 @@ export class OrchestratorAgent {
             .find(turn => turn.keeperNarrative);
           if (lastTurnWithNarrative && lastTurnWithNarrative.keeperNarrative) {
             previousNarrative = lastTurnWithNarrative.keeperNarrative;
-            console.log(`📜 [Orchestrator Agent] 从数据库获取到上一轮的 Keeper Narrative (Turn #${lastTurnWithNarrative.turnNumber})`);
+            console.log(`📜 [Orchestrator Agent] Retrieved last round's Keeper Narrative from database (Turn #${lastTurnWithNarrative.turnNumber})`);
           }
         }
       } catch (error) {
-        console.warn("[Orchestrator Agent] 从数据库获取对话历史失败:", error);
+        console.warn("[Orchestrator Agent] Failed to retrieve conversation history from database:", error);
         // Fallback to gameState if database access fails
         const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
           turnNumber: number;

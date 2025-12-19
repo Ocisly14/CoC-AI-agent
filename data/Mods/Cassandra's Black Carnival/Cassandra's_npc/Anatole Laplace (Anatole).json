@@ -12,7 +12,14 @@
     ],
     "secrets": [
       "He knowingly enabled and protected ritual sacrifice activities by providing surveillance technology",
-      "He retains secret backdoor access capable of exposing or sabotaging powerful individuals"
+      "He retains secret backdoor access capable of exposing or sabotaging powerful individuals",
+      "He is Simon's alter ego (dissociative identity disorder) - Simon is the host personality",
+      "During the 2003 Reindeer Bar incident, he was in control and had an argument with Lucifero (Jenny Florence)",
+      "He received a threatening note from Adolph arranging a meeting at the Reindeer Bar on December 22, mentioning the 1988 incident",
+      "He hates Black people due to childhood trauma and would use racial slurs",
+      "He has a habit of stalking and spying on underage girls, both online and in person",
+      "He can easily find evidence of Lux Lynch's corruption and use it to make him talk",
+      "He is not interested in stopping Patrizio, only in solving his own problems and getting rid of Nancy"
     ],
     "attributes": {
       "STR": 40,
@@ -66,6 +73,27 @@
         "relatedTo": [
           "Qianwei System",
           "Dark Web Clients"
+        ]
+      },
+      {
+        "clueText": "During the 2003 Reindeer Bar incident, Anatole was in control and had an argument with Lucifero, but Simon was not aware of this until later.",
+        "category": "secret",
+        "difficulty": "extreme",
+        "relatedTo": [
+          "2003 Reindeer Bar murder",
+          "Jenny Florence (Lucifero)",
+          "Simon Laplace",
+          "Dissociative Identity Disorder"
+        ]
+      },
+      {
+        "clueText": "He received a threatening note from Adolph mentioning the 1988 incident, which forced him to attend the meeting at the Reindeer Bar.",
+        "category": "secret",
+        "difficulty": "hard",
+        "relatedTo": [
+          "Adolph Carl",
+          "1988 Paris incident",
+          "Reindeer Bar"
         ]
       }
     ],

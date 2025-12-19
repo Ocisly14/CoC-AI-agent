@@ -78,31 +78,31 @@ export class ModuleDocumentParser {
 
     const results: ParsedModuleData[] = [];
 
-    console.log(`\n📄 [Module Document Parser] 找到 ${moduleFiles.length} 个模块文档，开始解析...`);
+    console.log(`\n📄 [Module Document Parser] Found ${moduleFiles.length} module documents, starting parsing...`);
     for (let i = 0; i < moduleFiles.length; i++) {
       const file = moduleFiles[i];
       try {
         const filePath = path.join(dirPath, file);
-        console.log(`\n  [${i + 1}/${moduleFiles.length}] 正在解析: ${file}`);
+        console.log(`\n  [${i + 1}/${moduleFiles.length}] Parsing: ${file}`);
         const moduleData = await this.parseDocument(filePath);
         results.push(moduleData);
-        console.log(`\n  ✓ [${i + 1}/${moduleFiles.length}] 解析完成: ${moduleData.title}`);
-        console.log(`     - 初始游戏时间: ${moduleData.initialGameTime || "未指定"}`);
-        console.log(`     - 初始NPC数: ${moduleData.initialScenarioNPCs?.length || 0}`);
+        console.log(`\n  ✓ [${i + 1}/${moduleFiles.length}] Parsing completed: ${moduleData.title}`);
+        console.log(`     - Initial Game Time: ${moduleData.initialGameTime || "Not specified"}`);
+        console.log(`     - Initial NPC Count: ${moduleData.initialScenarioNPCs?.length || 0}`);
         if (moduleData.initialScenarioNPCs && moduleData.initialScenarioNPCs.length > 0) {
-          console.log(`     - 初始NPC列表: ${moduleData.initialScenarioNPCs.join(", ")}`);
+          console.log(`     - Initial NPC List: ${moduleData.initialScenarioNPCs.join(", ")}`);
         }
       } catch (error) {
-        console.error(`\n  ✗ [${i + 1}/${moduleFiles.length}] 解析失败 ${file}:`, error);
+        console.error(`\n  ✗ [${i + 1}/${moduleFiles.length}] Parsing failed ${file}:`, error);
         if (error instanceof Error) {
-          console.error(`     错误消息: ${error.message}`);
+          console.error(`     Error message: ${error.message}`);
           if (error.stack) {
-            console.error(`     堆栈跟踪: ${error.stack.split('\n').slice(0, 3).join('\n')}`);
+            console.error(`     Stack trace: ${error.stack.split('\n').slice(0, 3).join('\n')}`);
           }
         }
       }
     }
-    console.log(`\n📄 [Module Document Parser] 解析完成，共成功解析 ${results.length}/${moduleFiles.length} 个模块文档\n`);
+    console.log(`\n📄 [Module Document Parser] Parsing completed, successfully parsed ${results.length}/${moduleFiles.length} module documents\n`);
 
     return results;
   }
@@ -203,29 +203,29 @@ Return ONLY the JSON object, nothing else.`;
         }
 
         // Log detailed parsing results
-        console.log(`\n📋 [Module Document Parser] 解析结果详情 (${fileName}):`);
+        console.log(`\n📋 [Module Document Parser] Parsing result details (${fileName}):`);
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-        console.log(`📌 基本信息:`);
+        console.log(`📌 Basic Information:`);
         console.log(`   Title: ${moduleData.title}`);
-        console.log(`   Initial Game Time: ${moduleData.initialGameTime || "未指定"}`);
+        console.log(`   Initial Game Time: ${moduleData.initialGameTime || "Not specified"}`);
         if (moduleData.initialScenarioNPCs && moduleData.initialScenarioNPCs.length > 0) {
           console.log(`   Initial Scenario NPCs (${moduleData.initialScenarioNPCs.length}):`);
           moduleData.initialScenarioNPCs.forEach((npc, index) => {
             console.log(`     [${index + 1}] ${npc}`);
           });
         } else {
-          console.log(`   Initial Scenario NPCs: 无`);
+          console.log(`   Initial Scenario NPCs: None`);
         }
         if (moduleData.tags && moduleData.tags.length > 0) {
           console.log(`   Tags (${moduleData.tags.length}): ${moduleData.tags.join(", ")}`);
         }
-        console.log(`\n📖 内容摘要 (前100字符):`);
-        console.log(`   Background: ${moduleData.background ? `${moduleData.background.substring(0, 100)}...` : "无"}`);
-        console.log(`   Story Outline: ${moduleData.storyOutline ? `${moduleData.storyOutline.substring(0, 100)}...` : "无"}`);
-        console.log(`   Keeper Guidance: ${moduleData.keeperGuidance ? `${moduleData.keeperGuidance.substring(0, 100)}...` : "无"}`);
-        console.log(`   Module Notes: ${moduleData.moduleNotes ? `${moduleData.moduleNotes.substring(0, 100)}...` : "无"}`);
-        console.log(`   Module Limitations: ${moduleData.moduleLimitations ? `${moduleData.moduleLimitations.substring(0, 100)}...` : "无"}`);
-        console.log(`   Introduction: ${moduleData.introduction ? `${moduleData.introduction.substring(0, 100)}...` : "无"}`);
+        console.log(`\n📖 Content Summary (first 100 characters):`);
+        console.log(`   Background: ${moduleData.background ? `${moduleData.background.substring(0, 100)}...` : "None"}`);
+        console.log(`   Story Outline: ${moduleData.storyOutline ? `${moduleData.storyOutline.substring(0, 100)}...` : "None"}`);
+        console.log(`   Keeper Guidance: ${moduleData.keeperGuidance ? `${moduleData.keeperGuidance.substring(0, 100)}...` : "None"}`);
+        console.log(`   Module Notes: ${moduleData.moduleNotes ? `${moduleData.moduleNotes.substring(0, 100)}...` : "None"}`);
+        console.log(`   Module Limitations: ${moduleData.moduleLimitations ? `${moduleData.moduleLimitations.substring(0, 100)}...` : "None"}`);
+        console.log(`   Introduction: ${moduleData.introduction ? `${moduleData.introduction.substring(0, 100)}...` : "None"}`);
         console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
         return moduleData;

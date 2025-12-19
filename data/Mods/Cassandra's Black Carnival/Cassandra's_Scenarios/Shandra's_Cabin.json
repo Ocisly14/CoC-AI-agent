@@ -17,28 +17,52 @@
         ],
         "clues": [
           {
-            "clueText": "Shandra reveals that Bruno received an anonymous text message warning him not to trust his superiors, especially Padrich, and stating that Constantine Frollo was unfit to serve God.",
+            "clueText": "Shandra reveals that Bruno received an anonymous text message warning him not to trust his superiors, especially Padrich, and stating that Constantine Frollo was unfit to serve God. The message specifically mentioned Bruno's investigation into BOTH murder cases.",
             "category": "witness",
             "difficulty": "regular",
             "location": "Conversation with Shandra inside the cabin",
             "discoveryMethod": "Talk / Charm",
-            "reveals": ["Bruno was investigating a past case against orders.", "Padrich and Constantine may be involved in a conspiracy."]
+            "reveals": [
+              "Bruno was investigating BOTH cases: the FIRST CASE (December 22, 2002, 19-year-old girl frozen in ice at Paradil Grand Hotel) and the SECOND CASE (December 22, 2003, 21-year-old Lucifero killed at Reindeer Bar)",
+              "Bruno believed the two cases were connected despite being exactly one year apart",
+              "Padrich and Constantine may be involved in a conspiracy to suppress both cases"
+            ]
           },
           {
-            "clueText": "Shandra confirms the message sender knew details about Bruno's investigation that were not public knowledge.",
+            "clueText": "Shandra confirms the message sender knew details about Bruno's investigation into BOTH murder cases that were not public knowledge, including the suppressed first case from 2002.",
             "category": "knowledge",
             "difficulty": "automatic",
             "location": "Conversation with Shandra",
             "discoveryMethod": "",
-            "reveals": ["The anonymous sender had insider information."]
+            "reveals": [
+              "The anonymous sender had insider information about both cases",
+              "The first case (2002) was deliberately suppressed and not widely known",
+              "Someone with inside knowledge was helping Bruno investigate both cases"
+            ]
           },
           {
-            "clueText": "Shandra admits she did not tell the local police about the message, fearing they could not be trusted.",
+            "clueText": "Shandra admits she did not tell the local police about the message, fearing they could not be trusted. She mentions Bruno was particularly focused on the first case from 2002, which had been officially closed.",
             "category": "witness",
             "difficulty": "automatic",
             "location": "Conversation with Shandra",
             "discoveryMethod": "",
-            "reveals": ["Local authorities may be compromised."]
+            "reveals": [
+              "Local authorities may be compromised",
+              "The first case (2002) was officially closed despite Bruno's efforts",
+              "Bruno's determination to solve both cases may have led to his death"
+            ]
+          },
+          {
+            "clueText": "Shandra reveals Bruno mentioned the two cases were connected—both involved young Black girls killed exactly one year apart, but with completely different methods (frozen in ice vs gunshot/stab).",
+            "category": "witness",
+            "difficulty": "hard",
+            "location": "Conversation with Shandra",
+            "discoveryMethod": "Persuade or Psychology",
+            "reveals": [
+              "Bruno believed the same killer was responsible for both cases",
+              "The methods were different but the pattern was the same",
+              "The first case victim (19-year-old) and second case victim (21-year-old Lucifero) were both Black girls"
+            ]
           }
         ],
         "conditions": [
@@ -54,8 +78,9 @@
           }
         ],
         "events": [
-          "Shandra recounts Bruno's final days and the anonymous warning message.",
-          "Shandra entrusts the investigators with information she refused to give the police."
+          "Shandra recounts Bruno's final days and the anonymous warning message about both murder cases",
+          "Shandra reveals Bruno was investigating TWO SEPARATE CASES: the first from December 22, 2002 (19-year-old girl, frozen in ice) and the second from December 22, 2003 (21-year-old Lucifero, gunshot/stab)",
+          "Shandra entrusts the investigators with information she refused to give the police, including details about both cases"
         ],
         "exits": [
           {
@@ -65,7 +90,7 @@
             "condition": ""
           }
         ],
-        "keeperNotes": "Shandra is cautious and will not reveal everything at once. If investigators mention Mythos or inhuman forces, she may become more cooperative but will still withhold details about the Nine Angels.",
+        "keeperNotes": "Shandra is cautious and will not reveal everything at once. CRITICALLY: She knows about BOTH MURDER CASES. The FIRST CASE (December 22, 2002) involved a 19-year-old Black girl found frozen in ice in the Paradil Grand Hotel freezer. The SECOND CASE (December 22, 2003) involved 21-year-old Aberforth Locefern (Lucifero) killed by gunshot and knife at Reindeer Bar. Bruno believed they were connected despite different methods. If investigators mention Mythos or inhuman forces, she may become more cooperative but will still withhold details about the Nine Angels.",
         "permanentChanges": []
       },
       "tags": ["witness testimony", "secrecy", "conspiracy hint", "safe location"],
