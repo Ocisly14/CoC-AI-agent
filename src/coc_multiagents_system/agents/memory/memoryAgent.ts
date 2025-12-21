@@ -222,8 +222,8 @@ export const createScenarioCheckpoint = async (
     // 2. Save/Update the scenario snapshot (without permanent_changes - those are at scenario level)
     const snapshotStmt = database.prepare(`
       INSERT OR REPLACE INTO scenario_snapshots (
-        snapshot_id, scenario_id, snapshot_name, location, description, events, exits, keeper_notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        snapshot_id, scenario_id, snapshot_name, location, description, events, exits, keeper_notes, time_restriction
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     snapshotStmt.run(
@@ -234,7 +234,8 @@ export const createScenarioCheckpoint = async (
       currentScenario.description,
       JSON.stringify(currentScenario.events),
       JSON.stringify(currentScenario.exits || []),
-      currentScenario.keeperNotes || null
+      currentScenario.keeperNotes || null,
+      currentScenario.timeRestriction || null
     );
 
     // 3. Save scenario characters (from snapshot)

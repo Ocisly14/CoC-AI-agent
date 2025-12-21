@@ -346,6 +346,7 @@ export class MemoryAgent {
       events: this.safeParse<string[]>(row.events, []),
       exits: this.safeParse(row.exits, []),
       keeperNotes: row.keeper_notes ?? undefined,
+      timeRestriction: row.time_restriction ?? undefined,
     };
   }
 

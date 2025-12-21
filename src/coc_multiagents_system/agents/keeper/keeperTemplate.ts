@@ -171,7 +171,8 @@ export function getKeeperTemplate(): string {
   - Narrative language MUST match investigator's input language
   - Narrative should contain everything happened in the scene, including the actions of the investigator and the NPCs.
   - Do not add commentary outside the JSON
-  
+  - CRITICAL: You MUST complete the entire JSON structure with all closing braces and quotes. Do not stop mid-generation.
+
   ==================================================
   BEGIN RESPONSE
   ==================================================

@@ -253,13 +253,17 @@ export class ScenarioLoader {
   }
 
   /**
-   * Convert ParsedScenarioData to ScenarioProfile
+   * Convert a single parsed snapshot to ScenarioSnapshot
    */
-  private convertToScenarioProfile(parsedData: ParsedScenarioData): ScenarioProfile {
-    const scenarioId = this.generateScenarioId(parsedData.name);
-    const snapshotId = `${scenarioId}-snapshot`;
-
-    const snapshotData = parsedData.snapshot;
+  private convertSnapshot(
+    snapshotData: import("../../models/scenarioTypes.js").ParsedScenarioSnapshot,
+    scenarioId: string,
+    snapshotIndex: number,
+    scenarioName: string
+  ): ScenarioSnapshot {
+    const snapshotId = snapshotIndex === 0 
+      ? `${scenarioId}-snapshot` 
+      : `${scenarioId}-snapshot-${snapshotIndex}`;
 
     // Convert characters
     const characters: ScenarioCharacter[] = (snapshotData.characters || []).map((char, charIndex) => ({
@@ -292,7 +296,7 @@ export class ScenarioLoader {
 
     const snapshot: ScenarioSnapshot = {
       id: snapshotId,
-      name: snapshotData.name || parsedData.name,
+      name: snapshotData.name || scenarioName,
       location: snapshotData.location,
       description: snapshotData.description,
       characters,
@@ -302,13 +306,42 @@ export class ScenarioLoader {
       exits: snapshotData.exits || [],
       permanentChanges: snapshotData.permanentChanges || [],
       keeperNotes: snapshotData.keeperNotes,
+      timeRestriction: snapshotData.timeRestriction,
     };
+
+    return snapshot;
+  }
+
+  /**
+   * Convert ParsedScenarioData to ScenarioProfile
+   * Supports both single snapshot and multiple snapshots
+   */
+  private convertToScenarioProfile(parsedData: ParsedScenarioData): ScenarioProfile {
+    const scenarioId = this.generateScenarioId(parsedData.name);
+
+    // Handle both single snapshot (legacy) and multiple snapshots (new format)
+    let snapshots: ScenarioSnapshot[];
+    if (parsedData.snapshots && parsedData.snapshots.length > 0) {
+      // Multiple snapshots
+      snapshots = parsedData.snapshots.map((snapshotData, index) =>
+        this.convertSnapshot(snapshotData, scenarioId, index, parsedData.name)
+      );
+    } else if (parsedData.snapshot) {
+      // Single snapshot (legacy format)
+      snapshots = [this.convertSnapshot(parsedData.snapshot, scenarioId, 0, parsedData.name)];
+    } else {
+      throw new Error(`Scenario "${parsedData.name}" has no snapshot or snapshots`);
+    }
+
+    // Use the first snapshot as the default snapshot for backward compatibility
+    // (or the one without timeRestriction if available)
+    const defaultSnapshot = snapshots.find(s => !s.timeRestriction) || snapshots[0];
 
     const scenarioProfile: ScenarioProfile = {
       id: scenarioId,
       name: parsedData.name,
       description: parsedData.description,
-      snapshot,
+      snapshot: defaultSnapshot,
       tags: parsedData.tags || [],
       connections: parsedData.connections?.map((conn) => ({
         scenarioId: this.generateScenarioId(conn.scenarioName),
@@ -321,6 +354,9 @@ export class ScenarioLoader {
         gameSystem: "CoC 7e",
       },
     };
+
+    // Store all snapshots for saving to database
+    (scenarioProfile as any).__allSnapshots = snapshots;
 
     return scenarioProfile;
   }
@@ -371,10 +407,12 @@ export class ScenarioLoader {
       database.prepare("DELETE FROM scenario_snapshots WHERE scenario_id = ?").run(scenario.id);
       // Note: Foreign key constraints will cascade delete related characters, clues, and conditions
 
-      // Insert single snapshot
-      const snapshot = scenario.snapshot;
-      {
-        // Insert snapshot (no time fields needed)
+      // Get all snapshots to save (support multiple snapshots)
+      const allSnapshots: ScenarioSnapshot[] = (scenario as any).__allSnapshots || [scenario.snapshot];
+
+      // Insert all snapshots
+      for (const snapshot of allSnapshots) {
+        // Insert snapshot (with time_restriction field)
         const snapshotColumns = [
           "snapshot_id",
           "scenario_id",
@@ -384,6 +422,7 @@ export class ScenarioLoader {
           "events",
           "exits",
           "keeper_notes",
+          "time_restriction",
         ];
         const snapshotValues: any[] = [
           snapshot.id,
@@ -394,6 +433,7 @@ export class ScenarioLoader {
           JSON.stringify(snapshot.events),
           JSON.stringify(snapshot.exits),
           snapshot.keeperNotes || null,
+          snapshot.timeRestriction || null,
         ];
 
         const snapshotStmt = database.prepare(
@@ -547,6 +587,7 @@ export class ScenarioLoader {
       exits: snap.exits ? JSON.parse(snap.exits) : [],
       permanentChanges: scenario.permanent_changes ? JSON.parse(scenario.permanent_changes) : [],
       keeperNotes: snap.keeper_notes,
+      timeRestriction: snap.time_restriction || undefined,
     };
 
     const scenarioProfile: ScenarioProfile = {

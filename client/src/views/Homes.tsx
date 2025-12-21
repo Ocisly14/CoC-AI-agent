@@ -17,7 +17,7 @@ const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame, onContinueGame }) =
       <div className="hero">
         <div>
           <p className="eyebrow">Call of Cthulhu · Multi-Agent</p>
-          <h1>CoC AI Agent</h1>
+          <h1>CoC AI Keeper</h1>
           <p className="lede">
             Manage investigators and let orchestrator, memory, action, and keeper agents run your scenarios.
           </p>
@@ -33,21 +33,6 @@ const Homes: React.FC<HomeProps> = ({ onCreate, onStartGame, onContinueGame }) =
           <button onClick={onCreate}>
             Create Character
           </button>
-        </div>
-      </div>
-
-      <div className="home-panels">
-        <div className="home-card">
-          <h3>Flow</h3>
-          <p>Orchestrator → Memory → Action → Keeper, linear execution.</p>
-        </div>
-        <div className="home-card">
-          <h3>Character Sheet</h3>
-          <p>Use tabular investigator sheet, generate JSON for backend storage.</p>
-        </div>
-        <div className="home-card">
-          <h3>Data</h3>
-          <p>Backend uses SQLite, frontend can connect to API as needed (not connected).</p>
         </div>
       </div>
     </div>

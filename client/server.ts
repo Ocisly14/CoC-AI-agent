@@ -834,8 +834,21 @@ app.post("/api/game/start", async (req, res) => {
 
       const parsedAttributes = JSON.parse(character.attributes);
       const parsedStatus = JSON.parse(character.status);
-      const parsedSkills = JSON.parse(character.skills);
+      const parsedSkillsRaw = JSON.parse(character.skills);
       const parsedInventory = JSON.parse(character.inventory);
+
+      // Convert skills to simple number format for game use
+      // Support both new format (object with value) and old format (simple number)
+      const parsedSkills: Record<string, number> = {};
+      for (const [skillName, skillData] of Object.entries(parsedSkillsRaw)) {
+        if (typeof skillData === 'object' && skillData !== null && 'value' in skillData) {
+          // New format: extract value
+          parsedSkills[skillName] = (skillData as any).value;
+        } else {
+          // Old format or simple number: use as is
+          parsedSkills[skillName] = typeof skillData === 'number' ? skillData : 0;
+        }
+      }
 
       console.log(`📝 [1/3] 创建基础游戏状态...`);
       // Generate sessionId based on client IP
@@ -1745,7 +1758,19 @@ app.post("/api/character", (req, res) => {
       ),
       skills: JSON.stringify(
         Object.entries(characterData.skills || {}).reduce((acc: any, [name, data]: [string, any]) => {
-          acc[name] = data.value || 0;
+          // Support both old format (data.value) and new format (data.total with breakdown)
+          if (typeof data === 'object' && data.total !== undefined) {
+            // New format: store complete skill data with breakdown
+            acc[name] = {
+              value: data.total,
+              base: data.base || 0,
+              occupationalPoints: data.occupationalPoints || 0,
+              interestPoints: data.interestPoints || 0
+            };
+          } else {
+            // Old format or simple value: store as is
+            acc[name] = typeof data === 'object' ? (data.value || 0) : data;
+          }
           return acc;
         }, {})
       ),

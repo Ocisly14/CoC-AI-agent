@@ -316,7 +316,7 @@ export class CoCDatabase {
       // ignore if column already exists or cannot be added
     }
 
-    // Scenario snapshots table - each scenario now has a single snapshot (no timeline)
+    // Scenario snapshots table - each scenario can have multiple snapshots with time restrictions
     this.db.exec(`
             CREATE TABLE IF NOT EXISTS scenario_snapshots (
                 snapshot_id TEXT PRIMARY KEY,
@@ -327,11 +327,23 @@ export class CoCDatabase {
                 events TEXT, -- JSON array
                 exits TEXT, -- JSON array
                 keeper_notes TEXT,
+                time_restriction TEXT, -- Optional time restriction (e.g., "day1 evening", "day2 (after)")
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (scenario_id) REFERENCES scenarios(scenario_id)
             );
             CREATE INDEX IF NOT EXISTS idx_snapshots_scenario ON scenario_snapshots(scenario_id);
         `);
+    
+    // Backfill time_restriction column if table already existed
+    try {
+      if (!this.hasColumn("scenario_snapshots", "time_restriction")) {
+        this.db.exec(
+          "ALTER TABLE scenario_snapshots ADD COLUMN time_restriction TEXT;"
+        );
+      }
+    } catch {
+      // ignore if column already exists or cannot be added
+    }
     
     // Legacy time fields removed - scenarios no longer have timeline/timepoint data
 

@@ -47,7 +47,8 @@
         ],
         "events": [
           "Investigators arrive at the distillery.",
-          "The distillery owner dies in front of the investigators."
+          "The distillery owner (Abel William) dies in front of the investigators. His body begins to convulse, and a black spider crawls out from his neck, leaving a circular hole. The spider immediately disappears into the darkness. William's neck shows a circular blood hole, and blood spreads through his beard. He is already dead.",
+          "Investigators should leave immediately—no one will discover they were here. The next day, William's death will be reported in the newspaper, stating he was killed by a sharp object to the neck. His body will be found in the wine cellar, but only the investigators know the actual circumstances."
         ],
         "exits": [
           {

@@ -50,55 +50,70 @@ export function useTurnPolling(
     stopPolling();
     setError(null);
     setTurn(null);
-    
+
     setIsPolling(true);
 
     // Create abort controller for cancellation
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    try {
-      // Use long polling: server will wait until turn is completed
-      const response = await fetch(`${apiBaseUrl}/turns/${turnId}?wait=true`, {
-        signal: abortController.signal,
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const poll = async () => {
+      try {
+        // Use long polling: server will wait until turn is completed
+        const response = await fetch(`${apiBaseUrl}/turns/${turnId}?wait=true`, {
+          signal: abortController.signal,
+        });
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch turn status');
-      }
+        const data = await response.json();
 
-      // Log turn data for debugging
-      console.log(`[useTurnPolling] Received turn data:`, {
-        turnId: data.turn?.turnId,
-        turnNumber: data.turn?.turnNumber,
-        status: data.turn?.status,
-        hasKeeperNarrative: !!data.turn?.keeperNarrative,
-        keeperNarrativeLength: data.turn?.keeperNarrative?.length || 0,
-      });
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch turn status');
+        }
 
-      setTurn(data.turn);
-      
-      if (data.turn.status === 'error') {
-        setError(data.turn.errorMessage || 'Turn processing failed');
+        // Log turn data for debugging
+        console.log(`[useTurnPolling] Received turn data:`, {
+          turnId: data.turn?.turnId,
+          turnNumber: data.turn?.turnNumber,
+          status: data.turn?.status,
+          hasKeeperNarrative: !!data.turn?.keeperNarrative,
+          keeperNarrativeLength: data.turn?.keeperNarrative?.length || 0,
+        });
+
+        setTurn(data.turn);
+
+        if (data.turn.status === 'error') {
+          setError(data.turn.errorMessage || 'Turn processing failed');
+          setIsPolling(false);
+          abortControllerRef.current = null;
+        } else if (data.turn.status === 'processing') {
+          // Still processing, continue polling
+          console.log(`[useTurnPolling] Turn still processing, continuing to poll...`);
+          poll(); // Continue polling recursively
+        } else {
+          // Completed
+          setIsPolling(false);
+          abortControllerRef.current = null;
+        }
+      } catch (err) {
+        // Ignore abort errors (user cancelled)
+        if (err instanceof Error && err.name === 'AbortError') {
+          setIsPolling(false);
+          abortControllerRef.current = null;
+          return;
+        }
+
+        console.error('Error waiting for turn:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
+        setIsPolling(false);
+        abortControllerRef.current = null;
       }
-    } catch (err) {
-      // Ignore abort errors (user cancelled)
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-      
-      console.error('Error waiting for turn:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsPolling(false);
-      abortControllerRef.current = null;
-    }
+    };
+
+    poll();
   };
 
   // Cleanup on unmount

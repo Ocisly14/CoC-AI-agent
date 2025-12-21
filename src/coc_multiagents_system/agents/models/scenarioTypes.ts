@@ -91,6 +91,8 @@ export interface ScenarioSnapshot {
   keeperNotes?: string;
   /** Estimated short actions the scene can accommodate (runtime-only, set by Director) */
   estimatedShortActions?: number;
+  /** Time restriction for this snapshot (e.g., "day1 evening", "day2 (after)") - optional */
+  timeRestriction?: string;
 }
 
 /**
@@ -123,45 +125,55 @@ export interface ScenarioProfile {
 }
 
 /**
+ * Raw parsed scenario snapshot data from documents
+ */
+export interface ParsedScenarioSnapshot {
+  name?: string;
+  location: string;
+  description: string;
+  timeRestriction?: string;
+  characters?: {
+    name: string;
+    role?: string;
+    status?: string;
+    location?: string;
+    notes?: string;
+  }[];
+  clues?: {
+    clueText: string;
+    category?: string;
+    difficulty?: string;
+    location?: string;
+    discoveryMethod?: string;
+    reveals?: string[];
+  }[];
+  conditions?: {
+    type?: string;
+    description: string;
+    mechanicalEffect?: string;
+  }[];
+  events?: string[];
+  exits?: {
+    direction: string;
+    destination: string;
+    description?: string;
+    condition?: string;
+  }[];
+  keeperNotes?: string;
+  permanentChanges?: string[];
+}
+
+/**
  * Raw parsed scenario data from documents
+ * Supports both single snapshot and multiple snapshots
  */
 export interface ParsedScenarioData {
   name: string;
   description: string;
-  snapshot: {
-    name?: string;
-    location: string;
-    description: string;
-    characters?: {
-      name: string;
-      role?: string;
-      status?: string;
-      location?: string;
-      notes?: string;
-    }[];
-    clues?: {
-      clueText: string;
-      category?: string;
-      difficulty?: string;
-      location?: string;
-      discoveryMethod?: string;
-      reveals?: string[];
-    }[];
-    conditions?: {
-      type?: string;
-      description: string;
-      mechanicalEffect?: string;
-    }[];
-    events?: string[];
-    exits?: {
-      direction: string;
-      destination: string;
-      description?: string;
-      condition?: string;
-    }[];
-    keeperNotes?: string;
-    permanentChanges?: string[];
-  };
+  /** Single snapshot (legacy format) */
+  snapshot?: ParsedScenarioSnapshot;
+  /** Multiple snapshots (new format) */
+  snapshots?: ParsedScenarioSnapshot[];
   tags?: string[];
   connections?: {
     scenarioName: string;

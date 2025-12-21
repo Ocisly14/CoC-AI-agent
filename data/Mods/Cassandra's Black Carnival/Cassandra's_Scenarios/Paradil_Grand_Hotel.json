@@ -5,16 +5,9 @@
       "snapshot": {
         "name": "Paradil Grand Hotel",
         "location": "A standard mid-sized hotel in the town of Cassandra",
-        "description": "The hotel appears ordinary and functional, serving travelers and visitors. Beneath its mundane appearance, it carries the shadow of an unresolved incident: THE FIRST MURDER CASE occurred here on December 22, 2002—exactly one year before the Reindeer Bar murder. A 19-year-old Black girl was found dead in a freezer in the hotel kitchen's basement, her body completely naked and encased in a massive block of ice. The case was never fully investigated and never developed into a formal missing person case.",
-        "characters": [
-          {
-            "name": "Unknown Deceased Woman (First Case Victim)",
-            "role": "victim",
-            "status": "deceased",
-            "location": "Paradil Grand Hotel kitchen basement freezer (December 22, 2002)",
-            "notes": "A 19-year-old Black girl, not a local resident of Cassandra. Her body was found completely naked, encased in a massive block of ice in the hotel kitchen's basement freezer. There was no local missing person report filed for her. This is THE FIRST MURDER CASE, occurring exactly one year before the Reindeer Bar murder (December 22, 2003)."
-          }
-        ],
+        "timeRestriction": "day1 evening",
+        "description": "The hotel appears ordinary and functional, serving travelers and visitors. Beneath its mundane appearance, it carries the shadow of an unresolved incident: THE FIRST MURDER CASE occurred here on December 22, 2002—exactly one year before the Reindeer Bar murder. A 19-year-old Black girl was found dead in a freezer in the hotel kitchen's basement, her body completely naked and encased in a massive block of ice. The case was never fully investigated and never developed into a formal missing person case. The body has long since been removed and processed. Bruno arranges for investigators to stay here after questioning suspects at the Reindeer Bar. Around 2 AM, investigators will be attacked by two masked assailants.",
+        "characters": [],
         "clues": [
           {
             "clueText": "Record of the FIRST murder case: an unidentified 19-year-old Black girl found dead in the Paradil Grand Hotel on December 22, 2002—exactly one year before the Reindeer Bar murder.",
@@ -30,15 +23,16 @@
             ]
           },
           {
-            "clueText": "The victim's body was discovered in the hotel kitchen's basement freezer, completely naked and encased in a massive block of ice—a distinctive method that differs from the second murder case.",
-            "category": "physical",
+            "clueText": "According to case records, the victim's body was discovered in the hotel kitchen's basement freezer on December 22, 2002, completely naked and encased in a massive block of ice—a distinctive method that differs from the second murder case. The body has since been removed.",
+            "category": "document",
             "difficulty": "regular",
-            "location": "Hotel kitchen basement (if accessible) or case files",
-            "discoveryMethod": "Investigation of hotel basement or police records",
+            "location": "Hotel records, police case files, or investigation of hotel basement",
+            "discoveryMethod": "Library Use, investigation of hotel records, or police archives",
             "reveals": [
               "The first case involved freezing the body in ice",
               "This method is completely different from the second case (gunshot and knife)",
-              "The two cases may be connected but use different killing methods"
+              "The two cases may be connected but use different killing methods",
+              "The body was removed long ago—this is a past incident, not a current crime scene"
             ]
           },
           {
@@ -57,9 +51,10 @@
         "conditions": [],
         "events": [
           "December 22, 2002: THE FIRST MURDER CASE—A 19-year-old Black girl found dead in the hotel kitchen basement freezer, her body encased in ice",
-          "The case was quickly shelved due to lack of evidence and official support",
-          "Bruno attempted to reopen the case but was denied",
-          "Exactly one year later, on December 22, 2003, a similar but different murder occurred at the Reindeer Bar"
+          "Day 1 night (around 2 AM): Investigators staying at the hotel are attacked by two masked assailants wearing black clothes and carrying clubs. The attackers will flee if defeated or after some time, jumping out of windows and climbing walls like spiders (SC 0/1d3)",
+          "After the attack: A hotel staff member arrives but does not believe the investigators' account of the attack. Investigators must use persuasion, bribery, or other methods to handle the situation, or the staff will threaten to call the police",
+          "If police are called: Lux responds and claims he was on duty at the station but did not see Bruno there",
+          "Easter egg: After dealing with the staff, a gunshot is heard from the circular corridor. If investigators follow, they encounter a group of out-of-towners: Lily (pink-haired), Hongsen, Lyn, Bigbear, and Reid. Lily's gun accidentally discharged, injuring Hongsen and Lyn. They mention their friend Wind came to meet his fiancée, and that their friend Bruno (a different person) and O'Neil are investigating a serial murder case targeting Black girls"
         ],
         "exits": [
           {

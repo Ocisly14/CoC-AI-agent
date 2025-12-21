@@ -109,38 +109,68 @@ export class KeeperAgent {
     // Use template and LLM to generate narrative and clue revelations
     const prompt = composeTemplate(template, {}, templateContext, "handlebars");
 
-    const response = await generateText({
-      runtime,
-      context: prompt,
-      modelClass: ModelClass.MEDIUM,
-    });
+    let response: string;
+    let parsedResponse: any;
+    const maxAttempts = 2; // Try up to 2 times
 
-    // Parse LLM's JSON response
-    let parsedResponse;
-    try {
-      // Extract JSON from response (in case LLM wraps it in markdown code blocks)
-      const jsonText =
-        response.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
-        response.match(/\{[\s\S]*\}/)?.[0];
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await generateText({
+          runtime,
+          context: prompt,
+          modelClass: ModelClass.MEDIUM,
+        });
 
-      if (!jsonText) {
-        console.warn("Failed to extract JSON from keeper response");
+        // Extract JSON from response (in case LLM wraps it in markdown code blocks)
+        const jsonText =
+          response.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
+          response.match(/\{[\s\S]*\}/)?.[0];
+
+        if (!jsonText) {
+          if (attempt < maxAttempts) {
+            console.warn(`⚠️ Failed to extract JSON from keeper response (attempt ${attempt}/${maxAttempts}), retrying...`);
+            continue;
+          }
+          console.warn("Failed to extract JSON from keeper response");
+          console.warn("Response content:", response);
+          return {
+            narrative: response,
+            clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },
+            updatedGameState: gameState
+          };
+        }
+
+        parsedResponse = JSON.parse(jsonText);
+        console.log(`✅ Successfully parsed keeper response on attempt ${attempt}`);
+        break; // Success, exit retry loop
+
+      } catch (error) {
+        if (attempt < maxAttempts) {
+          console.warn(`⚠️ Failed to parse keeper response as JSON (attempt ${attempt}/${maxAttempts}), retrying...`);
+          continue;
+        }
+
+        // Final attempt failed
+        console.error("Failed to parse keeper response as JSON:", error);
+        console.warn("Response content:", response!);
+
+        // Try to extract narrative from incomplete JSON
+        let fallbackNarrative = response!;
+        const narrativeMatch = response!.match(/"narrative"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (narrativeMatch && narrativeMatch[1]) {
+          fallbackNarrative = narrativeMatch[1]
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+          console.log("✓ Extracted narrative from incomplete JSON");
+        }
+
         return {
-          narrative: response,
+          narrative: fallbackNarrative,
           clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },
           updatedGameState: gameState
         };
       }
-
-      parsedResponse = JSON.parse(jsonText);
-    } catch (error) {
-      console.error("Failed to parse keeper response as JSON:", error);
-      console.warn("Response content:", response.substring(0, 200));
-      return {
-        narrative: response,
-        clueRevelations: { scenarioClues: [], npcClues: [], npcSecrets: [] },
-        updatedGameState: gameState
-      };
     }
 
     // Update clue states in game state

@@ -124,6 +124,7 @@ const App: React.FC = () => {
     turnNumber: number;
   }> | null>(null);
   const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState(0);
+  const [isCreatingFromGameFlow, setIsCreatingFromGameFlow] = useState(false);
 
   const [form, setForm] = React.useState<Record<string, string>>({});
 
@@ -607,8 +608,21 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setSaveMessage({ type: "success", text: data.message });
-        // 角色创建成功，不自动跳转，让用户自己决定下一步
-        // 用户可以继续编辑、返回首页或选择角色开始游戏
+
+        // Wait a moment to show success message, then navigate
+        setTimeout(() => {
+          if (isCreatingFromGameFlow) {
+            // If from game flow, return to character selection
+            setPage("character-select");
+          } else {
+            // If from home, return to home page
+            setPage("home");
+          }
+          // Clear form and reset state
+          setForm({});
+          setSaveMessage(null);
+          setIsCreatingFromGameFlow(false);
+        }, 1500);
       } else {
         setSaveMessage({ type: "error", text: data.error || "创建角色失败" });
       }
@@ -628,10 +642,17 @@ const App: React.FC = () => {
           <button
             type="button"
             className="pill-btn"
-            onClick={() => setPage("home")}
+            onClick={() => {
+              if (isCreatingFromGameFlow) {
+                setPage("character-select");
+              } else {
+                setPage("home");
+              }
+              setIsCreatingFromGameFlow(false);
+            }}
             style={{ background: "#eee" }}
           >
-            Return to Home
+            {isCreatingFromGameFlow ? "← Back to Character Selection" : "← Return to Home"}
           </button>
         </div>
         <div className="section-title">Identity</div>
@@ -912,11 +933,17 @@ const App: React.FC = () => {
                         <th style={{ textAlign: 'left' }}>Skill Name</th>
                         <th style={{ width: '80px' }}>Occupational</th>
                         <th style={{ width: '80px' }}>Interest</th>
+                        <th style={{ width: '80px' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {groupSkills.map((skill) => {
                         const isOccupationalSkill = selectedOccupation?.suggested_skills?.includes(skill.name);
+                        const baseValue = parseInt(skill.base.replace("%", "")) || 0;
+                        const occValue = parseInt(skill.occupationalValue) || 0;
+                        const intValue = parseInt(skill.interestValue) || 0;
+                        const totalValue = baseValue + occValue + intValue;
+
                         return (
                           <tr
                             key={skill.name}
@@ -949,6 +976,9 @@ const App: React.FC = () => {
                                 onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
                                 style={{ width: '100%' }}
                               />
+                            </td>
+                            <td className="skill-value-cell" style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                              {totalValue}
                             </td>
                           </tr>
                         );
@@ -979,11 +1009,17 @@ const App: React.FC = () => {
                         <th style={{ textAlign: 'left' }}>Skill Name</th>
                         <th style={{ width: '80px' }}>Occupational</th>
                         <th style={{ width: '80px' }}>Interest</th>
+                        <th style={{ width: '80px' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {groupSkills.map((skill) => {
                         const isOccupationalSkill = selectedOccupation?.suggested_skills?.includes(skill.name);
+                        const baseValue = parseInt(skill.base.replace("%", "")) || 0;
+                        const occValue = parseInt(skill.occupationalValue) || 0;
+                        const intValue = parseInt(skill.interestValue) || 0;
+                        const totalValue = baseValue + occValue + intValue;
+
                         return (
                           <tr
                             key={skill.name}
@@ -1016,6 +1052,9 @@ const App: React.FC = () => {
                                 onChange={(e) => onChange(`skill_int_${skill.name}`, e.target.value)}
                                 style={{ width: '100%' }}
                               />
+                            </td>
+                            <td className="skill-value-cell" style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                              {totalValue}
                             </td>
                           </tr>
                         );
@@ -1443,8 +1482,11 @@ const App: React.FC = () => {
   if (page === "home") {
     return (
       <>
-        <Homes 
-          onCreate={() => setPage("sheet")} 
+        <Homes
+          onCreate={() => {
+            setIsCreatingFromGameFlow(false);
+            setPage("sheet");
+          }}
           onStartGame={handleShowCharacterSelector}
           onContinueGame={handleContinueGame}
         />
@@ -1775,7 +1817,10 @@ const App: React.FC = () => {
       <CharacterSelector
         onSelectCharacter={handleSelectCharacter}
         onCancel={() => setPage("module-intro")}
-        onCreateNew={() => setPage("sheet")}
+        onCreateNew={() => {
+          setIsCreatingFromGameFlow(true);
+          setPage("sheet");
+        }}
       />
     );
   }

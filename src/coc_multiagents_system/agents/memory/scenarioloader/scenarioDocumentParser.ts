@@ -10,7 +10,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 import { createChatModel, ModelProviderName, ModelClass } from "../../../../models/index.js";
-import type { ParsedScenarioData } from "../../models/scenarioTypes.js";
+import type { ParsedScenarioData, ParsedScenarioSnapshot } from "../../models/scenarioTypes.js";
 
 /**
  * Supported document formats
@@ -167,6 +167,7 @@ The JSON array should contain objects following this structure:
       "name": "Scene name (optional, can be same as scenario name)",
       "location": "Primary location description",
       "description": "Detailed scene description",
+      "timeRestriction": "Optional time restriction (e.g., 'day1 evening', 'day2 (after)')",
       "characters": [
         {
           "name": "Character name",
@@ -205,6 +206,21 @@ The JSON array should contain objects following this structure:
       "keeperNotes": "Notes for the Keeper",
       "permanentChanges": ["Any permanent changes to the scenario"]
     },
+  "snapshots": [
+    {
+      "name": "Scene name (optional)",
+      "location": "Primary location description",
+      "description": "Detailed scene description",
+      "timeRestriction": "Optional time restriction (e.g., 'day1 evening', 'day2 (after)')",
+      "characters": [...],
+      "clues": [...],
+      "conditions": [...],
+      "events": [...],
+      "exits": [...],
+      "keeperNotes": "...",
+      "permanentChanges": [...]
+    }
+  ],
   "tags": ["tag1", "tag2", "descriptive tags"],
   "connections": [
     {
@@ -217,7 +233,8 @@ The JSON array should contain objects following this structure:
 
 Important extraction guidelines:
 1. **Multiple Scenarios**: If the document describes multiple distinct locations (bar, hospital, church, train station, etc.), create SEPARATE scenario objects for each
-2. **Single Snapshot per Scenario**: Each scenario has ONE snapshot representing that location's state
+2. **Single or Multiple Snapshots**: Each scenario can have either a single "snapshot" object (legacy format) or multiple "snapshots" array (new format). Use "snapshots" array if the scenario has different states at different times (e.g., before/after an event, different time periods)
+3. **Time Restrictions**: If a snapshot is only valid at a specific time, include "timeRestriction" field (e.g., "day1 evening", "day2 (after)")
 3. **Character Information**: Document all characters present in each scenario with their status
 4. **Clue Scope**: Only include clues discoverable in the scene/location. Do NOT include clues belonging solely to NPC private knowledge
 5. **Partial Inputs**: If information is missing, leave the field blank or omit it—do NOT fabricate details
@@ -404,10 +421,25 @@ Do not include any additional text, explanations, or markdown formatting.`;
     base: ParsedScenarioData,
     incoming: ParsedScenarioData
   ): ParsedScenarioData {
+    // Merge snapshots - handle both single snapshot and multiple snapshots
+    let mergedSnapshot: ParsedScenarioSnapshot | undefined;
+    let mergedSnapshots: ParsedScenarioSnapshot[] | undefined;
+
+    if (base.snapshots || incoming.snapshots) {
+      // Both have snapshots arrays - merge them
+      const baseSnapshots = base.snapshots || (base.snapshot ? [base.snapshot] : []);
+      const incomingSnapshots = incoming.snapshots || (incoming.snapshot ? [incoming.snapshot] : []);
+      mergedSnapshots = [...baseSnapshots, ...incomingSnapshots];
+    } else if (base.snapshot || incoming.snapshot) {
+      // Both have single snapshot - merge them
+      mergedSnapshot = this.mergeSnapshot(base.snapshot, incoming.snapshot);
+    }
+
     const merged: ParsedScenarioData = {
       name: base.name || incoming.name,
       description: this.pickLonger(base.description, incoming.description) || "",
-      snapshot: this.mergeSnapshot(base.snapshot, incoming.snapshot),
+      snapshot: mergedSnapshot,
+      snapshots: mergedSnapshots,
       tags: this.mergeStringArrays(base.tags, incoming.tags) || [],
       connections: this.mergeByKey(
         base.connections,
@@ -422,11 +454,18 @@ Do not include any additional text, explanations, or markdown formatting.`;
   private mergeSnapshot(
     a: ParsedScenarioData["snapshot"],
     b: ParsedScenarioData["snapshot"]
-  ): ParsedScenarioData["snapshot"] {
+  ): ParsedScenarioSnapshot {
+    if (!a && !b) {
+      throw new Error("Cannot merge: both snapshots are undefined");
+    }
+    if (!a) return b!;
+    if (!b) return a;
+
     return {
       name: a.name || b.name,
       location: a.location || b.location,
       description: this.pickLonger(a.description, b.description) || "",
+      timeRestriction: a.timeRestriction || b.timeRestriction,
       characters: this.mergeByKey(
         a.characters,
         b.characters,

@@ -5,7 +5,8 @@
       "snapshot": {
         "name": "Bruno's Car (12.26)",
         "location": "Crescent Street B, parked in front of a two-story wooden house",
-        "description": "A Buick car is parked quietly along Crescent Street B. Inside, Bruno’s body is slumped in the driver’s seat with the seatbelt still fastened. His corpse appears unnaturally desiccated, resembling a dried mummy rather than a recently deceased man. The scene is eerily still, with no signs of a conventional struggle or accident.",
+        "timeRestriction": "day2 morning",
+        "description": "A Buick car is parked quietly along Crescent Street B. Inside, Bruno's body is slumped in the driver's seat with the seatbelt still fastened. His corpse appears unnaturally desiccated, resembling a dried mummy rather than a recently deceased man. The scene is eerily still, with no signs of a conventional struggle or accident.",
         "characters": [
           {
             "name": "Bruno Galilei",
