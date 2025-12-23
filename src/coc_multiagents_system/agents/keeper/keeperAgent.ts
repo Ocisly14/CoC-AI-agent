@@ -109,7 +109,7 @@ export class KeeperAgent {
     // Use template and LLM to generate narrative and clue revelations
     const prompt = composeTemplate(template, {}, templateContext, "handlebars");
 
-    let response: string;
+    let response: string = "";
     let parsedResponse: any;
     const maxAttempts = 2; // Try up to 2 times
 
@@ -152,11 +152,11 @@ export class KeeperAgent {
 
         // Final attempt failed
         console.error("Failed to parse keeper response as JSON:", error);
-        console.warn("Response content:", response!);
+        console.warn("Response content:", response);
 
         // Try to extract narrative from incomplete JSON
-        let fallbackNarrative = response!;
-        const narrativeMatch = response!.match(/"narrative"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        let fallbackNarrative = response;
+        const narrativeMatch = response.match(/"narrative"\s*:\s*"((?:[^"\\]|\\.)*)"/);
         if (narrativeMatch && narrativeMatch[1]) {
           fallbackNarrative = narrativeMatch[1]
             .replace(/\\n/g, '\n')
@@ -199,8 +199,9 @@ export class KeeperAgent {
       gameStateManager.clearSceneTransitionRejection();
     }
 
-    // Clear temporary state content (after generating narrative and updating state)
-    const finalGameState = this.clearTemporaryState(updatedGameState, gameStateManager);
+    // Temporary state is now preserved until next real player input
+    // Cleanup happens in entry node for real input only
+    const finalGameState = updatedGameState;
 
     return {
       narrative: parsedResponse.narrative || response,
@@ -211,6 +212,9 @@ export class KeeperAgent {
 
   /**
    * Clear temporary state content
+   * @deprecated Cleanup now happens in entry node for real player input.
+   * Temporary state is preserved across simulated queries during listening loop.
+   * Kept for backward compatibility but no longer called.
    */
   private clearTemporaryState(gameState: GameState, gameStateManager: GameStateManager): GameState {
     console.log("\n🧹 [Keeper Agent] Clearing temporary state content...");
@@ -405,7 +409,7 @@ export class KeeperAgent {
       
       // Personal details
       occupation: npcData.occupation || "Unknown",
-      age: npcData.age || "Unknown",
+      age: npcData.age,
       appearance: npcData.appearance || "No description",
       personality: npcData.personality || "Unknown personality",
       background: npcData.background || "Unknown background",

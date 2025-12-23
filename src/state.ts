@@ -96,6 +96,9 @@ export interface GameState {
   discoveredClues: DiscoveredClue[];
   playerCharacter: CharacterProfile;
   npcCharacters: CharacterProfile[];
+  // Story progression monitoring
+  turnsInCurrentScene: number;  // Tracks turns spent in current scene
+  lastPlayerInputTime: Date | null;  // Timestamp of last player input
   scenarioTimeState: {
     sceneStartTime: string;     // Game time when scene started
     playerTimeConsumption: Record<string, {  // Time consumption records for each player
@@ -173,6 +176,8 @@ export const initialGameState: GameState = {
   discoveredClues: [],
   playerCharacter: defaultPlayerCharacter,
   npcCharacters: [],
+  turnsInCurrentScene: 0,
+  lastPlayerInputTime: null,
   scenarioTimeState: {
     sceneStartTime: "08:00",
     playerTimeConsumption: {},
@@ -630,6 +635,76 @@ export class GameStateManager {
   resetScenarioTimeState(): void {
     this.gameState.scenarioTimeState.playerTimeConsumption = {};
     this.gameState.scenarioTimeState.sceneStartTime = this.gameState.timeOfDay;
+    // Reset turn counter on scenario change
+    this.gameState.turnsInCurrentScene = 0;
+  }
+
+  /**
+   * Increment turn counter for current scene
+   */
+  incrementTurnCounter(): void {
+    this.gameState.turnsInCurrentScene += 1;
+  }
+
+  /**
+   * Get current turn count in scene
+   */
+  getTurnsInCurrentScene(): number {
+    return this.gameState.turnsInCurrentScene;
+  }
+
+  /**
+   * Update last player input timestamp
+   */
+  updatePlayerInputTime(): void {
+    this.gameState.lastPlayerInputTime = new Date();
+  }
+
+  /**
+   * Get minutes since last player input
+   */
+  getMinutesSinceLastInput(): number {
+    if (!this.gameState.lastPlayerInputTime) {
+      return 0;
+    }
+    const now = new Date();
+    const diffMs = now.getTime() - this.gameState.lastPlayerInputTime.getTime();
+    return Math.floor(diffMs / 60000); // Convert to minutes
+  }
+
+  /**
+   * Calculate dynamic threshold based on tension
+   * Lower tension = higher threshold (slower progression)
+   * Higher tension = lower threshold (faster progression)
+   */
+  getProgressionThreshold(): number {
+    const tension = this.gameState.tension;
+    if (tension <= 3) return 4;      // Low tension (1-3): 4 turns
+    if (tension <= 6) return 3;      // Medium tension (4-6): 3 turns
+    if (tension <= 8) return 2;      // High tension (7-8): 2 turns
+    return 1;                         // Critical tension (9-10): 1 turn
+  }
+
+  /**
+   * Check if progression should trigger based on turn count OR time elapsed
+   * @returns true if either condition is met
+   */
+  shouldTriggerProgression(): boolean {
+    // Check turn count threshold
+    const turnsInScene = this.getTurnsInCurrentScene();
+    const threshold = this.getProgressionThreshold();
+
+    if (turnsInScene >= threshold) {
+      return true;
+    }
+
+    // Check time threshold (3 minutes)
+    const minutesSinceInput = this.getMinutesSinceLastInput();
+    if (minutesSinceInput >= 3) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

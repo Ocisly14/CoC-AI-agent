@@ -629,20 +629,27 @@ Example:
     }
 
     // Update game time based on elapsed time
+    // IMPORTANT: Only player actions advance game time, NPC reactions do not
     if (actionResult.timeElapsedMinutes && actionResult.timeElapsedMinutes > 0) {
-      const oldDay = gameState.gameDay;
-      const oldTime = gameState.timeOfDay;
-      stateManager.updateGameTime(actionResult.timeElapsedMinutes);
-      const updatedState = stateManager.getGameState();
-      const newDay = updatedState.gameDay;
-      const newTime = updatedState.timeOfDay;
-      const fullTime = stateManager.getFullGameTime();
-      
-      console.log(`⏰ Time advanced by ${actionResult.timeElapsedMinutes} minutes`);
-      if (newDay > oldDay) {
-        console.log(`   Day ${oldDay}, ${oldTime} → ${fullTime} 🌅`);
+      if (!isNPC) {
+        // Only advance time for player actions
+        const oldDay = gameState.gameDay;
+        const oldTime = gameState.timeOfDay;
+        stateManager.updateGameTime(actionResult.timeElapsedMinutes);
+        const updatedState = stateManager.getGameState();
+        const newDay = updatedState.gameDay;
+        const newTime = updatedState.timeOfDay;
+        const fullTime = stateManager.getFullGameTime();
+
+        console.log(`⏰ Time advanced by ${actionResult.timeElapsedMinutes} minutes (Player action)`);
+        if (newDay > oldDay) {
+          console.log(`   Day ${oldDay}, ${oldTime} → ${fullTime} 🌅`);
+        } else {
+          console.log(`   ${oldTime} → ${fullTime}`);
+        }
       } else {
-        console.log(`   ${oldTime} → ${fullTime}`);
+        // NPC actions have time elapsed but don't advance game time
+        console.log(`⏰ NPC action time: ${actionResult.timeElapsedMinutes} minutes (not counted in game time)`);
       }
     }
 

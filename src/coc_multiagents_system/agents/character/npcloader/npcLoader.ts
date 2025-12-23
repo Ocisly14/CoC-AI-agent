@@ -537,6 +537,7 @@ export class NPCLoader {
       notes: parsedData.notes,
       occupation: parsedData.occupation,
       age: parsedData.age,
+      gender: parsedData.gender,
       appearance: parsedData.appearance,
       personality: parsedData.personality,
       background: parsedData.background,
@@ -888,9 +889,9 @@ Return ONLY JSON array, no extra text.`;
       const stmt = database.prepare(`
                 INSERT OR REPLACE INTO characters (
                     character_id, name, attributes, status, inventory, skills, notes,
-                    is_npc, occupation, age, appearance, personality, background, goals, secrets, current_location,
+                    is_npc, occupation, age, gender, appearance, personality, background, goals, secrets, current_location,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `);
 
       stmt.run(
@@ -904,6 +905,7 @@ Return ONLY JSON array, no extra text.`;
         1, // is_npc = true
         npc.occupation || null,
         npc.age || null,
+        npc.gender || null,
         npc.appearance || null,
         npc.personality || null,
         npc.background || null,
@@ -1020,6 +1022,7 @@ Return ONLY JSON array, no extra text.`;
       notes: character.notes,
       occupation: character.occupation,
       age: character.age,
+      gender: character.gender,
       appearance: character.appearance,
       personality: character.personality,
       background: character.background,

@@ -1,202 +1,4 @@
 /**
- * Director Agent Template - for plot progression and scenario management
- */
-export function getDirectorTemplate(): string {
-    return `# Director Agent - Story Progression Analysis
-
-Monitor game progress and determine when to advance the story while respecting investigator agency.
-
-## 🎬 Current Scene
-{{#if currentScenario}}
-**{{currentScenario.name}}** @ {{currentScenario.location}}
-
-{{currentScenario.description}}
-
-👥 {{currentScenario.characters.length}} characters | 💡 Clues: {{discoveredCluesCount}}/{{totalCluesCount}} | 🚪 {{currentScenario.exits.length}} exits
-{{#if currentScenario.keeperNotes}}
-🎭 {{currentScenario.keeperNotes}}
-{{/if}}
-{{else}}
-*No scene loaded*
-{{/if}}
-
-## 🕵️ Clues
-{{#if discoveredClues}}
-{{#each discoveredClues}}
-✅ {{this.clueText}}
-{{/each}}
-{{else}}
-*None discovered*
-{{/if}}
-
-## 📝 Recent Queries
-{{#if recentQueries}}
-{{#each recentQueries}}
-{{add @index 1}}. "{{this}}"
-{{/each}}
-{{else}}
-*None*
-{{/if}}
-
-## 🗺️ Town Map & Spatial Logic
-{{#if mapData}}
-**Map Name**: {{mapData.map_name}}
-
-**Spatial Logic**: {{mapData.spatial_logic}}
-
-### Road Network
-{{#each mapData.road_network}}
-**{{this.road_name}}** ({{this.orientation}})
-{{#if this.connected_to}}
-🔗 Connected to: {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}
-{{#if this.locations_along_road}}
-📍 Locations: {{#each this.locations_along_road}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/if}}
-{{#if this.sub_sections}}
-{{#each this.sub_sections}}
-  - **{{this.segment}}**: Connected to {{#each this.connected_to}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-    Locations: {{#each this.locations}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
-{{/each}}
-{{/if}}
-
-{{/each}}
-
-### Hidden Connectivity
-{{#if mapData.hidden_connectivity}}
-{{#each mapData.hidden_connectivity}}
-- **{{this.entry_point}}** → {{this.leads_to}}
-{{/each}}
-{{else}}
-*No hidden connections*
-{{/if}}
-
-### Visited Scenarios
-{{#if visitedScenarioNames}}
-{{#each visitedScenarioNames}}
-- ✅ {{this}}
-{{/each}}
-{{else}}
-*None visited yet*
-{{/if}}
-{{else}}
-*Map data not available*
-{{/if}}
-
-## 📊 Game State
-**Player**: HP {{gameStats.playerStatus.hp}}/{{gameStats.playerStatus.maxHp}} | Sanity {{gameStats.playerStatus.sanity}}/{{gameStats.playerStatus.maxSanity}}
-**Progress**: {{gameStats.totalCluesDiscovered}} clues found | {{gameStats.visitedScenarioCount}} scenes visited
-**Latest Query**: "{{latestUserQuery}}"
-
-## Decision Framework
-
-**Progress When**:
-- Stagnation: Multiple "what next" queries, all clues found, no progress
-- Natural: Clues point elsewhere, story logic suggests transition
-- Forced: Low HP/Sanity, time-sensitive events, safety concerns
-
-**Stay When**:
-- Active investigation ongoing
-- Key clues remain undiscovered
-- Investigator has meaningful options
-
-**Types**:
-- **scene_change**: Move to different location
-- **narrative_push**: Inject events into current scene
-- **none**: Continue current scene
-
-## Response
-\`\`\`json
-{
-  "shouldProgress": true/false,
-  "targetSnapshotId": "snapshot-id or null",
-  "targetScenarioName": "scenario name from map or null (alternative to targetSnapshotId)",
-  "estimatedShortActions": number or null,
-  "increaseShortActionCapBy": number or null,
-  "reasoning": "Explanation (2-3 sentences, must reference map spatial logic)"
-}
-\`\`\`
-
-**Fields**:
-- **shouldProgress**: true to advance story
-- **targetSnapshotId**: Snapshot ID of target scenario (can be null if using targetScenarioName)
-- **targetScenarioName**: Name of target scenario from map (alternative to targetSnapshotId, e.g., "Star Hospital", "Train Station", "Helen's Restaurant")
-- **estimatedShortActions**: Actions available in new scene (null if staying)
-- **increaseShortActionCapBy**: Extra actions for current scene (null if progressing)
-- **reasoning**: Why progress or stay (must reference map spatial logic and road connections)
-
-**Important**: 
-- Use the map's spatial logic to determine which locations are accessible from the current scene
-- Consider road connections and locations_along_road when selecting next scene
-- Check visitedScenarioNames to avoid revisiting unless story requires it
-- Match scenario names from the map to actual scenario names in the system
-
-*Analyze and decide:*`;
-}
-
-/**
- * Scene Transition Template - for deciding scene changes
- */
-export function getSceneTransitionTemplate(): string {
-    return `# Director Agent - Scene Transition Decision
-
-Decide whether to transition to a new scene based on the current state and available options.
-
-## 📍 Current Scene
-{{#if currentScene}}
-**{{currentScene.name}}** @ {{currentScene.location}}
-
-{{currentScene.description}}
-
-📊 **Status**: {{currentScene.cluesDiscovered}}/{{currentScene.cluesTotal}} clues | {{currentScene.characterCount}} characters | {{currentScene.actionCount}} actions
-{{#if currentScene.keeperNotes}}
-🎭 {{currentScene.keeperNotes}}
-{{/if}}
-{{else}}
-*No current scene*
-{{/if}}
-
-## 🗺️ Available Transitions
-{{#if availableScenes}}
-{{#each availableScenes}}
-
-**{{this.name}}** (ID: {{this.id}})
-📍 {{this.location}}
-🔗 {{this.connectionType}}: {{this.connectionDesc}}
-
-{{this.description}}
-
-💡 {{this.clueCount}} clues | 👥 {{this.characterCount}} characters
-{{#if this.keeperNotes}}🎭 {{this.keeperNotes}}{{/if}}
-
-{{/each}}
-{{else}}
-*No transitions available*
-{{/if}}
-
-## 📜 Activity
-{{activitySummary}}
-
-## Guidelines
-✅ **Transition**: Most clues discovered, story stalled, natural timing, investigator ready, OR action points exhausted, OR investigator insists on leaving
-❌ **Stay**: Many clues undiscovered (especially easy ones), just arrived, active investigation ongoing, investigator not expressing desire to leave
-
-## Response
-\`\`\`json
-{
-  "shouldTransition": true/false,
-  "targetSceneId": "scene-id",
-  "reasoning": "Why transition or stay (2-3 sentences)",
-  "urgency": "low|medium|high",
-  "transitionType": "immediate|gradual|player-initiated",
-  "suggestedTransitionNarrative": "Transition hook (1-2 sentences)"
-}
-\`\`\`
-
-*Decide:*`;
-}
-
-/**
  * Action-Driven Scene Change Template - for validating and selecting scene based on map
  */
 export function getActionDrivenSceneChangeTemplate(): string {
@@ -262,28 +64,66 @@ Based on the character's input and previous narrative context, determine the app
 *No character input available*
 {{/if}}
 
+## ⏰ Current Game Time
+{{#if currentGameTime}}
+**Day**: {{currentGameTime.gameDay}}
+**Time**: {{currentGameTime.timeOfDay}}
+{{else}}
+*Game time not available*
+{{/if}}
+
+## 🎬 Available Scenarios & Snapshots
+{{#if scenariosWithSnapshots}}
+{{#each scenariosWithSnapshots}}
+### **{{this.scenarioName}}**
+{{#if this.snapshots}}
+{{#each this.snapshots}}
+- **Snapshot**: "{{this.snapshotName}}" (ID: {{this.snapshotId}})
+  - Location: {{this.location}}
+  {{#if this.timeRestriction}}
+  - ⏰ Time Restriction: **{{this.timeRestriction}}**
+    - Check if current time (Day {{../currentGameTime.gameDay}}, Time {{../currentGameTime.timeOfDay}}) matches this restriction
+  {{else}}
+  - ✅ **No Time Restriction**: Available at any time
+  {{/if}}
+{{/each}}
+{{else}}
+*No snapshots available*
+{{/if}}
+
+{{/each}}
+{{else}}
+*No scenarios available*
+{{/if}}
+
 ## Guidelines
 - Analyze the character's input and the previous narrative to understand the intent for scene change
 - Use the map's spatial logic to determine which scene the character wants to reach or should reach
 - Check road connections: scenes on the same road or connected roads are accessible from the current location
 - Consider hidden connectivity (entry points) if applicable
-- Based on the character's intent and the map's spatial logic, determine the most appropriate target scene
-- Return the exact scene name as it appears in the map or scenario system
+- **IMPORTANT**: Select the appropriate snapshot based on time restrictions:
+  - If a snapshot has **no timeRestriction**, it's available at any time
+  - If a snapshot has a **specific time** (e.g., "day1 evening"), it's only available at that exact time
+  - If a snapshot has a **time range** (e.g., "day2 (after)"), it's available from that time onwards
+  - Check the current game time (Day {{currentGameTime.gameDay}}, Time {{currentGameTime.timeOfDay}}) against each snapshot's timeRestriction
+  - If multiple snapshots are available for a scenario, choose the one that matches the current time or has no restriction
+- **MUST** return the exact snapshot ID from the available scenarios list that matches the current game time
 
 ## Response
 \`\`\`json
 {
-  "targetScenarioName": "exact scene name from map (e.g., 'Star Hospital', 'Train Station', 'Helen's Restaurant')",
-  "reasoning": "Why this scene is selected based on map spatial logic (2-3 sentences)"
+  "targetSnapshotId": "exact snapshot ID that matches current game time (e.g., 'scenario-xxx-snapshot' or 'scenario-xxx-snapshot-1')",
+  "reasoning": "Why this snapshot is selected based on map spatial logic and time restrictions (2-3 sentences)"
 }
 \`\`\`
 
-**Important**: 
-- Return the exact scene name that matches the scenario names in the system
-- Base your decision on the character's input and the context from the previous narrative
+**Important**:
+- **MUST** return the exact snapshot ID from the available scenarios list above
+- Base your decision on the character's input, the context from the previous narrative, and the current game time
 - Use the map's spatial logic to determine the most appropriate accessible scene
+- **Check time restrictions**: Only select snapshots that are available at the current game time (Day {{currentGameTime.gameDay}}, Time {{currentGameTime.timeOfDay}})
 - If the character's intended destination is not directly accessible, suggest the closest accessible scene based on map connections
-- Reference specific roads and connections in your reasoning
+- Reference specific roads, connections, and time restrictions in your reasoning
 
 *Validate and decide:*`;
 }
@@ -363,3 +203,49 @@ Based on the module constraints (limitations, keeper guidance, module notes), th
 
 *Generate narrative direction instruction:*`;
 }
+
+/**
+ * Player Intent Analysis Template - for analyzing player intent when progression threshold is reached
+ */
+export function getPlayerIntentAnalysisTemplate(): string {
+  return `# Director Agent - Player Intent Analysis
+
+Analyze recent player behavior and generate a third-person query describing their intent.
+
+## Current Scene
+{{scenarioInfoJson}}
+
+## Recent Player Actions (Last 3 turns)
+
+{{#if recentActions}}
+{{#each recentActions}}
+**Turn {{this.turnNumber}}**
+- Player Input: "{{this.characterInput}}"
+{{#if this.actionAnalysis}}
+- Action Analysis: {{this.actionAnalysis}}
+{{/if}}
+
+{{/each}}
+{{else}}
+*No recent actions*
+{{/if}}
+
+## Task
+
+Generate a third-person query: "{{playerName}} + what they're trying to do"
+
+Examples:
+- "John is searching for clues in the room"
+- "Mary wants to enter the locked door"
+- "Robert is trying to get information from the Sheriff"
+
+## Response
+
+\`\`\`json
+{
+  "query": "Third-person description here"
+}
+\`\`\`
+`;
+}
+

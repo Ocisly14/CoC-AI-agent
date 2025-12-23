@@ -149,6 +149,7 @@ The JSON array entries should follow this structure:
     "name": "NPC name",
     "occupation": "NPC occupation",
     "age": number,
+    "gender": "male" | "female" | "other",
     "appearance": "physical description",
     "personality": "personality traits",
     "background": "backstory",

@@ -19,6 +19,7 @@ export interface TurnStatus {
   sceneId: string | null;
   sceneName: string | null;
   location: string | null;
+  isSimulated?: boolean;
 }
 
 export interface UseTurnPollingResult {

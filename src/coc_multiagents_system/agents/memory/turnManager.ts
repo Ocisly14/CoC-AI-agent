@@ -17,6 +17,7 @@ export interface TurnInput {
   sceneId?: string;
   sceneName?: string;
   location?: string;
+  isSimulated?: boolean;
 }
 
 export interface TurnProcessing {
@@ -60,6 +61,9 @@ export interface GameTurn {
   startedAt: string;
   completedAt: string | null;
   createdAt: string;
+  
+  // Simulation flag
+  isSimulated?: boolean;
 }
 
 export class TurnManager {
@@ -85,10 +89,12 @@ export class TurnManager {
       input.characterName,
       input.sceneId,
       input.sceneName,
-      input.location
+      input.location,
+      input.isSimulated
     );
 
-    console.log(`✓ Turn created: ${turnId} (Turn #${turnNumber})`);
+    const turnType = input.isSimulated ? 'simulated' : 'user';
+    console.log(`✓ Turn created: ${turnId} (Turn #${turnNumber}, ${turnType})`);
     return turnId;
   }
 
@@ -98,7 +104,8 @@ export class TurnManager {
   createTurnFromGameState(
     sessionId: string,
     characterInput: string,
-    gameState: GameState
+    gameState: GameState,
+    isSimulated?: boolean
   ): string {
     return this.createTurn({
       sessionId,
@@ -108,6 +115,7 @@ export class TurnManager {
       sceneId: gameState.currentScenario?.id,
       sceneName: gameState.currentScenario?.name,
       location: gameState.currentScenario?.location,
+      isSimulated,
     });
   }
 
@@ -167,8 +175,8 @@ export class TurnManager {
   /**
    * Get turn history for a session
    */
-  getHistory(sessionId: string, limit = 50): GameTurn[] {
-    return this.db.getTurnHistory(sessionId, limit) as GameTurn[];
+  getHistory(sessionId: string, limit = 50, afterTurnNumber?: number): GameTurn[] {
+    return this.db.getTurnHistory(sessionId, limit, afterTurnNumber) as GameTurn[];
   }
 
   /**
@@ -255,8 +263,8 @@ export class TurnManager {
         }
       } else {
         // For normal turns, add character input and keeper narrative
-        // Add character input (skip if empty)
-        if (turn.characterInput) {
+        // Skip character input for simulated queries (only show user input)
+        if (turn.characterInput && !turn.isSimulated) {
           conversation.push({
             role: 'character',
             content: turn.characterInput,
@@ -265,7 +273,7 @@ export class TurnManager {
           });
         }
 
-        // Add keeper narrative if completed
+        // Add keeper narrative if completed (show for both real and simulated turns)
         if (turn.status === 'completed' && turn.keeperNarrative) {
           conversation.push({
             role: 'keeper',

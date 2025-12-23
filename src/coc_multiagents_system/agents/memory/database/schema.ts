@@ -122,7 +122,10 @@ export class CoCDatabase {
                 error_message TEXT,
                 started_at DATETIME NOT NULL,
                 completed_at DATETIME,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                
+                -- Simulation flag
+                is_simulated INTEGER DEFAULT 0 -- 0 for real user input, 1 for simulated query
             );
             CREATE INDEX IF NOT EXISTS idx_turns_session ON game_turns(session_id);
             CREATE INDEX IF NOT EXISTS idx_turns_status ON game_turns(status);
@@ -197,6 +200,7 @@ export class CoCDatabase {
                 is_npc INTEGER DEFAULT 0, -- 0 for PC, 1 for NPC
                 occupation TEXT,
                 age INTEGER,
+                gender TEXT,
                 appearance TEXT,
                 personality TEXT,
                 background TEXT,
@@ -214,6 +218,7 @@ export class CoCDatabase {
       "is_npc INTEGER DEFAULT 0",
       "occupation TEXT",
       "age INTEGER",
+      "gender TEXT",
       "appearance TEXT",
       "personality TEXT",
       "background TEXT",
@@ -825,14 +830,27 @@ export class CoCDatabase {
     characterName?: string,
     sceneId?: string,
     sceneName?: string,
-    location?: string
+    location?: string,
+    isSimulated?: boolean
   ): void {
     const database = this.db;
+    
+    // Add is_simulated column if it doesn't exist (for backward compatibility)
+    if (!this.hasColumn('game_turns', 'is_simulated')) {
+      try {
+        database.exec(`ALTER TABLE game_turns ADD COLUMN is_simulated INTEGER DEFAULT 0`);
+        console.log('✓ Added is_simulated column to game_turns table');
+      } catch (error) {
+        // Column might already exist, ignore error
+        console.log('Note: is_simulated column may already exist');
+      }
+    }
+    
     const stmt = database.prepare(`
       INSERT INTO game_turns (
         turn_id, session_id, turn_number, character_input, character_id, character_name,
-        scene_id, scene_name, location, status, started_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', CURRENT_TIMESTAMP)
+        scene_id, scene_name, location, status, started_at, is_simulated
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', CURRENT_TIMESTAMP, ?)
     `);
     
     stmt.run(
@@ -844,7 +862,8 @@ export class CoCDatabase {
       characterName || null,
       sceneId || null,
       sceneName || null,
-      location || null
+      location || null,
+      isSimulated ? 1 : 0
     );
   }
 
@@ -930,6 +949,8 @@ export class CoCDatabase {
       sessionId: row.session_id,
       turnNumber: row.turn_number,
       characterInput: row.character_input,
+      characterId: row.character_id,
+      characterName: row.character_name,
       keeperNarrative: row.keeper_narrative,
       status: row.status,
       errorMessage: row.error_message,
@@ -942,27 +963,44 @@ export class CoCDatabase {
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
       clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+      isSimulated: row.is_simulated === 1 || row.is_simulated === true,
     };
   }
 
   /**
    * Get turn history for a session
    */
-  getTurnHistory(sessionId: string, limit = 50): any[] {
+  getTurnHistory(sessionId: string, limit = 50, afterTurnNumber?: number): any[] {
     const database = this.db;
-    const stmt = database.prepare(`
-      SELECT * FROM game_turns 
+
+    let sql = `
+      SELECT * FROM game_turns
       WHERE session_id = ?
+    `;
+
+    const params: any[] = [sessionId];
+
+    // Add filter for turns after a specific turn number
+    if (afterTurnNumber !== undefined) {
+      sql += ` AND turn_number > ?`;
+      params.push(afterTurnNumber);
+    }
+
+    sql += `
       ORDER BY turn_number DESC
       LIMIT ?
-    `);
-    
-    const rows = stmt.all(sessionId, limit) as any[];
+    `;
+    params.push(limit);
+
+    const stmt = database.prepare(sql);
+    const rows = stmt.all(...params) as any[];
     return rows.map(row => ({
       turnId: row.turn_id,
       sessionId: row.session_id,
       turnNumber: row.turn_number,
       characterInput: row.character_input,
+      characterId: row.character_id,
+      characterName: row.character_name,
       keeperNarrative: row.keeper_narrative,
       status: row.status,
       errorMessage: row.error_message,
@@ -975,6 +1013,7 @@ export class CoCDatabase {
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
       clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+      isSimulated: row.is_simulated === 1 || row.is_simulated === true,
     }));
   }
 
@@ -998,6 +1037,8 @@ export class CoCDatabase {
       sessionId: row.session_id,
       turnNumber: row.turn_number,
       characterInput: row.character_input,
+      characterId: row.character_id,
+      characterName: row.character_name,
       keeperNarrative: row.keeper_narrative,
       status: row.status,
       errorMessage: row.error_message,
@@ -1010,6 +1051,7 @@ export class CoCDatabase {
       actionResults: row.action_results ? JSON.parse(row.action_results) : null,
       directorDecision: row.director_decision ? JSON.parse(row.director_decision) : null,
       clueRevelations: row.clue_revelations ? JSON.parse(row.clue_revelations) : null,
+      isSimulated: row.is_simulated === 1 || row.is_simulated === true,
     };
   }
 

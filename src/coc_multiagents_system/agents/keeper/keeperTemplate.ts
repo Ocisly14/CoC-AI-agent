@@ -67,7 +67,12 @@ export function getKeeperTemplate(): string {
   {{#if conversationHistory}}
   Recent Narrative History (DO NOT REPEAT):
   {{#each conversationHistory}}
-  - Previous Keeper Output Exists
+  {{#if this.keeperNarrative}}
+  **Turn #{{this.turnNumber}}**:
+  Input: "{{this.characterInput}}"
+  Previous Narrative: "{{this.keeperNarrative}}"
+  
+  {{/if}}
   {{/each}}
   {{/if}}
   
@@ -132,16 +137,26 @@ export function getKeeperTemplate(): string {
   ==================================================
   SECTION 4 — CLUE REVELATION RULES
   ==================================================
-  
+
   When revealing clues:
   - Embed naturally in the narrative
   - Describe HOW the investigator perceives it
   - Do not label clues explicitly in the story text
-  
+
   Types:
   - Scenario Clues: environment, documents, objects
   - NPC Clues: dialogue slips, reactions, knowledge
   - NPC Secrets: rare, dramatic, trust-based
+
+  ### Clue Difficulty & Revelation Limits
+  CRITICAL RULES:
+  - **AUTOMATIC** clues: May be revealed progressively over multiple turns without requiring specific action success
+  - **REGULAR or higher** difficulty clues (Regular, Hard, Extreme):
+    * MUST only be revealed when the corresponding action succeeds
+    * Reveal ONLY ONE clue per successful action
+    * Never reveal multiple Regular+ clues in a single turn
+  - Check clue difficulty level in scenario data before revealing
+  - Prioritize most relevant clue when multiple are possible
   
   ==================================================
   SECTION 5 — OUTPUT FORMAT (MANDATORY)

@@ -31,7 +31,134 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const processedTurnIdsRef = useRef<Set<string>>(new Set());
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
   const { turn, isPolling, error, startPolling } = useTurnPolling(apiBaseUrl);
+
+  // WebSocket connection for progression checking
+  useEffect(() => {
+    if (!sessionId) return;
+
+    // Get WebSocket URL from apiBaseUrl
+    const wsUrl = apiBaseUrl.replace('/api', '').replace('http://', 'ws://').replace('https://', 'wss://');
+    const wsPath = `${wsUrl}/ws?sessionId=${sessionId}`;
+
+    console.log(`[WebSocket] Connecting to ${wsPath}`);
+
+    const connectWebSocket = () => {
+      try {
+        const ws = new WebSocket(wsPath);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          console.log('[WebSocket] Connected');
+          // Clear any reconnect timeout
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = null;
+          }
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            console.log('[WebSocket] Received message:', message);
+
+            if (message.type === 'connected') {
+              console.log(`[WebSocket] Connection confirmed for session ${message.sessionId}`);
+            } else if (message.type === 'simulate_triggered') {
+              console.log('[WebSocket] Simulate triggered:', message);
+              // Handle simulated narrative
+              if (message.keeperNarrative) {
+                // Find the latest turn number and add 1 for the simulated turn
+                const latestTurnNumber = messages.length > 0 
+                  ? Math.max(...messages.map(m => m.turnNumber))
+                  : 0;
+                
+                setMessages(prev => {
+                  // Check if this turn already exists
+                  const existingTurn = prev.find(m => m.turnNumber === latestTurnNumber + 1);
+                  if (existingTurn) return prev;
+
+                  return [
+                    ...prev,
+                    {
+                      role: 'keeper',
+                      content: message.keeperNarrative,
+                      timestamp: message.timestamp || new Date().toISOString(),
+                      turnNumber: latestTurnNumber + 1,
+                    }
+                  ];
+                });
+
+                // Trigger sidebar refresh
+                if (onNarrativeComplete) {
+                  onNarrativeComplete();
+                }
+              }
+            } else if (message.type === 'pong') {
+              // Heartbeat response
+              console.log('[WebSocket] Heartbeat received');
+            } else if (message.type === 'progression_check_result') {
+              console.log('[WebSocket] Progression check result:', message.triggered);
+            } else if (message.type === 'error') {
+              console.error('[WebSocket] Error:', message.message || message.error);
+            }
+          } catch (error) {
+            console.error('[WebSocket] Error parsing message:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error('[WebSocket] Error:', error);
+        };
+
+        ws.onclose = () => {
+          console.log('[WebSocket] Connection closed, attempting to reconnect in 5 seconds...');
+          wsRef.current = null;
+          
+          // Reconnect after 5 seconds
+          reconnectTimeoutRef.current = window.setTimeout(() => {
+            connectWebSocket();
+          }, 5000);
+        };
+      } catch (error) {
+        console.error('[WebSocket] Failed to connect:', error);
+        // Retry connection after 5 seconds
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          connectWebSocket();
+        }, 5000);
+      }
+    };
+
+    connectWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      if (reconnectTimeoutRef.current !== null) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+  }, [sessionId, apiBaseUrl, messages, onNarrativeComplete]);
+
+  // Send heartbeat ping every 60 seconds
+  useEffect(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    const heartbeatInterval = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+        console.log('[WebSocket] Sent heartbeat ping');
+      }
+    }, 60000); // Send ping every 60 seconds
+
+    return () => clearInterval(heartbeatInterval);
+  }, [sessionId]);
 
   // Load conversation history on mount or when sessionId changes
   useEffect(() => {
@@ -97,16 +224,19 @@ export function GameChat({ sessionId, apiBaseUrl = 'http://localhost:3000/api', 
           return prev;
         }
 
-        const newMessages: Message[] = [
-          {
+        const newMessages: Message[] = [];
+        
+        // Skip character input for simulated queries (only show user input)
+        if (turn.characterInput && !turn.isSimulated) {
+          newMessages.push({
             role: 'character',
-            content: turn.characterInput || '',
+            content: turn.characterInput,
             timestamp: turn.startedAt,
             turnNumber: turn.turnNumber,
-          }
-        ];
+          });
+        }
 
-        // Only add keeper message if narrative exists
+        // Only add keeper message if narrative exists (show for both real and simulated turns)
         if (turn.keeperNarrative) {
           newMessages.push({
             role: 'keeper',

@@ -230,6 +230,7 @@ export interface NPCRelationship {
 export interface NPCProfile extends CharacterProfile {
   occupation?: string;
   age?: number;
+  gender?: string;
   appearance?: string;
   personality?: string;
   background?: string;
@@ -248,6 +249,7 @@ export interface ParsedNPCData {
   name: string;
   occupation?: string;
   age?: number;
+  gender?: string;
   appearance?: string;
   personality?: string;
   background?: string;

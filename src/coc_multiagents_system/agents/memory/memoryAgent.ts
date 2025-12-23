@@ -42,12 +42,15 @@ export const injectActionTypeRules = (
 
 /**
  * Extract recent conversation history (last N completed turns) from database
+ * Note: Simulate queries (with actionAnalysis === null) are included in conversationHistory
+ * but should not count towards turn statistics (turnsInCurrentScene).
+ * Real queries have actionAnalysis set by the Orchestrator Agent.
  */
 export const extractRecentConversationHistory = async (
   db: CoCDatabase | undefined,
   sessionId: string,
   limit = 1
-): Promise<Array<{ turnNumber: number; characterInput: string; keeperNarrative: string | null }>> => {
+): Promise<Array<{ turnNumber: number; characterInput: string; keeperNarrative: string | null; actionAnalysis?: any | null }>> => {
   if (!db) return [];
 
   try {
@@ -55,6 +58,7 @@ export const extractRecentConversationHistory = async (
     const turns = db.getTurnHistory(sessionId, limit * 2);
     
     // Filter only completed turns with keeper narrative, then take the last N
+    // Include both real queries (with actionAnalysis) and simulate queries (actionAnalysis === null)
     const completedTurns = turns
       .filter(turn => turn.status === 'completed' && turn.keeperNarrative)
       .slice(0, limit)
@@ -62,11 +66,14 @@ export const extractRecentConversationHistory = async (
         turnNumber: turn.turnNumber,
         characterInput: turn.characterInput,
         keeperNarrative: turn.keeperNarrative,
+        actionAnalysis: turn.actionAnalysis || null, // null indicates simulate query
       }))
       .reverse(); // Reverse to get chronological order (oldest first)
 
     if (completedTurns.length > 0) {
-      console.log(`📜 [Memory Agent] 提取了 ${completedTurns.length} 轮历史对话 (Turn #${completedTurns[0]?.turnNumber} 到 Turn #${completedTurns[completedTurns.length - 1]?.turnNumber})`);
+      const simulateCount = completedTurns.filter(t => !t.actionAnalysis).length;
+      const realCount = completedTurns.length - simulateCount;
+      console.log(`📜 [Memory Agent] 提取了 ${completedTurns.length} 轮历史对话 (Turn #${completedTurns[0]?.turnNumber} 到 Turn #${completedTurns[completedTurns.length - 1]?.turnNumber}), 其中真实轮数: ${realCount}, simulate轮数: ${simulateCount}`);
     }
 
     return completedTurns;

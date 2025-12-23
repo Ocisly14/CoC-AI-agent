@@ -1,7 +1,7 @@
-import { getDirectorTemplate, getActionDrivenSceneChangeTemplate, getNarrativeDirectionTemplate } from "./directorTemplate.js";
+import { getActionDrivenSceneChangeTemplate, getNarrativeDirectionTemplate, getPlayerIntentAnalysisTemplate } from "./directorTemplate.js";
 import { composeTemplate } from "../../../template.js";
-import type { GameState, GameStateManager, VisitedScenarioBasic, DirectorDecision } from "../../../state.js";
-import type { ScenarioProfile, ScenarioSnapshot } from "../models/scenarioTypes.js";
+import type { GameStateManager } from "../../../state.js";
+import type { ScenarioSnapshot } from "../models/scenarioTypes.js";
 import { ScenarioLoader } from "../memory/scenarioloader/scenarioLoader.js";
 import { updateCurrentScenarioWithCheckpoint } from "../memory/index.js";
 import type { CoCDatabase } from "../memory/database/index.js";
@@ -32,238 +32,11 @@ const createRuntime = (): DirectorRuntime => ({
 export class DirectorAgent {
   private scenarioLoader: ScenarioLoader;
   private db: CoCDatabase;
-  private userQueryHistory: string[] = [];
 
   constructor(scenarioLoader: ScenarioLoader, db: CoCDatabase) {
     this.scenarioLoader = scenarioLoader;
     this.db = db;
   }
-
-  /**
-   * Analyze current game state and provide story progression recommendations
-   */
-  async analyzeProgressionNeeds(gameStateManager: GameStateManager, userQuery?: string): Promise<DirectorDecision> {
-    const runtime = createRuntime();
-    const gameState = gameStateManager.getGameState();
-    
-    // Record user query history
-    if (userQuery) {
-      this.addToQueryHistory(userQuery);
-    }
-    
-    // Get complete current scenario information
-    const currentScenarioInfo = this.extractCurrentScenarioInfo(gameState);
-    
-    // Get discovered clues information
-    const discoveredCluesInfo = this.extractDiscoveredClues(gameState);
-    
-    // Get user's recent 10 queries
-    const recentQueries = this.getRecentQueries();
-    
-    // Load map information
-    const mapData = this.loadMapData();
-    
-    // Get set of visited scenario names (for map judgment)
-    const visitedScenarioNames = new Set<string>();
-    if (gameState.currentScenario) {
-      visitedScenarioNames.add(gameState.currentScenario.name);
-    }
-    gameState.visitedScenarios.forEach(scenario => {
-      visitedScenarioNames.add(scenario.name);
-    });
-    
-    // Get template
-    const template = getDirectorTemplate();
-    
-    // Prepare template context
-    const templateContext = {
-      // Current game state
-      currentScenario: currentScenarioInfo,
-      
-      // Discovered clues
-      discoveredClues: discoveredCluesInfo,
-      
-      // User query history
-      recentQueries,
-      
-      // Map information
-      mapData,
-      
-      // Visited scenario names
-      visitedScenarioNames: Array.from(visitedScenarioNames),
-      
-      // Game state statistics
-      gameStats: {
-        sessionId: gameState.sessionId,
-        phase: gameState.phase,
-        gameDay: gameState.gameDay,
-        timeOfDay: gameState.timeOfDay,
-        tension: gameState.tension,
-        totalCluesDiscovered: gameState.discoveredClues.length,
-        visitedScenarioCount: gameState.visitedScenarios.length,
-        playerStatus: {
-          hp: gameState.playerCharacter.status.hp,
-          maxHp: gameState.playerCharacter.status.maxHp,
-          sanity: gameState.playerCharacter.status.sanity,
-          maxSanity: gameState.playerCharacter.status.maxSanity
-        }
-      },
-      
-      // Latest user query
-      latestUserQuery: userQuery || "No recent query"
-    };
-
-    // Use template and LLM to analyze story progression needs
-    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
-
-    const response = await generateText({
-      runtime,
-      context: prompt,
-      modelClass: ModelClass.SMALL,
-    });
-
-    // Parse LLM's JSON response
-    let parsedResponse;
-    try {
-      parsedResponse = JSON.parse(response);
-    } catch (error) {
-      console.error("Failed to parse director response as JSON:", error);
-      return {
-        shouldProgress: false,
-        targetSnapshotId: undefined,
-        reasoning: "Unable to analyze progression needs - JSON parse error",
-        timestamp: new Date()
-      };
-    }
-
-    const estimatedShortActions = 
-      typeof parsedResponse.estimatedShortActions === "number" && parsedResponse.estimatedShortActions > 0
-        ? parsedResponse.estimatedShortActions
-        : null;
-    const increaseShortActionCapBy =
-      typeof parsedResponse.increaseShortActionCapBy === "number" && parsedResponse.increaseShortActionCapBy > 0
-        ? parsedResponse.increaseShortActionCapBy
-        : null;
-
-    // Build Director Decision
-    // If LLM returns scene name instead of ID, need to find corresponding scene ID first
-    let targetSnapshotId = parsedResponse.targetSnapshotId;
-    if (parsedResponse.targetScenarioName && !targetSnapshotId) {
-      // Try to find ID by scene name
-      const allScenarios = this.scenarioLoader.getAllScenarios();
-      const matchedScenario = allScenarios.find(s => 
-        s.snapshot.name.toLowerCase().trim() === parsedResponse.targetScenarioName.toLowerCase().trim()
-      );
-      if (matchedScenario) {
-        targetSnapshotId = matchedScenario.snapshot.id;
-        console.log(`Found scenario ID ${targetSnapshotId} for name "${parsedResponse.targetScenarioName}"`);
-      } else {
-        console.warn(`Could not find scenario with name "${parsedResponse.targetScenarioName}"`);
-      }
-    }
-
-    const decision: DirectorDecision = {
-      shouldProgress: parsedResponse.shouldProgress || false,
-      targetSnapshotId: targetSnapshotId,
-      estimatedShortActions,
-      increaseShortActionCapBy,
-      reasoning: parsedResponse.reasoning || parsedResponse.recommendation || "No reasoning provided",
-      timestamp: new Date()
-    };
-
-    // Save decision to game state
-    gameStateManager.setDirectorDecision(decision);
-
-    // If progression is needed and target scene ID exists, directly execute scene update
-    if (decision.shouldProgress && decision.targetSnapshotId) {
-      await this.executeScenarioProgression(decision.targetSnapshotId, gameStateManager, estimatedShortActions);
-    } else if (!decision.shouldProgress && increaseShortActionCapBy) {
-      this.extendCurrentScenarioActionCap(gameStateManager, increaseShortActionCapBy);
-    }
-
-    return decision;
-  }
-
-  /**
-   * Extract complete current scenario information
-   */
-  private extractCurrentScenarioInfo(gameState: GameState) {
-    if (!gameState.currentScenario) {
-      return null;
-    }
-
-    // Return complete current scenario state
-    return gameState.currentScenario;
-  }
-
-  /**
-   * Extract discovered clues information
-   */
-  private extractDiscoveredClues(gameState: GameState) {
-    const discoveredClues = [];
-
-    // Get from global discovery list
-    const globalClues = gameState.discoveredClues.map(clue => ({
-      type: clue.type,
-      source: clue.sourceName,
-      clueText: clue.text,
-      discoveredBy: clue.discoveredBy,
-      discoveredAt: clue.discoveredAt
-    }));
-    discoveredClues.push(...globalClues);
-
-    // Get discovered clues from current scenario
-    if (gameState.currentScenario && gameState.currentScenario.clues) {
-      const scenarioClues = gameState.currentScenario.clues
-        .filter(clue => clue.discovered)
-        .map(clue => ({
-          source: "scenario",
-          id: clue.id,
-          clueText: clue.clueText,
-          location: clue.location,
-          discoveryMethod: clue.discoveryMethod,
-          reveals: clue.reveals
-        }));
-      discoveredClues.push(...scenarioClues);
-    }
-
-    // Get revealed clues from NPCs
-    gameState.npcCharacters.forEach(npc => {
-      const npcData = npc as any;
-      if (npcData.clues) {
-        const revealedNpcClues = npcData.clues
-          .filter((clue: any) => clue.revealed)
-          .map((clue: any) => ({
-            source: "npc",
-            npcName: npc.name,
-            clueText: clue.clueText
-          }));
-        discoveredClues.push(...revealedNpcClues);
-      }
-    });
-
-    return discoveredClues;
-  }
-
-  /**
-   * Add user query to history
-   */
-  private addToQueryHistory(query: string) {
-    this.userQueryHistory.push(query);
-    
-    // Only keep recent 20 queries (more than needed for filtering)
-    if (this.userQueryHistory.length > 20) {
-      this.userQueryHistory = this.userQueryHistory.slice(-20);
-    }
-  }
-
-  /**
-   * Get recent 10 user queries
-   */
-  private getRecentQueries(): string[] {
-    return this.userQueryHistory.slice(-10);
-  }
-
   /**
    * Load map information
    */
@@ -282,10 +55,61 @@ export class DirectorAgent {
     }
   }
 
+  /**
+   * Get all scenarios with their snapshots (including timeRestriction)
+   */
+  private getAllScenariosWithSnapshots(): Array<{
+    scenarioName: string;
+    scenarioId: string;
+    snapshots: Array<{
+      snapshotId: string;
+      snapshotName: string;
+      location: string;
+      timeRestriction: string | null;
+    }>;
+  }> {
+    const database = this.db.getDatabase();
+    const allScenarios = this.scenarioLoader.getAllScenarios();
+    
+    const scenariosWithSnapshots = allScenarios.map(scenario => {
+      // Get all snapshots for this scenario from database
+      const snapshots = database
+        .prepare(`SELECT snapshot_id, snapshot_name, location, time_restriction 
+                  FROM scenario_snapshots 
+                  WHERE scenario_id = ? 
+                  ORDER BY 
+                    CASE 
+                      WHEN time_restriction IS NULL THEN 0 
+                      ELSE 1 
+                    END,
+                    snapshot_id`)
+        .all(scenario.id) as Array<{
+          snapshot_id: string;
+          snapshot_name: string;
+          location: string;
+          time_restriction: string | null;
+        }>;
+      
+      return {
+        scenarioName: scenario.name,
+        scenarioId: scenario.id,
+        snapshots: snapshots.map(snap => ({
+          snapshotId: snap.snapshot_id,
+          snapshotName: snap.snapshot_name || scenario.name,
+          location: snap.location,
+          timeRestriction: snap.time_restriction
+        }))
+      };
+    });
+    
+    return scenariosWithSnapshots;
+  }
+
   // Time progression removed - scenarios are now static snapshots without timeline
 
   /**
    * Execute scenario progression - update current scenario based on target scene ID
+   * Supports scenarios with multiple snapshots by searching in the database
    */
   private async executeScenarioProgression(
     targetSnapshotId: string, 
@@ -293,12 +117,12 @@ export class DirectorAgent {
     estimatedShortActions: number | null = null
   ): Promise<void> {
     try {
-      // Find target scenario snapshot from scenario loader (each scenario has only one snapshot)
+      // First try to find in scenario loader's default snapshots (backward compatibility)
       const allScenarios = this.scenarioLoader.getAllScenarios();
       let targetSnapshot: ScenarioSnapshot | null = null;
       let scenarioName = "";
 
-      // Search for target snapshot in all scenarios
+      // Search for target snapshot in all scenarios' default snapshots first
       for (const scenario of allScenarios) {
         if (scenario.snapshot.id === targetSnapshotId) {
           targetSnapshot = scenario.snapshot;
@@ -307,7 +131,29 @@ export class DirectorAgent {
         }
       }
 
-      if (targetSnapshot) {
+      // If not found in default snapshots, search in database for all snapshots
+      if (!targetSnapshot) {
+        const database = this.db.getDatabase();
+        const snapshotRow = database
+          .prepare(`SELECT snapshot_id, scenario_id FROM scenario_snapshots WHERE snapshot_id = ?`)
+          .get(targetSnapshotId) as { snapshot_id: string; scenario_id: string } | undefined;
+
+        if (snapshotRow) {
+          // Find the scenario name
+          const scenario = allScenarios.find(s => s.id === snapshotRow.scenario_id);
+          if (scenario) {
+            scenarioName = scenario.name;
+            // Build complete snapshot object from database
+            targetSnapshot = await this.buildSnapshotFromRow(targetSnapshotId);
+            if (!targetSnapshot) {
+              console.warn(`Director Agent: Failed to build snapshot object for ID "${targetSnapshotId}"`);
+              return;
+            }
+          }
+        }
+      }
+
+      if (targetSnapshot && scenarioName) {
         // Attach short action estimate to target scenario snapshot for subsequent state tracking
         if (estimatedShortActions && estimatedShortActions > 0) {
           targetSnapshot.estimatedShortActions = estimatedShortActions;
@@ -327,7 +173,7 @@ export class DirectorAgent {
         
         console.log(`Director Agent: Progressed to scenario "${scenarioName}" snapshot "${targetSnapshotId}" (checkpoint created)`);
       } else {
-        console.warn(`Director Agent: Could not find target snapshot "${targetSnapshotId}"`);
+        console.warn(`Director Agent: Could not find target snapshot "${targetSnapshotId}" in any scenario`);
       }
     } catch (error) {
       console.error("Error executing scenario progression:", error);
@@ -335,93 +181,144 @@ export class DirectorAgent {
   }
 
   /**
-   * Process Director Agent input request
+   * Select snapshot based on current game time
    */
-  async processInput(input: string, gameStateManager: GameStateManager): Promise<DirectorDecision> {
-    try {
-      const result = await this.analyzeProgressionNeeds(gameStateManager, input);
-      return result;
-    } catch (error) {
-      console.error("Error in Director Agent:", error);
-      const errorDecision: DirectorDecision = {
-        shouldProgress: false,
-        targetSnapshotId: undefined,
-        estimatedShortActions: null,
-        reasoning: "Director Agent encountered an error analyzing progression needs",
-        timestamp: new Date()
-      };
-      gameStateManager.setDirectorDecision(errorDecision);
-      return errorDecision;
+  private selectSnapshotByTime(
+    snapshots: Array<{ snapshot_id: string; snapshot_name: string; location: string; description: string; time_restriction: string | null }>,
+    currentDay: number,
+    currentTime: string
+  ): typeof snapshots[0] | null {
+    // First, try to find snapshots without time restriction
+    const noRestriction = snapshots.find(s => !s.time_restriction);
+    if (noRestriction) {
+      return noRestriction;
     }
+    
+    // Then, try to find snapshots that match current time
+    const matchingTime = snapshots.find(s => {
+      if (!s.time_restriction) return false;
+      const restriction = s.time_restriction.toLowerCase();
+      
+      // Check for "dayX (after)" format - available from day X onwards
+      const afterMatch = restriction.match(/day\s*(\d+)\s*\(after\)/i);
+      if (afterMatch) {
+        const requiredDay = parseInt(afterMatch[1]);
+        return currentDay >= requiredDay;
+      }
+      
+      // Check for "dayX evening" format - only available on day X evening
+      const eveningMatch = restriction.match(/day\s*(\d+)\s*evening/i);
+      if (eveningMatch) {
+        const requiredDay = parseInt(eveningMatch[1]);
+        return currentDay === requiredDay && (currentTime.includes("evening") || parseInt(currentTime.split(":")[0]) >= 18);
+      }
+      
+      // Check for exact "dayX" match
+      const dayMatch = restriction.match(/day\s*(\d+)/i);
+      if (dayMatch) {
+        const requiredDay = parseInt(dayMatch[1]);
+        return currentDay === requiredDay;
+      }
+      
+      return false;
+    });
+    
+    if (matchingTime) {
+      return matchingTime;
+    }
+    
+    // If no match, return the first snapshot (fallback)
+    return snapshots[0] || null;
   }
 
   /**
-   * Extend current scene short action cap (used when not progressing scene)
+   * Build complete snapshot object from database row
    */
-  private extendCurrentScenarioActionCap(gameStateManager: GameStateManager, increaseBy: number): void {
-    const gameState = gameStateManager.getGameState();
-    if (!gameState.currentScenario) {
-      console.warn("Director Agent: No current scenario to extend short action cap");
-      return;
+  private async buildSnapshotFromRow(snapshotId: string): Promise<ScenarioSnapshot | null> {
+    const database = this.db.getDatabase();
+    
+    const snap = database
+      .prepare(`SELECT * FROM scenario_snapshots WHERE snapshot_id = ?`)
+      .get(snapshotId) as any;
+    
+    if (!snap) {
+      return null;
     }
-
-    const currentCap = gameState.currentScenario.estimatedShortActions || 3;
-    const newCap = currentCap + increaseBy;
-    gameState.currentScenario.estimatedShortActions = newCap;
-    console.log(`Director Agent: Extended current scenario short action cap from ${currentCap} to ${newCap}`);
+    
+    // Get characters, clues, conditions for this snapshot
+    const characters = database
+      .prepare(`SELECT * FROM scenario_characters WHERE snapshot_id = ?`)
+      .all(snapshotId) as any[];
+    
+    const clues = database
+      .prepare(`SELECT * FROM scenario_clues WHERE snapshot_id = ?`)
+      .all(snapshotId) as any[];
+    
+    const conditions = database
+      .prepare(`SELECT * FROM scenario_conditions WHERE snapshot_id = ?`)
+      .all(snapshotId) as any[];
+    
+    // Get scenario for permanent changes
+    const scenario = database
+      .prepare(`SELECT permanent_changes FROM scenarios WHERE scenario_id = ?`)
+      .get(snap.scenario_id) as any;
+    
+    const snapshot: ScenarioSnapshot = {
+      id: snap.snapshot_id,
+      name: snap.snapshot_name,
+      location: snap.location,
+      description: snap.description,
+      characters: characters.map((c) => ({
+        id: c.id,
+        name: c.character_name,
+        role: c.character_role,
+        status: c.character_status,
+        location: c.character_location,
+        notes: c.character_notes,
+      })),
+      clues: clues.map((c) => ({
+        id: c.clue_id,
+        clueText: c.clue_text,
+        category: c.category,
+        difficulty: c.difficulty,
+        location: c.clue_location,
+        discoveryMethod: c.discovery_method,
+        reveals: c.reveals ? JSON.parse(c.reveals) : [],
+        discovered: c.discovered === 1,
+        discoveryDetails: c.discovery_details ? JSON.parse(c.discovery_details) : undefined,
+      })),
+      conditions: conditions.map((c) => ({
+        type: c.condition_type,
+        description: c.description,
+        mechanicalEffect: c.mechanical_effect,
+      })),
+      events: snap.events ? JSON.parse(snap.events) : [],
+      exits: snap.exits ? JSON.parse(snap.exits) : [],
+      permanentChanges: scenario?.permanent_changes ? JSON.parse(scenario.permanent_changes) : [],
+      keeperNotes: snap.keeper_notes,
+      timeRestriction: snap.time_restriction || undefined,
+    };
+    
+    return snapshot;
   }
 
   /**
-   * Execute scene change (find and switch by scene name)
-   * This is a reusable helper method for finding and executing scene changes by scene name
+   * Execute scene transition (shared logic)
    */
-  private async executeSceneChangeByName(
-    targetSceneName: string,
+  private async executeSceneTransition(
+    targetSnapshot: ScenarioSnapshot,
+    scenarioName: string,
     gameStateManager: GameStateManager
   ): Promise<void> {
     const gameState = gameStateManager.getGameState();
     
-    // Search for target scenario
-    console.log(`\n🔍 [Finding Target Scene]:`);
-    console.log(`   Searching for scene: "${targetSceneName}"...`);
-    
-    // First try exact match
-    let targetScenarioProfile: ScenarioProfile | null = null;
-    const allScenarios = this.scenarioLoader.getAllScenarios();
-    const exactMatch = allScenarios.find(s => 
-      s.snapshot.name.toLowerCase().trim() === targetSceneName.toLowerCase().trim()
-    );
-    
-    if (exactMatch) {
-      console.log(`   ✓ Found exact match scene`);
-      targetScenarioProfile = exactMatch;
-    } else {
-      // Fallback to fuzzy search if exact match not found
-      console.log(`   ⚠️  No exact match found, using fuzzy search...`);
-      const searchResult = this.scenarioLoader.searchScenarios({ name: targetSceneName });
-      
-      if (searchResult.scenarios.length === 0) {
-        console.error(`   ❌ No matching scene found: "${targetSceneName}"`);
-        console.error(`   💡 Tip: Please check if the scene name is correct, or if the scene has been loaded into the database`);
-        return;
-      }
-      
-      targetScenarioProfile = searchResult.scenarios[0];
-    }
-    
-    const targetSnapshot = targetScenarioProfile.snapshot;
-    
-    console.log(`   ✓ Found matching scene: ${targetScenarioProfile.name}`);
-    console.log(`     Scene ID: ${targetSnapshot.id}`);
-    console.log(`     Location: ${targetSnapshot.location}`);
-    console.log(`     Description: ${targetSnapshot.description ? targetSnapshot.description.substring(0, 100) + '...' : 'None'}`);
-    console.log(`     Characters: ${targetSnapshot.characters?.length || 0}`);
-    console.log(`     Clues: ${targetSnapshot.clues?.length || 0}`);
-    console.log(`     Exits: ${targetSnapshot.exits?.length || 0}`);
+    console.log(`\n🔄 [Executing Scene Transition]:`);
+    console.log(`   To: ${targetSnapshot.name}`);
+    console.log(`   Location: ${targetSnapshot.location}`);
     
     // Check if we're returning to a previously visited scenario
     const wasVisited = gameState.visitedScenarios.some(
-      v => v.id === targetSnapshot.id || v.name === targetScenarioProfile.name
+      v => v.id === targetSnapshot.id || v.name === scenarioName
     );
     
     if (wasVisited) {
@@ -430,14 +327,12 @@ export class DirectorAgent {
       console.log(`   🆕 This is a first-time visit scene`);
     }
     
-    // Execute scene transition
-    console.log(`\n🔄 [Executing Scene Transition]:`);
     try {
       await updateCurrentScenarioWithCheckpoint(
         gameStateManager,
         {
           snapshot: targetSnapshot,
-          scenarioName: targetScenarioProfile.name
+          scenarioName: scenarioName
         },
         this.db
       );
@@ -451,25 +346,11 @@ export class DirectorAgent {
       console.log(`   Location: ${updatedState.currentScenario?.location || 'None'}`);
       console.log(`   Visited Scenarios Count: ${updatedState.visitedScenarios.length}`);
       
-      console.log(`\n📚 [Updated Visited Scenarios List]:`);
-      if (updatedState.visitedScenarios.length > 0) {
-        updatedState.visitedScenarios.forEach((visited, index) => {
-          console.log(`   [${index + 1}] ${visited.name} (${visited.location})`);
-        });
-      } else {
-        console.log(`   (None)`);
-      }
-      
       console.log(`\n✅ [Director Agent] Scene transition completed`);
       console.log(`🎬 [Director Agent] ========================================\n`);
       
     } catch (error) {
       console.error(`   ❌ Scene transition failed:`, error);
-      console.error(`   Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
-      console.error(`   Error message: ${error instanceof Error ? error.message : String(error)}`);
-      if (error instanceof Error && error.stack) {
-        console.error(`   Stack trace:\n${error.stack}`);
-      }
       throw error;
     }
   }
@@ -486,10 +367,10 @@ export class DirectorAgent {
     console.log(`\n🎬 [Director Agent] ========================================`);
     console.log(`🎬 [Director Agent] Starting to process Action-driven scene transition`);
     console.log(`🎬 [Director Agent] ========================================`);
-    
+
     const gameState = gameStateManager.getGameState();
     const currentScenario = gameState.currentScenario;
-    
+
     // Log current state
     console.log(`\n📍 [Current Scene State]:`);
     if (currentScenario) {
@@ -500,27 +381,22 @@ export class DirectorAgent {
     } else {
       console.log(`   ⚠️  No current scene`);
     }
-    
+
     // Log target scene request
     console.log(`\n🎯 [Scene Transition Request]:`);
     console.log(`   Target Scene Name: ${targetSceneName}`);
     console.log(`   Transition Reason: ${reason}`);
-    
+
     // Load map data
     const mapData = this.loadMapData();
-    if (!mapData) {
-      console.warn(`   ⚠️  Unable to load map data, will use requested scene name directly`);
-      await this.executeSceneChangeByName(targetSceneName, gameStateManager);
-      return;
-    }
-    
+
     // Get conversation history to extract previous narrative and current character input
     const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
       turnNumber: number;
       characterInput: string;
       keeperNarrative: string | null;
     }>) || [];
-    
+
     // Get previous round narrative (last completed turn with narrative)
     let previousNarrative: string | null = null;
     if (conversationHistory.length > 0) {
@@ -531,7 +407,7 @@ export class DirectorAgent {
         previousNarrative = lastTurnWithNarrative.keeperNarrative;
       }
     }
-    
+
     // Get current round character input (latest turn without narrative yet, or from the latest turn)
     let characterInput: string | null = null;
     if (conversationHistory.length > 0) {
@@ -549,12 +425,21 @@ export class DirectorAgent {
         }
       }
     }
-    
-    // Use LLM to validate and select target scene based on map
-    console.log(`\n🤖 [Using LLM to Validate Scene Selection Based on Map]:`);
+
+    // Get all scenarios with their snapshots (including timeRestriction)
+    const allScenariosWithSnapshots = this.getAllScenariosWithSnapshots();
+
+    // Get current game time
+    const currentGameTime = {
+      gameDay: gameState.gameDay,
+      timeOfDay: gameState.timeOfDay
+    };
+
+    // Use LLM to validate and select target snapshot based on map
+    console.log(`\n🤖 [Using LLM to Select Target Snapshot Based on Map]:`);
     const runtime = createRuntime();
     const template = getActionDrivenSceneChangeTemplate();
-    
+
     const templateContext = {
       currentScene: currentScenario ? {
         name: currentScenario.name,
@@ -562,323 +447,155 @@ export class DirectorAgent {
       } : null,
       mapData,
       previousNarrative,
-      characterInput
+      characterInput,
+      scenariosWithSnapshots: allScenariosWithSnapshots,
+      currentGameTime
     };
-    
+
     const prompt = composeTemplate(template, {}, templateContext, "handlebars");
-    
-    let validatedTargetSceneName: string;
+
     try {
       const response = await generateText({
         runtime,
         context: prompt,
         modelClass: ModelClass.SMALL,
       });
-      
+
       // Parse LLM response
-      let parsedResponse;
+      let parsedResponse: {
+        targetSnapshotId?: string;
+        reasoning?: string;
+      };
       try {
         parsedResponse = JSON.parse(response);
       } catch (error) {
         console.error("Failed to parse LLM response as JSON:", error);
-        console.log(`   ⚠️  JSON parsing failed, using original requested scene name`);
-        validatedTargetSceneName = targetSceneName;
+        console.error("Raw response:", response);
+        return;
       }
-      
-      if (parsedResponse && parsedResponse.targetScenarioName) {
-        validatedTargetSceneName = parsedResponse.targetScenarioName;
-        console.log(`   ✓ LLM validation completed`);
-        console.log(`   LLM returned scene name: ${validatedTargetSceneName}`);
+
+      // Validate and execute scene change
+      if (parsedResponse?.targetSnapshotId) {
+        console.log(`   ✓ LLM returned snapshot ID: ${parsedResponse.targetSnapshotId}`);
         if (parsedResponse.reasoning) {
-          console.log(`   LLM reasoning: ${parsedResponse.reasoning}`);
+          console.log(`   ✓ LLM reasoning: ${parsedResponse.reasoning}`);
         }
+
+        // Execute scene progression using snapshot ID
+        await this.executeScenarioProgression(
+          parsedResponse.targetSnapshotId,
+          gameStateManager,
+          null
+        );
       } else {
-        console.warn(`   ⚠️  targetScenarioName not found in LLM response, using original requested scene name`);
-        validatedTargetSceneName = targetSceneName;
+        console.error(`   ❌ No targetSnapshotId in LLM response`);
       }
     } catch (error) {
       console.error(`   ❌ LLM call failed:`, error);
-      console.log(`   ⚠️  Will use original requested scene name`);
-      validatedTargetSceneName = targetSceneName;
-    }
-    
-    // Execute scene change using the validated scene name
-    await this.executeSceneChangeByName(validatedTargetSceneName, gameStateManager);
-  }
-
-  /**
-   * Get related connected scenes (no longer has time restrictions)
-   */
-  async getConnectedScenes(currentScenario: ScenarioSnapshot): Promise<ConnectedSceneInfo[]> {
-    try {
-      // Find the scenario profile that contains this snapshot
-      const allScenarios = this.scenarioLoader.getAllScenarios();
-      const currentScenarioProfile = allScenarios.find(s => s.snapshot.id === currentScenario.id);
-      
-      if (!currentScenarioProfile || !currentScenarioProfile.connections) {
-        console.log("No scenario profile or connections found");
-        return [];
-      }
-
-      // Get all connected scenario IDs
-      const connectedScenarioIds = currentScenarioProfile.connections.map(conn => conn.scenarioId);
-      
-      if (connectedScenarioIds.length === 0) {
-        console.log("No connected scenarios");
-        return [];
-      }
-
-      const connectedScenes: ConnectedSceneInfo[] = [];
-
-      // Iterate through each connected scenario
-      for (const connectedScenarioId of connectedScenarioIds) {
-        const scenarioProfile = this.scenarioLoader.getScenarioById(connectedScenarioId);
-        if (!scenarioProfile) continue;
-
-        // Find corresponding connection information
-        const connectionInfo = currentScenarioProfile.connections!.find(
-          conn => conn.scenarioId === connectedScenarioId
-        );
-
-        // Get the single snapshot for this scenario (no timeline)
-        const snapshot = scenarioProfile.snapshot;
-              
-        connectedScenes.push({
-          ...snapshot,
-          connectionType: connectionInfo?.relationshipType || "unknown",
-          connectionDescription: connectionInfo?.description || "",
-          timeDifferenceHours: 0, // No time difference concept anymore
-        });
-      }
-
-      console.log(`Found ${connectedScenes.length} connected scenes`);
-      return connectedScenes;
-    } catch (error) {
-      console.error("Error getting connected scenes:", error);
-      return [];
     }
   }
 
   /**
-   * Use scene transition template to make decision
+   * Check if story progression should trigger and generate simulated player intent query
    */
-  async decideSceneTransition(gameStateManager: GameStateManager): Promise<SceneTransitionDecision> {
-    const runtime = createRuntime();
+  async checkStoryProgression(
+    gameStateManager: GameStateManager
+  ): Promise<{ shouldTrigger: boolean; simulatedQuery: string | null }> {
     const gameState = gameStateManager.getGameState();
-    const { getSceneTransitionTemplate } = await import("./directorTemplate.js");
-    
-    if (!gameState.currentScenario) {
-      throw new Error("No current scenario to transition from");
+
+    // Get metrics
+    const turnsInScene = gameStateManager.getTurnsInCurrentScene();
+    const threshold = gameStateManager.getProgressionThreshold();
+    const minutesSinceInput = gameStateManager.getMinutesSinceLastInput();
+
+    console.log(`\n🎬 [Director Agent] Story Progression Check`);
+    console.log(`   Turns in scene: ${turnsInScene} / ${threshold}`);
+    console.log(`   Minutes since input: ${minutesSinceInput} / 3`);
+    console.log(`   Tension: ${gameState.tension}/10`);
+
+    // Check if either threshold is reached
+    const shouldTrigger = gameStateManager.shouldTriggerProgression();
+
+    if (!shouldTrigger) {
+      console.log(`   ✓ No trigger conditions met`);
+      return { shouldTrigger: false, simulatedQuery: null };
     }
 
-    // Get connected scenes
-    const connectedScenes = await this.getConnectedScenes(gameState.currentScenario);
+    // Log which condition triggered
+    if (turnsInScene >= threshold) {
+      console.log(`   ⚠️ Turn threshold reached! Analyzing player intent...`);
+    } else if (minutesSinceInput >= 3) {
+      console.log(`   ⚠️ Time threshold reached (3 min idle)! Analyzing player intent...`);
+    }
 
-    // Package current scene information
-    const discoveredCount = gameState.currentScenario.clues.filter(c => c.discovered).length;
-    const totalCount = gameState.currentScenario.clues.length;
-    const actionCount = Object.values(gameState.scenarioTimeState.playerTimeConsumption)
-      .reduce((sum, p: any) => sum + (p.totalShortActions || 0), 0);
+    // Get recent conversation history
+    const conversationHistory = (gameState.temporaryInfo.contextualData?.conversationHistory as Array<{
+      turnNumber: number;
+      characterInput: string;
+      keeperNarrative: string | null;
+      actionAnalysis?: any;
+    }>) || [];
 
-    const currentScene = {
-      name: gameState.currentScenario.name,
-      location: gameState.currentScenario.location,
-      description: gameState.currentScenario.description,
-      cluesDiscovered: discoveredCount,
-      cluesTotal: totalCount,
-      characterCount: gameState.currentScenario.characters.length,
-      actionCount,
-      keeperNotes: gameState.currentScenario.keeperNotes,
-    };
-
-    // Package available scene information
-    const availableScenes = connectedScenes.map(scene => ({
-      id: scene.id,
-      name: scene.name,
-      location: scene.location,
-      connectionType: scene.connectionType,
-      connectionDesc: scene.connectionDescription,
-      description: scene.description.length > 200 ? scene.description.slice(0, 200) + "..." : scene.description,
-      clueCount: scene.clues.length,
-      characterCount: scene.characters.length,
-      keeperNotes: scene.keeperNotes,
+    // Get last 3 turns
+    const recentActions = conversationHistory.slice(-3).map(turn => ({
+      turnNumber: turn.turnNumber,
+      characterInput: turn.characterInput,
+      actionAnalysis: turn.actionAnalysis ? JSON.stringify(turn.actionAnalysis, null, 2) : null
     }));
 
-    // Package activity summary
-    const recentActions = gameState.temporaryInfo.actionResults.slice(-5);
-    const discoveredClues = gameState.currentScenario.clues.filter(c => c.discovered);
-    
-    const activityParts = [];
-    if (recentActions.length > 0) {
-      activityParts.push(`**Recent**: ${recentActions.map((a, i) => `${i+1}.${a.character}:${a.result}`).join("; ")}`);
-    }
-    if (discoveredClues.length > 0) {
-      activityParts.push(`**Clues**: ${discoveredClues.map(c => c.clueText.slice(0, 40)).join("; ")}`);
-    }
-    const timeConsumption = Object.entries(gameState.scenarioTimeState.playerTimeConsumption)
-      .map(([name, data]: [string, any]) => `${name}:${data.totalShortActions}acts`).join(", ");
-    if (timeConsumption) {
-      activityParts.push(`**Time**: ${timeConsumption}`);
-    }
+    // Get current scenario info
+    const currentScenario = gameState.currentScenario;
+    const scenarioInfo = currentScenario ? {
+      name: currentScenario.name,
+      location: currentScenario.location,
+      description: currentScenario.description
+    } : null;
 
-    const activitySummary = activityParts.length > 0 ? activityParts.join("\n") : "*No activity yet*";
+    // Prepare template context
+    const runtime = createRuntime();
+    const template = getPlayerIntentAnalysisTemplate();
 
-    // Build template data
-    const templateData = {
-      currentScene,
-      availableScenes,
-      activitySummary,
+    const templateContext = {
+      playerName: gameState.playerCharacter.name,
+      scenarioInfoJson: scenarioInfo ? JSON.stringify(scenarioInfo, null, 2) : "No current scene",
+      recentActions,
+      tension: gameState.tension
     };
 
-    const template = getSceneTransitionTemplate();
-    const prompt = composeTemplate(template, templateData);
+    const prompt = composeTemplate(template, {}, templateContext, "handlebars");
 
-    console.log("\n=== Director: Scene Transition Analysis ===");
-    console.log(`Current Scene: ${gameState.currentScenario.name}`);
-    console.log(`Connected Scenes Available: ${connectedScenes.length}`);
-
-    const response = await generateText({
-      runtime,
-      context: prompt,
-      modelClass: ModelClass.SMALL,
-    });
-
-    console.log("\n=== Director Response ===");
-    console.log(response);
-
-    // Parse JSON response
-    const decision = this.parseSceneTransitionDecision(response);
-    
-    // Validate target scene ID
-    if (decision.shouldTransition && decision.targetSceneId) {
-      const targetScene = connectedScenes.find(s => s.id === decision.targetSceneId);
-      if (!targetScene) {
-        console.warn(`Target scene ${decision.targetSceneId} not found in connected scenes`);
-        decision.shouldTransition = false;
-        decision.targetSceneId = null;
-      }
-    }
-
-    return decision;
-  }
-
-  /**
-   * Parse scene transition decision JSON
-   */
-  private parseSceneTransitionDecision(response: string): SceneTransitionDecision {
     try {
-      // Try to extract JSON
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || 
-                       response.match(/\{[\s\S]*\}/);
-      
-      if (!jsonMatch) {
-        throw new Error("No JSON found in response");
+      const response = await generateText({
+        runtime,
+        context: prompt,
+        modelClass: ModelClass.SMALL,
+      });
+
+      // Parse response
+      let parsed;
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          parsed = JSON.parse(response);
+        }
+      } catch (error) {
+        console.error("Failed to parse player intent analysis:", error);
+        return { shouldTrigger: false, simulatedQuery: null };
       }
 
-      const jsonStr = jsonMatch[1] || jsonMatch[0];
-      const parsed = JSON.parse(jsonStr);
-
-      return {
-        shouldTransition: parsed.shouldTransition || false,
-        targetSceneId: parsed.targetSceneId || null,
-        reasoning: parsed.reasoning || "No reasoning provided",
-        urgency: parsed.urgency || "low",
-        transitionType: parsed.transitionType || "player-initiated",
-        suggestedTransitionNarrative: parsed.suggestedTransitionNarrative || "",
-      };
-    } catch (error) {
-      console.error("Failed to parse scene transition decision:", error);
-      return {
-        shouldTransition: false,
-        targetSceneId: null,
-        reasoning: "Failed to parse director response",
-        urgency: "low",
-        transitionType: "player-initiated",
-        suggestedTransitionNarrative: "",
-      };
-    }
-  }
-
-  /**
-   * Make decision and automatically execute scene transition (if decision is true)
-   */
-  async decideAndTransition(gameStateManager: GameStateManager): Promise<SceneTransitionResult> {
-    // Step 1: Make decision
-    const decision = await this.decideSceneTransition(gameStateManager);
-
-    console.log("\n=== Director: Transition Decision ===");
-    console.log(`Should Transition: ${decision.shouldTransition}`);
-    console.log(`Reasoning: ${decision.reasoning}`);
-
-    // If transition is not needed, save rejection information and return
-    if (!decision.shouldTransition || !decision.targetSceneId) {
-      // Save scene transition rejection information so Keeper can generate reasonable narrative
-      gameStateManager.setSceneTransitionRejection(decision.reasoning);
-      
-      return {
-        decision,
-        transitioned: false,
-        message: "No transition needed"
-      };
-    }
-
-    // Step 2: Execute transition
-    try {
-      const targetScenarioId = decision.targetSceneId;
-      
-      // Get complete scenario from scenarioLoader
-      const targetScenario = this.scenarioLoader.getScenarioById(targetScenarioId);
-      if (!targetScenario) {
-        console.error(`Target scenario not found for snapshot ID: ${targetScenarioId}`);
-        return {
-          decision,
-          transitioned: false,
-          message: `Target scenario not found: ${targetScenarioId}`
-        };
+      if (parsed.query) {
+        console.log(`   ✓ Generated simulated query: "${parsed.query}"`);
+        return { shouldTrigger: true, simulatedQuery: parsed.query };
+      } else {
+        console.warn(`   ⚠️ No query in response`);
+        return { shouldTrigger: false, simulatedQuery: null };
       }
-
-      // Get the single snapshot for the scenario (each scenario now has only one snapshot)
-      const targetSnapshot = targetScenario.snapshot;
-      
-      // Verify snapshot ID matches
-      if (targetSnapshot.id !== targetScenarioId) {
-        console.error(`Snapshot ID mismatch: expected ${targetScenarioId}, got ${targetSnapshot.id}`);
-        return {
-          decision,
-          transitioned: false,
-          message: `Snapshot ID mismatch: ${targetScenarioId}`
-        };
-      }
-
-      // Update scene (with checkpoint save)
-      await updateCurrentScenarioWithCheckpoint(
-        gameStateManager,
-        {
-          snapshot: targetSnapshot,
-          scenarioName: targetScenario.name
-        },
-        this.db
-      );
-
-      console.log(`\n✓ Scene Transition Executed (checkpoint saved)`);
-      console.log(`  From: ${gameStateManager.getGameState().visitedScenarios[0]?.name || "Unknown"}`);
-      console.log(`  To: ${targetSnapshot.name}`);
-      console.log(`  Narrative: ${decision.suggestedTransitionNarrative}`);
-
-      return {
-        decision,
-        transitioned: true,
-        message: `Transitioned to: ${targetSnapshot.name}`,
-        newScenario: targetSnapshot
-      };
 
     } catch (error) {
-      console.error("Failed to execute scene transition:", error);
-      return {
-        decision,
-        transitioned: false,
-        message: `Transition failed: ${error instanceof Error ? error.message : "Unknown error"}`
-      };
+      console.error("Error generating player intent analysis:", error);
+      return { shouldTrigger: false, simulatedQuery: null };
     }
   }
 
@@ -944,35 +661,4 @@ export class DirectorAgent {
       return "Generate narrative based on current context while respecting module constraints.";
     }
   }
-}
-
-/**
- * 场景切换结果
- */
-export interface SceneTransitionResult {
-  decision: SceneTransitionDecision;
-  transitioned: boolean;
-  message: string;
-  newScenario?: ScenarioSnapshot;
-}
-
-/**
- * 连接场景信息（扩展了 ScenarioSnapshot）
- */
-export interface ConnectedSceneInfo extends ScenarioSnapshot {
-  connectionType: string;
-  connectionDescription: string;
-  timeDifferenceHours: number;
-}
-
-/**
- * 场景切换决策
- */
-export interface SceneTransitionDecision {
-  shouldTransition: boolean;
-  targetSceneId: string | null;
-  reasoning: string;
-  urgency: "low" | "medium" | "high";
-  transitionType: "immediate" | "gradual" | "player-initiated";
-  suggestedTransitionNarrative: string;
 }
