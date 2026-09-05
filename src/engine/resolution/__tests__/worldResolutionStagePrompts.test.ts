@@ -191,6 +191,10 @@ describe("renderPhaseSystemPrompt — one phase, one tool", () => {
       // literal, and the number the guard actually uses is then invisible in
       // both places.
       expect(prompt).not.toContain("{{");
+      // Both of the Engine's two functions are named, in the words the
+      // model reads them in (session-protocol.md's own lowercase usage).
+      expect(prompt).toContain("start judgement");
+      expect(prompt).toContain("settlement");
     }
   });
 
@@ -260,18 +264,44 @@ describe("renderPhaseSystemPrompt — one phase, one tool", () => {
 
 describe("renderPhaseInstruction — the accepted draft is read-only", () => {
   it("embeds each accepted upstream array as JSON, in phase order", () => {
-    const text = renderPhaseInstruction("occurrences", makeContext(), draft);
+    // Both accepted phases here belong to the SETTLEMENT session — `starting`
+    // is a different session's output and never appears alongside them.
+    const settlementDraft: AcceptedResolutionDraft = {
+      endings: [
+        {
+          actionId: "action_c0",
+          mode: "outcome",
+          outcome: "The drawer opens.",
+        },
+      ],
+      characterChanges: [
+        {
+          sourceActionId: "action_c0",
+          characterId: "npc_1",
+          operation: {
+            kind: "hp",
+            delta: -1,
+            reason: "the drawer pinched him",
+          },
+        },
+      ],
+    };
+    const text = renderPhaseInstruction(
+      "itemChanges",
+      makeContext(),
+      settlementDraft
+    );
 
     expect(text).toContain("## Accepted so far (read-only)");
     expect(text).toContain("### `endings` — accepted in phase 1");
-    expect(text).toContain("### `starting` — accepted in phase 2");
+    expect(text).toContain("### `characterChanges` — accepted in phase 2");
     expect(text.indexOf("### `endings`")).toBeLessThan(
-      text.indexOf("### `starting`")
+      text.indexOf("### `characterChanges`")
     );
     // The arrays themselves, verbatim, not a paraphrase.
     expect(text).toContain('"outcome": "The drawer opens."');
     expect(text).toContain('"mode": "outcome"');
-    expect(text).toContain('"route"');
+    expect(text).toContain('"characterId": "npc_1"');
     // Read-only means read-only, and the reason it is not this phase's problem
     // is stated rather than left to be inferred.
     expect(text).toContain("do not try to revise them here");
@@ -281,10 +311,28 @@ describe("renderPhaseInstruction — the accepted draft is read-only", () => {
     const text = renderPhaseInstruction("itemChanges", makeContext(), draft);
 
     expect(text).toContain("### `endings` — accepted in phase 1");
-    expect(text).toContain("### `starting` — accepted in phase 2");
+    // `draft.starting` is the START JUDGEMENT's own output, a different
+    // session's fact — it never shows up here, accepted or otherwise.
+    expect(text).not.toContain("### `starting`");
     for (const phase of ["characterChanges", "itemChanges", "sceneChanges"]) {
       expect(text).not.toContain(`### \`${phase}\` — accepted`);
     }
+  });
+
+  it("shows a settlement phase only the settlement's earlier phases as accepted", () => {
+    const text = renderPhaseInstruction(
+      "characterChanges",
+      makeContext(),
+      draft
+    );
+    expect(text).toContain("### `endings` — accepted in phase 1");
+    expect(text).not.toContain("### `starting`");
+  });
+
+  it("tells the starts phase nothing precedes it", () => {
+    const text = renderPhaseInstruction("starts", makeContext(), {});
+    expect(text).toContain("Nothing precedes this phase");
+    expect(text).toContain("# Phase 1 of 1 of the START JUDGEMENT — STARTS");
   });
 
   // `acceptedSoFarSection` indexes the draft with `PHASE_FIELDS[p]`, which is
@@ -307,12 +355,18 @@ describe("renderPhaseInstruction — the accepted draft is read-only", () => {
     expect(new Set(Object.values(PHASE_FIELDS)).size).toBe(keys.length);
 
     // And the rendering actually reaches every one of them: an occurrences
-    // phase given a full draft shows all five upstream arrays.
+    // phase given a full draft shows all four upstream SETTLEMENT arrays —
+    // never `starting`, which belongs to the other session.
     const text = renderPhaseInstruction("occurrences", makeContext(), full);
-    for (const phase of RESOLUTION_PHASES) {
-      if (phase === "occurrences") continue;
+    for (const phase of [
+      "endings",
+      "characterChanges",
+      "itemChanges",
+      "sceneChanges",
+    ] as const) {
       expect(text).toContain(`### \`${PHASE_FIELDS[phase]}\` — accepted`);
     }
+    expect(text).not.toContain("### `starting`");
   });
 
   it("says so plainly when nothing precedes the phase", () => {

@@ -26,6 +26,12 @@ const START = "1923-10-17T08:00:00";
 function resolveWithShock(context: EngineResolutionContext): RawTickResolution {
   const actionId = context.trigger.actionIds[0];
   if (!actionId) return { starting: [], ending: [] };
+  const reason = context.trigger.triggers[0]?.reason;
+  // The start judgement, at 08:00: one minute, no check.
+  if (reason === "new_action") {
+    return { starting: [{ actionId, resolvedDurationTicks: 1 }], ending: [] };
+  }
+  // The settlement, at 08:01: the tarp comes away and the shock lands.
   return {
     starting: [],
     ending: [{ actionId, outcome: "the tarp comes away" }],

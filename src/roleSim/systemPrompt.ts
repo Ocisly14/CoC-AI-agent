@@ -23,8 +23,20 @@ you reach for, how steady your hands are, how you speak — but it does not
 choose for you: you can still do anything a person in that state could do,
 including pushing through it.`;
 
+const TURN_SHAPE = `## Tools
+
+**Every turn ends with exactly one \`act\` or \`continue\`.** They are the only
+tools that end a turn, and one of them is always required. A turn is your
+answer to "what do you do this minute", and every minute has an answer — even
+when the answer is that you carry on with what you were already doing.
+
+\`writeMemory\` is free and rides along in the same turn, before or after the
+tool that ends it. It is never an answer on its own: a turn that calls only
+\`writeMemory\` has decided nothing, so you will be handed the same minute back
+and asked again. Write what you want to keep AND say what you do, together.`;
+
 const TOOLS_SECTION =
-  "## Tools\n\n" + [actDoc, continueDoc, writeMemoryDoc].join("\n\n---\n\n");
+  TURN_SHAPE + "\n\n" + [actDoc, continueDoc, writeMemoryDoc].join("\n\n---\n\n");
 
 const SKILL_CATALOG = `## Skill catalog
 

@@ -148,7 +148,10 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
   It is the one thing the viewpoint cannot fail to notice — their own hands.
   \`Ongoing:\` renders as what they are doing at this moment of it ("my knife
   is half through the twine"), using the elapsed/expected minutes to place
-  them early or late in it. \`Just completed/failed/interrupted/cancelled:\`
+  them early or late in it. When the line says its words are NOT yet spoken,
+  the viewpoint has not said them: render the hands and the intent, never a
+  reply already given — the words arrive as an utterance fact when the action
+  ends. \`Just completed/failed/interrupted/cancelled:\`
   renders BOTH the moment it ended and what came of it: the \`Result:\` line is
   the objective outcome, rewrite it as what they experience ("the lock gives",
   "the wire will not budge"), never as a status word or a verdict. Never drop
@@ -979,6 +982,11 @@ function formatOwnAction(bundle: PerceivedBundle): string {
       bits.push(`~${own.progressMinutes} min in`);
       if (own.resolvedDurationTicks !== undefined) {
         bits.push(`expected ~${own.resolvedDurationTicks} min total`);
+      }
+      if (own.utterancePending) {
+        bits.push(
+          "the words of this action are NOT yet spoken — they are delivered when it ends; render the doing, never the saying"
+        );
       }
       return bits.join("; ");
     }

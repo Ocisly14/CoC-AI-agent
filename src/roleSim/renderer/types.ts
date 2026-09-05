@@ -25,6 +25,12 @@ export type OwnActionState =
       startedAt?: GameTime;
       progressMinutes: number;
       resolvedDurationTicks?: number;
+      /** The command carries an utterance that code has NOT delivered yet —
+       *  it lands when the action ends. The renderer must not narrate the
+       *  words as said. Measured: told only the description ("answering the
+       *  man's question"), the renderer wrote "I answered offhand", and the
+       *  character, believing the reply given, answered again. */
+      utterancePending?: true;
     }
   | {
       kind: "ended";

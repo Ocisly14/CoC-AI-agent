@@ -173,7 +173,11 @@ describe("the tool schema and the TS types describe the same thing", () => {
   });
 
   it("starting carries the fields of RawActionStart", () => {
-    expect([...new Set(submit.properties.starting.items?.anyOf?.flatMap(propsOf))].sort()).toEqual(sorted(START));
+    expect(
+      [
+        ...new Set(submit.properties.starting.items?.anyOf?.flatMap(propsOf)),
+      ].sort()
+    ).toEqual(sorted(START));
   });
 
   it("an outcome decision carries the fields of RawActionEnd plus its discriminator, branch for branch", () => {
@@ -627,7 +631,7 @@ describe("the Engine phase schemas and provider limits", () => {
     const optionalsByPhase = RESOLUTION_PHASES.map((phase) =>
       optionalCount(PHASE_TOOLS[phase].inputSchema)
     );
-    expect(optionalsByPhase).toEqual([0, 6, 0, 8, 5, 4]);
+    expect(optionalsByPhase).toEqual([6, 0, 0, 8, 5, 4]);
     expect(
       RESOLUTION_PHASES.map((phase) =>
         branchCount(PHASE_TOOLS[phase].inputSchema)

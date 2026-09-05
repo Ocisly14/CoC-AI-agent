@@ -1,21 +1,36 @@
 // src/engine/core/tickOrchestrator.ts
 //
-// Tick driver for the tool-driven action engine (plan Phase 8). Target phases:
+// Tick driver for the tool-driven action engine (plan Phase 8). One tick, in
+// order:
 //
-//   1  advance clock (tick-start snapshot is the pre-flush DGSM state)
-//   2  advance deterministic movement runtimes (blocked → interruption)
-//   3  drain + validate the command inbox
-//   4  collect action resolution triggers (new / due / replacement / interrupted)
-//   5-7 (conditional) build the full-world context and run ONE World Action
-//       Engine session; no triggers → zero model calls
+//   1  drain the command inbox at the clock the actors decided on
+//   2  (conditional) the START JUDGEMENT — the Engine's first function, one
+//       session over that same minute: clock, bar and route for every new
+//       command, committed as active from that minute; no commands → no call
+//   3  advance the clock
+//   4  advance deterministic movement runtimes (a walk that just started
+//       takes its first step; blocked → interruption); spend the minute on
+//       every active action
+//   5  collect settlement triggers (due / replacement / interrupted)
+//   6  (conditional) the SETTLEMENT — the Engine's second function, one
+//       session over the new minute; no triggers → no call
 //   8  anchor subsystems + scripted events (unchanged relative order)
-//   9-10 output validation happened inside the engine session (validator)
-//   11 single Applier flush (StateChanges + engine WorldDeltas)
-//   12 commit action lifecycle to the store, emit TickReport
+//   11 single Applier flush (StateChanges + settlement WorldDeltas)
+//   12 commit the settlement's lifecycle transitions, emit TickReport
+//
+// A command is judged the minute its actor decided it. The actor perceived
+// the world at 09:00 and acted; the start judgement runs on that 09:00 world
+// before the clock moves, so `startedAt` is 09:00 and the minute to 09:01 is
+// the first minute spent on it. A one-minute action — plain talk, a short
+// walk — is therefore due at 09:01 and settled in that same tick, its words
+// delivered in that tick's occurrences. Measured before this: a spoken line
+// took two ticks to be heard, and the speaker, asked to decide again in
+// between and told nothing of the words still in their mouth, answered the
+// same question twice.
 //
 // There is no queued-step activation, no plannedOutcome commit, no cancel
-// re-resolve: replacement and interruption are resolved by the Engine on the
-// same snapshot as everything else.
+// re-resolve: replacement and interruption are settled by the Engine on the
+// same snapshot as everything else that ends.
 
 import type { DynamicGameStateManager } from "../../state/DynamicGameState.js";
 import { addMinutes, diffDays, timePart } from "../../state/gameClock.js";
@@ -94,6 +109,8 @@ export interface OrchestratorDeps {
   /** Injectable for tests; defaults to the real weather engine. */
   weatherJudgeFn?: WeatherJudgeFn;
   tickDurationMinutes: number;
+  /** Language every Engine session composes its prose in. Default English. */
+  narrationLanguage?: string;
 }
 
 interface PendingInterruption {
@@ -118,41 +135,16 @@ export class TickOrchestrator {
   async tick(): Promise<TickReport> {
     const { dgsm, applier, scriptedEventRunner, subsystemRegistry } = this.deps;
     this.tickCounter += 1;
+    const tick = this.deps.tickDurationMinutes;
+    const resolveFn = this.deps.resolveTickFn ?? resolveTick;
+    const engineDeps: WorldActionEngineDeps = {
+      dgsm,
+      codeTools: this.deps.codeTools,
+    };
 
-    // Phase 1 — clock
-    const nextTickTime = this.advanceClock();
-    const buffer: StateChange[] = [];
-
-    // Phase 2 — deterministic movement advancement (no model calls). Blocked
-    // routes become interruption triggers; arrivals force the action due now.
-    const arrivedActionIds = new Set<string>();
-    for (const action of this.deps.actionStore.liveActions()) {
-      if (action.status !== "active") continue;
-      const movement = getMovementRuntime(action);
-      if (!movement) continue;
-      const advanced = advanceMovement(dgsm, action.command.actorId, movement);
-      buffer.push(...advanced.stateChanges);
-      if (advanced.status === "blocked") {
-        this.pendingInterruptions.push({
-          actionId: action.id,
-          reason: advanced.blockedReason ?? "route blocked",
-        });
-      } else if (advanced.status === "arrived") {
-        arrivedActionIds.add(action.id);
-      }
-    }
-
-    // Phase 2b — time. Every action in flight advances by exactly one tick,
-    // from the clock and nothing else. The Engine is never asked how much
-    // time passed and cannot say: it decides how long a thing SHOULD take,
-    // and this is where that estimate is spent, minute by minute.
-    for (const action of this.deps.actionStore.liveActions()) {
-      if (action.status !== "active") continue;
-      action.progressMinutes += this.deps.tickDurationMinutes;
-      action.lastAdvancedAt = nextTickTime;
-    }
-
-    // Phase 3 — drain inbox; dead actors get an immediate failed transition.
+    // Phase 1 — drain the inbox at the clock the actors decided on. The
+    // world still stands at the minute they perceived; nothing has moved.
+    const decidedAt = dgsm.getGameDateTime();
     const drained = this.deps.inbox.drain();
     const newCommands: ActionCommand[] = [];
     const preTransitions: ActionTransition[] = [];
@@ -175,9 +167,90 @@ export class TickOrchestrator {
       newCommands.push(command);
     }
 
-    // Dead actors with live actions → interruption triggers.
+    // Phase 2 — the START JUDGEMENT: the Engine's first function, one
+    // session over the world at `decidedAt`. It sets each new action's
+    // clock, bar and route, and the action is committed as active from THIS
+    // minute — `startedAt` is the minute the actor decided, not a minute
+    // later — so the clock that advances next spends its first minute on it.
+    // No new command → no session, no model call.
+    const startTransitions: ActionTransition[] = [];
+    if (newCommands.length > 0) {
+      const context = buildEngineResolutionContext({
+        dgsm,
+        tickId: `tick_${this.tickCounter}_${decidedAt}_start`,
+        tickStartTime: decidedAt,
+        durationMinutes: tick,
+        triggers: [
+          {
+            actionIds: newCommands.map((c) => actionIdForCommand(c.commandId)),
+            reason: "new_action",
+          },
+        ],
+        newCommands,
+        activeActions: this.activeActions(),
+        objectiveWorldEvents: [],
+        narrationLanguage: this.deps.narrationLanguage,
+      });
+      const result = await resolveFn(context, engineDeps);
+      if (result.ok) {
+        startTransitions.push(
+          ...this.commitStarts(result, decidedAt, newCommands)
+        );
+      } else {
+        // The Engine produced nothing usable. The commands go back: drained
+        // commands have queued actions that no trigger would pick up again,
+        // and putting them back is what makes "nothing happened" true rather
+        // than "this tick silently ate two commands". They start a minute
+        // late, on the next drain.
+        for (const command of newCommands) this.deps.inbox.add(command);
+      }
+    }
+
+    // Phase 3 — clock. Every action that is active now, the ones judged a
+    // moment ago included, spends this minute.
+    const nextTickTime = this.advanceClock();
+    const buffer: StateChange[] = [];
+
+    // Phase 4 — deterministic movement advancement (no model calls). A walk
+    // that just started takes its first step here, on the world its actor
+    // saw. Blocked routes become interruption triggers; arrivals force the
+    // action due now.
+    const arrivedActionIds = new Set<string>();
     for (const action of this.deps.actionStore.liveActions()) {
-      if (!dgsm.isNpcAlive(action.command.actorId)) {
+      if (action.status !== "active") continue;
+      const movement = getMovementRuntime(action);
+      if (!movement) continue;
+      const advanced = advanceMovement(dgsm, action.command.actorId, movement);
+      buffer.push(...advanced.stateChanges);
+      if (advanced.status === "blocked") {
+        this.pendingInterruptions.push({
+          actionId: action.id,
+          reason: advanced.blockedReason ?? "route blocked",
+        });
+      } else if (advanced.status === "arrived") {
+        arrivedActionIds.add(action.id);
+      }
+    }
+
+    // Phase 4b — time. Every action in flight advances by exactly one tick,
+    // from the clock and nothing else. The Engine is never asked how much
+    // time passed and cannot say: it decides how long a thing SHOULD take,
+    // and this is where that estimate is spent, minute by minute.
+    for (const action of this.deps.actionStore.liveActions()) {
+      if (action.status !== "active") continue;
+      action.progressMinutes += tick;
+      action.lastAdvancedAt = nextTickTime;
+    }
+
+    // Dead actors with live actions → interruption triggers. Only active
+    // actions: a settlement context cannot address a still-queued action (its
+    // worklist silently drops the id), so a queued command of a dead actor is
+    // left for the next drain, where the dead-actor check there fails it.
+    for (const action of this.deps.actionStore.liveActions()) {
+      if (
+        action.status === "active" &&
+        !dgsm.isNpcAlive(action.command.actorId)
+      ) {
         this.pendingInterruptions.push({
           actionId: action.id,
           reason: "actor died",
@@ -185,50 +258,53 @@ export class TickOrchestrator {
       }
     }
 
-    // Phase 4 — trigger collection (plan §5 trigger policy).
-    const activeActions = this.deps.actionStore
-      .liveActions()
-      .filter((a) => a.status === "active");
+    // Phase 5 — settlement triggers (plan §5 trigger policy): what is due,
+    // what its actor cut short, what the world stopped.
+    const activeActions = this.activeActions();
     const triggers: ResolutionTrigger[] = [];
-    if (newCommands.length > 0) {
-      triggers.push({
-        actionIds: newCommands.map((c) => actionIdForCommand(c.commandId)),
-        reason: "new_action",
-      });
-    }
-    const replacedIds = newCommands
-      .map((c) => c.replacesActionId)
-      .filter((id): id is string => {
-        if (!id) return false;
-        const target = this.deps.actionStore.get(id);
-        return (
-          target !== undefined &&
-          (target.status === "active" || target.status === "queued")
-        );
-      });
-    if (replacedIds.length > 0) {
-      triggers.push({ actionIds: replacedIds, reason: "replacement" });
-    }
     const dueIds = activeActions
       .filter(
         (a) =>
           arrivedActionIds.has(a.id) ||
           (a.resolvedDurationTicks !== undefined &&
-            a.progressMinutes >=
-              a.resolvedDurationTicks * this.deps.tickDurationMinutes)
+            a.progressMinutes >= a.resolvedDurationTicks * tick)
       )
       .map((a) => a.id);
+    const due = new Set(dueIds);
+    // A replacement is the actor cutting an action short. An action whose
+    // time is spent this very minute was not cut short — it ended on its own,
+    // and its successor is simply the next thing the actor does — so it is
+    // listed as due and never as replaced. Measured: told an action that was
+    // also due had been cut short, the Engine wrote the old action's speech
+    // row as if it were the new one's. Only "active" is eligible: a
+    // settlement context cannot address a still-queued action (its worklist
+    // silently drops the id), so a queued target is answered by the next
+    // drain instead of being named here.
+    const replacedIds = newCommands
+      .map((c) => c.replacesActionId)
+      .filter((id): id is string => {
+        if (!id || due.has(id)) return false;
+        const target = this.deps.actionStore.get(id);
+        return target !== undefined && target.status === "active";
+      });
+    if (replacedIds.length > 0) {
+      triggers.push({ actionIds: replacedIds, reason: "replacement" });
+    }
     if (dueIds.length > 0) {
       triggers.push({ actionIds: dueIds, reason: "duration_reached" });
     }
+    // Only "active" is eligible: a settlement context cannot address a
+    // still-queued action (its worklist silently drops the id). An
+    // interruption requested against an action that is still queued — a
+    // command sent back by a failed start session — stays pending until the
+    // action is active, rather than being dropped on the floor.
     const interruptions = this.pendingInterruptions.filter((p) => {
       const action = this.deps.actionStore.get(p.actionId);
-      return (
-        action !== undefined &&
-        (action.status === "active" || action.status === "queued")
-      );
+      return action !== undefined && action.status === "active";
     });
-    this.pendingInterruptions = [];
+    this.pendingInterruptions = this.pendingInterruptions.filter(
+      (p) => this.deps.actionStore.get(p.actionId)?.status === "queued"
+    );
     if (interruptions.length > 0) {
       triggers.push({
         actionIds: [...new Set(interruptions.map((p) => p.actionId))],
@@ -236,8 +312,9 @@ export class TickOrchestrator {
       });
     }
 
-    // Phases 5-7 — conditional global resolution. No triggers → no model call.
-    let engineResult: (WorldActionEngineResult & { ok: true }) | undefined;
+    // Phase 6 — the SETTLEMENT: the Engine's second function, one session
+    // over the world at `nextTickTime`. No triggers → no model call.
+    let settlement: (WorldActionEngineResult & { ok: true }) | undefined;
     if (triggers.length > 0) {
       // Dice, now that the bar is old news: the Engine set requiredLevel when
       // the action started and has not seen a number since. Rolling here puts
@@ -254,115 +331,28 @@ export class TickOrchestrator {
         dgsm,
         tickId: `tick_${this.tickCounter}_${nextTickTime}`,
         tickStartTime: nextTickTime,
-        durationMinutes: this.deps.tickDurationMinutes,
+        durationMinutes: tick,
         triggers,
-        newCommands,
+        newCommands: [],
         activeActions,
         objectiveWorldEvents,
+        narrationLanguage: this.deps.narrationLanguage,
       });
-      const resolveFn = this.deps.resolveTickFn ?? resolveTick;
-      const result = await resolveFn(context, {
-        dgsm,
-        codeTools: this.deps.codeTools,
-      });
-
+      const result = await resolveFn(context, engineDeps);
       if (result.ok) {
-        engineResult = result;
+        settlement = result;
       } else {
-        // The Engine produced nothing usable. Nothing it would have changed
-        // is applied — and the inputs it consumed go back, or they vanish:
-        // drained commands have queued actions that no trigger would pick up
-        // again, and a swallowed interruption never fires twice. Putting them
-        // back is what makes "nothing happened this tick" true rather than
-        // "this tick silently ate two commands".
-        for (const command of newCommands) this.deps.inbox.add(command);
+        // Nothing it would have changed is applied. A due action stays due
+        // and is asked about again next minute; a swallowed interruption
+        // would never fire twice, so it goes back.
         this.pendingInterruptions.push(...interruptions);
-      }
-    }
-
-    // Movement runtime init for newly-resolved movement legs. Read-only
-    // planning; a failed init downgrades the transition to failed.
-    const movementStates = new Map<
-      string,
-      ReturnType<typeof initMovementRuntime>
-    >();
-    if (engineResult) {
-      // The bar, written once as the action starts. It is not revisable: the
-      // whole point is that it was chosen before any roll existed.
-      for (const [actionId, bar] of Object.entries(engineResult.checkInits)) {
-        const action = this.deps.actionStore.get(actionId);
-        const skillId = action?.command.declaredSkillId;
-        if (!action || action.check || !skillId) continue;
-        action.check = {
-          skillId,
-          ...(action.command.declaredLanguage !== undefined
-            ? { language: action.command.declaredLanguage }
-            : {}),
-          requiredLevel: bar.requiredLevel,
-          ...(bar.opposedBy ? { opposedBy: bar.opposedBy } : {}),
-        };
-      }
-      for (const [actionId, init] of Object.entries(
-        engineResult.movementInits
-      )) {
-        const action = this.deps.actionStore.get(actionId) ?? undefined;
-        const actorId = action?.command.actorId;
-        if (!actorId) continue;
-        movementStates.set(
-          actionId,
-          initMovementRuntime(
-            dgsm,
-            actorId,
-            init.route,
-            init.vehicleId,
-            init.passBlockedConnectionId
-          )
-        );
-      }
-      for (const transition of engineResult.resolution.transitions) {
-        const planned = movementStates.get(transition.actionId);
-        if (!planned) continue;
-        if (!planned.ok && transition.to === "active") {
-          transition.to = "failed";
-          transition.reason = planned.reason;
-          if (planned.unstatedHop) {
-            transition.unstatedHop = planned.unstatedHop;
-          }
-          transition.nextWakeAt = undefined;
-          continue;
-        }
-        if (planned.ok && transition.to === "active") {
-          // Movement time is DERIVED, never the Engine's: the stated route
-          // (and vehicle) determine it. Whatever duration the Engine set —
-          // or omitted — the plan's own minutes are the action's clock.
-          const minutes = Math.max(
-            this.deps.tickDurationMinutes,
-            planned.totalMinutes
-          );
-          transition.resolvedDurationTicks = Math.ceil(
-            minutes / this.deps.tickDurationMinutes
-          );
-          transition.timingReason =
-            transition.timingReason ?? "movement time derived from the route";
-          // Wake at the duration we just RESOLVED, not at the raw estimate.
-          // A leg that begins or ends partway along a road costs a fractional
-          // number of minutes (|0 - 0.1| * 15 = 1.5), which the movement
-          // runtime handles by advancing a minute per tick and clamping — so
-          // the leg really does take `resolvedDurationTicks`. Deriving the
-          // wake time from the same number keeps the two from describing the
-          // same action differently, and keeps a fraction off the clock,
-          // which rejects one outright.
-          transition.nextWakeAt = addMinutes(
-            nextTickTime,
-            transition.resolvedDurationTicks * this.deps.tickDurationMinutes
-          );
-        }
       }
     }
 
     const transitions: ActionTransition[] = [
       ...preTransitions,
-      ...(engineResult?.resolution.transitions ?? []),
+      ...startTransitions,
+      ...(settlement?.resolution.transitions ?? []),
     ];
 
     // Every action that ended must leave the actor something to perceive.
@@ -373,7 +363,7 @@ export class TickOrchestrator {
     // failure is invisible: the actor's position and surroundings are
     // unchanged, so next tick's perception is identical and they re-issue the
     // same doomed action. Observed live as a seven-tick loop.
-    const occurrences = [...(engineResult?.resolution.occurrences ?? [])];
+    const occurrences = [...(settlement?.resolution.occurrences ?? [])];
     const traced = new Set(occurrences.flatMap((occ) => occ.sourceActionIds));
     for (const t of transitions) {
       if (t.to === "active" || traced.has(t.actionId)) continue;
@@ -464,7 +454,12 @@ export class TickOrchestrator {
       }
     }
     for (const [regionId, state] of weatherTransitions) {
-      const request = buildWeatherJudgementRequest(dgsm, regionId, state);
+      const request = buildWeatherJudgementRequest(
+        dgsm,
+        regionId,
+        state,
+        this.deps.narrationLanguage
+      );
       const judged = await (this.deps.weatherJudgeFn ?? judgeWeather)(request);
       let judgement = judged.ok ? judged.judgement : undefined;
       if (!judged.ok) {
@@ -500,24 +495,21 @@ export class TickOrchestrator {
     // the Applier and apply ahead of the buffered StateChanges, so semantic
     // outcomes land first and deterministic execution (movement
     // interpolation) plus ambient subsystem effects replay after them.
-    const engineDeltas = engineResult
+    const engineDeltas = settlement
       ? [
-          ...engineResult.resolution.characterChanges,
-          ...engineResult.resolution.sceneChanges,
-          ...engineResult.resolution.itemChanges,
+          ...settlement.resolution.characterChanges,
+          ...settlement.resolution.sceneChanges,
+          ...settlement.resolution.itemChanges,
         ]
       : [];
     const applied = applier.flush(flushBuffer, nextTickTime, engineDeltas);
 
-    // Phase 12 — lifecycle commit AFTER a successful flush.
-    for (const t of transitions) {
+    // Phase 12 — the settlement's lifecycle commit, AFTER a successful flush.
+    // (The starts were committed in Phase 2: they had nothing to flush.)
+    for (const t of settlement?.resolution.transitions ?? []) {
       const action = this.deps.actionStore.get(t.actionId);
       if (!action) continue;
       this.applyTransition(action, t, nextTickTime);
-      const planned = movementStates.get(t.actionId);
-      if (planned?.ok && action.status === "active") {
-        action.runtime = { ...(action.runtime ?? {}), movement: planned.state };
-      }
     }
 
     return {
@@ -530,6 +522,109 @@ export class TickOrchestrator {
       stateChanges: applied.stateChanges,
       damageReports: applied.damageReports,
     };
+  }
+
+  private activeActions(): EngineAction[] {
+    return this.deps.actionStore
+      .liveActions()
+      .filter((a) => a.status === "active");
+  }
+
+  /**
+   * Apply an accepted start judgement to the store, at the minute the actors
+   * decided. The bar is written once (it is not revisable: the whole point is
+   * that it was chosen before any roll existed); each movement is planned
+   * read-only and its clock DERIVED from the route — never the Engine's — or
+   * the start fails outright when the route cannot be walked; then every
+   * transition commits, so the action is under way from this minute.
+   * Returns the transitions as committed, for the tick's report.
+   */
+  private commitStarts(
+    result: WorldActionEngineResult & { ok: true },
+    now: GameTime,
+    newCommands: readonly ActionCommand[]
+  ): ActionTransition[] {
+    const { dgsm } = this.deps;
+    const tick = this.deps.tickDurationMinutes;
+    for (const [actionId, bar] of Object.entries(result.checkInits)) {
+      const action = this.deps.actionStore.get(actionId);
+      const skillId = action?.command.declaredSkillId;
+      if (!action || action.check || !skillId) continue;
+      action.check = {
+        skillId,
+        ...(action.command.declaredLanguage !== undefined
+          ? { language: action.command.declaredLanguage }
+          : {}),
+        requiredLevel: bar.requiredLevel,
+        ...(bar.opposedBy ? { opposedBy: bar.opposedBy } : {}),
+      };
+    }
+    const movementStates = new Map<
+      string,
+      ReturnType<typeof initMovementRuntime>
+    >();
+    for (const [actionId, init] of Object.entries(result.movementInits)) {
+      const actorId = this.deps.actionStore.get(actionId)?.command.actorId;
+      if (!actorId) continue;
+      movementStates.set(
+        actionId,
+        initMovementRuntime(
+          dgsm,
+          actorId,
+          init.route,
+          init.vehicleId,
+          init.passBlockedConnectionId
+        )
+      );
+    }
+    // Only the transitions of the commands this session was asked about:
+    // a start judgement answers its worklist and nothing else.
+    const asked = new Set(
+      newCommands.map((c) => actionIdForCommand(c.commandId))
+    );
+    const transitions = result.resolution.transitions.filter((t) =>
+      asked.has(t.actionId)
+    );
+    for (const transition of transitions) {
+      const planned = movementStates.get(transition.actionId);
+      if (!planned || transition.to !== "active") continue;
+      if (!planned.ok) {
+        transition.to = "failed";
+        transition.reason = planned.reason;
+        if (planned.unstatedHop) transition.unstatedHop = planned.unstatedHop;
+        if (planned.notAboard) transition.notAboard = planned.notAboard;
+        transition.nextWakeAt = undefined;
+        continue;
+      }
+      // Movement time is DERIVED, never the Engine's: the stated route (and
+      // vehicle) determine it. Whatever duration the Engine set — or omitted
+      // — the plan's own minutes are the action's clock.
+      const minutes = Math.max(tick, planned.totalMinutes);
+      transition.resolvedDurationTicks = Math.ceil(minutes / tick);
+      transition.timingReason =
+        transition.timingReason ?? "movement time derived from the route";
+      // Wake at the duration we just RESOLVED, not at the raw estimate. A leg
+      // that begins or ends partway along a road costs a fractional number of
+      // minutes (|0 - 0.1| * 15 = 1.5), which the movement runtime handles by
+      // advancing a minute per tick and clamping — so the leg really does
+      // take `resolvedDurationTicks`. Deriving the wake time from the same
+      // number keeps the two from describing the same action differently,
+      // and keeps a fraction off the clock, which rejects one outright.
+      transition.nextWakeAt = addMinutes(
+        now,
+        transition.resolvedDurationTicks * tick
+      );
+    }
+    for (const t of transitions) {
+      const action = this.deps.actionStore.get(t.actionId);
+      if (!action) continue;
+      this.applyTransition(action, t, now);
+      const planned = movementStates.get(t.actionId);
+      if (planned?.ok && action.status === "active") {
+        action.runtime = { ...(action.runtime ?? {}), movement: planned.state };
+      }
+    }
+    return transitions;
   }
 
   /** Roll every declared-but-unrolled check among these actions. The record
@@ -668,6 +763,15 @@ export class TickOrchestrator {
       // memory was wrong sends them to doubt their own head — which is
       // exactly what both of them then did.
       return `${t.actorId} 没有出发。他心里那条路要从「${from}」接到「${to}」，可这两处之间并没有一条路——不是他记错了什么，是这两段本来就接不上。他还在原地，${what} 一步也没有开始，时间也没有花掉；要去别处，得走一条他确实知道通向那里的路。`;
+    }
+    if (t.notAboard) {
+      const vehicle =
+        this.deps.dgsm.getVehicle?.(t.notAboard.vehicleId)?.name ??
+        t.notAboard.vehicleId;
+      // The same narrowness as the route case: not "the action failed" but
+      // the one fact that lets him fix it — he is standing beside the
+      // vehicle, not in it.
+      return `${t.actorId} 没有出发。他不在「${vehicle}」里——车停在原地，他还站在车外，方向盘不在他手上。${what} 一步也没有开始，时间也没有花掉；要开这辆车，得先上车。`;
     }
     if (t.to === "completed") {
       return `${t.actorId} 的行动${what}结束了${t.reason ? `：${t.reason}` : "，没有留下可见的变化"}`;

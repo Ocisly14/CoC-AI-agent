@@ -1,10 +1,13 @@
-// The staged runner: six phases in a fixed order, each its own request
-// offering only its own submission tool, each answer validated on arrival and
-// kept only when accepted; addressed phase-local corrections that rerun ONE
-// phase; a shared budget of provider calls; one global gate over the assembled
-// draft, and one rewind to the phase that owns a global fault; and — when a
-// phase cannot converge, the budget runs out, or the model fails — a result
-// that applies nothing at all.
+// The staged runner: the Engine's two functions, each a session of its own
+// over its own context — the START JUDGEMENT (one phase, `starts`) and the
+// SETTLEMENT (five, `endings` → `occurrences`) — with a context that asks for
+// both refused outright. Within a session: phases in a fixed order, each its
+// own request offering only its own submission tool, each answer validated on
+// arrival and kept only when accepted; addressed phase-local corrections that
+// rerun ONE phase; a shared budget of provider calls; one global gate over the
+// assembled draft, and one rewind to the phase of THIS session that owns a
+// global fault; and — when a phase cannot converge, the budget runs out, or
+// the model fails — a result that applies nothing at all.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ToolCallOptions } from "../../../models/types.js";
@@ -22,7 +25,9 @@ import {
   PHASE_TOOL_NAMES,
   RESOLUTION_PHASES,
   type ResolutionPhase,
+  SESSION_PHASES,
   schemaFingerprint,
+  sessionOfPhase,
 } from "../worldResolutionStageSchemas.js";
 
 const generateToolCalls = vi.fn();
@@ -126,26 +131,39 @@ const cmd2: ActionCommand = {
   proposedDurationTicks: 2,
 };
 
+/**
+ * One context, asking for ONE of the Engine's two functions.
+ *
+ * A start context carries the queued commands and a single `new_action`
+ * trigger; its active actions are context the Engine reads and is asked
+ * nothing about. A settlement context carries no new command at all and
+ * triggers on the actions whose time is up. The two are never mixed — the
+ * runner refuses a context that asks for both — so the fixture cannot build
+ * one by accident.
+ */
 function makeContext(
   opts: {
+    kind?: "start" | "settlement";
     ending?: boolean;
     talk?: boolean;
     blocked?: boolean;
     second?: boolean;
   } = {}
 ): EngineResolutionContext {
+  const settlement = opts.kind === "settlement";
   const activeActions = [
     ...(opts.ending ? [activeAction()] : []),
     ...(opts.talk ? [talkingAction()] : []),
   ];
-  const newCommands = [cmd, ...(opts.second ? [cmd2] : [])];
-  const actionIds = [
-    ...newCommands.map((c) => `action_${c.commandId}`),
-    ...activeActions.map((a) => a.id),
-  ];
+  const newCommands = settlement ? [] : [cmd, ...(opts.second ? [cmd2] : [])];
+  const actionIds = settlement
+    ? activeActions.map((a) => a.id)
+    : newCommands.map((c) => `action_${c.commandId}`);
   return {
     trigger: {
-      triggers: [{ actionIds, reason: "new_action" }],
+      triggers: [
+        { actionIds, reason: settlement ? "duration_reached" : "new_action" },
+      ],
       actionIds,
     },
     tick: {
@@ -312,24 +330,57 @@ const BASE_ANSWERS: Record<ResolutionPhase, object> = {
   occurrences: { occurrences: [] },
 };
 
-/** Six first-try acceptances, with any phase's answer overridden. */
-function happyPath(overrides: Partial<Record<ResolutionPhase, object>> = {}) {
-  return RESOLUTION_PHASES.map((phase) =>
-    accept(phase, overrides[phase] ?? BASE_ANSWERS[phase])
+/** What the one-phase START JUDGEMENT submits for the plain fixture. */
+const START_ANSWERS: Partial<Record<ResolutionPhase, object>> = {
+  starts: BASE_ANSWERS.starts,
+};
+
+/** What the five-phase SETTLEMENT submits when nothing is ending: every
+ *  domain empty. A context with an action ending in it owes decisions, and
+ *  the tests that build one override them (see `SETTLES_LIVE`). No `starts`
+ *  key: a settlement session never runs that phase. */
+const SETTLEMENT_ANSWERS: Record<Exclude<ResolutionPhase, "starts">, object> = {
+  endings: BASE_ANSWERS.endings,
+  characterChanges: BASE_ANSWERS.characterChanges,
+  itemChanges: BASE_ANSWERS.itemChanges,
+  sceneChanges: BASE_ANSWERS.sceneChanges,
+  occurrences: BASE_ANSWERS.occurrences,
+};
+
+/** The start judgement's one first-try acceptance. */
+function startPath(overrides: Partial<Record<ResolutionPhase, object>> = {}) {
+  return SESSION_PHASES.start.map((phase) =>
+    accept(phase, overrides[phase] ?? START_ANSWERS[phase] ?? {})
   );
 }
 
-/** The happy path with further attempts spliced in right after `phase`'s
- *  first turn. The runner asks the SAME phase again before it moves on, so a
- *  retry appended after the six acceptances would be read as the answer to a
- *  later phase's request — a wrong-tool turn, not the correction. */
+/** Five first-try acceptances, with any phase's answer overridden. */
+function settlementPath(
+  overrides: Partial<Record<ResolutionPhase, object>> = {}
+) {
+  // SESSION_PHASES.settlement is typed as the full ResolutionPhase (it is
+  // one array among others of that shape) though it never actually holds
+  // "starts" — the one cast lives here.
+  const answers = SETTLEMENT_ANSWERS as Record<ResolutionPhase, object>;
+  return SESSION_PHASES.settlement.map((phase) =>
+    accept(phase, overrides[phase] ?? answers[phase])
+  );
+}
+
+/** The session that owns `phase`, with further attempts spliced in right
+ *  after that phase's first turn. The runner asks the SAME phase again before
+ *  it moves on, so a retry appended after the session's acceptances would be
+ *  read as the answer to a later phase's request — a wrong-tool turn, not the
+ *  correction. */
 function retrying(
   phase: ResolutionPhase,
   overrides: Partial<Record<ResolutionPhase, object>>,
   ...retries: ReturnType<typeof turn>[]
 ) {
-  const path = happyPath(overrides);
-  const i = RESOLUTION_PHASES.indexOf(phase);
+  const kind = sessionOfPhase(phase);
+  const path =
+    kind === "start" ? startPath(overrides) : settlementPath(overrides);
+  const i = SESSION_PHASES[kind].indexOf(phase);
   return [...path.slice(0, i + 1), ...retries, ...path.slice(i + 1)];
 }
 
@@ -361,10 +412,13 @@ function lastToolResults(req: ToolCallOptions) {
   return msg && msg.role === "tool" ? msg.results : [];
 }
 
+// Every change is sourced to an action of THIS session, and a settlement's
+// actions are the ones ending in it — `action_c1` is a start, and a settlement
+// context does not carry it at all.
 const A_BAD_ITEM_OP = {
   itemChanges: [
     {
-      sourceActionId: "action_c1",
+      sourceActionId: LIVE,
       itemId: "lamp_1",
       operation: { kind: "teleport" },
     },
@@ -373,12 +427,31 @@ const A_BAD_ITEM_OP = {
 const A_GOOD_ITEM_OP = {
   itemChanges: [
     {
-      sourceActionId: "action_c1",
+      sourceActionId: LIVE,
       itemId: "lamp_1",
       operation: { kind: "move", from: "scene:SCN_1", to: "npc_1" },
     },
   ],
 };
+
+/** The settlement of `makeContext({ kind: "settlement", ending: true })`: the
+ *  one ending action decided, and the one occurrence that traces it. Every
+ *  settlement test that carries an ending but is not ABOUT the ending starts
+ *  from these two. */
+const LIVE_OUTCOME = {
+  endings: [{ actionId: LIVE, mode: "outcome", outcome: "The cabinet gives." }],
+};
+const LIVE_TRACE = {
+  occurrences: [
+    {
+      actionIds: [LIVE],
+      speech: false,
+      perceivers: [{ characterId: "npc_2", clarity: "full" }],
+      content: "The cabinet door gives way.",
+    },
+  ],
+};
+const SETTLES_LIVE = { endings: LIVE_OUTCOME, occurrences: LIVE_TRACE };
 
 describe("exitsFromHere — code's passability verdict beside the command", () => {
   // The model read "lodge_drive ↔ porch is closed" as "the porch is closed"
@@ -462,25 +535,55 @@ describe("resolveTick — the staged runner", () => {
     resetStrictDowngrades();
   });
 
-  it("runs the six phases in order, one call each, and assembles the same resolution the single submission did", async () => {
-    script(...happyPath());
-
-    const result = await resolveTick(makeContext(), makeDeps());
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.resolution.transitions).toEqual([
+  it("the start judgement is one request; the settlement is five, in order; each assembles the same resolution the single submission did", async () => {
+    script(...startPath());
+    const start = await resolveTick(makeContext(), makeDeps());
+    expect(start.ok).toBe(true);
+    if (!start.ok) return;
+    expect(start.resolution.transitions).toEqual([
       expect.objectContaining({ actionId: "action_c1", to: "active" }),
     ]);
     // Travel time is the movement runtime's: nothing is clocked here.
-    expect(result.resolution.transitions[0].resolvedDurationTicks).toBe(
+    expect(start.resolution.transitions[0].resolvedDurationTicks).toBe(
       undefined
     );
-    expect(result.movementInits.action_c1).toEqual({ route: ["SCN_FAR"] });
-    expect(result.checkInits).toEqual({});
-    expect(result.codeToolInvocations).toEqual([]);
-    expect(generateToolCalls).toHaveBeenCalledTimes(6);
-    expect(phasesRequested()).toEqual([...RESOLUTION_PHASES]);
+    expect(start.movementInits.action_c1).toEqual({ route: ["SCN_FAR"] });
+    expect(start.checkInits).toEqual({});
+    expect(start.codeToolInvocations).toEqual([]);
+    expect(phasesRequested()).toEqual(["starts"]);
+    expect(gate).toHaveBeenCalledTimes(1);
+
+    generateToolCalls.mockClear();
+    gate.mockClear();
+    script(
+      ...settlementPath({
+        endings: {
+          endings: [
+            { actionId: LIVE, mode: "outcome", outcome: "The cabinet gives." },
+          ],
+        },
+        occurrences: {
+          occurrences: [
+            {
+              actionIds: [LIVE],
+              speech: false,
+              perceivers: [{ characterId: "npc_2", clarity: "full" }],
+              content: "The cabinet door gives way.",
+            },
+          ],
+        },
+      })
+    );
+    const settled = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
+    expect(settled.ok).toBe(true);
+    if (!settled.ok) return;
+    expect(settled.resolution.transitions).toEqual([
+      expect.objectContaining({ actionId: LIVE, to: "completed" }),
+    ]);
+    expect(phasesRequested()).toEqual([...SESSION_PHASES.settlement]);
     // Each phase is its own conversation: no request carries another
     // phase's turns.
     for (const req of requests()) expect(req.messages).toHaveLength(1);
@@ -488,12 +591,28 @@ describe("resolveTick — the staged runner", () => {
     expect(gate).toHaveBeenCalledTimes(1);
   });
 
-  it("accepts `[]` for every domain that has nothing to say", async () => {
-    // A tick with one starting action: every phase but starts is empty, and
-    // an accepted empty array is a fact the later phases are shown.
-    script(...happyPath());
+  it("refuses a context that asks for both functions at once, without a model call", async () => {
+    const mixed = makeContext({ kind: "start", ending: true });
+    mixed.trigger.triggers.push({
+      actionIds: [LIVE],
+      reason: "duration_reached",
+    });
+    const result = await resolveTick(mixed, makeDeps());
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.failure).toContain("two sessions at once");
+    expect(generateToolCalls).not.toHaveBeenCalled();
+  });
 
-    const result = await resolveTick(makeContext(), makeDeps());
+  it("accepts `[]` for every domain that has nothing to say", async () => {
+    // A settlement with nothing ending in it: every phase is empty, and an
+    // accepted empty array is a fact the later phases are shown.
+    script(...settlementPath());
+
+    const result = await resolveTick(
+      makeContext({ kind: "settlement" }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -501,14 +620,14 @@ describe("resolveTick — the staged runner", () => {
     expect(result.resolution.characterChanges).toEqual([]);
     expect(result.resolution.itemChanges).toEqual([]);
     expect(result.resolution.sceneChanges).toEqual([]);
-    const last = instructionOf(requests()[5]);
+    const last = instructionOf(requests()[4]);
     expect(last).toContain("### `endings` — accepted in phase 1\n[]");
-    expect(last).toContain("### `itemChanges` — accepted in phase 4\n[]");
+    expect(last).toContain("### `itemChanges` — accepted in phase 3\n[]");
   });
 
   it("pure speech: a pure_speech decision plus its speech row ends the action with no ending row", async () => {
     script(
-      ...happyPath({
+      ...settlementPath({
         endings: { endings: [{ actionId: TALK, mode: "pure_speech" }] },
         occurrences: {
           occurrences: [
@@ -523,7 +642,10 @@ describe("resolveTick — the staged runner", () => {
       })
     );
 
-    const result = await resolveTick(makeContext({ talk: true }), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement", talk: true }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -557,11 +679,11 @@ describe("resolveTick — the staged runner", () => {
       ],
     };
     script(
-      ...happyPath({ endings: outcome, occurrences: { occurrences: [] } }),
+      ...settlementPath({ endings: outcome, occurrences: { occurrences: [] } }),
       accept("occurrences", trace)
     );
 
-    const context = makeContext({ ending: true });
+    const context = makeContext({ kind: "settlement", ending: true });
     const result = await resolveTick(context, makeDeps());
 
     expect(result.ok).toBe(true);
@@ -574,8 +696,11 @@ describe("resolveTick — the staged runner", () => {
       })
     );
     // Only the occurrence phase was rerun, and its rejection was local.
-    expect(phasesRequested()).toEqual([...RESOLUTION_PHASES, "occurrences"]);
-    const rejection = lastToolResults(requests()[6])[0].content;
+    expect(phasesRequested()).toEqual([
+      ...SESSION_PHASES.settlement,
+      "occurrences",
+    ]);
+    const rejection = lastToolResults(requests()[5])[0].content;
     expect(rejection).toContain("REJECTED");
     expect(rejection).toContain("`submit_occurrences`");
     expect(rejection).toContain(`occurrence:${LIVE}`);
@@ -586,7 +711,7 @@ describe("resolveTick — the staged runner", () => {
       endings: [
         { actionId: LIVE, mode: "outcome", outcome: "The cabinet gives." },
       ],
-      starting: [{ actionId: "action_c1", movement: { route: ["SCN_FAR"] } }],
+      starting: [],
       characterChanges: [],
       itemChanges: [],
       sceneChanges: [],
@@ -602,17 +727,19 @@ describe("resolveTick — the staged runner", () => {
     script(
       ...retrying(
         "itemChanges",
-        { itemChanges: A_BAD_ITEM_OP },
+        { ...SETTLES_LIVE, itemChanges: A_BAD_ITEM_OP },
         accept("itemChanges", A_GOOD_ITEM_OP)
       )
     );
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(true);
     expect(phasesRequested()).toEqual([
       "endings",
-      "starts",
       "characterChanges",
       "itemChanges",
       "itemChanges",
@@ -621,7 +748,7 @@ describe("resolveTick — the staged runner", () => {
     ]);
     // The second item request continues the item conversation: the opening
     // turn, the rejected call, and its addressed rejection.
-    const retry = requests()[4];
+    const retry = requests()[3];
     expect(retry.messages.map((m) => m.role)).toEqual([
       "user",
       "assistant",
@@ -637,27 +764,29 @@ describe("resolveTick — the staged runner", () => {
     expect(rejection[0].content).toContain("COMPLETE `itemChanges` array");
     expect(rejection[0].content).toContain("There is no patch");
     // Nothing of the rejected array reached the next phase.
-    expect(instructionOf(requests()[5])).not.toContain("teleport");
+    expect(instructionOf(requests()[4])).not.toContain("teleport");
   });
 
   it("shows each phase the accepted upstream draft, verbatim and read-only", async () => {
-    script(...happyPath({ itemChanges: A_GOOD_ITEM_OP }));
+    script(...settlementPath({ ...SETTLES_LIVE, itemChanges: A_GOOD_ITEM_OP }));
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(true);
-    const scene = instructionOf(requests()[4]);
-    expect(scene).toContain("### `itemChanges` — accepted in phase 4");
+    const scene = instructionOf(requests()[3]);
+    expect(scene).toContain("### `itemChanges` — accepted in phase 3");
     expect(scene).toContain('"kind": "move"');
     expect(scene).toContain('"to": "npc_1"');
     expect(scene).not.toContain("### `sceneChanges`");
-    const occurrences = instructionOf(requests()[5]);
+    const occurrences = instructionOf(requests()[4]);
     for (const heading of [
       "### `endings` — accepted in phase 1",
-      "### `starting` — accepted in phase 2",
-      "### `characterChanges` — accepted in phase 3",
-      "### `itemChanges` — accepted in phase 4",
-      "### `sceneChanges` — accepted in phase 5",
+      "### `characterChanges` — accepted in phase 2",
+      "### `itemChanges` — accepted in phase 3",
+      "### `sceneChanges` — accepted in phase 4",
     ]) {
       expect(occurrences).toContain(heading);
     }
@@ -668,7 +797,10 @@ describe("resolveTick — the staged runner", () => {
     );
   });
 
-  it("pass versus unblock: a grant on an accepted start refuses an unblock of the same passage in the scene phase", async () => {
+  it("a one-shot grant on a start names the blocked passage and rides through to the movement init", async () => {
+    // The passage stays shut for everybody else; the grant is the exact edge
+    // this walker gets past, and it is settled in the start judgement — the
+    // settlement, a minute later, never sees the start at all.
     const granted = {
       starting: [
         {
@@ -680,27 +812,7 @@ describe("resolveTick — the staged runner", () => {
         },
       ],
     };
-    const unblock = {
-      sceneChanges: [
-        {
-          sourceActionId: "action_c1",
-          sceneId: "SCN_1",
-          operation: {
-            kind: "connectionBlock",
-            connectionId: "connection.scn1.far",
-            blocked: false,
-            reason: "the beam is lifted aside",
-          },
-        },
-      ],
-    };
-    script(
-      ...retrying(
-        "sceneChanges",
-        { starts: granted, sceneChanges: unblock },
-        accept("sceneChanges", { sceneChanges: [] })
-      )
-    );
+    script(...startPath({ starts: granted }));
 
     const result = await resolveTick(
       makeContext({ blocked: true }),
@@ -709,24 +821,11 @@ describe("resolveTick — the staged runner", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // The grant stands: one walker gets through, the passage stays shut.
     expect(result.movementInits.action_c1).toEqual({
       route: ["SCN_FAR"],
       passBlockedConnectionId: "connection.scn1.far",
     });
-    expect(result.resolution.sceneChanges).toEqual([]);
-    expect(phasesRequested()).toEqual([
-      "endings",
-      "starts",
-      "characterChanges",
-      "itemChanges",
-      "sceneChanges",
-      "sceneChanges",
-      "occurrences",
-    ]);
-    const rejection = lastToolResults(requests()[5])[0].content;
-    expect(rejection).toContain("sceneChange:0");
-    expect(rejection).toContain("never both for one passage");
+    expect(phasesRequested()).toEqual(["starts"]);
   });
 
   it("global rewind: a gate fault rewinds to its owning phase, tells that phase why, and reruns the tail", async () => {
@@ -738,54 +837,66 @@ describe("resolveTick — the staged runner", () => {
     ];
     gate.mockImplementationOnce(() => stale);
     script(
-      ...happyPath({ itemChanges: A_GOOD_ITEM_OP }),
+      ...settlementPath({ ...SETTLES_LIVE, itemChanges: A_GOOD_ITEM_OP }),
       accept("itemChanges", A_GOOD_ITEM_OP),
       accept("sceneChanges", BASE_ANSWERS.sceneChanges),
-      accept("occurrences", BASE_ANSWERS.occurrences)
+      accept("occurrences", LIVE_TRACE)
     );
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(true);
     expect(phasesRequested()).toEqual([
-      ...RESOLUTION_PHASES,
+      ...SESSION_PHASES.settlement,
       "itemChanges",
       "sceneChanges",
       "occurrences",
     ]);
-    expect(generateToolCalls).toHaveBeenCalledTimes(9);
+    expect(generateToolCalls).toHaveBeenCalledTimes(8);
     expect(gate).toHaveBeenCalledTimes(2);
     // The rewound phase gets the verdict, once, in its opening instruction —
     // and still sees the earlier phases, which were kept.
-    const redo = instructionOf(requests()[6]);
+    const redo = instructionOf(requests()[5]);
     expect(redo).toContain("## Why this phase is being redone");
     expect(redo).toContain("itemChange:0 — the prose of SCN_1 still cites");
-    expect(redo).toContain("### `characterChanges` — accepted in phase 3");
+    expect(redo).toContain("### `characterChanges` — accepted in phase 2");
     expect(redo).not.toContain("### `sceneChanges`");
     // The phases behind it are rerun because the draft changed, and told
     // nothing about a fault that was not theirs.
+    expect(instructionOf(requests()[6])).not.toContain("being redone");
     expect(instructionOf(requests()[7])).not.toContain("being redone");
-    expect(instructionOf(requests()[8])).not.toContain("being redone");
   });
 
   it("a second global failure rejects the tick atomically, naming the rewind", async () => {
     const errors: ResolutionError[] = [
       {
-        target: { kind: "occurrence", actionIds: ["action_c1"] },
+        target: { kind: "occurrence", actionIds: [LIVE] },
         message: "x",
       },
     ];
     gate.mockImplementation(() => errors);
-    script(...happyPath(), accept("occurrences", BASE_ANSWERS.occurrences));
+    script(
+      ...settlementPath(),
+      accept("occurrences", BASE_ANSWERS.occurrences)
+    );
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement" }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.failure).toContain("still invalid after 1 global rewind(s)");
     expect(result.failure).toContain("nothing applied");
     expect(result.errors).toEqual(errors);
-    expect(phasesRequested()).toEqual([...RESOLUTION_PHASES, "occurrences"]);
+    expect(phasesRequested()).toEqual([
+      ...SESSION_PHASES.settlement,
+      "occurrences",
+    ]);
     expect(gate).toHaveBeenCalledTimes(2);
   });
 
@@ -828,16 +939,8 @@ describe("resolveTick — the staged runner", () => {
         ])
       );
       expect(result.movementInits.action_c1).toEqual({ route: ["SCN_FAR"] });
-      expect(phasesRequested()).toEqual([
-        "endings",
-        "starts",
-        "starts",
-        "characterChanges",
-        "itemChanges",
-        "sceneChanges",
-        "occurrences",
-      ]);
-      const rejection = lastToolResults(requests()[2])[0].content;
+      expect(phasesRequested()).toEqual(["starts", "starts"]);
+      const rejection = lastToolResults(requests()[1])[0].content;
       expect(rejection).toContain("## Kept by code (1 rows)");
       expect(rejection).toContain('"actionId": "action_c1"');
       expect(rejection).toContain(
@@ -885,7 +988,7 @@ describe("resolveTick — the staged runner", () => {
       );
 
       const result = await resolveTick(
-        makeContext({ ending: true, talk: true }),
+        makeContext({ kind: "settlement", ending: true, talk: true }),
         makeDeps()
       );
 
@@ -901,7 +1004,7 @@ describe("resolveTick — the staged runner", () => {
         "## Still owed — send ONLY these (0 coverage pairs"
       );
       expect(rejection).toContain("unfinished placeholder");
-      expect(generateToolCalls).toHaveBeenCalledTimes(8);
+      expect(generateToolCalls).toHaveBeenCalledTimes(7);
     });
 
     it("keeps retained rows visible after a malformed repair envelope", async () => {
@@ -938,11 +1041,11 @@ describe("resolveTick — the staged runner", () => {
         )
       );
       const result = await resolveTick(
-        makeContext({ ending: true, talk: true }),
+        makeContext({ kind: "settlement", ending: true, talk: true }),
         makeDeps()
       );
       expect(result.ok).toBe(true);
-      const rejection = lastToolResults(requests()[7])[0].content;
+      const rejection = lastToolResults(requests()[6])[0].content;
       expect(rejection).toContain("Kept by code (1 rows)");
       expect(rejection).toContain("1 coverage pairs");
       if (result.ok) expect(result.resolution.occurrences).toHaveLength(2);
@@ -966,16 +1069,19 @@ describe("resolveTick — the staged runner", () => {
         )
       );
 
-      const result = await resolveTick(makeContext({ talk: true }), makeDeps());
+      const result = await resolveTick(
+        makeContext({ kind: "settlement", talk: true }),
+        makeDeps()
+      );
 
       expect(result.ok).toBe(true);
-      const instruction = instructionOf(requests()[5]);
+      const instruction = instructionOf(requests()[4]);
       expect(instruction).toContain(
         "## Required occurrence coverage (1 obligations)"
       );
       expect(instruction).toContain("An empty array is invalid.");
       expect(instruction).not.toContain("Nothing perceptible happened is `[]`");
-      const rejection = lastToolResults(requests()[6])[0].content;
+      const rejection = lastToolResults(requests()[5])[0].content;
       expect(rejection).toContain("## Kept by code (0 rows)");
       expect(rejection).toContain(`"actionId": "${TALK}",\n  "speech": true`);
     });
@@ -985,7 +1091,7 @@ describe("resolveTick — the staged runner", () => {
     script(
       ...retrying(
         "itemChanges",
-        { itemChanges: A_BAD_ITEM_OP },
+        { ...SETTLES_LIVE, itemChanges: A_BAD_ITEM_OP },
         accept("itemChanges", A_BAD_ITEM_OP),
         accept("itemChanges", A_BAD_ITEM_OP)
       )
@@ -994,7 +1100,10 @@ describe("resolveTick — the staged runner", () => {
     // would see an accepted tick.
     generateToolCalls.mockResolvedValue(accept("itemChanges", A_GOOD_ITEM_OP));
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -1006,7 +1115,6 @@ describe("resolveTick — the staged runner", () => {
     );
     expect(phasesRequested()).toEqual([
       "endings",
-      "starts",
       "characterChanges",
       "itemChanges",
       "itemChanges",
@@ -1016,17 +1124,20 @@ describe("resolveTick — the staged runner", () => {
   });
 
   it("shared cap: dice turns count, and the thirteenth call is never made", async () => {
-    // Seven dice turns and five accepted phases spend the twelve; the
+    // Eight dice turns and four accepted phases spend the twelve; the
     // occurrence phase cannot open, and the tick applies nothing.
     script(
-      ...Array.from({ length: 7 }, (_, i) => roll(`r${i}`)),
-      ...happyPath().slice(0, 5)
+      ...Array.from({ length: 8 }, (_, i) => roll(`r${i}`)),
+      ...settlementPath().slice(0, 4)
     );
     generateToolCalls.mockResolvedValue(
       accept("occurrences", BASE_ANSWERS.occurrences)
     );
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement" }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -1035,7 +1146,7 @@ describe("resolveTick — the staged runner", () => {
       `call budget of ${MAX_PROVIDER_CALLS} exhausted in phase occurrences`
     );
     // Every roll that was made is still in the record.
-    expect(result.codeToolInvocations).toHaveLength(7);
+    expect(result.codeToolInvocations).toHaveLength(8);
     expect(gate).not.toHaveBeenCalled();
   });
 
@@ -1045,30 +1156,36 @@ describe("resolveTick — the staged runner", () => {
     script(accept("endings", BASE_ANSWERS.endings));
     generateToolCalls.mockRejectedValueOnce(new Error("provider down"));
 
-    const result = await resolveTick(makeContext(), makeDeps());
+    const result = await resolveTick(
+      makeContext({ kind: "settlement" }),
+      makeDeps()
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.failure).toContain("model error in phase starts");
+    expect(result.failure).toContain("model error in phase characterChanges");
     expect(generateToolCalls).toHaveBeenCalledTimes(2);
   });
 
   it("damage rolls made in endings survive a later phase's correction, on success and on failure", async () => {
     // The roll is executed by the registry and attributed to its action.
     script(
-      roll("dmg", { actionId: "action_c1", formula: "1d4" }),
+      roll("dmg", { actionId: LIVE, formula: "1d4" }),
       ...retrying(
         "itemChanges",
-        { itemChanges: A_BAD_ITEM_OP },
+        { ...SETTLES_LIVE, itemChanges: A_BAD_ITEM_OP },
         accept("itemChanges", A_GOOD_ITEM_OP)
       )
     );
-    const ok = await resolveTick(makeContext(), makeDeps());
+    const ok = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
     expect(ok.ok).toBe(true);
     expect(ok.codeToolInvocations).toHaveLength(1);
     expect(ok.codeToolInvocations[0]).toMatchObject({
       toolName: "damageRoll",
-      actionId: "action_c1",
+      actionId: LIVE,
       output: { ok: true, total: 5 },
     });
     // The second endings request carried the roll back to the model.
@@ -1076,15 +1193,18 @@ describe("resolveTick — the staged runner", () => {
 
     generateToolCalls.mockReset();
     script(
-      roll("dmg", { actionId: "action_c1", formula: "1d4" }),
+      roll("dmg", { actionId: LIVE, formula: "1d4" }),
       ...retrying(
         "itemChanges",
-        { itemChanges: A_BAD_ITEM_OP },
+        { ...SETTLES_LIVE, itemChanges: A_BAD_ITEM_OP },
         accept("itemChanges", A_BAD_ITEM_OP),
         accept("itemChanges", A_BAD_ITEM_OP)
       )
     );
-    const failed = await resolveTick(makeContext(), makeDeps());
+    const failed = await resolveTick(
+      makeContext({ kind: "settlement", ending: true }),
+      makeDeps()
+    );
     expect(failed.ok).toBe(false);
     expect(failed.codeToolInvocations).toHaveLength(1);
     expect(failed.codeToolInvocations[0]).toMatchObject({
@@ -1093,6 +1213,8 @@ describe("resolveTick — the staged runner", () => {
   });
 
   describe("structural refusals — each its own answer, each one attempt", () => {
+    // Shown on the start judgement's one phase, which is where a refusal has
+    // nowhere to hide: the session is that phase.
     const good = phaseCall("starts", BASE_ANSWERS.starts);
     const faults: Array<[string, () => ReturnType<typeof turn>, string]> = [
       // `{}` is legal JSON, so it used to reach the validator and come back
@@ -1130,12 +1252,7 @@ describe("resolveTick — the staged runner", () => {
     it.each(faults)(
       "%s is refused with its own text and counts against the three attempts",
       async (_kind, fault, text) => {
-        script(
-          accept("endings", BASE_ANSWERS.endings),
-          fault(),
-          fault(),
-          fault()
-        );
+        script(fault(), fault(), fault());
         generateToolCalls.mockResolvedValue(
           accept("starts", BASE_ANSWERS.starts)
         );
@@ -1147,16 +1264,11 @@ describe("resolveTick — the staged runner", () => {
         expect(result.failure).toContain(
           `phase starts still invalid after ${MAX_PHASE_ATTEMPTS} attempts`
         );
-        expect(phasesRequested()).toEqual([
-          "endings",
-          "starts",
-          "starts",
-          "starts",
-        ]);
+        expect(phasesRequested()).toEqual(["starts", "starts", "starts"]);
         // Every call of the refused turn is answered — an unanswered
         // tool_use is a 400 on the very next request — and the phase call's
         // answer names the fault.
-        const answered = lastToolResults(requests()[2]);
+        const answered = lastToolResults(requests()[1]);
         const refused = fault().toolCalls;
         expect(answered.map((r) => r.toolCallId)).toEqual(
           refused.map((c) => c.id)
@@ -1170,18 +1282,17 @@ describe("resolveTick — the staged runner", () => {
 
     it("answers the companion of a mixed turn as the wrong tool", async () => {
       script(
-        accept("endings", BASE_ANSWERS.endings),
         turn([
           good,
           { id: "x", name: "submit_item_changes", args: { itemChanges: [] } },
         ]),
-        ...happyPath().slice(1)
+        ...startPath()
       );
 
       const result = await resolveTick(makeContext(), makeDeps());
 
       expect(result.ok).toBe(true);
-      const companion = lastToolResults(requests()[2]).find(
+      const companion = lastToolResults(requests()[1]).find(
         (r) => r.toolCallId === "x"
       );
       expect(companion?.content).toContain(
@@ -1199,10 +1310,13 @@ describe("resolveTick — the staged runner", () => {
           { id: "d", name: "damageRoll", args: { formula: "1d6" } },
           phaseCall("endings", BASE_ANSWERS.endings, "e"),
         ]),
-        ...happyPath()
+        ...settlementPath()
       );
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(
+        makeContext({ kind: "settlement" }),
+        makeDeps()
+      );
 
       expect(result.ok).toBe(true);
       expect(result.codeToolInvocations).toHaveLength(1);
@@ -1217,22 +1331,18 @@ describe("resolveTick — the staged runner", () => {
     });
 
     it("a wrong phase's tool is refused and counts as an attempt", async () => {
+      // `submit_endings` belongs to the other session entirely: reaching for
+      // it from the start judgement is refused like any other wrong tool.
       script(
-        accept("endings", BASE_ANSWERS.endings),
         turn([{ id: "w", name: "submit_endings", args: { endings: [] } }]),
-        ...happyPath().slice(1)
+        ...startPath()
       );
 
       const result = await resolveTick(makeContext(), makeDeps());
 
       expect(result.ok).toBe(true);
-      expect(phasesRequested()).toEqual([
-        "endings",
-        "starts",
-        "starts",
-        ...RESOLUTION_PHASES.slice(2),
-      ]);
-      const answer = lastToolResults(requests()[2])[0].content;
+      expect(phasesRequested()).toEqual(["starts", "starts"]);
+      const answer = lastToolResults(requests()[1])[0].content;
       expect(answer).toContain("`submit_endings` was NOT accepted");
       expect(answer).toContain("Call `submit_starts` now");
     });
@@ -1240,9 +1350,12 @@ describe("resolveTick — the staged runner", () => {
     it("a dice turn in the endings phase is not an attempt", async () => {
       // Three rolls, then the submission — and the phase still has its three
       // tries. Only the call budget bounds dice turns.
-      script(roll("a"), roll("b"), roll("c"), ...happyPath());
+      script(roll("a"), roll("b"), roll("c"), ...settlementPath());
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(
+        makeContext({ kind: "settlement" }),
+        makeDeps()
+      );
 
       expect(result.ok).toBe(true);
       expect(phasesRequested().filter((p) => p === "endings")).toHaveLength(4);
@@ -1250,62 +1363,77 @@ describe("resolveTick — the staged runner", () => {
   });
 
   it("offers each phase exactly its own tool, forced, and a system prompt naming only that tool", async () => {
-    script(...happyPath());
+    // Each session is checked on its own: the phase count and the session's
+    // name in the heading are what a phase knows about where it is.
+    const checkSession = (
+      phases: readonly ResolutionPhase[],
+      session: string
+    ) => {
+      const all = requests();
+      expect(all).toHaveLength(phases.length);
+      phases.forEach((phase, i) => {
+        const req = all[i];
+        const own = PHASE_TOOL_NAMES[phase];
+        // The dice ride along in endings only, and only there is the choice
+        // left open — everywhere else the phase tool is the structured output.
+        if (phase === "endings") {
+          expect(req.tools.map((t) => t.name)).toEqual([own, "damageRoll"]);
+          expect(req.toolChoice).toBe("any");
+          expect(req.allowParallelCalls).toBe(true);
+        } else {
+          expect(req.tools.map((t) => t.name)).toEqual([own]);
+          expect(req.toolChoice).toEqual({ name: own });
+          expect(req.allowParallelCalls).toBe(false);
+        }
+        expect(req.tools[0].strict).toBe(true);
+        expect(req.operation).toBe(`world-action-engine:${phase}`);
+        expect(req.cacheSystemPrompt).toBe(true);
+
+        const prompt = req.customSystemPrompt ?? "";
+        expect(prompt).toContain(`\`${own}\``);
+        for (const other of RESOLUTION_PHASES.filter((p) => p !== phase)) {
+          expect(prompt).not.toContain(PHASE_TOOL_NAMES[other]);
+        }
+        // The budget is a code constant and a prompt sentence at once; the
+        // document names it with placeholders so the two cannot drift.
+        expect(prompt).not.toContain("{{");
+        expect(prompt).toContain(`budget of ${MAX_PROVIDER_CALLS} model calls`);
+        expect(prompt).toContain(
+          `at most ${MAX_PHASE_ATTEMPTS} submission attempts`
+        );
+        // damageRoll is named only where it is offered.
+        expect(prompt.includes("damageRoll")).toBe(phase === "endings");
+
+        // The opening turn: the two cached context blocks, then the phase's
+        // own instruction.
+        const first = req.messages[0];
+        expect(first.role).toBe("user");
+        if (first.role !== "user") return;
+        expect(first.content).toHaveLength(3);
+        expect(first.content[0]).toMatchObject({
+          kind: "text",
+          cacheControl: true,
+        });
+        expect(first.content[1]).toMatchObject({
+          kind: "text",
+          cacheControl: true,
+        });
+        expect(first.content[2]).not.toHaveProperty("cacheControl");
+        expect(instructionOf(req)).toContain(
+          `# Phase ${i + 1} of ${phases.length} of the ${session}`
+        );
+        expect(instructionOf(req)).toContain(`Call \`${own}\` now`);
+      });
+    };
+
+    script(...settlementPath());
+    await resolveTick(makeContext({ kind: "settlement" }), makeDeps());
+    checkSession(SESSION_PHASES.settlement, "SETTLEMENT");
+
+    generateToolCalls.mockClear();
+    script(...startPath());
     await resolveTick(makeContext(), makeDeps());
-
-    const all = requests();
-    expect(all).toHaveLength(6);
-    RESOLUTION_PHASES.forEach((phase, i) => {
-      const req = all[i];
-      const own = PHASE_TOOL_NAMES[phase];
-      // The dice ride along in endings only, and only there is the choice
-      // left open — everywhere else the phase tool is the structured output.
-      if (phase === "endings") {
-        expect(req.tools.map((t) => t.name)).toEqual([own, "damageRoll"]);
-        expect(req.toolChoice).toBe("any");
-        expect(req.allowParallelCalls).toBe(true);
-      } else {
-        expect(req.tools.map((t) => t.name)).toEqual([own]);
-        expect(req.toolChoice).toEqual({ name: own });
-        expect(req.allowParallelCalls).toBe(false);
-      }
-      expect(req.tools[0].strict).toBe(true);
-      expect(req.operation).toBe(`world-action-engine:${phase}`);
-      expect(req.cacheSystemPrompt).toBe(true);
-
-      const prompt = req.customSystemPrompt ?? "";
-      expect(prompt).toContain(`\`${own}\``);
-      for (const other of RESOLUTION_PHASES.filter((p) => p !== phase)) {
-        expect(prompt).not.toContain(PHASE_TOOL_NAMES[other]);
-      }
-      // The budget is a code constant and a prompt sentence at once; the
-      // document names it with placeholders so the two cannot drift.
-      expect(prompt).not.toContain("{{");
-      expect(prompt).toContain(`budget of ${MAX_PROVIDER_CALLS} model calls`);
-      expect(prompt).toContain(
-        `at most ${MAX_PHASE_ATTEMPTS} submission attempts`
-      );
-      // damageRoll is named only where it is offered.
-      expect(prompt.includes("damageRoll")).toBe(phase === "endings");
-
-      // The opening turn: the two cached context blocks, then the phase's
-      // own instruction.
-      const first = req.messages[0];
-      expect(first.role).toBe("user");
-      if (first.role !== "user") return;
-      expect(first.content).toHaveLength(3);
-      expect(first.content[0]).toMatchObject({
-        kind: "text",
-        cacheControl: true,
-      });
-      expect(first.content[1]).toMatchObject({
-        kind: "text",
-        cacheControl: true,
-      });
-      expect(first.content[2]).not.toHaveProperty("cacheControl");
-      expect(instructionOf(req)).toContain(`# Phase ${i + 1} of 6`);
-      expect(instructionOf(req)).toContain(`Call \`${own}\` now`);
-    });
+    checkSession(SESSION_PHASES.start, "START JUDGEMENT");
   });
 
   // ==================== The strict-schema fallback ====================
@@ -1335,16 +1463,19 @@ describe("resolveTick — the staged runner", () => {
     const A_BAD_SCENE_OP = {
       sceneChanges: [
         {
-          sourceActionId: "action_c1",
+          sourceActionId: LIVE,
           sceneId: "SCN_1",
           operation: { kind: "levitate" },
         },
       ],
     };
 
-    /** The four phases before the scene phase, all accepted first try. */
-    const beforeScene = () => script(...happyPath().slice(0, 4));
-    const fromScene = () => script(...happyPath().slice(4));
+    /** One settlement, with the ending it has to answer. */
+    const settling = () => makeContext({ kind: "settlement", ending: true });
+    /** The three phases before the scene phase, all accepted first try. */
+    const beforeScene = () =>
+      script(...settlementPath(SETTLES_LIVE).slice(0, 3));
+    const fromScene = () => script(...settlementPath(SETTLES_LIVE).slice(3));
 
     let warned: string[] = [];
     let warnSpy: { mockRestore: () => void };
@@ -1357,12 +1488,12 @@ describe("resolveTick — the staged runner", () => {
     afterEach(() => warnSpy.mockRestore());
 
     it("offers every phase its strict tool while nothing has been refused", async () => {
-      script(...happyPath());
+      script(...settlementPath(SETTLES_LIVE));
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(settling(), makeDeps());
 
       expect(result.ok).toBe(true);
-      expect(requests()).toHaveLength(6);
+      expect(requests()).toHaveLength(5);
       for (const req of requests()) expect(req.tools[0].strict).toBe(true);
       expect(warned).toEqual([]);
     });
@@ -1372,21 +1503,20 @@ describe("resolveTick — the staged runner", () => {
       generateToolCalls.mockRejectedValueOnce(grammarError());
       fromScene();
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(settling(), makeDeps());
 
       expect(result.ok).toBe(true);
-      expect(generateToolCalls).toHaveBeenCalledTimes(7);
+      expect(generateToolCalls).toHaveBeenCalledTimes(6);
       expect(phasesRequested()).toEqual([
         "endings",
-        "starts",
         "characterChanges",
         "itemChanges",
         "sceneChanges",
         "sceneChanges",
         "occurrences",
       ]);
-      const refused = requests()[4];
-      const retried = requests()[5];
+      const refused = requests()[3];
+      const retried = requests()[4];
       expect(refused.tools[0]).toMatchObject({ name: SCENE, strict: true });
       expect(retried.tools[0]).toMatchObject({ name: SCENE, strict: false });
       // The same question, asked again: the refusal happened before the model
@@ -1409,21 +1539,21 @@ describe("resolveTick — the staged runner", () => {
       beforeScene();
       generateToolCalls.mockRejectedValueOnce(grammarError());
       fromScene();
-      expect((await resolveTick(makeContext(), makeDeps())).ok).toBe(true);
+      expect((await resolveTick(settling(), makeDeps())).ok).toBe(true);
 
       // A second tick in the same process. Nothing is refused this time,
       // because nothing strict is offered for that phase any more.
       generateToolCalls.mockClear();
       warned = [];
-      script(...happyPath());
-      const second = await resolveTick(makeContext(), makeDeps());
+      script(...settlementPath(SETTLES_LIVE));
+      const second = await resolveTick(settling(), makeDeps());
 
       expect(second.ok).toBe(true);
-      expect(generateToolCalls).toHaveBeenCalledTimes(6);
-      expect(phasesRequested()).toEqual([...RESOLUTION_PHASES]);
-      // Only that phase: the five schemas nobody refused are still strict.
+      expect(generateToolCalls).toHaveBeenCalledTimes(5);
+      expect(phasesRequested()).toEqual([...SESSION_PHASES.settlement]);
+      // Only that phase: the schemas nobody refused are still strict.
       requests().forEach((req, i) => {
-        expect(req.tools[0].strict).toBe(i !== 4);
+        expect(req.tools[0].strict).toBe(i !== 3);
       });
       // Quiet: the refusal was warned about in the tick that met it.
       expect(warned).toEqual([]);
@@ -1437,14 +1567,14 @@ describe("resolveTick — the staged runner", () => {
       script(
         accept("sceneChanges", A_BAD_SCENE_OP),
         accept("sceneChanges", BASE_ANSWERS.sceneChanges),
-        accept("occurrences", BASE_ANSWERS.occurrences)
+        accept("occurrences", LIVE_TRACE)
       );
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(settling(), makeDeps());
 
       expect(result.ok).toBe(true);
-      expect(generateToolCalls).toHaveBeenCalledTimes(8);
-      const correction = requests()[6];
+      expect(generateToolCalls).toHaveBeenCalledTimes(7);
+      const correction = requests()[5];
       const rejection = lastToolResults(correction)[0].content;
       expect(rejection).toContain("sceneChange:0");
       expect(rejection).toContain('unknown scene operation kind "levitate"');
@@ -1465,12 +1595,12 @@ describe("resolveTick — the staged runner", () => {
         accept("sceneChanges", BASE_ANSWERS.sceneChanges)
       );
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(settling(), makeDeps());
 
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.failure).toContain("model error in phase sceneChanges");
-      expect(generateToolCalls).toHaveBeenCalledTimes(5);
+      expect(generateToolCalls).toHaveBeenCalledTimes(4);
       expect(isStrictDowngraded(fingerprintOf("sceneChanges"))).toBe(false);
       expect(warned.join("\n")).not.toContain("without strict");
     });
@@ -1486,7 +1616,7 @@ describe("resolveTick — the staged runner", () => {
         accept("endings", BASE_ANSWERS.endings)
       );
 
-      const result = await resolveTick(makeContext(), makeDeps());
+      const result = await resolveTick(settling(), makeDeps());
 
       expect(result.ok).toBe(false);
       if (result.ok) return;

@@ -27,6 +27,7 @@ import {
   PHASE_TOOL_NAME_SET,
   RESOLUTION_PHASES,
   type ResolutionPhase,
+  SESSION_PHASES,
   phaseOfTool,
   phaseTool,
   schemaFingerprint,
@@ -93,16 +94,26 @@ const branchCountOf = (node: unknown): number => {
 describe("the six phase tools", () => {
   it("names one tool per phase, in execution order", () => {
     expect([...RESOLUTION_PHASES]).toEqual([
-      "endings",
       "starts",
+      "endings",
       "characterChanges",
       "itemChanges",
       "sceneChanges",
       "occurrences",
     ]);
+    expect(SESSION_PHASES).toEqual({
+      start: ["starts"],
+      settlement: [
+        "endings",
+        "characterChanges",
+        "itemChanges",
+        "sceneChanges",
+        "occurrences",
+      ],
+    });
     expect(RESOLUTION_PHASES.map((p) => PHASE_TOOL_NAMES[p])).toEqual([
-      "submit_endings",
       "submit_starts",
+      "submit_endings",
       "submit_character_changes",
       "submit_item_changes",
       "submit_scene_changes",
@@ -305,7 +316,7 @@ describe("what the split bought", () => {
     }
     expect(
       RESOLUTION_PHASES.map((p) => optionalsOf(schemaOf(p)).length)
-    ).toEqual([0, 6, 0, 8, 5, 4]);
+    ).toEqual([6, 0, 0, 8, 5, 4]);
   });
 
   it("stays inside the strict keyword subset", () => {

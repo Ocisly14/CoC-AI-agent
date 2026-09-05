@@ -71,6 +71,10 @@ export interface CreateTickEngineOptions {
   /** Test seam: replaces the weather engine LLM call. */
   weatherJudgeFn?: WeatherJudgeFn;
   persistedState?: TickEnginePersistedState;
+  /** Language the World Action Engine writes its prose in ("zh" | "en" | …).
+   *  Absent means English. Distinct from a module's `commonLanguage`, which
+   *  says what tongue the characters SPEAK. */
+  narrationLanguage?: string;
 }
 
 export function createTickEngine(opts: CreateTickEngineOptions): TickEngine {
@@ -114,6 +118,7 @@ export function createTickEngine(opts: CreateTickEngineOptions): TickEngine {
     resolveTickFn: opts.resolveTickFn,
     weatherJudgeFn: opts.weatherJudgeFn,
     tickDurationMinutes: opts.tickDurationMinutes,
+    narrationLanguage: opts.narrationLanguage,
   });
 
   return {

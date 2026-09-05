@@ -286,7 +286,7 @@ export const CHARACTER_OPS: OperationSpec[] = [
   {
     kinds: ["setAppearance"],
     fields:
-      "appearance:string — REPLACES the character's whole appearance prose (what anyone looking at them sees: build, face, hair, clothes, marks). Keep every part still true, change only what really changed — a shaved beard, a scar that will stay, a coat they now wear. A passing state (blood on the hands, soaked clothes, a bandage) is a condition, not an appearance",
+      "appearance:string — REPLACES the character's whole appearance prose (what anyone looking at them sees: build, face, hair, clothes, marks). Keep every part still true, change only what really changed — a shaved beard, a scar that will stay, a coat they now wear. A passing state (blood on the hands, soaked clothes, a bandage) is a condition, not something to add here — but when the appearance you were given already states a bodily state and this tick undid it (a wound now dressed, a face now washed), rewriting that sentence here is the only way the world stops reading the old claim as current",
     schema: { properties: { appearance: STR }, required: ["appearance"] },
   },
   {

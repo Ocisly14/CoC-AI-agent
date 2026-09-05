@@ -187,12 +187,7 @@ export interface Lookup {
    *  what the model was shown. Undefined when the actor's place is not in
    *  the involved set. */
   exitsFor: (actorId: string) => Exit[] | undefined;
-  /** connectionId → the two places it joins, from every involved place's
-   *  connections and the world-wide blocked list. Used to tell when two
-   *  different ids name the same passage (a two-way exit is two ids). */
-  edgeByConnectionId: Map<string, { from: string; to: string }>;
   vehicleIds: Set<string>;
-  vehicleInteriors: Map<string, string>;
   characterSceneIds: Map<string, string | undefined>;
   /** Involved (Tier 2) places' prose — for the stale-citation check. */
   placeDescriptions: Map<string, string>;
@@ -231,8 +226,8 @@ export interface ResolutionWorklist {
    *  except that a pure-speech action is answered by its speech occurrence
    *  alone. The duration was set once when the action began. */
   ending: string[];
-  /** Triggered but still running. Informational only — the Engine owes these
-   *  nothing. Listed so every id in the trigger is accounted for. */
+  /** Active and not yet ending, including actions absent from the trigger.
+   *  Informational only — the Engine owes these nothing. */
   stillRunning: string[];
   /** The actor has issued a new command over this one. It is in `ending`
    *  too: it stops at THIS minute, whatever its duration said, and the Engine
@@ -317,7 +312,21 @@ export function resolutionWorklist(
       // (not the Engine) will record it as interrupted, since its time was
       // not spent.
       if (replaced.has(id)) worklist.replaced.push(id);
-    } else worklist.stillRunning.push(id);
+    }
+  }
+  // Ongoing actions normally have no trigger until their clock expires.
+  // Include them as context without creating any new resolution obligations.
+  for (const action of context.actions.activeActions) {
+    const durationTicks = action.resolvedDurationTicks;
+    if (
+      action.status === "active" &&
+      !queued.has(action.id) &&
+      !explicitlyEnding.has(action.id) &&
+      (durationTicks === undefined ||
+        action.progressMinutes < durationTicks * context.tick.durationMinutes)
+    ) {
+      worklist.stillRunning.push(action.id);
+    }
   }
   for (const id of worklist.ending) {
     const action = context.actions.activeActions.find((a) => a.id === id);
@@ -346,9 +355,6 @@ export function buildLookup(context: EngineResolutionContext): Lookup {
   const placeIds = new Set(placeKinds.map(([id]) => id));
   const connectionIds = new Set(context.state.connectionIds);
   const vehicleIds = new Set((context.state.vehicles ?? []).map((v) => v.id));
-  const vehicleInteriors = new Map(
-    (context.state.vehicles ?? []).map((v) => [v.id, v.interiorSceneId])
-  );
   const characterSceneIds = new Map(
     context.state.characters.map((c) => {
       const position = c.position as { sceneId?: string } | null;
@@ -378,21 +384,6 @@ export function buildLookup(context: EngineResolutionContext): Lookup {
     }
     return exitsCache.get(actorId);
   };
-  const edgeByConnectionId = new Map<string, { from: string; to: string }>();
-  for (const place of context.state.places) {
-    for (const c of place.connections ?? []) {
-      edgeByConnectionId.set(c.connectionId, {
-        from: place.id,
-        to: c.targetId,
-      });
-    }
-  }
-  for (const e of context.state.blockedEdges) {
-    if (!edgeByConnectionId.has(e.connectionId)) {
-      edgeByConnectionId.set(e.connectionId, { from: e.from, to: e.to });
-    }
-  }
-
   const actionById = new Map<string, KnownAction>();
   for (const action of context.actions.activeActions) {
     actionById.set(action.id, {
@@ -424,9 +415,7 @@ export function buildLookup(context: EngineResolutionContext): Lookup {
     locationIds,
     connectionIds,
     exitsFor,
-    edgeByConnectionId,
     vehicleIds,
-    vehicleInteriors,
     characterSceneIds,
     placeDescriptions,
     itemHolders,
@@ -1564,119 +1553,11 @@ export function notARowMessage(index: number): string {
 // the moment its second domain arrives, and `validateRawResolution` runs
 // every one of them again over the assembled draft. Two copies of a rule
 // this shape is exactly how a phase and the final gate come to disagree.
-
-/** A start that drives a vehicle its driver is not inside. */
-export interface VehicleBoardingGap {
-  actionId: string;
-  message: string;
-}
-
-/**
- * The wheels will not turn for someone standing beside the vehicle: a drive is
- * only settled when the driver is IN the interior scene — already, or moved
- * there by a position change in the same resolution. Mechanical (position vs
- * scene id), so it can live here rather than in the rules prose alone.
- */
-export function vehicleBoardingGaps(
-  starting: readonly unknown[],
-  characterChanges: readonly unknown[],
-  lookup: Lookup
-): VehicleBoardingGap[] {
-  const gaps: VehicleBoardingGap[] = [];
-  for (const entry of starting) {
-    if (!isRecord(entry) || typeof entry.actionId !== "string") continue;
-    const movement = entry.movement;
-    const vehicleId = isRecord(movement) ? movement.vehicleId : undefined;
-    if (typeof vehicleId !== "string") continue;
-    const interior = lookup.vehicleInteriors.get(vehicleId);
-    if (interior === undefined) continue; // unknown vehicle already reported
-    const actorId = lookup.actionById.get(entry.actionId)?.command.actorId;
-    if (actorId === undefined) continue;
-    const alreadyInside = lookup.characterSceneIds.get(actorId) === interior;
-    const boardedHere = characterChanges.some(
-      (change) =>
-        isRecord(change) &&
-        change.characterId === actorId &&
-        (
-          change.operation as {
-            kind?: string;
-            position?: { sceneId?: string };
-          }
-        )?.kind === "position" &&
-        (change.operation as { position?: { sceneId?: string } }).position
-          ?.sceneId === interior
-    );
-    if (!alreadyInside && !boardedHere) {
-      gaps.push({
-        actionId: entry.actionId,
-        message: `movement.vehicleId "${vehicleId}": the driver ${actorId} is not in its interior scene "${interior}" — add a characterChange position into "${interior}" in this submission (boarding), or drop the vehicle and walk`,
-      });
-    }
-  }
-  return gaps;
-}
-
-/** A one-shot grant and a world-wide unblock naming the same passage. */
-export interface PassVersusUnblock {
-  /** The starting action carrying the grant. */
-  actionId: string;
-  /** Index in the sceneChanges array of the `connectionBlock blocked:false`
-   *  it collides with — the row a scene phase would drop. */
-  sceneChangeIndex: number;
-  message: string;
-}
-
-/**
- * Never both for one passage: an obstacle is either removed for everyone
- * (`connectionBlock blocked:false`) or got past by this one walker
- * (`passBlockedConnectionId`). Compared on the passage, not the id — a two-way
- * exit is two ids.
- */
-export function passVersusUnblockConflicts(
-  starting: readonly unknown[],
-  sceneChanges: readonly unknown[],
-  lookup: Lookup
-): PassVersusUnblock[] {
-  const passageKey = (connectionId: string): string => {
-    const edge = lookup.edgeByConnectionId.get(connectionId);
-    return edge ? [edge.from, edge.to].sort().join("::") : connectionId;
-  };
-  const unblocked = new Map<string, { connectionId: string; index: number }>();
-  for (const [index, sc] of sceneChanges.entries()) {
-    if (!isRecord(sc)) continue;
-    const op = sc.operation as
-      | { kind?: string; connectionId?: unknown; blocked?: unknown }
-      | undefined;
-    if (
-      op?.kind === "connectionBlock" &&
-      op.blocked === false &&
-      typeof op.connectionId === "string"
-    ) {
-      unblocked.set(passageKey(op.connectionId), {
-        connectionId: op.connectionId,
-        index,
-      });
-    }
-  }
-  const conflicts: PassVersusUnblock[] = [];
-  if (unblocked.size === 0) return conflicts;
-  for (const entry of starting) {
-    if (!isRecord(entry) || typeof entry.actionId !== "string") continue;
-    const movement = entry.movement;
-    const passId = isRecord(movement)
-      ? movement.passBlockedConnectionId
-      : undefined;
-    if (typeof passId !== "string") continue;
-    const cleared = unblocked.get(passageKey(passId));
-    if (cleared === undefined) continue;
-    conflicts.push({
-      actionId: entry.actionId,
-      sceneChangeIndex: cleared.index,
-      message: `movement.passBlockedConnectionId "${passId}" and a sceneChanges connectionBlock blocked:false on "${cleared.connectionId}" name the same passage — never both for one passage. If the act REMOVED the obstacle, keep the unblock and drop the grant; if the obstacle STAYS and only this walker got past, keep the grant and drop the unblock`,
-    });
-  }
-  return conflicts;
-}
+//
+// Nothing here spans a start and a settlement: those are two sessions over
+// two world states, and a start is a settled fact by the time anything is
+// settled against it. Whether a driver is in the cab is checked by the
+// movement runtime when the drive starts (`initMovementRuntime`), not here.
 
 /** An item leaving a place whose prose still points at it. */
 export interface StaleCitation {
@@ -1827,26 +1708,6 @@ export function validateRawResolution(
             )
           : validate(entry as never, lookup)
       );
-    }
-    if (moment === "starting") {
-      // Two domains at once, so neither the starts phase nor the phase that
-      // submits the other half can settle them alone. They run again HERE,
-      // over the assembled draft, even though a phase already ran them:
-      // faster feedback there, final authority here.
-      for (const gap of vehicleBoardingGaps(
-        entries as unknown[],
-        raw.characterChanges ?? [],
-        lookup
-      )) {
-        at({ kind: "action", actionId: gap.actionId }, [gap.message]);
-      }
-      for (const conflict of passVersusUnblockConflicts(
-        entries as unknown[],
-        raw.sceneChanges ?? [],
-        lookup
-      )) {
-        at({ kind: "action", actionId: conflict.actionId }, [conflict.message]);
-      }
     }
   }
   // An ending answered by talk alone has no entry: its speech row is the

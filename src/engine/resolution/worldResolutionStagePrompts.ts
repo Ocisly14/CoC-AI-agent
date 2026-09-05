@@ -1,13 +1,15 @@
 // src/engine/resolution/worldResolutionStagePrompts.ts
 //
-// Everything the six-phase World Action Engine says to the model, and nothing
-// that decides anything. One tick's resolution is decided in six ordered
-// phases — endings, starts, characterChanges, itemChanges, sceneChanges,
-// occurrences — each its own request with ONLY its own submission tool, so
-// each needs its own narrow system prompt and its own closing demand. The
-// world context itself is phase-neutral: the same two segments are sent to
-// every phase (the cache layout below is the reason), and only this file's
-// per-phase blocks differ.
+// Everything the World Action Engine says to the model, and nothing that
+// decides anything. The Engine has two functions, each a session of its own:
+// the start judgement (one phase, `starts`, run the minute a command arrives)
+// and the settlement (`endings`, `characterChanges`, `itemChanges`,
+// `sceneChanges`, `occurrences`, run when actions end). Every phase is its own
+// request with ONLY its own submission tool, so each needs its own narrow
+// system prompt and its own closing demand. The world context itself is
+// phase-neutral: the same two segments are sent to every phase of a session
+// (the cache layout below is the reason), and only this file's per-phase
+// blocks differ.
 //
 // Every string rendered here is English. The world's own prose travels inside
 // the context JSON and may be any language — that is data, not instruction.
@@ -38,8 +40,9 @@ import {
   type AcceptedResolutionDraft,
   PHASE_FIELDS,
   PHASE_TOOL_NAMES,
-  RESOLUTION_PHASES,
   type ResolutionPhase,
+  sessionOfPhase,
+  sessionPhasesOf,
 } from "./worldResolutionStageSchemas.js";
 import {
   MERGE_PHASES,
@@ -139,7 +142,7 @@ const RULE_MODULE_TEXT = new Map<string, string>(
  *  the difference every tick, and nobody would see it in either place alone. */
 const PHASE_PROTOCOL = loadRuleFile(
   "session-protocol.md",
-  "You are in one phase of six. Call only this phase's submission tool, exactly once, with its complete array; `[]` when the domain is empty. Everything accepted in an earlier phase is a read-only fact. There is no patch tool: a rejected starts or occurrences phase sends only what the rejection lists as still owed, which code merges with the rows it kept; every other rejected phase sends the complete array again."
+  "You are in one phase of one of the Engine's two functions — the start judgement (one phase) or the settlement (five). Call only this phase's submission tool, exactly once, with its complete array; `[]` when the domain is empty. Everything accepted in an earlier phase is a read-only fact. There is no patch tool: a rejected starts or occurrences phase sends only what the rejection lists as still owed, which code merges with the rows it kept; every other rejected phase sends the complete array again."
 );
 
 const SKILL_CATALOG_SECTION = `## Skill catalog
@@ -164,8 +167,27 @@ const PHASE_TITLES: Record<ResolutionPhase, string> = {
   occurrences: "OCCURRENCES",
 };
 
+/** Position of a phase within ITS session: the start judgement is one
+ *  phase, the settlement five. */
 function phaseNumber(phase: ResolutionPhase): number {
-  return RESOLUTION_PHASES.indexOf(phase) + 1;
+  return sessionPhasesOf(phase).indexOf(phase) + 1;
+}
+
+function phaseCount(phase: ResolutionPhase): number {
+  return sessionPhasesOf(phase).length;
+}
+
+/** The session, in the prompt's own voice. */
+function sessionName(phase: ResolutionPhase): string {
+  return sessionOfPhase(phase) === "start"
+    ? "the START JUDGEMENT"
+    : "the SETTLEMENT";
+}
+
+/** "phase 2 of 5 of the SETTLEMENT — CHARACTER CHANGES": how a request
+ *  names itself, everywhere it does. */
+function phaseHeading(phase: ResolutionPhase): string {
+  return `phase ${phaseNumber(phase)} of ${phaseCount(phase)} of ${sessionName(phase)} — ${PHASE_TITLES[phase]}`;
 }
 
 /** `submit_endings`, backticked — written once so no renderer can spell a
@@ -196,7 +218,7 @@ function phaseToolContract(phase: ResolutionPhase): string {
     phase === "endings"
       ? `This phase takes two tools and no others: \`damageRoll\`, described below, and ${toolRef(phase)}, which ends the phase and carries exactly one array, ${fieldRef(phase)}.`
       : `The only tool this phase takes is ${toolRef(phase)}, and it carries exactly one array, ${fieldRef(phase)}.`;
-  const head = `## This request: phase ${phaseNumber(phase)} of 6 — ${PHASE_TITLES[phase]}
+  const head = `## This request: ${phaseHeading(phase)}
 
 ${tools} Call it once, with the complete array; a phase with nothing to report submits \`[]\`. Nothing else in this request is yours to answer.`;
 
@@ -240,11 +262,29 @@ Report every objective thing that happened this tick that somebody could perceiv
   }
 }
 
+/**
+ * The one instruction that fixes the language of everything this session
+ * WRITES. Without it the session had none: it composed in whatever language
+ * the surrounding world data leaned toward, which held for most ticks and
+ * then produced a whole settlement — every ending and every occurrence — in
+ * English inside a Chinese run.
+ *
+ * This is the narration language, not the tongue the characters speak: a
+ * command's `declaredLanguage` and a module's `commonLanguage` are in-world
+ * facts and are untouched by it. English is the default, as it is for the
+ * renderer and the persona agent, so a module that says nothing gets English.
+ */
+function languageDirective(narrationLanguage?: string): string {
+  const named = narrationLanguage?.startsWith("zh") ? "Chinese" : "English";
+  return `Write every string you submit in ${named}: outcomes, occurrence content, condition and appearance prose, item and place descriptions, reasons. This is the language of the telling and it does not change with what you read — the world data in this request may be in any language, and quoted speech keeps the tongue it was spoken in.`;
+}
+
 /** The whole system prompt for one phase. `budget` is templated into the
  *  protocol text; Task 4's constants own the numbers. */
 export function renderPhaseSystemPrompt(
   phase: ResolutionPhase,
-  budget: { maxProviderCalls: number; maxPhaseAttempts: number }
+  budget: { maxProviderCalls: number; maxPhaseAttempts: number },
+  narrationLanguage?: string
 ): string {
   const modules = PHASE_RULE_MODULES[phase]
     .map((name) => RULE_MODULE_TEXT.get(name) ?? "")
@@ -255,9 +295,10 @@ export function renderPhaseSystemPrompt(
   ).replaceAll("{{MAX_PHASE_ATTEMPTS}}", String(budget.maxPhaseAttempts));
 
   return [
+    languageDirective(narrationLanguage),
     `You are the World Action Engine of a tick-based world simulation. You are the sole authority on what actually happens: characters submitted intent (ActionCommands), and you decide how long each action should take, how hard it is, and what it does to the world — for ALL new and in-flight actions on one shared world snapshot. You do not decide how much time passed, whether an action is finished, or whether a check was passed: code owns the clock and the dice, and hands you their results.
 
-One tick's resolution is decided in six phases, one request each. This request is phase ${phaseNumber(phase)} of 6: ${PHASE_TITLES[phase]}.`,
+You have two functions, each a session of its own. The START JUDGEMENT is one phase, run the minute a command arrives, before any world time has passed on it: the clock, the bar and the route of every new action. The SETTLEMENT is five phases, run when actions end: what came of them and what that did to the world. This request is ${phaseHeading(phase)}.`,
     ROOT_CONTRACT,
     ...modules,
     ...(PHASES_WITH_SKILL_CATALOG.has(phase) ? [SKILL_CATALOG_SECTION] : []),
@@ -446,7 +487,7 @@ export function renderContextSegments(context: EngineResolutionContext): {
       context.state.places
     ),
     section(
-      "Vehicles (movable interiors: boarding = a `position` change into interiorSceneId; driving = movement.vehicleId with the route; the vehicle stands at `position` until driven)",
+      "Vehicles (movable interiors: driving = movement.vehicleId with the route, and only for a driver already standing in interiorSceneId when the drive starts — boarding is its own earlier action, a `position` change into the interior when it ends; the vehicle stands at `position` until driven)",
       context.state.vehicles ?? []
     ),
     section(
@@ -613,7 +654,7 @@ function phaseObligations(
   }
   const guidance: Record<string, string> = {
     characterChanges:
-      "Reconcile each accepted outcome with the character's CURRENT state. Record only resulting persistent differences. A narrated effect does not require a state row when the state already matches. Each row names its real characterId and sourceActionId.",
+      "Reconcile each accepted outcome with the character's CURRENT state. Record only resulting persistent differences. A narrated effect does not require a state row when the state already matches — but state that still ASSERTS what the outcome undid does not match, and that is a change you must write: a condition the action ended is a `removeCondition`, and appearance prose still claiming a wound, blood or disorder the action dealt with is a `setAppearance`. Left alone it is read as current by every later tick, which is how a treated wound comes back untreated and gets treated again. Each row names its real characterId and sourceActionId.",
     itemChanges:
       "Reconcile accepted outcomes with CURRENT item ownership, existence and descriptions. Preserve conservation: no duplicate ownership or invented supplies. Mere handling is not a change. Each row names its sourceActionId.",
     sceneChanges:
@@ -632,13 +673,13 @@ function acceptedSoFarSection(
   phase: ResolutionPhase,
   draft: AcceptedResolutionDraft
 ): string {
-  const upstream = RESOLUTION_PHASES.slice(
-    0,
-    RESOLUTION_PHASES.indexOf(phase)
-  ).filter((p) => draft[PHASE_FIELDS[p] as keyof AcceptedResolutionDraft]);
+  const phases = sessionPhasesOf(phase);
+  const upstream = phases
+    .slice(0, phases.indexOf(phase))
+    .filter((p) => draft[PHASE_FIELDS[p] as keyof AcceptedResolutionDraft]);
 
   if (upstream.length === 0) {
-    return "## Accepted so far (read-only)\n\nNothing precedes this phase: these are the first judgements of this tick.";
+    return "## Accepted so far (read-only)\n\nNothing precedes this phase: these are the first judgements of this session.";
   }
   const blocks = upstream.map((p) => {
     const field = PHASE_FIELDS[p];
@@ -703,7 +744,7 @@ export function renderPhaseInstruction(
 ): string {
   const globalErrors = opts?.globalErrors ?? [];
   return [
-    `# Phase ${phaseNumber(phase)} of 6 — ${PHASE_TITLES[phase]}`,
+    `# ${phaseHeading(phase).replace(/^phase/, "Phase")}`,
     phaseWorklistSection(phase, context, draft),
     acceptedSoFarSection(phase, draft),
     ...(globalErrors.length > 0 ? [redoSection(globalErrors)] : []),
@@ -863,8 +904,8 @@ export function renderPhaseWrongTool(
 ): string {
   const only =
     phase === "endings"
-      ? `This is phase ${phaseNumber(phase)} of 6, ${PHASE_TITLES[phase]}. It takes two tools and no others: \`damageRoll\`, for damage that is actually being dealt this tick, and ${toolRef(phase)}, which ends the phase.`
-      : `This is phase ${phaseNumber(phase)} of 6, ${PHASE_TITLES[phase]}, and ${toolRef(phase)} is the only tool it takes.`;
+      ? `This is ${phaseHeading(phase)}. It takes two tools and no others: \`damageRoll\`, for damage that is actually being dealt this tick, and ${toolRef(phase)}, which ends the phase.`
+      : `This is ${phaseHeading(phase)}, and ${toolRef(phase)} is the only tool it takes.`;
   return [
     `Error: \`${calledName}\` was NOT accepted and did nothing.`,
     "",

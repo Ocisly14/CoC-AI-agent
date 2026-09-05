@@ -464,20 +464,6 @@ describe("starts phase", () => {
     expect(text(errors)).toContain("appears more than once");
   });
 
-  it("refuses an id the endings phase already decided", () => {
-    // The upstream draft is a FACT here, not another guess: the contradiction
-    // is named against it rather than left for the final gate.
-    const errors = validatePhase(
-      "starts",
-      {
-        starting: [goodStart, { actionId: ENDING, resolvedDurationTicks: 2 }],
-      },
-      makeContext(),
-      draft
-    );
-    expect(text(errors)).toContain("already answered in the endings phase");
-  });
-
   it("refuses an id that does not begin this tick", () => {
     const errors = validatePhase(
       "starts",
@@ -577,46 +563,6 @@ describe("characterChanges phase", () => {
     expect(errors[0]?.target).toEqual({ kind: "characterChange", index: 0 });
     expect(text(errors)).toContain("does not exist");
   });
-
-  it("catches a driver who never boarded — the first phase that can", () => {
-    // The starts phase could not: the position change that boards him is in
-    // THIS payload.
-    const driving: AcceptedResolutionDraft = {
-      endings: ENDING_DECISIONS,
-      starting: [
-        {
-          actionId: QUEUED,
-          movement: { route: ["SCN_3"], vehicleId: "VEH_1" },
-        },
-      ],
-    };
-    const missing = validatePhase(
-      "characterChanges",
-      { characterChanges: [] },
-      makeContext(),
-      driving
-    );
-    expect(text(missing)).toContain("is not in its interior scene");
-
-    const boarded = validatePhase(
-      "characterChanges",
-      {
-        characterChanges: [
-          {
-            sourceActionId: QUEUED,
-            characterId: "npc_1",
-            operation: {
-              kind: "position",
-              position: { type: "scene", sceneId: "SCN_TRUCK" },
-            },
-          },
-        ],
-      },
-      makeContext(),
-      driving
-    );
-    expect(boarded).toEqual([]);
-  });
 });
 
 // ==================== Item changes ====================
@@ -688,46 +634,6 @@ describe("sceneChanges phase", () => {
         base
       )
     ).toEqual([]);
-  });
-
-  it("refuses an unblock that duplicates an accepted one-shot grant", () => {
-    const granted: AcceptedResolutionDraft = {
-      ...base,
-      starting: [
-        {
-          actionId: QUEUED,
-          movement: {
-            route: ["SCN_2"],
-            passBlockedConnectionId: "connection.scn1.door",
-          },
-        },
-      ],
-    };
-    const errors = validatePhase(
-      "sceneChanges",
-      {
-        sceneChanges: [
-          {
-            sourceActionId: QUEUED,
-            sceneId: "SCN_1",
-            operation: {
-              kind: "connectionBlock",
-              connectionId: "connection.scn1.door",
-              blocked: false,
-              reason: "he lifted the bar",
-            },
-          },
-        ],
-      },
-      makeContext(),
-      granted
-    );
-    expect(text(errors)).toContain("name the same passage");
-    // Addressed at the row this phase can actually drop.
-    expect(errors.map((e) => e.target)).toContainEqual({
-      kind: "sceneChange",
-      index: 0,
-    });
   });
 
   it("demands the rewrite an accepted item move orphans", () => {
@@ -938,10 +844,12 @@ describe("assembleRawResolution", () => {
 
 describe("rewindPhaseFor", () => {
   const context = makeContext();
-  const only = (target: ResolutionError["target"]) =>
-    rewindPhaseFor([{ target, message: "x" }], context);
+  const only = (
+    target: ResolutionError["target"],
+    session?: "start" | "settlement"
+  ) => rewindPhaseFor([{ target, message: "x" }], context, session);
 
-  it("maps every target kind to the phase that can fix it", () => {
+  it("maps every target kind to the settlement phase that can fix it", () => {
     expect(only({ kind: "resolution" })).toBe("endings");
     expect(only({ kind: "characterChange", index: 0 })).toBe(
       "characterChanges"
@@ -953,11 +861,17 @@ describe("rewindPhaseFor", () => {
     );
   });
 
-  it("splits an action id by the moment the worklist puts it in", () => {
+  it("an action id the settlement cannot place goes to its opening phase, never to starts", () => {
     expect(only({ kind: "action", actionId: ENDING })).toBe("endings");
     expect(only({ kind: "action", actionId: TALKING })).toBe("endings");
-    expect(only({ kind: "action", actionId: QUEUED })).toBe("starts");
-    expect(only({ kind: "action", actionId: "action_ghost" })).toBe("starts");
+    expect(only({ kind: "action", actionId: QUEUED })).toBe("endings");
+    expect(only({ kind: "action", actionId: "action_ghost" })).toBe("endings");
+  });
+
+  it("the start judgement has one phase, and every fault rewinds to it", () => {
+    expect(only({ kind: "resolution" }, "start")).toBe("starts");
+    expect(only({ kind: "action", actionId: QUEUED }, "start")).toBe("starts");
+    expect(only({ kind: "occurrence", actionIds: [] }, "start")).toBe("starts");
   });
 
   it("takes the earliest phase over the whole set", () => {
@@ -975,13 +889,14 @@ describe("rewindPhaseFor", () => {
 
   it("rewinds nothing early when there is nothing to fix", () => {
     expect(rewindPhaseFor([], context)).toBe("occurrences");
+    expect(rewindPhaseFor([], context, "start")).toBe("starts");
   });
 });
 
 describe("phaseIndex", () => {
-  it("is the execution order", () => {
-    expect(phaseIndex("endings")).toBe(0);
-    expect(phaseIndex("starts")).toBe(1);
+  it("is the execution order: the start judgement first, then the settlement", () => {
+    expect(phaseIndex("starts")).toBe(0);
+    expect(phaseIndex("endings")).toBe(1);
     expect(phaseIndex("occurrences")).toBe(5);
     expect(phaseIndex("itemChanges")).toBeLessThan(phaseIndex("sceneChanges"));
   });

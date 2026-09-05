@@ -104,6 +104,15 @@ export type MovementInitResult =
        * ticks and ~200k tokens on a mistake he could have corrected in one.
        */
       unstatedHop?: { fromId: string; toId: string };
+      /**
+       * Set when the actor asked to drive a vehicle they are not sitting in.
+       * A drive is judged the minute its command arrives, against the world
+       * as it stands — boarding is a separate, earlier action that ends with
+       * the driver in the interior scene — so a driver standing beside the
+       * cab never sets off. Carried as ids so the actor's own account of it
+       * is written upstream, in their words.
+       */
+      notAboard?: { vehicleId: string; interiorSceneId: string };
     };
 
 /** A place's name for a message a person will read, with the id kept for the
@@ -239,6 +248,36 @@ export function initMovementRuntime(
   if (route.length > 1 && startId !== undefined && route[0] === startId) {
     route = route.slice(1);
   }
+  // The driver's absence is checked before the route itself: it is the more
+  // actionable fact, and it holds regardless of which leg the route fails
+  // on. The driver has to be in the cab when the drive starts. A start is
+  // judged the minute its command arrives, against the world as it stands —
+  // nothing boards anyone in the same breath — so someone beside the vehicle
+  // never sets off, and is told so. (Every later minute is checked again by
+  // `advanceMovement`: a driver pulled out mid-route stops it.)
+  if (vehicleId !== undefined) {
+    const vehicle = dgsm.getVehicle(vehicleId);
+    if (vehicle === null) {
+      return {
+        ok: false,
+        reason: `movement init failed: no vehicle "${vehicleId}"`,
+      };
+    }
+    const actorPos = dgsm.getCharacterPosition(actorId);
+    if (
+      actorPos?.type !== "scene" ||
+      actorPos.sceneId !== vehicle.interiorSceneId
+    ) {
+      return {
+        ok: false,
+        reason: `movement init failed: the driver ${actorId} is not inside ${vehicle.name} (${vehicle.interiorSceneId})`,
+        notAboard: {
+          vehicleId,
+          interiorSceneId: vehicle.interiorSceneId,
+        },
+      };
+    }
+  }
   // The FIRST leg obeys the same grain as every other: one stated stretch
   // from where the subject stands. Without this, a bare far destination
   // would fall through to unconstrained pathfinding — the omniscient router
@@ -255,15 +294,6 @@ export function initMovementRuntime(
       unstatedHop: { fromId: startId, toId: route[0] },
     };
   }
-  if (vehicleId !== undefined && dgsm.getVehicle(vehicleId) === null) {
-    return {
-      ok: false,
-      reason: `movement init failed: no vehicle "${vehicleId}"`,
-    };
-  }
-  // NOTE: whether the driver is sitting inside is checked at each advance,
-  // not here — init runs before this tick's deltas flush, so a same-tick
-  // "board and drive" resolution has not put them in the cab yet.
   let unstatedHopAhead: { fromId: string; toId: string } | undefined;
   for (let i = 0; i + 1 < route.length; i += 1) {
     if (!placesAdjacent(dgsm, route[i], route[i + 1])) {

@@ -1,21 +1,32 @@
 // src/engine/resolution/worldActionEngine.ts
 //
-// The staged World Action Engine (plan Phase 7, six-phase output). Called once
-// per triggered tick with the full EngineResolutionContext. One tick is
-// resolved in six ordered phases — endings, starts, characterChanges,
-// itemChanges, sceneChanges, occurrences — each a request of its own that
-// offers ONLY that phase's submission tool (plus the deterministic damage dice
-// in the endings phase, because a roll must never be the model's). A phase's
+// The staged World Action Engine (plan Phase 7, six-phase output). The Engine
+// has two functions, and the orchestrator calls each as a session of its own
+// over its own full EngineResolutionContext:
+//
+//   the START JUDGEMENT — one phase, `starts` — the minute a command arrives,
+//   before any world time has passed on it: the clock, the bar, the route;
+//   the SETTLEMENT — `endings`, `characterChanges`, `itemChanges`,
+//   `sceneChanges`, `occurrences` — when actions end: what came of them and
+//   what that did to the world.
+//
+// Which function a context asks for is what its triggers say: a `new_action`
+// trigger is a start judgement, everything else a settlement, and the two are
+// never mixed in one context. Within a session the phases run in order, each
+// a request of its own that offers ONLY that phase's submission tool (plus
+// the deterministic damage dice in the endings phase, because a roll must
+// never be the model's). A phase's
 // answer is validated the moment it arrives and retained only when its own
 // validator accepts it; an invalid answer gets an addressed, phase-local
 // rejection. In the two phases whose rows have a key (starts, occurrences)
 // code keeps the rows that passed and asks only for what is still owed,
 // merging before it validates the whole array again; everywhere else the
 // answer is the COMPLETE array for that phase again. There is no patch tool
-// either way. After six accepted phases the draft is assembled into the
-// same RawTickResolution as before and judged whole by the same global gate;
-// a global fault rewinds to the earliest phase that owns it (once), and a tick
-// still invalid after that applies nothing.
+// either way. After the session's phases are accepted the draft is assembled
+// into the same RawTickResolution as before and judged whole by the same
+// global gate; a global fault rewinds to the earliest phase of the session
+// that owns it (once), and a session still invalid after that applies
+// nothing.
 //
 // The one thing a request may change about itself is the `strict` flag, and
 // only when the provider refuses to compile that phase's grammar: see
@@ -75,12 +86,14 @@ import {
 } from "./worldResolutionStagePrompts.js";
 import {
   type AcceptedResolutionDraft,
+  type EngineSessionKind,
   PHASE_FIELDS,
   PHASE_TOOLS,
   PHASE_TOOLS_NON_STRICT,
   PHASE_TOOL_NAMES,
   RESOLUTION_PHASES,
   type ResolutionPhase,
+  SESSION_PHASES,
   schemaFingerprint,
 } from "./worldResolutionStageSchemas.js";
 import {
@@ -88,7 +101,6 @@ import {
   acceptedPhaseValue,
   assembleRawResolution,
   mergeRows,
-  phaseIndex,
   phaseRows,
   retainedRows,
   rewindPhaseFor,
@@ -110,13 +122,14 @@ export {
 // ==================== Budget ====================
 
 /**
- * Hard ceiling on provider calls in one tick's resolution. EVERY
- * `generateToolCalls` invocation counts — a dice turn, a structural refusal, a
- * local correction, and the reruns after a global rewind alike.
+ * Hard ceiling on provider calls in one session. EVERY `generateToolCalls`
+ * invocation counts — a dice turn, a structural refusal, a local correction,
+ * and the reruns after a global rewind alike.
  *
- * Twelve for six phases is two calls a phase: the common path (one) with room
- * for one correction or one dice turn in most of them, or for the whole
- * rewound tail once. The single session it replaces had a 5-turn ceiling,
+ * Twelve for the five-phase settlement is about two calls a phase: the
+ * common path (one) with room for one correction or one dice turn in most of
+ * them, or for the whole rewound tail once. The one-phase start judgement is
+ * bounded well below it by its attempts. The single session it replaces had a 5-turn ceiling,
  * measured over two 30-tick full-town runs: a session that spends every turn
  * fanning out tool calls and applies nothing costs the whole world context
  * per turn, so the ceiling exists to bound waste, not to be reached.
@@ -136,13 +149,29 @@ export const MAX_PROVIDER_CALLS = 12;
  */
 export const MAX_PHASE_ATTEMPTS = 3;
 
-/** Global rewinds one tick may take. One: after a rewound tail the phases have
- *  had their say twice, and a second global failure means they cannot be made
- *  to agree — the tick is rejected atomically rather than argued further. */
+/** Global rewinds one session may take. One: after a rewound tail the phases
+ *  have had their say twice, and a second global failure means they cannot be
+ *  made to agree — the session is rejected atomically rather than argued
+ *  further. */
 export const MAX_GLOBAL_REWINDS = 1;
 
 /** The execution order, which is also the rewind order. */
 export const PHASE_ORDER = RESOLUTION_PHASES;
+
+/**
+ * Which of the Engine's two functions a context asks for. A `new_action`
+ * trigger is a start judgement; anything else is a settlement. The
+ * orchestrator never mixes the two — they are judged on different world
+ * states, a minute apart — and a context that does is refused as unusable
+ * rather than half-answered.
+ */
+export function sessionKindOf(
+  context: EngineResolutionContext
+): EngineSessionKind | "mixed" {
+  const reasons = new Set(context.trigger.triggers.map((t) => t.reason));
+  if (!reasons.has("new_action")) return "settlement";
+  return reasons.size === 1 ? "start" : "mixed";
+}
 
 const BUDGET = {
   maxProviderCalls: MAX_PROVIDER_CALLS,
@@ -212,12 +241,19 @@ function hasNoArgs(call: ToolCallRecord): boolean {
 /** One system prompt per phase, rendered once. The text is a pure function of
  *  the phase and the budget constants, and keeping the string byte-identical
  *  across calls is what lets the provider cache it. */
-const SYSTEM_PROMPTS = new Map<ResolutionPhase, string>();
-function systemPromptFor(phase: ResolutionPhase): string {
-  let prompt = SYSTEM_PROMPTS.get(phase);
+const SYSTEM_PROMPTS = new Map<string, string>();
+function systemPromptFor(
+  phase: ResolutionPhase,
+  narrationLanguage?: string
+): string {
+  // Keyed by language as well as phase: the prompt names the language it
+  // writes in, so one memo per phase would hand a zh run the en text it
+  // happened to render first.
+  const key = `${phase}|${narrationLanguage ?? ""}`;
+  let prompt = SYSTEM_PROMPTS.get(key);
   if (prompt === undefined) {
-    prompt = renderPhaseSystemPrompt(phase, BUDGET);
-    SYSTEM_PROMPTS.set(phase, prompt);
+    prompt = renderPhaseSystemPrompt(phase, BUDGET, narrationLanguage);
+    SYSTEM_PROMPTS.set(key, prompt);
   }
   return prompt;
 }
@@ -244,11 +280,12 @@ function systemPromptFor(phase: ResolutionPhase): string {
 export async function callPhaseModel(
   phase: ResolutionPhase,
   submissionTool: ToolSpec,
-  messages: ModelMessage[]
+  messages: ModelMessage[],
+  narrationLanguage?: string
 ): Promise<ToolCallResult> {
   const endings = phase === "endings";
   return generateToolCalls({
-    customSystemPrompt: systemPromptFor(phase),
+    customSystemPrompt: systemPromptFor(phase, narrationLanguage),
     cacheSystemPrompt: true,
     messages,
     tools: endings ? [submissionTool, ...CODE_TOOL_SPECS] : [submissionTool],
@@ -307,7 +344,8 @@ async function callPhaseModelWithFallback(
     return await callPhaseModel(
       phase,
       downgraded ? PHASE_TOOLS_NON_STRICT[phase] : strictTool,
-      messages
+      messages,
+      session.context.rules.narrationLanguage
     );
   } catch (err) {
     // Already unstrict, or an error that says nothing about the schema: not
@@ -330,14 +368,22 @@ async function callPhaseModelWithFallback(
       throw err;
     }
     session.calls += 1;
-    return await callPhaseModel(phase, PHASE_TOOLS_NON_STRICT[phase], messages);
+    return await callPhaseModel(
+      phase,
+      PHASE_TOOLS_NON_STRICT[phase],
+      messages,
+      session.context.rules.narrationLanguage
+    );
   }
 }
 
 // ==================== Session state ====================
 
-/** Everything one tick's resolution carries across its phases. */
+/** Everything one session carries across its phases. */
 interface Session {
+  kind: EngineSessionKind;
+  /** The phases this session runs, in order. */
+  phases: readonly ResolutionPhase[];
   context: EngineResolutionContext;
   deps: WorldActionEngineDeps;
   /** Accepted output, phase by phase. A key is absent until its phase's
@@ -356,8 +402,8 @@ interface Session {
   noticedDowngrade: boolean;
 }
 
-/** Segments rendered once per tick: the context is phase-neutral, so all six
- *  requests carry the same two cached blocks. */
+/** Segments rendered once per session: the context is phase-neutral, so
+ *  every request of the session carries the same two cached blocks. */
 type ContextSegments = ReturnType<typeof renderContextSegments>;
 
 /** The draft key a phase's accepted array is stored under. `PHASE_FIELDS` is
@@ -366,13 +412,13 @@ function draftKey(phase: ResolutionPhase): keyof AcceptedResolutionDraft {
   return PHASE_FIELDS[phase] as keyof AcceptedResolutionDraft;
 }
 
-/** Discard the phase and every phase after it; earlier phases stay accepted. */
-function discardFrom(
-  draft: AcceptedResolutionDraft,
-  phase: ResolutionPhase
-): void {
-  for (const later of RESOLUTION_PHASES.slice(phaseIndex(phase))) {
-    delete draft[draftKey(later)];
+/** Discard the phase and every phase after it, within THIS session's own
+ *  phase list — not the global six — since a settlement session never ran
+ *  `starts` and must not be asked to discard a phase it never had. Earlier
+ *  phases stay accepted. */
+function discardFrom(session: Session, phase: ResolutionPhase): void {
+  for (const later of session.phases.slice(session.phases.indexOf(phase))) {
+    delete session.draft[draftKey(later)];
   }
 }
 
@@ -386,7 +432,18 @@ export async function resolveTick(
   context: EngineResolutionContext,
   deps: WorldActionEngineDeps
 ): Promise<WorldActionEngineResult> {
+  const tickId = context.tick.tickId;
+  const kind = sessionKindOf(context);
+  if (kind === "mixed") {
+    return unusable(
+      `${tickId}: a context that both starts and settles actions asks for two sessions at once — the orchestrator judges starts the minute they arrive and settlements a minute later, never together; nothing applied`,
+      [],
+      []
+    );
+  }
   const session: Session = {
+    kind,
+    phases: SESSION_PHASES[kind],
     context,
     deps,
     draft: {},
@@ -396,13 +453,12 @@ export async function resolveTick(
     noticedDowngrade: false,
   };
   const segments = renderContextSegments(context);
-  const tickId = context.tick.tickId;
 
-  let from: ResolutionPhase = RESOLUTION_PHASES[0];
+  let from: ResolutionPhase = session.phases[0];
   let globalErrors: ResolutionError[] | undefined;
 
   for (;;) {
-    for (const phase of RESOLUTION_PHASES.slice(phaseIndex(from))) {
+    for (const phase of session.phases.slice(session.phases.indexOf(from))) {
       // The global gate's verdict goes to the FIRST request of the rewound
       // phase only: it is why that phase is being decided again. The phases
       // behind it are rerun because the draft they read changed, and they are
@@ -416,9 +472,10 @@ export async function resolveTick(
       if (!outcome.accepted) return outcome.failed;
     }
 
-    // Six accepted phases. The assembled draft is judged whole by the same
-    // gate as before — every phase-local check is a subset of it, and it is
-    // the only authority that lets a resolution reach the Applier.
+    // Every phase of the session accepted. The assembled draft is judged
+    // whole by the same gate as before — every phase-local check is a subset
+    // of it, and it is the only authority that lets a resolution reach the
+    // Applier.
     const raw = assembleRawResolution(session.draft);
     const errors = validateRawResolution(raw, context);
     if (errors.length === 0) {
@@ -439,8 +496,8 @@ export async function resolveTick(
       );
     }
     session.rewinds += 1;
-    from = rewindPhaseFor(errors, context);
-    discardFrom(session.draft, from);
+    from = rewindPhaseFor(errors, context, session.kind);
+    discardFrom(session, from);
     globalErrors = errors;
     console.warn(
       `[WorldActionEngine] tick ${tickId}: assembled draft rejected by the global gate (${errors.length} error(s)); rewinding to phase ${from}, ${session.calls}/${MAX_PROVIDER_CALLS} calls spent`

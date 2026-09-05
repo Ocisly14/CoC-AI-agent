@@ -50,9 +50,32 @@ const RULES_DOC = loadRuleFile(
   "Close a passage only when this weather makes it impassable on foot; write one objective sentence per place the weather visibly touches; a passage you do not list reopens."
 );
 
-const SYSTEM_PROMPT = `You are the weather engine of a tick-based world simulation. A region's weather has just changed. You decide what that weather does to the region's outdoor places and the passages between them, and nothing else: code owns the weather itself, its numbers and its clock.
+/**
+ * Weather prose used to be told to match "the language of the place
+ * descriptions" — imitation, which put it on a different axis from every
+ * other seam and let a Chinese module's weather sit beside an English
+ * settlement of the same minute. It now writes the run's narration language,
+ * English by default, exactly as the World Action Engine does.
+ */
+function systemPromptFor(narrationLanguage?: string): string {
+  const named = narrationLanguage?.startsWith("zh") ? "Chinese" : "English";
+  return `You are the weather engine of a tick-based world simulation. A region's weather has just changed. You decide what that weather does to the region's outdoor places and the passages between them, and nothing else: code owns the weather itself, its numbers and its clock.
+
+Write every string you submit — every block reason, every place condition — in ${named}. The place descriptions you read may be in any language; that is data, not the language of your answer.
 
 ${RULES_DOC}`;
+}
+
+const SYSTEM_PROMPTS = new Map<string, string>();
+function cachedSystemPrompt(narrationLanguage?: string): string {
+  const key = narrationLanguage ?? "";
+  let prompt = SYSTEM_PROMPTS.get(key);
+  if (prompt === undefined) {
+    prompt = systemPromptFor(narrationLanguage);
+    SYSTEM_PROMPTS.set(key, prompt);
+  }
+  return prompt;
+}
 
 export const submitWeatherJudgementTool: ToolSpec = {
   name: "submit_weather_judgement",
@@ -65,7 +88,7 @@ export const submitWeatherJudgementTool: ToolSpec = {
       blocks: {
         type: "array",
         description:
-          "Passages impassable on foot under this weather. Each names a connectionId from the Passages list VERBATIM and one objective sentence, in the language of the place descriptions, saying what blocks the way — it is what a character who reaches the passage is told.",
+          "Passages impassable on foot under this weather. Each names a connectionId from the Passages list VERBATIM and one objective sentence, in the language named in the system prompt, saying what blocks the way — it is what a character who reaches the passage is told.",
         items: {
           type: "object",
           properties: {
@@ -79,7 +102,7 @@ export const submitWeatherJudgementTool: ToolSpec = {
       conditions: {
         type: "array",
         description:
-          "One entry per place the weather visibly touches: a placeId from the Places list and one objective present-tense sentence of what the weather does THERE (visibility, footing, sound, exposure), in the language of the place descriptions. Omit places it does not touch. No mood, no character reactions, no numbers.",
+          "One entry per place the weather visibly touches: a placeId from the Places list and one objective present-tense sentence of what the weather does THERE (visibility, footing, sound, exposure), in the language named in the system prompt. Omit places it does not touch. No mood, no character reactions, no numbers.",
         items: {
           type: "object",
           properties: {
@@ -134,7 +157,7 @@ export async function judgeWeather(
     let res: Awaited<ReturnType<typeof generateToolCalls>>;
     try {
       res = await generateToolCalls({
-        customSystemPrompt: SYSTEM_PROMPT,
+        customSystemPrompt: cachedSystemPrompt(request.narrationLanguage),
         cacheSystemPrompt: true,
         messages,
         tools: [submitWeatherJudgementTool],

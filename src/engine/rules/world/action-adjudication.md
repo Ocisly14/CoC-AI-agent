@@ -31,7 +31,9 @@ judge is the attempt behind them.
 
 Every id listed by the trigger under `starting` gets exactly one entry in the
 starts phase, and is never also answered as an ending in the same tick. Even
-the shortest action takes at least one minute and resolves on a later tick.
+the shortest action takes at least one minute: it is judged here, at the
+minute it was decided, and settled by the settlement a minute later — never
+in the same judgement.
 
 - Always write `actionId`.
 - For a non-movement action, write `resolvedDurationTicks` as a whole number of

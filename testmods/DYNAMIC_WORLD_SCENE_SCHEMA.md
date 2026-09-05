@@ -229,6 +229,16 @@ placement now that macro locations are gone:
 
 - `currentLocation` / `residence`: **scene or road ids**, placement at
   session start.
+- `appearance` / `status.conditions`: an injury or impairment the character
+  starts with goes in `status.conditions` — an id and a description stating
+  the objective state AND the function it impairs — not in `appearance`
+  prose. Both are read by the Engine and both reach perception, but only a
+  condition has a handle the Engine can take away: treat the wound and it
+  writes `removeCondition`. The same wound spelled out in `appearance` is a
+  sentence nobody is obliged to rewrite, so it keeps asserting itself after
+  the world has moved on, and the Engine narrates it as untreated tick after
+  tick while characters dress it again and again. Keep `appearance` for what
+  stays true of the body — build, hair, clothing, old scars.
 - `memory[]`: authored memories, `map` type included — geographic knowledge
   is written per profile in the character's own voice. Nothing geographic is
   generated at bootstrap; a place absent from a character's memories does not

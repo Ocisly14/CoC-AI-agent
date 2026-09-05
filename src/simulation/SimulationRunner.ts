@@ -506,6 +506,7 @@ export class SimulationRunner {
       subsystemRegistry,
       scriptedEvents,
       tickDurationMinutes: 1,
+      narrationLanguage: this.language,
       persistedState: this.pendingTickEngineState ?? undefined,
     });
 

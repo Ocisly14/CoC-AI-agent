@@ -44,6 +44,11 @@ export interface WeatherJudgementRequest {
   passages: WeatherPassage[];
   /** What the last judgement closed. Anything not closed again reopens. */
   previouslyClosed: string[];
+  /** Language the judgement's prose is composed in — the same narration
+   *  language the World Action Engine writes in, so a region's weather and
+   *  its settlements do not describe the same minute in two languages.
+   *  Absent means English. */
+  narrationLanguage?: string;
 }
 
 export interface WeatherJudgement {
@@ -60,7 +65,8 @@ export const EMPTY_WEATHER_JUDGEMENT: WeatherJudgement = Object.freeze({
 export function buildWeatherJudgementRequest(
   dgsm: DynamicGameStateManager,
   regionId: string,
-  state: WeatherRegionState
+  state: WeatherRegionState,
+  narrationLanguage?: string
 ): WeatherJudgementRequest {
   const roads = dgsm.getState().roads ?? new Map();
   const places: WeatherPlace[] = [];
@@ -109,6 +115,7 @@ export function buildWeatherJudgementRequest(
     places,
     passages,
     previouslyClosed: [...(state.judgedBlockIds ?? [])],
+    narrationLanguage,
   };
 }
 

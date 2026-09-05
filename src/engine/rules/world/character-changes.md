@@ -46,9 +46,19 @@ part that remains true and change only what the action permanently altered.
 Use it for durable changes such as a new scar, shaved hair or a lasting bodily
 alteration.
 
-Temporary visible states—wet clothing, fresh blood, a bandage—remain
-conditions when they satisfy the persistence and functional rules. Do not turn
+Temporary visible states—wet clothing, fresh blood, a bandage—belong in a
+condition when they satisfy the persistence and functional rules. Do not turn
 a one-tick visual detail into permanent appearance.
+
+But appearance you were GIVEN is a claim about the body that outranks that
+caution. When it already states a visible bodily state—a split hand still
+bleeding, a face still filthy—and this tick's outcome changed that state,
+`setAppearance` is the only place the change can land, whether or not the
+state was ever severe enough to be a condition. Rewrite the sentence that has
+become false and leave every other part of the prose untouched. Appearance
+left asserting what the action undid is read as current by every tick after
+this one: the next settlement sees a wound nobody treated, narrates it as
+still open, and someone dresses it a second time.
 
 ## SAN
 

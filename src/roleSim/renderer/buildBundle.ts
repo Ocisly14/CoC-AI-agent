@@ -188,6 +188,7 @@ export function resolveOwnAction(
       ...(active.resolvedDurationTicks !== undefined
         ? { resolvedDurationTicks: active.resolvedDurationTicks }
         : {}),
+      ...(active.command.utterance?.trim() ? { utterancePending: true } : {}),
     };
   }
 

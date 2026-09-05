@@ -1,10 +1,13 @@
 // src/engine/resolution/worldResolutionStageSchemas.ts
 //
-// The six phase tools of a staged tick resolution, one per domain, offered to
-// the model one at a time and in this order:
+// The six phase tools of the World Action Engine, one per domain, offered to
+// the model one at a time. The Engine has two functions, each a session of
+// its own with its own world context:
 //
-//   endings → starts → characterChanges → itemChanges → sceneChanges
-//           → occurrences
+//   the start judgement — one phase, `starts` — run the minute a command
+//   arrives, before any world time has passed on it;
+//   the settlement — `endings → characterChanges → itemChanges → sceneChanges
+//   → occurrences` — run when actions end.
 //
 // Each tool takes ONE required top-level array and nothing else. That is the
 // whole point of the split. The retired arrangement was two terminal tools
@@ -39,12 +42,14 @@ import {
 
 // ==================== Phases ====================
 
-/** Execution order. A phase reads every earlier phase's accepted output as a
- *  fact and never revisits it; the array is also the rewind ordering, so its
- *  index is meaningful (see `phaseIndex` in the stage validator). */
+/** Every phase, in execution order. Within a session a phase reads every
+ *  earlier phase's accepted output as a fact and never revisits it; the array
+ *  is also the rewind ordering, so its index is meaningful (see `phaseIndex`
+ *  in the stage validator). The start judgement is the first entry alone;
+ *  the settlement is the rest, contiguous. */
 export const RESOLUTION_PHASES = [
-  "endings",
   "starts",
+  "endings",
   "characterChanges",
   "itemChanges",
   "sceneChanges",
@@ -52,6 +57,43 @@ export const RESOLUTION_PHASES = [
 ] as const;
 
 export type ResolutionPhase = (typeof RESOLUTION_PHASES)[number];
+
+/**
+ * The Engine's two functions. A start is judged the minute its command
+ * arrives — the clock, the bar, the route — before any world time has passed
+ * on it, so what code then executes counts from the minute the actor decided.
+ * A settlement is judged when actions end: what came of them, and what that
+ * did to the world. Each is its own session over its own world context, and
+ * a session runs only its own phases.
+ */
+export type EngineSessionKind = "start" | "settlement";
+
+export const SESSION_PHASES: Record<
+  EngineSessionKind,
+  readonly ResolutionPhase[]
+> = {
+  start: ["starts"],
+  settlement: [
+    "endings",
+    "characterChanges",
+    "itemChanges",
+    "sceneChanges",
+    "occurrences",
+  ],
+};
+
+/** Which of the two functions a phase belongs to. Every phase belongs to
+ *  exactly one, so a phase alone says which session it is in. */
+export function sessionOfPhase(phase: ResolutionPhase): EngineSessionKind {
+  return phase === "starts" ? "start" : "settlement";
+}
+
+/** The phases of the session this phase is in, in order. */
+export function sessionPhasesOf(
+  phase: ResolutionPhase
+): readonly ResolutionPhase[] {
+  return SESSION_PHASES[sessionOfPhase(phase)];
+}
 
 /** The wire name of each phase's tool. */
 export const PHASE_TOOL_NAMES: Record<ResolutionPhase, string> = {
@@ -162,18 +204,18 @@ const PHASE_CONTRACT =
   "The array is REQUIRED — a domain with nothing to say this tick sends `[]`, and never omits the list. Anything accepted in an earlier phase is shown to you as a settled, read-only fact of this tick: read it, do not restate it, and do not try to revise it here.";
 
 const PHASE_DESCRIPTIONS: Record<ResolutionPhase, string> = {
-  endings:
-    "Phase 1 of 6 — ENDINGS. Decide what became of every action that finishes this tick, and nothing else: no starts, no world changes, no occurrences. Each decision is one of two shapes, chosen by `mode`. `outcome` — the action produced something to account for, and `outcome` is that account: objective, third-person, final, never a restatement of or an argument with a `diceRoll` you were given. `pure_speech` — the action's command carries an `utterance` and its whole result was those words, so there is nothing to account for; never for an action that carried a `check`, whose dice decided an attempt. Roll damage with the deterministic tool before you decide; a damage number is never yours to invent.",
   starts:
-    "Phase 2 of 6 — STARTS. One entry for every action id the trigger lists under `starting`, and only those: for a non-travel action how long it should take and how hard it is — judged by what it ATTEMPTS, not by whether it speaks: plain talk takes 1 minute and no check, an attempt made while speaking takes the attempt's minutes and a check where the declared skill covers it — for travel the route the actor stated (and the vehicle, when they drive). Never an outcome — a starting action's time has not been spent yet, and a starting action's `utterance` is not spoken yet either.",
+    "The START JUDGEMENT — the Engine's first function, one phase. One entry for every action id the trigger lists under `starting`, and only those: for a non-travel action how long it should take and how hard it is — judged by what it ATTEMPTS, not by whether it speaks: plain talk takes 1 minute and no check, an attempt made while speaking takes the attempt's minutes and a check where the declared skill covers it — for travel the route the actor stated (and the vehicle, when they drive). Never an outcome — a starting action's time has not been spent yet, and a starting action's `utterance` is not spoken yet either. What comes of it is the settlement's business, on the tick its time runs out.",
+  endings:
+    "Phase 1 of 5 of the SETTLEMENT — ENDINGS. Decide what became of every action that finishes this tick, and nothing else: no starts, no world changes, no occurrences. Each decision is one of two shapes, chosen by `mode`. `outcome` — the action produced something to account for, and `outcome` is that account: objective, third-person, final, never a restatement of or an argument with a `diceRoll` you were given. `pure_speech` — the action's command carries an `utterance` and its whole result was those words, so there is nothing to account for; never for an action that carried a `check`, whose dice decided an attempt. Roll damage with the deterministic tool before you decide; a damage number is never yours to invent.",
   characterChanges:
-    "Phase 3 of 6 — CHARACTER CHANGES. The persistent changes this tick's actions make to characters — one row per change, each sourced to the action that caused it. A result that is merely described, and leaves no state behind, is not a change and belongs to the occurrence phase.",
+    "Phase 2 of 5 of the SETTLEMENT — CHARACTER CHANGES. The persistent changes this tick's actions make to characters — one row per change, each sourced to the action that caused it. A result that is merely described, and leaves no state behind, is not a change and belongs to the occurrence phase.",
   itemChanges:
-    "Phase 4 of 6 — ITEM CHANGES. What this tick's actions do to things: what came into being, what moved and to whom, what stopped existing, and what an item is now like — one row per change, each sourced to the action that caused it.",
+    "Phase 3 of 5 of the SETTLEMENT — ITEM CHANGES. What this tick's actions do to things: what came into being, what moved and to whom, what stopped existing, and what an item is now like — one row per change, each sourced to the action that caused it.",
   sceneChanges:
-    "Phase 5 of 6 — SCENE CHANGES. What this tick's actions do to places and to the passages between them — one row per change, each sourced to the action that caused it. This is also where a place's prose is brought back into agreement with the items that left it or ceased to exist.",
+    "Phase 4 of 5 of the SETTLEMENT — SCENE CHANGES. What this tick's actions do to places and to the passages between them — one row per change, each sourced to the action that caused it. This is also where a place's prose is brought back into agreement with the items that left it or ceased to exist.",
   occurrences:
-    "Phase 6 of 6 — OCCURRENCES. Every objective thing that happened this tick that somebody could perceive, one flat row and one paragraph each, tied by `actionIds` to the actions it is the trace of. Every ending accepted in phase 1 must be cited by at least one row here, and every pure-speech decision must have its `speech: true` row.",
+    "Phase 5 of 5 of the SETTLEMENT — OCCURRENCES. Every objective thing that happened this tick that somebody could perceive, one flat row and one paragraph each, tied by `actionIds` to the actions it is the trace of. Every ending accepted in the endings phase must be cited by at least one row here, and every pure-speech decision must have its `speech: true` row.",
 };
 
 /** The array schema each tool wraps. Five are the very objects the terminal

@@ -46,19 +46,18 @@ engine 处理的「操作」分四层，彼此不共享枚举：**演员发出�
 
 **无触发 = 0 次模型调用**，这一 tick 只跑确定性部分。会话失败时，drain 掉的命令会退回 inbox、中断重新挂起——「这一 tick 什么也没发生」必须是真的，而不是「悄悄吃掉了两条命令」。
 
-一次 tick 的顺序（`tickOrchestrator.ts:102`）：
+一次 tick 的顺序（`tickOrchestrator.ts:133`）：
 
-1. 时钟推进 1 分钟
-2. 移动 runtime 推进（确定性，无模型调用）；堵住→中断，到达→立即到期
-3. 在飞动作 `progressMinutes += 1`（时长只由时钟消耗，Engine 从不被问「过了多久」）
-4. drain 命令 inbox（死亡演员的命令直接 failed）
-5. 收集触发器
-6. `rollDueChecks` —— 骰子在这里掷，此时难度早已在动作开始时定好
-7. 一次 World Action Engine 会话
-8. anchor 子系统 + 脚本事件
-9. 天气判断：读并消费 buffer 里的内部 `weather.transition` 信号，调用天气 engine（晴天同样调用），把结果并入同一次 flush（见 §2.1）；该信号不进入公开事件流
-10. 单次 Applier flush
-11. 提交动作生命周期，发 `TickReport`
+1. drain 命令 inbox（时钟还停在角色决定的那一分钟；死亡演员的命令直接 failed）
+2. 有新命令就开 **start 判定会话**（只有 starts 阶段），在这一分钟的世界上定时钟、门槛、路线；通过即提交为 active，`startedAt` 就是这一分钟；路线接不上或司机不在车里 → 当场 failed
+3. 时钟推进 1 分钟
+4. 移动 runtime 推进（刚开始的路在这里走第一步；堵住→中断，到达→到期）；在飞动作 `progressMinutes += 1`
+5. 收集结算触发器：到期、被替换（到期的永远不算被替换）、中断
+6. `rollDueChecks`，然后开 **结算会话**（endings → characterChanges → itemChanges → sceneChanges → occurrences）；无触发 = 不调用
+7. anchor 子系统 + 脚本事件
+8. 天气判断（同前）
+9. 单次 Applier flush
+10. 提交结算会话的生命周期转换，发 `TickReport`
 
 ### 2.1 天气 engine：第二个会话，另一个触发源
 
@@ -80,17 +79,19 @@ engine 处理的「操作」分四层，彼此不共享枚举：**演员发出�
 - `inventoryValidation`：改成把答案直接放进请求——命令点名了谁、或点名了谁手里的东西，`contextBuilder` 就把那个人的口袋一并注入 Items 段。几百 token，而且在问题被提出之前就答完了。
 - `opposedRoll`：定义了但从未注册，也没有任何代码调用。对抗掷骰的真实路径是 Engine 在 `starting` 里声明 `opposedBy`，`skillRollService` 到期时掷两边。已连同上面三个一起删除。
 
-**六个提交工具，一个阶段一个请求**：一次 tick resolution 现在拆成六个顺序阶段——`endings → starts → characterChanges → itemChanges → sceneChanges → occurrences`。每个阶段是独立的一次请求，只带该阶段自己的一个 strict 提交工具：`submit_endings`、`submit_starts`、`submit_character_changes`、`submit_item_changes`、`submit_scene_changes`、`submit_occurrences`（定义在 `worldResolutionStageSchemas.ts`）。`damageRoll` 只出现在 endings 阶段的请求里，其余五个阶段看不到它。
+**两个功能、六个提交工具，一个阶段一个请求**：start 判定一个阶段、结算五个阶段，各自一次会话、各自一份完整世界上下文、各自 12 次调用预算、各自回退。`sessionKindOf` 只看触发器判断该开哪个会话：worklist 里有 `new_action` 就是 start 判定（阶段列表 `["starts"]`），否则是结算（阶段列表 `["endings", "characterChanges", "itemChanges", "sceneChanges", "occurrences"]`）——两者由 `SESSION_PHASES`（`worldResolutionStageSchemas.ts`）分别给出，从不在同一个上下文里混着问。每个阶段仍然是独立的一次请求，只带该阶段自己的一个 strict 提交工具：`submit_starts`、`submit_endings`、`submit_character_changes`、`submit_item_changes`、`submit_scene_changes`、`submit_occurrences`。`damageRoll` 只出现在 endings 阶段的请求里，其余阶段看不到它。
 
-一个阶段的数组一落地就校验（`worldResolutionStageValidator.ts`）；通过后作为**只读**事实注入后面每个阶段的 prompt——模型看得到更早阶段已经定下的事实，但不能改写它们。被拒的阶段用同一个工具再提交，单个阶段最多尝试 `MAX_PHASE_ATTEMPTS = 3` 次；没有 patch 工具，也不能借这次提交去修正已经通过的更早阶段。纠正的内容分两种：`starts` 和 `occurrences` 的行有天然主键（前者按 actionId，后者按引用的 action 加 speech 标志），代码会保留上一次提交里单独看合法的行，在拒绝消息里列出"已保留"与"仍欠"的清单，只要模型补齐欠的部分，合并后对整个数组重新校验（`MERGE_PHASES`、`retainedRows`、`mergeRows`）；其余四个阶段按下标寻址，仍然要求重发**完整**数组。这么改的原因是实测里模型把"重发完整数组"执行成了越纠越少——六条 start 缩成两条、四条 occurrence 缩成两条占位文本。
+一个阶段的数组一落地就校验（`worldResolutionStageValidator.ts`）；通过后作为**只读**事实注入同一会话里后面每个阶段的 prompt——模型看得到这个会话里更早阶段已经定下的事实，但不能改写它们（start 判定只有一个阶段，没有"更早阶段"）。被拒的阶段用同一个工具再提交，单个阶段最多尝试 `MAX_PHASE_ATTEMPTS = 3` 次；没有 patch 工具，也不能借这次提交去修正已经通过的更早阶段。纠正的内容分两种：`starts` 和 `occurrences` 的行有天然主键（前者按 actionId，后者按引用的 action 加 speech 标志），代码会保留上一次提交里单独看合法的行，在拒绝消息里列出"已保留"与"仍欠"的清单，只要模型补齐欠的部分，合并后对整个数组重新校验（`MERGE_PHASES`、`retainedRows`、`mergeRows`）；结算会话里其余四个阶段（`endings`、`characterChanges`、`itemChanges`、`sceneChanges`，按下标寻址）仍然要求重发**完整**数组。这么改的原因是实测里模型把"重发完整数组"执行成了越纠越少——六条 start 缩成两条、四条 occurrence 缩成两条占位文本。
 
-六个阶段都通过之后，拼好的整份 resolution 仍然要过一次全局校验——`validateRawResolution` 再 `finalizeResolution`——这一步只跑一次，跑之前没有任何阶段直接改动过 `DynamicGameState`，只有全局校验通过的完整结果才会送进 Applier。全局校验失败会回退到最早该为这个错误负责的那个阶段（错误种类到阶段的映射见设计文档的 Error Ownership 表），丢弃它和它之后所有已通过的阶段，把全局错误折进被回退阶段的 prompt 里从那里重新往前跑；每个 tick 最多回退一次（`MAX_GLOBAL_REWINDS = 1`），回退后仍不合法就是整个 tick 不应用任何结果。整条流水线共用一个硬上限 `MAX_PROVIDER_CALLS = 12` 次模型调用——每个阶段的重试、strict-schema 兜底重试、回退后的重新执行全部算在同一个预算里；预算耗尽同样是整个 tick 不应用任何结果。
+一个会话的所有阶段都通过之后，这个会话拼好的结果仍然要过一次全局校验——`validateRawResolution` 再 `finalizeResolution`——这一步只跑一次，跑之前没有任何阶段直接改动过 `DynamicGameState`，只有全局校验通过的完整结果才会送进 Applier。全局校验失败会回退到这个会话里最早该为这个错误负责的那个阶段（错误种类到阶段的映射见设计文档的 Error Ownership 表），丢弃它和它之后所有已通过的阶段，把全局错误折进被回退阶段的 prompt 里从那里重新往前跑；每个会话最多回退一次（`MAX_GLOBAL_REWINDS = 1`），回退后仍不合法就是这个会话不应用任何结果。start 判定和结算各自独立地拥有一个硬上限 `MAX_PROVIDER_CALLS = 12` 次模型调用——每个阶段的重试、strict-schema 兜底重试、回退后的重新执行全部算在各自会话的预算里；预算耗尽同样是那个会话不应用任何结果，而不牵连另一个会话。start 判定被拒时命令退回 inbox、下一分钟重新开始判定；结算被拒时到期/被替换/被中断的动作留在原状，下一分钟作为触发器重新被问一次。
+
+两个会话从不共享请求或上下文，因此也不再需要跨会话的一致性检查：旧的单会话设计里要靠 `vehicleBoardingGaps`、`passVersusUnblockConflicts` 这类检查防止"车上没人却在开车"之类的矛盾；现在上车是独立的一个动作，落地为把角色 `position` 改成车厢内部场景的一条 world change，"开车"是随后另一条命令，`movement.vehicleId` 只在司机此刻已经站在 `interiorSceneId` 里才成立——`initMovementRuntime` 在 start 判定时直接检查这一点，司机不在车厢里就让这次 start 当场 failed（`notAboard`），不必再靠跨会话对账来发现矛盾。
 
 拆成六个小 schema 延续的是同一个约束：旧的两工具方案里 `submit_actions` 是 `strict: true`（6 个 optional、零 `anyOf`），`submit_effects` 不是——三个 operation union 合计 19 个 `anyOf` 分支，语法编译器直接拒绝，模型会把 `starting` 写成一段把数组重新包了一层的 JSON 字符串。六个阶段各自的 schema 都足够小，全部能保持 `strict: true`。唯一的例外窄口：只有当供应商明确是因为语法/schema 编译拒绝了请求时（不是网络错误、不是限流、不是模型输出畸形、也不是校验失败），才对**那一个阶段**用一份内容相同、只是 `strict: false` 的工具重试恰好一次，并打一条警告；这次降级按 `(provider, model, schema fingerprint)` 记在进程内存里，同一进程里同样的组合不会再重复付这个代价。`scripts/probe-strict-schema.ts` 仍然是用几个被拒请求的代价重新测出这些上限的工具；改动任何一个阶段的 schema 之前先跑它。
 
 ---
 
-## 4. 提交内容的四块（六个阶段拼成一份完整 resolution 之后）
+## 4. 提交内容的四块（一次会话的各阶段拼成一份 resolution 之后）
 
 ### 4.1 `starting[]` —— 本 tick 开始的动作（`RawActionStart`）
 

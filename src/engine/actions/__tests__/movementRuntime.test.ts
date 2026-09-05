@@ -197,14 +197,27 @@ describe("route-of-waypoints movement", () => {
     expect(result.reason).toContain("takes no vehicles");
   });
 
-  it("refuses the wheel at first advance when the driver is not inside", () => {
+  it("refuses the wheel at init when the driver is not inside", () => {
     const dgsm = makeDgsm();
-    // Init succeeds — the same-tick board-and-drive resolution has not
-    // flushed yet, so the runtime cannot demand the driver be seated here.
+    // npc_1 stands at J_A beside the truck: a drive is judged the minute it
+    // is commanded, against the world as it stands, and nobody boards them.
+    const result = initMovementRuntime(dgsm, "npc_1", ["J_B"], "VEH_TRUCK");
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toContain("not inside");
+    expect(result.notAboard).toEqual({
+      vehicleId: "VEH_TRUCK",
+      interiorSceneId: "S_CAB",
+    });
+  });
+
+  it("stops a drive whose driver was pulled out of the cab mid-route", () => {
+    const dgsm = makeDgsm();
+    dgsm.__positions.set("npc_1", { type: "scene", sceneId: "S_CAB" });
     const result = initMovementRuntime(dgsm, "npc_1", ["J_B"], "VEH_TRUCK");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // But the wheels refuse to turn while npc_1 stands at J_A.
+    dgsm.__positions.set("npc_1", { type: "scene", sceneId: "J_A" });
     const advanced = advanceMovement(dgsm, "npc_1", result.state);
     expect(advanced.status).toBe("blocked");
     expect(advanced.blockedReason).toContain("not inside");

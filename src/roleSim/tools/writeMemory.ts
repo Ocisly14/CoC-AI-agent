@@ -2,7 +2,7 @@
 
 export const writeMemoryDoc = `---
 name: writeMemory
-description: Keep something in long-term memory. Free — may be called alongside act/continue in the same turn.
+description: Keep something in long-term memory. Free — rides along with act/continue in the same turn, and never ends a turn on its own.
 ---
 
 # writeMemory
@@ -23,6 +23,9 @@ If a minute left you several things worth keeping, write them ALL in this
 turn — one \`writeMemory\` call each, side by side in the same turn. There is
 no next turn for them: the turn ends when you act, and whatever you did not
 write down is gone.
+
+Writing does not end the turn, so never stop here. Call \`act\` or
+\`continue\` in this same turn to say what you actually do with the minute.
 
 ## Three things you can do
 

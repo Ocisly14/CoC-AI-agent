@@ -307,6 +307,25 @@ describe("validateRawResolution — the three moments", () => {
     );
   });
 
+  it("lists untriggered ongoing actions without requiring an answer", () => {
+    const context = makeContext({
+      newCommands: [],
+      activeActions: [
+        activeAction(),
+        activeAction({ id: "action_due", progressMinutes: 10 }),
+        activeAction({ id: "action_completed", status: "completed" }),
+        activeAction({ id: "action_interrupted", status: "interrupted" }),
+      ],
+      triggerActionIds: [],
+    });
+    expect(resolutionWorklist(context)).toMatchObject({
+      starting: [],
+      ending: [],
+      stillRunning: ["action_live"],
+    });
+    expect(validateRawResolution({}, context)).toEqual([]);
+  });
+
   it("treats duration and interruption triggers as authoritative endings", () => {
     for (const reason of ["duration_reached", "interrupted"] as const) {
       const context = makeContext({
@@ -316,6 +335,7 @@ describe("validateRawResolution — the three moments", () => {
       });
       context.trigger.triggers = [{ actionIds: ["action_live"], reason }];
       expect(resolutionWorklist(context).ending).toEqual(["action_live"]);
+      expect(resolutionWorklist(context).stillRunning).toEqual([]);
       expect(text(validateRawResolution({}, context))).toContain(
         "was not answered"
       );
@@ -1225,36 +1245,6 @@ describe("finalizeResolution", () => {
       expect(walk("connection.scn1.door", ["SCN_3"])).toContain(
         'the route\'s first step is "SCN_3"'
       );
-    });
-
-    it("refuses clearing the obstacle AND granting passage through it", () => {
-      const errors = validateRawResolution(
-        {
-          starting: [
-            start({
-              resolvedDurationTicks: undefined,
-              movement: {
-                route: ["SCN_2"],
-                passBlockedConnectionId: "connection.scn1.door",
-              },
-            }),
-          ],
-          sceneChanges: [
-            {
-              sourceActionId: ACTION_ID,
-              sceneId: "SCN_1",
-              operation: {
-                kind: "connectionBlock",
-                connectionId: "connection.scn1.door",
-                blocked: false,
-                reason: "the bar is broken",
-              },
-            } as never,
-          ],
-        },
-        makeContext({})
-      );
-      expect(text(errors)).toContain("never both for one passage");
     });
   });
 });

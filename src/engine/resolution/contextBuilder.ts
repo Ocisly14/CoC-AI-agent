@@ -84,6 +84,8 @@ export interface BuildContextParams {
   activeActions: EngineAction[];
   objectiveWorldEvents?: ObjectiveWorldEvent[];
   deterministicResults?: DeterministicResult[];
+  /** Narration language for everything the session writes. Default English. */
+  narrationLanguage?: string;
 }
 
 interface PlaceEntry {
@@ -342,6 +344,7 @@ export function buildEngineResolutionContext(
       resolutionGuide: "src/engine/rules/world-action-resolution.md",
       outputSchemaVersion: ACTION_SCHEMA_VERSION,
       worldInvariants: WORLD_INVARIANTS,
+      narrationLanguage: params.narrationLanguage,
     },
     state: {
       graph,

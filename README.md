@@ -86,12 +86,16 @@ happened; what a character makes of it is theirs to record.
 ```
 SimulationRunner
    └─▶ TickEngine / tickOrchestrator (advances 1 in-world minute per tick)
-          1. clock  2. movement runtimes  3. drain + validate command inbox
-          4. collect resolution triggers
-          5-7. ONE World Action Engine session (skipped when no triggers → 0 model calls)
+          1. drain the inbox at the clock the actors decided on
+          2. START JUDGEMENT session (starts only) on that minute → commit
+             starts, startedAt = that minute; no commands → 0 model calls
+          3. clock  4. movement runtimes (first step of a new walk) + progress
+          5. collect settlement triggers (due / replacement / interrupted)
+          6. SETTLEMENT session (endings → changes → occurrences); skipped
+             when no triggers → 0 model calls
           8. anchor subsystems + scripted events
-          11. single Applier flush (StateChanges + WorldDeltas)
-          12. commit action lifecycle, emit TickReport
+          11. single Applier flush (StateChanges + settlement WorldDeltas)
+          12. commit the settlement's lifecycle, emit TickReport
                  │
                  ├─▶ SimulationEventEmitter ──▶ WebSocket broadcast
                  └─▶ NpcActionController
@@ -111,11 +115,16 @@ them through one `Applier` per tick.
 
 ### World Action Engine
 
-`src/engine/resolution/worldActionEngine.ts` runs a fixed pipeline of six
-ordered phases per tick that has resolution triggers, over the full world
-context built by the context builder: `endings → starts →
-characterChanges → itemChanges → sceneChanges → occurrences`. A tick with
-no triggers makes no model calls.
+`src/engine/resolution/worldActionEngine.ts` runs one of two sessions per
+triggered moment: the **start judgement** (`starts`) the minute commands
+arrive, before any world time has passed on them — the clock, the bar, the
+route; and the **settlement** (`endings → characterChanges → itemChanges →
+sceneChanges → occurrences`), when actions end — what came of them and what
+that did to the world. `sessionKindOf` reads a context's triggers to say
+which: a `new_action` trigger asks for the start judgement, anything else
+for the settlement, and the two are never mixed in one context
+(`SESSION_PHASES` maps each session kind to its own ordered phases). A
+moment with no triggers makes no model calls.
 
 - **No action types, no per-action prompts.** One rule document,
   `src/engine/rules/world-action-resolution.md`, governs every action;
@@ -123,28 +132,31 @@ no triggers makes no model calls.
   `worldResolutionStagePrompts.ts`) as that phase's own contract.
 - **Six small strict tools, one phase at a time.** Each phase is a
   separate request carrying only its own array and its own strict
-  submission tool — `submit_endings`, `submit_starts`,
+  submission tool — `submit_starts`, `submit_endings`,
   `submit_character_changes`, `submit_item_changes`,
   `submit_scene_changes`, `submit_occurrences`
   (`worldResolutionStageSchemas.ts`); the endings phase alone also offers
   `damageRoll`. A phase's array is validated as soon as it lands
   (`worldResolutionStageValidator.ts`) and then becomes read-only input to
-  every later phase. There is no patch tool; a rejection is answered
-  through the same tool, up to `MAX_PHASE_ATTEMPTS` (3) attempts. In the
-  two phases whose rows have a key — `starts` (by actionId) and
-  `occurrences` (by cited actions + speech flag) — code keeps the rows that
-  passed on their own, lists what is still owed, and merges the answer
-  before validating the whole array again; the other four phases resubmit
-  their complete array.
-- **One global gate, one atomic result.** Once all six phases are
+  every later phase of that same session. There is no patch tool; a
+  rejection is answered through the same tool, up to `MAX_PHASE_ATTEMPTS`
+  (3) attempts. In the two phases whose rows have a key — `starts` (by
+  actionId) and `occurrences` (by cited actions + speech flag) — code keeps
+  the rows that passed on their own, lists what is still owed, and merges
+  the answer before validating the whole array again; the settlement's
+  other four phases (`endings`, `characterChanges`, `itemChanges`,
+  `sceneChanges`) resubmit their complete array.
+- **One global gate, one atomic result.** Once every phase of a session is
   accepted, the assembled draft still passes `validateRawResolution` then
   `finalizeResolution` exactly once before anything reaches the Applier;
   no phase mutates state on its own. A global failure rewinds to the
-  earliest phase that owns it, discards that phase and everything
-  downstream, and reruns forward — at most one rewind
-  (`MAX_GLOBAL_REWINDS` = 1) per tick. The whole resolution shares one
-  ceiling of `MAX_PROVIDER_CALLS` (12) provider calls; exhausting it, or
-  failing the global gate after a rewind, applies nothing.
+  earliest phase of that session that owns it, discards that phase and
+  everything downstream in the session, and reruns forward — at most one
+  rewind (`MAX_GLOBAL_REWINDS` = 1) per session. Each session, the
+  one-phase start judgement and the five-phase settlement alike, carries
+  its own ceiling of `MAX_PROVIDER_CALLS` (12) provider calls; exhausting
+  it, or failing the global gate after a rewind, applies nothing from that
+  session.
 - **One code tool.** `damageRoll` (`src/engine/tools/diceTools.ts`) is the
   only tool any phase can call, because a roll must never be the
   model's. The request already carries the place graph, the places and the

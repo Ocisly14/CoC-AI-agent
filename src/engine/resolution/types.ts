@@ -191,6 +191,12 @@ export interface EngineResolutionContext {
     resolutionGuide: "src/engine/rules/world-action-resolution.md";
     outputSchemaVersion: number;
     worldInvariants: WorldInvariant[];
+    /** The language every string this session WRITES is composed in — the
+     *  narration language, not the tongue characters speak in (that is
+     *  `declaredLanguage` on a command). Absent means English: the world data
+     *  it reads may be in any language, and without this the session simply
+     *  imitated whichever language the surrounding context leaned toward. */
+    narrationLanguage?: string;
   };
 
   state: {

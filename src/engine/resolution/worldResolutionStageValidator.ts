@@ -13,13 +13,14 @@ import { isDeepStrictEqual } from "node:util";
 // a phase already ran, and it remains the only authority that lets a resolution
 // reach the Applier. Nothing is dropped from it to pay for this file.
 //
-// Two things a phase deliberately does NOT judge:
-//   - the endings phase cannot check that an ending is traced by an occurrence:
-//     occurrences are submitted five phases later. It checks everything else
-//     `validateEnd` checks (`validateEndingTarget` + `validateEndOutcome`).
-//   - the starts phase cannot check vehicle boarding: the character changes
-//     that would board the driver have not been submitted. The characterChanges
-//     phase runs that check, and the gate runs it again.
+// One thing a phase deliberately does NOT judge: the endings phase cannot
+// check that an ending is traced by an occurrence, since occurrences are
+// submitted four phases later. It checks everything else `validateEnd` checks
+// (`validateEndingTarget` + `validateEndOutcome`).
+//
+// A session runs only its own phases — the start judgement is `starts` alone,
+// the settlement the other five — so nothing here spans the two: a start is a
+// settled fact of an earlier minute by the time anything is settled.
 
 import type { EngineResolutionContext, ResolutionError } from "./types.js";
 import type {
@@ -45,7 +46,6 @@ import {
   notARowMessage,
   notAnEntryMessage,
   occurrencesCiting,
-  passVersusUnblockConflicts,
   resolutionWorklist,
   staleCitations,
   validateCharacterChange,
@@ -55,20 +55,22 @@ import {
   validateOccurrence,
   validateSceneChange,
   validateStart,
-  vehicleBoardingGaps,
 } from "./worldDeltaValidator.js";
 import {
   type AcceptedResolutionDraft,
   type EndingDecision,
+  type EngineSessionKind,
   PHASE_FIELDS,
   PHASE_TOOL_NAMES,
   RESOLUTION_PHASES,
   type ResolutionPhase,
+  SESSION_PHASES,
 } from "./worldResolutionStageSchemas.js";
 
 export type {
   AcceptedResolutionDraft,
   EndingDecision,
+  EngineSessionKind,
   ResolutionPhase,
 } from "./worldResolutionStageSchemas.js";
 
@@ -244,12 +246,10 @@ function validateEndingsPhase(
 function validateStartsPhase(
   rows: unknown[],
   lookup: Lookup,
-  worklist: ResolutionWorklist,
-  draft: AcceptedResolutionDraft
+  worklist: ResolutionWorklist
 ): ResolutionError[] {
   const { errors, at } = collector();
   const startingIds = new Set(worklist.starting);
-  const decided = new Set((draft.endings ?? []).map((d) => d.actionId));
   const seen = new Set<string>();
   for (const [i, row] of rows.entries()) {
     const actionId = entryActionId(row);
@@ -265,15 +265,6 @@ function validateStartsPhase(
       continue;
     }
     seen.add(actionId);
-    if (decided.has(actionId)) {
-      // The endings phase is already accepted, so this contradicts a fact
-      // rather than another guess: an action is starting or ending this tick,
-      // never both.
-      at(target, [
-        `this action was already answered in the endings phase — an action is either starting or ending this tick, not both. Drop it from "starting"`,
-      ]);
-      continue;
-    }
     if (!startingIds.has(actionId)) {
       // An id the tick cannot address at all is better named by `validateStart`
       // itself, which lists the addressable ids; a known id that simply is not
@@ -301,8 +292,7 @@ function validateStartsPhase(
 
 function validateCharacterChangesPhase(
   rows: unknown[],
-  lookup: Lookup,
-  draft: AcceptedResolutionDraft
+  lookup: Lookup
 ): ResolutionError[] {
   const { errors, at } = collector();
   rows.forEach((d, i) => {
@@ -313,14 +303,6 @@ function validateCharacterChangesPhase(
         : notAChangeMessages("characterId")
     );
   });
-  // Both halves are known for the first time here: the starts are accepted,
-  // and the position changes that would board a driver are in this payload.
-  // Addressed at the phase rather than at the action, because the accepted
-  // start is not the thing that can change — the missing row is, and it goes
-  // in THIS array.
-  for (const gap of vehicleBoardingGaps(draft.starting ?? [], rows, lookup)) {
-    at({ kind: "resolution" }, [gap.message]);
-  }
   return errors;
 }
 
@@ -363,17 +345,6 @@ function validateSceneChangesPhase(
         : notAChangeMessages("sceneId")
     );
   });
-  // Addressed at the offending row, which is the one this phase can drop: the
-  // starts it collides with are accepted and out of reach until a rewind.
-  for (const conflict of passVersusUnblockConflicts(
-    draft.starting ?? [],
-    rows,
-    lookup
-  )) {
-    at({ kind: "sceneChange", index: conflict.sceneChangeIndex }, [
-      conflict.message,
-    ]);
-  }
   // The gate addresses this at the item change that orphans the prose; here
   // the item changes are accepted and the fix is a setDescription in THIS
   // array, so it is addressed at the phase.
@@ -478,9 +449,9 @@ export function validatePhase(
     case "endings":
       return validateEndingsPhase(rows, lookup, worklist);
     case "starts":
-      return validateStartsPhase(rows, lookup, worklist, draft);
+      return validateStartsPhase(rows, lookup, worklist);
     case "characterChanges":
-      return validateCharacterChangesPhase(rows, lookup, draft);
+      return validateCharacterChangesPhase(rows, lookup);
     case "itemChanges":
       return validateItemChangesPhase(rows, lookup);
     case "sceneChanges":
@@ -611,14 +582,12 @@ export function retainedRows(
   const faulty: unknown[] = [];
   if (phase === "starts") {
     const startingIds = new Set(worklist.starting);
-    const decided = new Set((draft.endings ?? []).map((d) => d.actionId));
     const seen = new Set<string>();
     for (const row of rows) {
       const id = entryActionId(row);
       const ok =
         id !== undefined &&
         startingIds.has(id) &&
-        !decided.has(id) &&
         !seen.has(id) &&
         validateStart(row as RawActionStart, lookup).length === 0;
       if (id !== undefined) seen.add(id);
@@ -751,14 +720,17 @@ export function assembleRawResolution(
  */
 function phaseForTarget(
   target: ResolutionError["target"],
-  endingIds: ReadonlySet<string>
+  endingIds: ReadonlySet<string>,
+  /** The session's phases: "the resolution as a whole" is owned by whichever
+   *  phase opens it. */
+  phases: readonly ResolutionPhase[]
 ): ResolutionPhase {
   switch (target.kind) {
     // "the resolution as a whole" — an unanswered trigger, a list element that
     // is not an element. The earliest phase is the only one that can rebuild
     // from scratch, and every later phase is rerun behind it anyway.
     case "resolution":
-      return "endings";
+      return phases[0];
     case "action":
       return endingIds.has(target.actionId) ? "endings" : "starts";
     case "characterChange":
@@ -779,21 +751,27 @@ function phaseForTarget(
 }
 
 /**
- * The earliest phase that can fix this set of global errors. Rewinding there
- * discards it and every phase after it; everything earlier stays accepted.
+ * The earliest phase of this session that can fix this set of global errors.
+ * Rewinding there discards it and every phase after it; everything earlier
+ * stays accepted.
  *
- * With no errors there is nothing to fix, and the answer is the last phase —
- * the least destructive thing to rerun. The runner never asks in that state.
+ * A fault owned by a phase the session does not run — an `action:<id>` the
+ * settlement cannot place, say — goes to the session's opening phase, which
+ * is the only one that can rebuild from scratch. With no errors there is
+ * nothing to fix, and the answer is the session's last phase — the least
+ * destructive thing to rerun. The runner never asks in that state.
  */
 export function rewindPhaseFor(
   errors: ResolutionError[],
-  context: EngineResolutionContext
+  context: EngineResolutionContext,
+  session: EngineSessionKind = "settlement"
 ): ResolutionPhase {
+  const phases = SESSION_PHASES[session];
   const endingIds = new Set(resolutionWorklist(context).ending);
-  let earliest: ResolutionPhase =
-    RESOLUTION_PHASES[RESOLUTION_PHASES.length - 1];
+  let earliest: ResolutionPhase = phases[phases.length - 1];
   for (const error of errors) {
-    const phase = phaseForTarget(error.target, endingIds);
+    const owner = phaseForTarget(error.target, endingIds, phases);
+    const phase = phases.includes(owner) ? owner : phases[0];
     if (phaseIndex(phase) < phaseIndex(earliest)) earliest = phase;
   }
   return earliest;

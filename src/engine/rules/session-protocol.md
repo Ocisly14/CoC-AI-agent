@@ -1,13 +1,15 @@
 # Phase Protocol
 
-One tick's resolution is decided in six phases, in a fixed order:
+The World Action Engine has two functions, and each is a session of its own:
 
-1. the actions that END this tick,
-2. the actions that START,
-3. the changes to characters,
-4. the changes to items,
-5. the changes to places and passages,
-6. the occurrences that record what anyone could perceive.
+- **The start judgement** — one phase, the actions that START. It runs the
+  minute a command arrives, before any world time has passed on it: how long
+  the action should take, how hard it is, the route it follows. Code then
+  executes from that minute.
+- **The settlement** — five phases, in a fixed order: the actions that END,
+  the changes to characters, the changes to items, the changes to places and
+  passages, and the occurrences that record what anyone could perceive. It
+  runs when actions end.
 
 Each phase is its own request, with its own submission tool. This document is
 the transport contract: what a phase is, what it may call, and what a rejection
@@ -15,10 +17,11 @@ asks for. Domain judgement belongs to the world-rule modules.
 
 ## One phase at a time
 
-You are in exactly one phase. The request names it, names the one submission
-tool that ends it, and names the one array that tool carries.
+You are in exactly one phase of exactly one session. The request names it,
+names the one submission tool that ends it, and names the one array that tool
+carries.
 
-- Answer that phase and nothing else. The other five are not yours in this
+- Answer that phase and nothing else. The other phases are not yours in this
   request, and there is no way to reach them from here.
 - The only tool to call is this phase's submission tool, unless the phase
   contract at the end of these instructions names a deterministic code tool as
@@ -31,21 +34,26 @@ tool that ends it, and names the one array that tool carries.
 
 ## The accepted draft is read-only
 
-Every phase before this one has already been decided and validated. Its output
-is shown under "Accepted so far" as a settled fact of this tick.
+Every phase of this session before this one has already been decided and
+validated. Its output is shown under "Accepted so far" as a settled fact of
+this session.
 
 - Read it, and stay consistent with it.
 - Do not restate it and do not submit any part of it again. This call carries
   this phase's array and nothing else.
 - Do not try to revise it. If something in it is genuinely wrong, say nothing
-  about it: the whole resolution is checked once more after the last phase, and
-  a fault found there sends the tick back to the phase that owns it, with every
-  phase after that one discarded and decided again.
+  about it: the whole session is checked once more after its last phase, and a
+  fault found there sends it back to the phase that owns it, with every phase
+  after that one discarded and decided again.
+
+A start judged in an earlier minute is not part of this draft at all: it is a
+fact of the world by now, shown under Active Actions with the clock and the
+bar it was given, and nothing in a settlement revises it.
 
 ## The request is the world; do not look it up again
 
 There is nothing to look up. The World Graph gives the place topology, Detailed
-Places gives the places this tick involves, Items gives the relevant scene
+Places gives the places this session involves, Items gives the relevant scene
 contents and inventories, and Characters is complete.
 
 Pathfinding, movement time, inventory validation and SAN rolls are not tool
@@ -60,20 +68,26 @@ calls:
 
 The whole request is resent on every call, so a call is expensive.
 
-- The six phases share a budget of {{MAX_PROVIDER_CALLS}} model calls in all.
+- The phases of one session share a budget of {{MAX_PROVIDER_CALLS}} model calls
+  in all.
 - Each phase gets at most {{MAX_PHASE_ATTEMPTS}} submission attempts.
 - On the common path a phase is one call: the submission, on the first turn.
   A phase that also carries a code tool still needs it only rarely.
-- If the budget runs out before all six phases are accepted, nothing from this
-  tick is applied.
+- If the budget runs out before every phase of the session is accepted,
+  nothing from this session is applied.
 
 ## Answer the worklist
 
 The trigger's `resolve` object is authoritative, and the phase instruction
 names the part of it this request owes.
 
-- Every id under `starting` is answered exactly once, by the starts phase.
-- Every id under `ending` is answered exactly once, by the endings phase.
+- Every id under `starting` is answered exactly once, by the starts phase of
+  a start judgement.
+- Every id under `ending` is answered exactly once, by the endings phase of a
+  settlement.
+- A session never holds both: a start judgement lists no endings, and a
+  settlement lists no starts. An action that ends was started in an earlier
+  minute's judgement.
 - Ids under `stillRunning` need no entry and no occurrence merely to say they
   continue. Silence leaves them active. They may still be cited by a change or
   an occurrence when something perceptible or persistent actually came of them

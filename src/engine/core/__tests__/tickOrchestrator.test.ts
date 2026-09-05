@@ -1,7 +1,10 @@
-// Phase 8 tick loop: action-driven gate (idle ticks → zero engine calls),
-// new-command trigger, due-action re-trigger via nextWakeAt, replacement
-// triggers, dead-actor rejection, lifecycle commit and persistence
-// round-trips — all against a stubbed World Action Engine.
+// The two-session tick loop against a stubbed World Action Engine: a START
+// JUDGEMENT at the minute a command is drained, before the clock advances,
+// and a SETTLEMENT — over due / replaced / interrupted active actions, with
+// newCommands: [] — after it. Idle ticks make zero engine calls; a trigger
+// with nothing to settle opens no session at all. Covers the due-action
+// re-trigger via nextWakeAt, replacement and interruption triggers,
+// dead-actor rejection, lifecycle commit, and persistence round-trips.
 
 import { describe, expect, it, vi } from "vitest";
 import type { DynamicGameStateManager } from "../../../state/DynamicGameState.js";
@@ -12,7 +15,10 @@ import {
   ACTION_SCHEMA_VERSION,
   type ActionCommand,
 } from "../../actions/types.js";
-import type { EngineResolutionContext } from "../../resolution/types.js";
+import type {
+  EngineResolutionContext,
+  WorldActionEngineResult,
+} from "../../resolution/types.js";
 import type { RawTickResolution } from "../../resolution/worldDeltaSchema.js";
 import { finalizeResolution } from "../../resolution/worldDeltaValidator.js";
 import { SubsystemRegistry } from "../../subsystem/registry.js";
@@ -83,49 +89,56 @@ function receiptActionId(receipt: { actionId?: string }): string {
 }
 
 /** Honest stub engine, speaking the two-moment contract: a starting action
- *  gets a duration and nothing else; a due one gets a result. Lifecycle and
- *  progress are never stated — code derives both — so this runs through the
- *  real finalizeResolution exactly like production. */
-function stubResolve() {
+ *  gets a duration and nothing else; a due one gets a result — the same stub
+ *  serves the start judgement and the settlement, since each context carries
+ *  only one kind of trigger. */
+function stubResolve(durationTicks = 2) {
   const calls: EngineResolutionContext[] = [];
-  const fn = vi.fn(async (context: EngineResolutionContext) => {
-    calls.push(context);
-    const raw: Required<
-      Pick<RawTickResolution, "starting" | "ending" | "occurrences">
-    > &
-      RawTickResolution = { starting: [], ending: [], occurrences: [] };
-    // An ending is two scalars; its trace is a flat `occurrences` row that
-    // cites the action in `actionIds`.
-    const cite = (actionId: string) => {
-      raw.occurrences.push({
-        actionIds: [actionId],
-        speech: false,
-        perceivers: [{ characterId: "npc_1", clarity: "full" }],
-        content: "stub fact",
-      });
-    };
-    for (const t of context.trigger.triggers) {
-      for (const actionId of t.actionIds) {
-        if (t.reason === "new_action") {
-          raw.starting.push({ actionId, resolvedDurationTicks: 2 });
-        } else if (t.reason === "duration_reached") {
-          raw.ending.push({ actionId, outcome: "stub done" });
-          cite(actionId);
-        } else if (t.reason === "replacement" || t.reason === "interrupted") {
-          raw.ending.push({ actionId, outcome: "stub interruption" });
-          cite(actionId);
+  const fn = vi.fn(
+    async (
+      context: EngineResolutionContext
+    ): Promise<WorldActionEngineResult> => {
+      calls.push(context);
+      const raw: Required<
+        Pick<RawTickResolution, "starting" | "ending" | "occurrences">
+      > &
+        RawTickResolution = { starting: [], ending: [], occurrences: [] };
+      // An ending is two scalars; its trace is a flat `occurrences` row that
+      // cites the action in `actionIds`.
+      const cite = (actionId: string) => {
+        raw.occurrences.push({
+          actionIds: [actionId],
+          speech: false,
+          perceivers: [{ characterId: "npc_1", clarity: "full" }],
+          content: "stub fact",
+        });
+      };
+      for (const t of context.trigger.triggers) {
+        for (const actionId of t.actionIds) {
+          if (t.reason === "new_action") {
+            raw.starting.push({
+              actionId,
+              resolvedDurationTicks: durationTicks,
+            });
+          } else if (t.reason === "duration_reached") {
+            raw.ending.push({ actionId, outcome: "stub done" });
+            cite(actionId);
+          } else if (t.reason === "replacement" || t.reason === "interrupted") {
+            raw.ending.push({ actionId, outcome: "stub interruption" });
+            cite(actionId);
+          }
         }
       }
+      const finalized = finalizeResolution(raw, context);
+      return {
+        ok: true as const,
+        resolution: finalized.resolution,
+        movementInits: finalized.movementInits,
+        checkInits: finalized.checkInits,
+        codeToolInvocations: [],
+      };
     }
-    const finalized = finalizeResolution(raw, context);
-    return {
-      ok: true as const,
-      resolution: finalized.resolution,
-      movementInits: finalized.movementInits,
-      checkInits: finalized.checkInits,
-      codeToolInvocations: [],
-    };
-  });
+  );
   return { fn, calls };
 }
 
@@ -170,7 +183,7 @@ describe("action-driven trigger gate", () => {
     expect(resolve.fn).not.toHaveBeenCalled();
   });
 
-  it("a new command triggers exactly one global resolution", async () => {
+  it("a new command is judged at the minute it was decided, before the clock moves", async () => {
     const { engine, resolve } = makeEngine();
     const receipt = await engine.submitCommand(command());
     expect(receipt).toMatchObject({ accepted: true, status: "queued" });
@@ -180,31 +193,34 @@ describe("action-driven trigger gate", () => {
     expect(resolve.fn).toHaveBeenCalledTimes(1);
     const context = resolve.calls[0];
     expect(context.actions.newCommands).toHaveLength(1);
-    expect(context.trigger.triggers[0].reason).toBe("new_action");
+    expect(context.trigger.triggers).toEqual([
+      { actionIds: [receipt.actionId], reason: "new_action" },
+    ]);
+    // The start judgement saw the 09:00 world, not the 09:01 one.
+    expect(context.tick.tickStartTime).toBe("1923-04-02T09:00:00");
 
-    const action = engine.getAction(receiptActionId(receipt));
-    expect(action).toMatchObject({
+    expect(engine.getAction(receiptActionId(receipt))).toMatchObject({
       status: "active",
       resolvedDurationTicks: 2,
-      startedAt: "1923-04-02T09:01:00",
-      nextWakeAt: "1923-04-02T09:03:00",
+      startedAt: "1923-04-02T09:00:00",
+      nextWakeAt: "1923-04-02T09:02:00",
+      progressMinutes: 1,
     });
-    expect(action?.status).toBe("active");
   });
 
-  it("the active action re-triggers only at nextWakeAt, then completes", async () => {
+  it("the active action is settled on the tick its minutes run out, and not before", async () => {
     const { engine, resolve } = makeEngine();
     const receipt = await engine.submitCommand(command());
 
-    await engine.tick(); // 09:01 — first resolution, wake at 09:03
-    await engine.tick(); // 09:02 — no trigger
+    await engine.tick(); // 09:00 judged, clock → 09:01, one minute spent
     expect(resolve.fn).toHaveBeenCalledTimes(1);
 
-    await engine.tick(); // 09:03 — due
+    await engine.tick(); // 09:02 — two minutes spent: due, settled
     expect(resolve.fn).toHaveBeenCalledTimes(2);
-    expect(resolve.calls[1].trigger.triggers[0].reason).toBe(
-      "duration_reached"
-    );
+    const settlement = resolve.calls[1];
+    expect(settlement.trigger.triggers[0].reason).toBe("duration_reached");
+    expect(settlement.actions.newCommands).toEqual([]);
+    expect(settlement.tick.tickStartTime).toBe("1923-04-02T09:02:00");
     expect(engine.getAction(receiptActionId(receipt))).toMatchObject({
       status: "completed",
       progressMinutes: 2,
@@ -212,6 +228,35 @@ describe("action-driven trigger gate", () => {
 
     await engine.tick(); // nothing left
     expect(resolve.fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("a one-minute action decided at 09:00 ends at 09:01, in one tick with two sessions", async () => {
+    const { engine, resolve } = makeEngine(makeDgsm(), stubResolve(1));
+    const reports: import("../types.js").TickReport[] = [];
+    engine.on("tickCompleted", (r) => {
+      reports.push(r);
+    });
+    const receipt = await engine.submitCommand(command());
+    await engine.tick();
+
+    // Start judgement on 09:00, settlement on 09:01: two sessions, one tick.
+    expect(resolve.fn).toHaveBeenCalledTimes(2);
+    expect(resolve.calls[0].trigger.triggers[0].reason).toBe("new_action");
+    expect(resolve.calls[1].trigger.triggers[0].reason).toBe(
+      "duration_reached"
+    );
+    expect(reports[0].transitions.map((t) => t.to)).toEqual([
+      "active",
+      "completed",
+    ]);
+    expect(engine.getAction(receiptActionId(receipt))).toMatchObject({
+      status: "completed",
+      startedAt: "1923-04-02T09:00:00",
+      progressMinutes: 1,
+    });
+    expect(reports[0].commits).toHaveLength(1);
+    expect(reports[0].commits[0].outcome?.elapsedMinutes).toBe(1);
+    expect(reports[0].occurrences).toHaveLength(1);
   });
 
   it("emits derived commits and the transition/occurrence report", async () => {
@@ -223,12 +268,11 @@ describe("action-driven trigger gate", () => {
     await engine.submitCommand(command());
     await engine.tick();
     await engine.tick();
-    await engine.tick();
 
     expect(reports[0].transitions).toHaveLength(1);
     expect(reports[0].transitions[0].to).toBe("active");
-    expect(reports[2].commits).toHaveLength(1);
-    expect(reports[2].commits[0]).toMatchObject({
+    expect(reports[1].commits).toHaveLength(1);
+    expect(reports[1].commits[0]).toMatchObject({
       characterId: "npc_1",
       actionText: "I search the desk.",
       definitionId: "act",
@@ -237,10 +281,10 @@ describe("action-driven trigger gate", () => {
 });
 
 describe("replacement and interruption", () => {
-  it("a replacing command triggers interruption of the old action in the same resolution", async () => {
-    const { engine, resolve } = makeEngine();
+  it("a replacing command is judged at its own minute, and the old action is settled as replaced a minute later", async () => {
+    const { engine, resolve } = makeEngine(makeDgsm(), stubResolve(3));
     const first = await engine.submitCommand(command());
-    await engine.tick(); // first is active
+    await engine.tick(); // c1 active from 09:00, one minute spent
 
     await engine.submitCommand(
       command({
@@ -251,11 +295,15 @@ describe("replacement and interruption", () => {
     );
     await engine.tick();
 
-    expect(resolve.fn).toHaveBeenCalledTimes(2);
-    const reasons = resolve.calls[1].trigger.triggers.map((t) => t.reason);
-    expect(reasons).toContain("new_action");
-    expect(reasons).toContain("replacement");
-
+    expect(resolve.fn).toHaveBeenCalledTimes(3);
+    // The start judgement of c2, alone, on the 09:01 world…
+    expect(resolve.calls[1].trigger.triggers.map((t) => t.reason)).toEqual([
+      "new_action",
+    ]);
+    // …then the settlement, which is told c1 was cut short.
+    expect(resolve.calls[2].trigger.triggers.map((t) => t.reason)).toEqual([
+      "replacement",
+    ]);
     expect(engine.getAction(receiptActionId(first))?.status).toBe(
       "interrupted"
     );
@@ -265,13 +313,71 @@ describe("replacement and interruption", () => {
     expect(second?.command.commandId).toBe("c2");
   });
 
-  it("requestInterruption resolves the action instead of dropping it", async () => {
+  it("an action whose time is spent this minute is due, not replaced, whatever its actor does next", async () => {
+    const { engine, resolve } = makeEngine(); // duration 2
+    const first = await engine.submitCommand(command());
+    await engine.tick(); // one minute spent
+    await engine.submitCommand(
+      command({ commandId: "c2", replacesActionId: first.actionId })
+    );
+    await engine.tick(); // second minute spent: c1 is due at 09:02
+
+    const reasons = resolve.calls[2].trigger.triggers.map((t) => t.reason);
+    expect(reasons).toEqual(["duration_reached"]);
+    expect(engine.getAction(receiptActionId(first))?.status).toBe("completed");
+  });
+
+  it("a start session that fails leaves nothing for the settlement to address", async () => {
     const { engine, resolve } = makeEngine();
-    const receipt = await engine.submitCommand(command());
+    resolve.fn.mockImplementationOnce(async () => ({
+      ok: false,
+      failure: "x",
+      errors: [],
+      codeToolInvocations: [],
+    }));
+
+    const first = await engine.submitCommand(command());
+    await engine.submitCommand(
+      command({ commandId: "c2", replacesActionId: first.actionId })
+    );
+
     await engine.tick();
 
-    engine.requestInterruption(receiptActionId(receipt), "scripted force-stop");
+    // The failed start left both commands queued. A settlement cannot
+    // address a still-queued action, so no settlement session opens for the
+    // one c2 claims to replace: exactly one engine call this tick.
+    expect(resolve.fn).toHaveBeenCalledTimes(1);
+    expect(engine.getAction(receiptActionId(first))?.status).toBe("queued");
+
     await engine.tick();
+
+    // Both commands are re-drained and started on the next tick, as a
+    // perfectly ordinary start judgement — the failure left no trace.
+    expect(resolve.fn).toHaveBeenCalledTimes(3);
+    const restart = resolve.calls[0];
+    expect(restart.trigger.triggers).toEqual([
+      {
+        actionIds: expect.arrayContaining([first.actionId]),
+        reason: "new_action",
+      },
+    ]);
+    expect(restart.actions.newCommands).toHaveLength(2);
+    // c1 is now genuinely active (started this same tick), so c2 naming it
+    // as replaced opens a real settlement — unlike the failed tick, this one
+    // has something to address.
+    expect(resolve.calls[1].trigger.triggers[0].reason).toBe("replacement");
+    expect(engine.getAction(receiptActionId(first))?.status).toBe(
+      "interrupted"
+    );
+  });
+
+  it("requestInterruption resolves the action instead of dropping it", async () => {
+    const { engine, resolve } = makeEngine(makeDgsm(), stubResolve(3));
+    const receipt = await engine.submitCommand(command());
+    await engine.tick(); // active from 09:00, one minute spent, wakes at 09:03
+
+    engine.requestInterruption(receiptActionId(receipt), "scripted force-stop");
+    await engine.tick(); // 09:02 — not due yet, but interrupted
 
     expect(resolve.calls[1].trigger.triggers[0].reason).toBe("interrupted");
     expect(engine.getAction(receiptActionId(receipt))?.status).toBe(
@@ -347,10 +453,9 @@ describe("an ended action always leaves something to perceive", () => {
       reports.push(r);
     });
     await engine.tick(); // active
-    await engine.tick();
     await engine.tick(); // due → completed, engine emits its own occurrence
 
-    const completedTick = reports[2];
+    const completedTick = reports[1];
     expect(completedTick.transitions[0].to).toBe("completed");
     // Exactly one — the fallback must not double up on the Engine's fact.
     expect(completedTick.occurrences).toHaveLength(1);
@@ -376,7 +481,7 @@ describe("persistence", () => {
   it("round-trips queued and active actions without re-resolution", async () => {
     const { engine, resolve } = makeEngine();
     const receipt = await engine.submitCommand(command());
-    await engine.tick(); // active, wake 09:03
+    await engine.tick(); // active from 09:00, wake 09:02
 
     const snapshot = JSON.parse(JSON.stringify(engine.serialize()));
     const dgsm2 = makeDgsm();
@@ -395,12 +500,10 @@ describe("persistence", () => {
     const restored = engine2.getAction(receiptActionId(receipt));
     expect(restored).toMatchObject({
       status: "active",
-      nextWakeAt: "1923-04-02T09:03:00",
+      nextWakeAt: "1923-04-02T09:02:00",
     });
 
-    await engine2.tick(); // 09:02 — not due, no call
-    expect(resolve2.fn).not.toHaveBeenCalled();
-    await engine2.tick(); // 09:03 — due
+    await engine2.tick(); // 09:02 — due
     expect(resolve2.fn).toHaveBeenCalledTimes(1);
     expect(engine2.getAction(receiptActionId(receipt))?.status).toBe(
       "completed"
@@ -467,7 +570,9 @@ describe("a route that does not join up", () => {
 
   /** Starts the action with a movement leg whose single hop is not a stretch. */
   function stubResolveWithBadRoute() {
+    const calls: EngineResolutionContext[] = [];
     const fn = vi.fn(async (context: EngineResolutionContext) => {
+      calls.push(context);
       const raw: RawTickResolution = { starting: [], ending: [] };
       for (const t of context.trigger.triggers) {
         for (const actionId of t.actionIds) {
@@ -489,7 +594,7 @@ describe("a route that does not join up", () => {
         codeToolInvocations: [],
       };
     });
-    return { fn, calls: [] as EngineResolutionContext[] };
+    return { fn, calls };
   }
 
   it("tells the actor which two places their way ran between, in words about the world", async () => {
@@ -590,13 +695,16 @@ describe("a walk that starts partway along a road", () => {
         roadId: "R_MAIN",
         position: 0.1,
       }),
+      setCharacterPosition: () => undefined,
       getBlockedConnections: () => new Map<string, string>(),
       getConnectionBlockReason: () => undefined,
     } as unknown as DynamicGameStateManager;
   }
 
   function stubResolveWithWalk() {
+    const calls: EngineResolutionContext[] = [];
     const fn = vi.fn(async (context: EngineResolutionContext) => {
+      calls.push(context);
       const raw: RawTickResolution = { starting: [], ending: [] };
       for (const t of context.trigger.triggers) {
         for (const actionId of t.actionIds) {
@@ -606,6 +714,8 @@ describe("a walk that starts partway along a road", () => {
               resolvedDurationTicks: 4,
               movement: { route: ["J_A"] },
             });
+          } else if (t.reason === "duration_reached") {
+            raw.ending?.push({ actionId, outcome: "arrived at J_A" });
           }
         }
       }
@@ -618,7 +728,7 @@ describe("a walk that starts partway along a road", () => {
         codeToolInvocations: [],
       };
     });
-    return { fn, calls: [] as EngineResolutionContext[] };
+    return { fn, calls };
   }
 
   it("does not hand the clock a fractional minute", async () => {
@@ -643,8 +753,49 @@ describe("a walk that starts partway along a road", () => {
 
     const started = reports[0].transitions.find((t) => t.to === "active");
     expect(started?.resolvedDurationTicks).toBe(2); // ceil(1.5 / 1)
-    // The clock is at 09:01 when the action starts, plus its own 2 ticks.
-    expect(started?.nextWakeAt).toBe("1923-04-02T09:03:00");
+    // The clock is at 09:00 when the action starts, plus its own 2 ticks.
+    expect(started?.nextWakeAt).toBe("1923-04-02T09:02:00");
+  });
+
+  it("takes the first step in the tick the route is judged, so a one-minute walk ends a minute after it was decided", async () => {
+    const positions: unknown[] = [];
+    const dgsm = makeRoadDgsm();
+    // Standing right next to J_A: the whole walk is one step.
+    (
+      dgsm as unknown as { getCharacterPosition: () => unknown }
+    ).getCharacterPosition = () => ({
+      type: "road",
+      roadId: "R_MAIN",
+      position: 0.05,
+    });
+    (
+      dgsm as unknown as {
+        setCharacterPosition: (id: string, position: unknown) => void;
+      }
+    ).setCharacterPosition = (_id, position) => {
+      positions.push(position);
+    };
+    const { engine, resolve } = makeEngine(dgsm, stubResolveWithWalk());
+    const reports: import("../types.js").TickReport[] = [];
+    engine.on("tickCompleted", (r) => {
+      reports.push(r);
+    });
+    const receipt = await engine.submitCommand(
+      command({ description: "我沿主街往回走到北口。" })
+    );
+    await engine.tick();
+
+    // Judged on 09:00, stepped and settled on 09:01.
+    expect(resolve.fn).toHaveBeenCalledTimes(2);
+    expect(
+      reports[0].stateChanges.some((c) => c.kind === "character.position")
+    ).toBe(true);
+    expect(engine.getAction(receiptActionId(receipt))).toMatchObject({
+      status: "completed",
+      startedAt: "1923-04-02T09:00:00",
+      progressMinutes: 1,
+    });
+    expect(positions.length).toBeGreaterThan(0);
   });
 });
 
@@ -652,7 +803,9 @@ describe("conditions reach the dice", () => {
   /** A stub that sets a bar when the action starts, so code rolls when its
    *  time is spent — the only place in the engine a skill is actually rolled. */
   function stubResolveWithCheck() {
+    const calls: EngineResolutionContext[] = [];
     const fn = vi.fn(async (context: EngineResolutionContext) => {
+      calls.push(context);
       const raw: RawTickResolution = { starting: [], ending: [] };
       for (const t of context.trigger.triggers) {
         for (const actionId of t.actionIds) {
@@ -674,7 +827,7 @@ describe("conditions reach the dice", () => {
         codeToolInvocations: [],
       };
     });
-    return { fn, calls: [] as EngineResolutionContext[] };
+    return { fn, calls };
   }
 
   const shaken: CharacterCondition = {
@@ -697,8 +850,7 @@ describe("conditions reach the dice", () => {
     );
     expect(receipt.accepted).toBe(true);
 
-    await engine.tick(); // starts, sets the bar
-    await engine.tick(); // time spent, code rolls
+    await engine.tick(); // judged at 09:00, spent and rolled at 09:01
 
     const action = engine.getAction(receiptActionId(receipt));
     expect(action?.checkOutcome?.actor).toMatchObject({
@@ -716,8 +868,7 @@ describe("conditions reach the dice", () => {
     const receipt = await engine.submitCommand(
       command({ declaredSkillId: "Social" })
     );
-    await engine.tick();
-    await engine.tick();
+    await engine.tick(); // judged at 09:00, spent and rolled at 09:01
 
     const roll = engine.getAction(receiptActionId(receipt))?.checkOutcome
       ?.actor;
@@ -741,12 +892,111 @@ describe("conditions reach the dice", () => {
     const receipt = await engine.submitCommand(
       command({ declaredSkillId: "Social" })
     );
-    await engine.tick();
-    await engine.tick();
+    await engine.tick(); // judged at 09:00, spent and rolled at 09:01
 
     expect(
       engine.getAction(receiptActionId(receipt))?.checkOutcome?.actor
         ?.skillValue
     ).toBe(35);
+  });
+});
+
+describe("a drive whose driver is not in the cab", () => {
+  function makeTruckDgsm() {
+    const base = makeDgsm();
+    const scenes = new Map([
+      [
+        "SCN_1",
+        {
+          id: "SCN_1",
+          name: "车库门口",
+          connections: [{ id: "connection.scn1.jb", targetId: "J_B" }],
+        },
+      ],
+      [
+        "S_CAB",
+        {
+          id: "S_CAB",
+          name: "驾驶室",
+          parentLocationId: "VEH_TRUCK",
+          connections: [],
+        },
+      ],
+      [
+        "J_B",
+        {
+          id: "J_B",
+          name: "南口",
+          connections: [{ id: "connection.jb.scn1", targetId: "SCN_1" }],
+        },
+      ],
+    ]);
+    const truck = {
+      id: "VEH_TRUCK",
+      name: "旧卡车",
+      interiorSceneId: "S_CAB",
+      position: { type: "scene", sceneId: "SCN_1" },
+    };
+    return {
+      ...base,
+      getState: () => ({ ...base.getState(), scenes }),
+      getScene: (id: string) => scenes.get(id) ?? null,
+      getVehicle: (id: string) => (id === "VEH_TRUCK" ? truck : null),
+      getVehicles: () => [truck],
+      getTopology: () => ({
+        roads: new Map(),
+        nodeSceneIds: new Set(["SCN_1", "J_B"]),
+        sceneToParent: new Map(),
+        sceneToRoads: new Map(),
+      }),
+    } as unknown as DynamicGameStateManager;
+  }
+
+  function stubResolveWithDrive() {
+    const calls: EngineResolutionContext[] = [];
+    const fn = vi.fn(async (context: EngineResolutionContext) => {
+      calls.push(context);
+      const raw: RawTickResolution = { starting: [], ending: [] };
+      for (const t of context.trigger.triggers) {
+        for (const actionId of t.actionIds) {
+          if (t.reason === "new_action") {
+            raw.starting?.push({
+              actionId,
+              movement: { route: ["J_B"], vehicleId: "VEH_TRUCK" },
+            });
+          }
+        }
+      }
+      const finalized = finalizeResolution(raw, context);
+      return {
+        ok: true as const,
+        resolution: finalized.resolution,
+        movementInits: finalized.movementInits,
+        checkInits: finalized.checkInits,
+        codeToolInvocations: [],
+      };
+    });
+    return { fn, calls };
+  }
+
+  it("never sets off, and the actor is told they are standing beside the vehicle", async () => {
+    const { engine } = makeEngine(makeTruckDgsm(), stubResolveWithDrive());
+    await engine.submitCommand(command({ description: "我开卡车去南口。" }));
+    const reports: import("../types.js").TickReport[] = [];
+    engine.on("tickCompleted", (r) => {
+      reports.push(r);
+    });
+    await engine.tick();
+
+    const transition = reports[0].transitions[0];
+    expect(transition.to).toBe("failed");
+    expect(transition.notAboard).toEqual({
+      vehicleId: "VEH_TRUCK",
+      interiorSceneId: "S_CAB",
+    });
+    const fact = reports[0].occurrences[0].facts[0].content;
+    expect(fact).toContain("旧卡车");
+    expect(fact).toContain("没有出发");
+    expect(fact).toContain("先上车");
   });
 });

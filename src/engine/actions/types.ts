@@ -225,6 +225,11 @@ export interface ActionTransition {
    *  the log; these two ids let the actor be told which pair of places their
    *  remembered way ran between, in theirs. */
   unstatedHop?: { fromId: string; toId: string };
+  /** Set when this transition is a drive that never started because the
+   *  actor is not sitting in the vehicle. Same division of labour as
+   *  `unstatedHop`: `reason` is for the log, these ids are for the words
+   *  the actor reads. */
+  notAboard?: { vehicleId: string; interiorSceneId: string };
 }
 
 // ==================== World deltas ====================
