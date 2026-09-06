@@ -120,9 +120,9 @@ export interface ScenePresentCharacter {
   /** Where they are standing within the shared place. Always perceivable — if
    *  you can see the person you can see the armchair they are in. */
   spot?: string;
-  /** Current in-flight action intent (EngineAction.command.description), if
-   *  the character is mid-action. Undefined = idle. */
-  currentActionText?: string;
+  /** In-flight intent with code-owned timing and pending-speech status.
+   *  This is not an observed result. Undefined = no active action. */
+  currentAction?: Extract<OwnActionState, { kind: "ongoing" }>;
 }
 
 export interface RenderedPerception {

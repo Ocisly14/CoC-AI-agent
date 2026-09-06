@@ -25,18 +25,19 @@ state, and the vessel's condition set the difficulty.
 
 ## Success levels
 
-- **Regular** — The vessel does what was asked, roughly. Noise, wake, a hard
-  contact with the dock.
+- **Regular** — The vessel does what was asked, within its capabilities. Noise and wake can follow;
+  damaging contact with a dock is not a default cost of success.
 - **Hard** — Cleanly handled: quiet, no damage, position held.
-- **Extreme** — The vessel is handled beyond its apparent limits — a hazard
-  taken at speed, a berth made in weather that should have prevented it.
+- **Extreme** — Exceptional control within the vessel's limits, water and
+  weather. Do not grant a physically impossible berth or untraversed distance.
 
 ## Failure
 
 - The maneuver misses: the approach must be made again, the hazard is still
   ahead, ground is lost against wind or current.
-- **Fumble** — Grounding, collision, or swamping. Damage the vessel, put
-  people in the water where that follows, and change the scene accordingly.
+- **Fumble** — A supported grounding, collision or swamping. Resolve the
+  actual impact and protection; damage and people overboard are consequences
+  only where the physical cause warrants them, not automatic fumble bonuses.
 
 ## State surface
 

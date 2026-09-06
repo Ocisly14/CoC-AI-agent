@@ -28,15 +28,15 @@ attempt as much as skill does — say which one is binding.
 
 - **Regular** — The feat comes off. The actor is where they meant to be, or
   the throw lands where aimed, at the cost of breath.
-- **Hard** — Cleanly and fast, with something to spare: quietly, without
+- **Hard** — With precise control within the assessed time: quietly, without
   dropping what they carry, or with enough control to keep going immediately.
-- **Extreme** — Beyond what the situation seemed to allow — a hold that should
-  not have held, a throw that lands exactly, ground covered ahead of pursuit.
+- **Extreme** — Exceptional precision or control within the supported physical
+  limits. No impossible hold, extra distance or retroactive shortening of time.
 
 ## Failure
 
 - The actor does not get there. They fall back to where they started, the
-  throw goes wide, the mount refuses. Fatigue is spent regardless.
+  throw goes wide, the mount refuses. Actual exertion can cost fatigue; never duplicate stamina already applied by code.
 - **Fumble** — A fall or a wrench. Apply real HP loss or an injury condition
   proportional to the height and surface, and put the actor where the fall
   actually leaves them.
@@ -50,9 +50,11 @@ for what actually happened — a one-off descriptive result is occurrence
 - `movement.route` — ordinary running or climbing along connected places;
   `character.position` only for a direct jump, fall or vault that bypasses the
   route, and `character.spot` for displacement within one scene.
-- `character.fatigue` — spent on every attempt, success or not.
+- `character.fatigue` — supported exertion not already applied by code.
 - `character.hp` and `character.addCondition` — a fall, a wrench, a broken
   bone. Put the actor where the fall leaves them.
 - `item.move` — a thrown or dropped object; pair it with `item.set` when the
   impact damages it but leaves it in play.
-- `scene.addCondition` — a rope left hanging, a railing broken through.
+- `scene.addCondition` — a lasting scene consequence with a real cause.
+  A rope must already exist or be created from available material, never appear
+  solely to explain how a successful climb worked.

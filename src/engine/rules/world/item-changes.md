@@ -47,7 +47,8 @@ item's holder, use `item.move` with its exact current `from` holder and final
 
 If the item remains in the same scene, the state model has no item-level
 `spot`. Do not emit a no-op move whose `from` and `to` are the same holder.
-Record the displacement in an occurrence; rewrite the scene description only
+Record the displacement in an occurrence and correct an item description
+that asserts its old placement; rewrite the scene description only
 when the new resting place is a persistent, materially relevant part of that
 scene.
 
@@ -65,8 +66,9 @@ vehicle travels. Do not move every carried item separately with the vehicle.
 
 Choose the operation from the object's resulting identity and function:
 
-- Cosmetic or localized damage that leaves the same usable object is `set`
-  with `appendDescription`.
+- Cosmetic or localized damage that leaves the same usable object is `set`.
+  Use `appendDescription` only if every existing claim remains true; otherwise
+  replace `description` and preserve its unaffected details.
 - A changed but still identifiable object is `set` with a complete replacement
   `description`, plus functional fields such as `isLightSource:false` when
   applicable.
@@ -86,6 +88,20 @@ conceals it. Knowing privately where something is does not necessarily reveal
 it to the whole scene.
 
 ## Scene-description coherence
+
+Before submitting, compare each affected item's CURRENT holder, existence,
+description and functional fields with the accepted outcomes. Updating one
+field does not update the others: `move` changes the holder only, never prose.
+If a map described as spread on a table was folded and taken away, submit
+both `move` and `set {description}` for that item, with the same causal action.
+Remove the obsolete placement and record the supported folded state while
+preserving its material and markings. Do not append a new sentence while
+leaving the contradictory old sentence intact. Unchanged identity or function
+does not excuse a stale description, and a transfer is not mere handling.
+
+Repair the item's OWN description in this phase; the scene phase separately
+repairs the surrounding place. Neither repair substitutes for the other.
+Submit `[]` only after checking both structural fields and descriptive claims.
 
 When an item's current scene description contains its `[itemId]` citation,
 moving or destroying it requires a `scene.setDescription` in the same

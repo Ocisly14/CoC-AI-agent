@@ -1,7 +1,9 @@
 # Occurrences and Dialogue
 
 Occurrences are the objective, non-persistent record of what happened this
-tick and the only route by which characters perceive action results. One row
+tick and the route by which other characters perceive action results. The
+acting character also receives its own ending outcome directly. Both routes
+must respect the same evidence and timing boundaries. One row
 describes one moment for everyone who received any evidence of it, graded per
 person. Determine sensory reach and each perceiver's grade under
 `perception.md`, then encode that decision here.
@@ -26,8 +28,16 @@ the one perception field. Do not output an actor, location, signals, fact
 arrays, fact types, reference-id arrays or affected-character arrays; those
 are not part of this occurrence shape.
 
-Content contains no reasoning, corrections, character-perspective phrasing or
-subjective interpretation. State the settled world fact once.
+A `no_change` ending must not be cited by any occurrence. Its lifecycle
+transition already tells the actor the action ended. Observation or waiting
+creates no retrospective event: keep actual events on their original source
+actions, with each perceiver's clarity, and deliver them when they occur.
+If there are no new perceptible facts, submit `[]`; do not manufacture an
+"observed nothing new" fact to fill the space.
+
+Content contains no model reasoning, corrections, character-perspective
+phrasing or imposed subjective interpretation. State the supported world fact
+once; keep any evidence-based analytical uncertainty explicit.
 
 ## One occurrence, one fact, graded audience
 
@@ -36,9 +46,10 @@ of who is listed — never at the lowest shared level. Each perceiver's `clarity
 says how much of that fact reached them; the Renderer degrades per grade. Never
 give a character a higher `clarity` than the evidence they received supports.
 
-Split into separate occurrences citing the same action ids ONLY when audiences
-receive different FACTS — the shove in one room and the landing in the
-courtyard. Different degrees of one fact are one row, graded per perceiver.
+Use separate occurrences citing the same action for distinct facts, including
+its delivered speech and its physical result, or events in different places
+with different audiences (a shove and a landing). Do not split copies of the
+same fact merely by clarity: those belong in one row, graded per perceiver.
 
 For example, a whisper produces ONE `speech:true` row carrying the original
 words, with `perceivers`:
@@ -80,19 +91,43 @@ speaking, for example—ENDS this tick, emit a speech occurrence for the words
 and a separate `speech:false` occurrence for the physical result. Such an
 action is a `mode: "outcome"` decision, never a pure-speech one, and an
 outcome decision cited only by a speech row is rejected. While it is still
-under `starting`, the words are not delivered and no speech row exists; a
-`speech:false` row may record the visible attempt.
+under `stillRunning`, the words are not delivered and no speech row exists.
+A settlement may record a supported visible intermediate attempt with
+`speech:false`; it must not summarize pending words, claim their intended
+effect, or complete all later steps. Do not replay earlier physical effects.
+Starts run in a separate session with no occurrence submission.
+
+Intermediate work that changes position, ownership or another persistent field
+needs the corresponding accepted change. This last phase cannot introduce that
+change through narration after its owning phase has passed. Use the supported
+attempt or existing state if no such change was established. Checking a window
+during a longer inspection is possible; "every window checked, fire fed, gun
+put away" needs evidence for that whole sequence, not just one minute elapsed.
 
 ## Other characters retain agency
 
-An action aimed at another person is complete once the actor's attempt is
-delivered — describe the actor's words and conduct, never the target's
+For an interpersonal exchange, describe the actor's delivered words and
+conduct at the time established by code, never the target's
 unissued reply, nod, silence, concession, belief or emotional reaction. The target responds on
-their own next command.
+their own command. This does not prohibit an independently grounded physical
+effect on a target, such as an injury or forced displacement.
 
 A successful social check may be delivered downstream as pressure or evidence
-the target must consider; it does not authorize the Engine to write the
+the target can weigh if it actually reaches them; it does not authorize the Engine to write the
 target's decision in advance.
+
+Before submitting, check every clause about someone other than the action's
+actor. A reply, nod, deliberate silence, refusal or group reaction needs that
+person's own settled action or an already established fact, not an inference
+from the speaker's roll. No response recorded is not a choice to remain silent.
+Do not bridge two speech rows by inventing that one person answered, conceded
+or ignored the other; keep their source actions and timing distinct.
+
+An actor's failed delivery may be perceptible; "nobody answers", "nobody
+laughs" and "the room stays tense" are not interchangeable descriptions of
+that failure. Do not add them to make the narrative feel complete. Accepted
+outcomes remain read-only, but citing an outcome requires a perceptible trace
+of its actor's attempt, not repetition of every clause or speculative reaction.
 
 ## Sanity declarations
 

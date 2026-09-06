@@ -439,6 +439,34 @@ describe("an ended action always leaves something to perceive", () => {
     expect(occurrences[0].facts[0].content).toContain("actor is dead");
   });
 
+  it("closes a wait and emits its transition without a fallback observation event", async () => {
+    const resolve = stubResolve();
+    const { engine } = makeEngine(makeDgsm(), resolve);
+    const receipt = await engine.submitCommand(
+      command({ description: "I wait and watch." })
+    );
+    if (!receipt.actionId) throw new Error("wait was rejected");
+    const actionId = receipt.actionId;
+    const reports: import("../types.js").TickReport[] = [];
+    engine.on("tickCompleted", (r) => {
+      reports.push(r);
+    });
+    await engine.tick();
+    resolve.fn.mockImplementationOnce(async (context) => {
+      const finalized = finalizeResolution(
+        { ending: [{ actionId, outcome: null }], occurrences: [] },
+        context
+      );
+      return { ok: true as const, ...finalized, codeToolInvocations: [] };
+    });
+    await engine.tick();
+    expect(reports[1].transitions).toEqual([
+      expect.objectContaining({ actionId: receipt.actionId, to: "completed" }),
+    ]);
+    expect(reports[1].occurrences).toEqual([]);
+    expect(engine.getAction(actionId)?.status).toBe("completed");
+  });
+
   it("leaves the Engine's own occurrence alone rather than doubling up", async () => {
     // Every ending is cited by at least one `occurrences` row (the validator
     // refuses one nothing cites), so the fallback below should never fire for

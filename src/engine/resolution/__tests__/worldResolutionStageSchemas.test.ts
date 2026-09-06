@@ -212,11 +212,12 @@ describe("the endings phase is a decision, not a RawActionEnd", () => {
   };
   const branches = (propertyOf("endings").items as Node).anyOf as Branch[];
 
-  it("offers exactly two closed branches, discriminated by mode", () => {
-    expect(branches).toHaveLength(2);
+  it("offers three closed branches, discriminated by mode", () => {
+    expect(branches).toHaveLength(3);
     expect(branches.map((b) => b.properties.mode.const)).toEqual([
       "outcome",
       "pure_speech",
+      "no_change",
     ]);
     for (const branch of branches) {
       expect(branch.type).toBe("object");
@@ -235,6 +236,8 @@ describe("the endings phase is a decision, not a RawActionEnd", () => {
     ]);
     expect([...branches[1].required].sort()).toEqual(["actionId", "mode"]);
     expect(branches[1].properties.outcome).toBeUndefined();
+    expect([...branches[2].required].sort()).toEqual(["actionId", "mode"]);
+    expect(branches[2].properties.outcome).toBeUndefined();
   });
 
   it("states the rule the validator will enforce about each mode", () => {
@@ -299,9 +302,9 @@ describe("what the split bought", () => {
   it("uses two timing branches for starts and no union for occurrences", () => {
     expect(branchCountOf(schemaOf("starts"))).toBe(2);
     expect(branchCountOf(schemaOf("occurrences"))).toBe(0);
-    // The endings decision is a union too, but a two-branch one — the cheapest
+    // The endings decision is a union too, with three closed branches — an explicit
     // way to say "required unless" in a grammar that cannot say it.
-    expect(branchCountOf(schemaOf("endings"))).toBe(2);
+    expect(branchCountOf(schemaOf("endings"))).toBe(3);
   });
 
   it("keeps every phase inside Anthropic's optional-parameter budget", () => {

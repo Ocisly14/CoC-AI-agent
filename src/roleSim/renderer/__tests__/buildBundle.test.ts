@@ -98,6 +98,53 @@ function report(overrides: Partial<TickReport> = {}): TickReport {
 }
 
 describe("resolveOwnAction", () => {
+  it("carries another character's clock and pending speech without exposing utterance text", () => {
+    const ongoing = action({
+      command: {
+        ...action().command,
+        actorId: "npc_2",
+        description: "I watch the door and offer to take first watch.",
+        utterance: "I will take first watch.",
+      },
+      resolvedDurationTicks: 90,
+    });
+    const sceneDgsm = {
+      ...dgsm,
+      getState: () => ({
+        ...dgsm.getState(),
+        npcCharacters: [{ id: "npc_1" }, { id: "npc_2" }, { id: "npc_3" }],
+      }),
+      isNpcAlive: () => true,
+    } as unknown as DynamicGameStateManager;
+    const bundle = buildPerceivedBundle({
+      npcId: "npc_1",
+      dgsm: sceneDgsm,
+      engine: makeEngine([ongoing]),
+    });
+    expect(bundle.charactersInScene.map((c) => c.id)).toEqual([
+      "npc_2",
+      "npc_3",
+    ]);
+    expect(bundle.charactersInScene[0].currentAction).toEqual({
+      kind: "ongoing",
+      description: ongoing.command.description,
+      startedAt: ongoing.startedAt,
+      progressMinutes: 2,
+      resolvedDurationTicks: 90,
+      utterancePending: true,
+    });
+    expect(JSON.stringify(bundle.charactersInScene)).not.toContain(
+      ongoing.command.utterance
+    );
+    expect(bundle.charactersInScene[1].currentAction).toBeUndefined();
+    const afterEnd = buildPerceivedBundle({
+      npcId: "npc_1",
+      dgsm: sceneDgsm,
+      engine: makeEngine([{ ...ongoing, status: "completed" }]),
+    });
+    expect(afterEnd.charactersInScene[0].currentAction).toBeUndefined();
+  });
+
   it("derives ongoing state with intent, start and progress — no runtime internals", () => {
     const own = resolveOwnAction("npc_1", undefined, makeEngine([action()]));
     expect(own).toEqual({

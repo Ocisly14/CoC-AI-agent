@@ -35,16 +35,18 @@ carries.
 ## The accepted draft is read-only
 
 Every phase of this session before this one has already been decided and
-validated. Its output is shown under "Accepted so far" as a settled fact of
-this session.
+checked against the implemented constraints. Its output is shown under
+"Accepted so far" as the read-only draft of this session. This is not a
+semantic guarantee of every prose clause.
 
 - Read it, and stay consistent with it.
 - Do not restate it and do not submit any part of it again. This call carries
   this phase's array and nothing else.
-- Do not try to revise it. If something in it is genuinely wrong, say nothing
-  about it: the whole session is checked once more after its last phase, and a
-  fault found there sends it back to the phase that owns it, with every phase
-  after that one discarded and decided again.
+- Do not try to revise it or add commentary outside your phase's schema.
+  Do not expand an unsupported clause into new speech, behavior or state.
+  The whole session is checked after its last phase; detected faults return
+  to their owning phase and discard later phases. These implemented checks
+  do not replace your own evidence and timing audit.
 
 A start judged in an earlier minute is not part of this draft at all: it is a
 fact of the world by now, shown under Active Actions with the clock and the

@@ -127,6 +127,8 @@ const RESOLUTION = fields<RawTickResolution>()(
 
 type OutcomeDecision = Extract<EndingDecision, { mode: "outcome" }>;
 type PureSpeechDecision = Extract<EndingDecision, { mode: "pure_speech" }>;
+type NoChangeDecision = Extract<EndingDecision, { mode: "no_change" }>;
+const NO_CHANGE_DECISION = fields<NoChangeDecision>()("actionId", "mode");
 const OUTCOME_DECISION = fields<OutcomeDecision>()(
   "actionId",
   "mode",
@@ -144,7 +146,8 @@ const _covers: [
   Covers<RawTickResolution, (typeof RESOLUTION)[number]>,
   Covers<OutcomeDecision, (typeof OUTCOME_DECISION)[number]>,
   Covers<PureSpeechDecision, (typeof PURE_SPEECH_DECISION)[number]>,
-] = [true, true, true, true, true, true, true, true];
+  Covers<NoChangeDecision, (typeof NO_CHANGE_DECISION)[number]>,
+] = [true, true, true, true, true, true, true, true, true];
 void _covers;
 
 /** The two closed branches of an endings decision, in schema order. The
@@ -181,12 +184,17 @@ describe("the tool schema and the TS types describe the same thing", () => {
   });
 
   it("an outcome decision carries the fields of RawActionEnd plus its discriminator, branch for branch", () => {
-    expect(endingBranches).toHaveLength(2);
+    expect(endingBranches).toHaveLength(3);
     expect(propsOf(outcomeBranch)).toEqual(sorted([...END, "mode"]));
     expect(propsOf(outcomeBranch)).toEqual(sorted(OUTCOME_DECISION));
     expect(propsOf(pureSpeechBranch)).toEqual(sorted(PURE_SPEECH_DECISION));
     expect(outcomeBranch.properties.mode.const).toBe("outcome");
     expect(pureSpeechBranch.properties.mode.const).toBe("pure_speech");
+    expect(endingBranches[2].properties.mode.const).toBe("no_change");
+    expect(propsOf(endingBranches[2])).toEqual(sorted(NO_CHANGE_DECISION));
+    expect(sorted(endingBranches[2].required ?? [])).toEqual(
+      sorted(NO_CHANGE_DECISION)
+    );
     // Both branches are fully required: a decision with a missing half is not
     // a decision, and there is nothing here a grammar has to leave open.
     expect(sorted(outcomeBranch.required ?? [])).toEqual(
@@ -636,7 +644,7 @@ describe("the Engine phase schemas and provider limits", () => {
       RESOLUTION_PHASES.map((phase) =>
         branchCount(PHASE_TOOLS[phase].inputSchema)
       )
-    ).toEqual([2, 2, 7, 4, 8, 0]);
+    ).toEqual([2, 3, 7, 4, 8, 0]);
     // The five reused lists still add up to the 23 optionals the two-tool
     // partition carried (6 in the action half, 17 in the effect half); the
     // endings decision adds none. Same six lists, cut differently.

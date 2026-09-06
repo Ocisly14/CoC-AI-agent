@@ -18,16 +18,28 @@ judge is the attempt behind them.
   the sentence; check it where the declared skill covers it. The `utterance`
   rides along and lands when the action ends.
 - Prying, deceiving, stalling, intimidating, persuading and reading a person
-  are attempts, not talk. Declared `Social`, they take a `check`, and the person
-  they work on is `opposedBy` with the skill they resist with. Whether the
-  probe got anything, whether the lie held, whether the bluff was read — that
-  is the outcome, and code's dice decide it, not your prose.
+  are attempts, not plain talk. When `Social` covers the declared attempt and
+  success is uncertain, use a `check`. Add `opposedBy` only for supported
+  active resistance with the skill used to resist; a target reference alone
+  does not establish resistance. Code's dice
+  settle the delivery and effectiveness of the attempt under the skill's
+  guidance; they do not author the target's answer, belief or decision.
 - The same holds for every other declared skill: treating a wound, forcing a
   lock, edging into a doorway unnoticed, reading a room. If success is in any
   doubt, it is checked; if the declared skill does not cover the attempt, it is
   not, and no substitute is named.
 
 ## Starting an action
+
+The character is responsible for submitting one atomic action: one immediate
+objective with an independently settleable result. It can span several ticks;
+atomic does not mean one minute or one bodily motion. Starts judges that
+submitted action's timing and check. It does not expand a broad plan into a
+queue of future actions or choose what the character does next. Separate tasks
+and decisions belong in subsequent commands after the character receives the
+current action's result. Incidental manner and words intended at this action's
+completion can accompany it; words needed before a long task belong to an
+earlier speech action, not to the long task's ending.
 
 Every id listed by the trigger under `starting` gets exactly one entry in the
 starts phase, and is never also answered as an ending in the same tick. Even
@@ -47,8 +59,8 @@ in the same judgement.
   skill is a stake the actor chose to put down: the default is to check it,
   and to omit the check only when the attempt cannot fail or the skill does
   not cover it.
-- When someone actively resists — the person being pried, deceived, stalled,
-  restrained or slipped past — list them in `opposedBy` with the skill they
+- When supplied conduct or standing defenses establish active resistance
+  to an attempt — including concealment, evasion or guarding — list them in `opposedBy` with the skill they
   use to defend. `opposedBy` requires a `check`. Code rolls and compares both
   sides; ties go to the defender. The defense `skillId` must be one of the
   ability domains named in the skill reference, and never `Languages` — a
@@ -63,33 +75,67 @@ its speech row is written on that later tick.
 
 ## Ending an action
 
-When an action is due or interrupted, decide the finished objective account.
+When an action is due or interrupted, decide whether it has a new objective
+result to settle. Closing an action's clock does not itself create a world event.
 
-- An action that produced something to account for is decided
-  `mode: "outcome"`, with its `actionId` and that `outcome`.
-- `outcome` is objective prose: what was achieved, where the attempt stopped,
-  and what the actor can objectively know. It is not an enum, an explanation of
-  your reasoning or a restatement of the dice.
-- An action that was nothing but words said is decided `mode: "pure_speech"`
-  and writes no outcome at all. Its complete answer is the `speech:true`
-  occurrence defined in `occurrences-and-dialogue.md`. An action that carried
-  a `check` is never pure speech: it attempted something, the dice answered,
-  and what came of the attempt is its `outcome` — the probe that got nothing,
-  the lie that held or did not, the wound that closed or kept bleeding. Its
-  words still get their speech row.
-- Every `mode: "outcome"` decision must be referenced by at least one non-speech
-  occurrence. The decision is the result account; the occurrence is what was
-  objectively perceptible.
-- Do not emit duration, a new difficulty, progress or status at ending time.
-  Code already knows whether elapsed time makes it completed or interrupted.
+- `mode: "outcome"` carries `actionId` and the new objective `outcome`: what
+  this attempt changed, exposed or failed to accomplish. State world facts,
+  not a personal account of what the actor saw, heard, learned or concluded.
+  A checked attempt always needs its objective result, consistent with the roll.
+- `mode: "pure_speech"` carries no outcome. It is only for an unchecked action
+  consisting entirely of its utterance, delivered by its `speech:true` occurrence.
+- `mode: "no_change"` carries only `actionId` and `mode`. Use it when no new
+  result, check or utterance needs settling, including routine observation,
+  listening and waiting. It sources no state changes and no occurrences.
+- Every `outcome` decision needs a non-speech occurrence for the perceptible
+  result. Words, if present, get a separate speech occurrence.
+- Do not emit duration, difficulty, progress or status at ending time. Code
+  closes the action and wakes its actor even for `no_change`.
+
+Ordinary perception is continuous event delivery, not a task whose ending
+needs a retrospective summary. An event is recorded under its own source action,
+with its actual perceivers and clarity, when it occurs. The Renderer supplies
+the personal perspective; the character owns interpretation and memory.
+Do not collect those events again into an observer's outcome, and do not invent
+"no new information", silence or a negative finding just because the clock ended.
+
+For a mixed command such as "sit down, take food and watch", settle only any
+new, supported physical effects that still need settling. Previously applied
+effects are not repeated. Do not append a recap of the room. A checked search
+that actually exposes a clue still needs an objective result and a properly
+routed occurrence, not the character's interpretation. An observer's action
+never executes another person's pending command or delivers their pending words.
 
 An action with a deterministic dice result must respect it:
 
-- `extreme`, `hard` or `regular`: the attempt worked, with its quality shaded
-  by the achieved level and the skill guidance.
+- `critical`, `extreme`, `hard` or `regular`: apply the supplied resolved check verdict
+  (`diceRoll.met`, including opposition), with quality shaded by the achieved level. A nominal
+  success level that lost the opposition does not make the attempt succeed.
+  For an interrupted action, credit only established partial work; a met roll
+  does not complete unspent work.
 - `failure`: the attempt did not work. Spend the time and stop without adding
   an unrelated lasting penalty.
-- `fumble`: apply the skill document's appropriate lasting consequence.
+- `fumble`: apply a supported, proportionate consequence under the skill
+  guidance; examples are not a requirement to invent damage or a target reaction.
+
+## Social outcomes stop at the actor
+
+For a social attempt, settle the actor's delivery and the pressure or evidence
+it produced, as the skill guidance permits. A successful or failed check does
+not authorize a reply, silence, concession, belief or emotional reaction from
+the target. Do not make "failure" mean "the other person refused to answer",
+or "success" mean "the other person believed them".
+
+On a failed probe, describe the unsupported angle, awkward phrasing or other
+actor-side failure justified by the attempt. Stop there. "Nobody answered",
+"the target replied politely", "nobody took up the joke" and "the room stayed
+tense" all invent other people's conduct or feelings unless supplied facts
+already establish them. No recorded response is not evidence of chosen silence.
+
+Only the other actor's own settled action or an already established fact can
+support describing their response. Preserve that source and its timing; do
+not turn a queued command, an ongoing intent, or a simultaneous unrelated line
+into a reaction to this attempt. Do not predict the response to finish the scene.
 
 ## Interrupted and replaced actions
 
@@ -104,7 +150,9 @@ old and new actions never both happen in full.
 
 ## Still-running and composite actions
 
-An id listed under `stillRunning` needs no output. Silence keeps it active.
+An id listed under `stillRunning` needs no ending entry. Code keeps it active.
+It may source a supported intermediate effect in a settlement's change and
+occurrence phases; it does not require one merely because time passed.
 
 Resolve only the part of a composite instruction whose time has actually been
 spent. A command such as "wait, then return to the room" does not authorize the

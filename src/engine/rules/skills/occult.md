@@ -21,8 +21,8 @@ was for.
 - Rejected for the physical examination of the object itself (Investigation or
   Science & Nature) and for reading the script it is written in (Languages).
 - Mythos knowledge the character has no route to remains unavailable at every
-  success level. The result is a correct account of what it is not, and that
-  is worth emitting.
+  success level. Report what is supported and what remains unidentified; lack of
+  knowledge cannot establish a tradition, exclusion or supernatural property.
 
 ## Success levels
 
@@ -30,14 +30,14 @@ was for.
   protective, summoning, funerary, a hoax.
 - **Hard** — The specifics — which rite, what stage it reached, what is
   missing from it, what it is meant to keep out or bring in.
-- **Extreme** — What it implies about the people who made it: how recent, how
-  practiced, what they will do next.
+- **Extreme** — Subtle supported detail about age, workmanship or the rite.
+  Do not infer certain private motives or another actor's future decisions.
 
 ## Failure
 
 - No placement. Superstition and the real thing look the same from here.
-- **Fumble** — A confident misreading — the protective sign read as a summons,
-  the hoax taken as genuine. Where the material is genuinely dangerous,
+- **Fumble** — A mistaken analysis may be produced, but it is not world truth
+  or a belief the character must adopt. Where the material is genuinely dangerous,
   handling it on a fumble applies the real consequence, including a sanity
   check on the occurrence where the material meets `sanity-check.md`. Add a
   condition only for an objective, major functional impairment — never for
@@ -45,9 +45,9 @@ was for.
 
 ## Sanity
 
-Sustained study of genuine Mythos material is not free: where the fiction
-warrants it, apply a sanity cost as a real character change with an objective
-`reason`, at any success level.
+Sustained study of genuine Mythos material is not free: only a supplied exposure meeting `sanity-check.md` permits a
+`sanityChecks` declaration in the occurrence phase, at any success level.
+Code rolls and applies any loss; no direct SAN change or automatic cost.
 
 ## State surface
 

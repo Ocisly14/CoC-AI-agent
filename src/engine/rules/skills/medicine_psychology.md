@@ -25,22 +25,27 @@ bound what is achievable — name what is missing when it is.
 
 ## Success levels
 
-- **Regular** — The patient stops getting worse. Bleeding is halted, the wound
-  is dressed, a small amount of HP is recovered and the bleeding condition is
-  cleared. A mind is steadied enough to function this scene.
-- **Hard** — Swift and correct: the same, plus a secondary problem noticed and
-  named, and the patient stable enough to move under their own power.
-- **Extreme** — Materially better than the situation allowed — a second
-  condition resolved, sanity genuinely steadied rather than postponed, a
-  diagnosis that reframes what is happening.
+- **Regular** — Resolve the specific feasible treatment: pressure may stop
+  bleeding, a dressing may protect the wound, a splint may support the limb.
+  These are not automatic HP recovery, a healed fracture or all conditions
+  cleared. A diagnosis yields supported findings; conversation yields the
+  clinician's conduct, not a prescribed feeling or decision in the patient.
+- **Hard** — More precise work within the same assessed time and resources.
+  Notice a secondary problem only if evidence supports it; do not automatically
+  make the patient ambulatory.
+- **Extreme** — The best feasible treatment or most discriminating supported
+  diagnosis. Do not exceed physiology, available supplies or elapsed time,
+  invent another illness, restore SAN, or lift a code-timed SAN consequence.
 
 ## Failure
 
 - No measurable change. The wound is neither better nor worse, the diagnosis
-  will not come, the session does not land. Supplies are consumed regardless.
+  will not come, the session does not land. Record only supplies actually used, in representable amounts; do not destroy
+  an entire medical kit to account for one dressing.
 - **Fumble** — Handled wrongly: a tourniquet too tight, a wound contaminated, a
-  session that opens something. Worsen the condition — HP loss, infection, a
-  sanity condition — and record it as a persistent character change.
+  concrete harmful intervention. Record only proportionate bodily harm or an
+  independently verifiable major impairment with a supported cause. A difficult
+  conversation alone does not license infection, psychological injury or SAN loss.
 
 ## State surface
 
@@ -49,12 +54,16 @@ for what actually happened — a one-off descriptive result is occurrence
 `content`, not a state change.
 
 - `character.hp` — recovered, in the small amounts field treatment allows.
-- `character.removeCondition` — bleeding stopped or a break splinted;
+- `character.removeCondition` — an existing bleeding condition actually resolved; a splint does
+  not remove a fracture or its remaining functional limitations;
   `character.addCondition` when treatment goes wrong and adds an objective,
   major impairment such as infection, circulatory shock, loss of limb use, or
   severe disorientation. Anxiety or feeling calmer is not a condition.
 - `item.set` / `item.destroy` — bandages, drugs, and supplies consumed
-  whether or not the treatment worked.
+  only to the extent actually used, whether or not the treatment worked.
+- `character.setAppearance` — repair an existing claim of active bleeding or
+  an untreated wound when treatment changed it; preserve unrelated injuries.
+  Dressings do not require a new major-impairment condition.
 - The diagnosis itself is occurrence `content`, with the patient and the medic
   in `perceivers` when both actually receive it, each at the grade their
   evidence supports.

@@ -151,7 +151,7 @@ ${block}`
     }
     const suffix = bits.length > 0 ? `\n(${bits.join(", ")})` : "";
     volatile.push(
-      `## Currently doing\n"${ctx.currentAction.description}"${suffix}`
+      `## Currently doing\n"${ctx.currentAction.description}"${suffix}\nThis is your ongoing intention, not a list of completed steps. Elapsed time alone does not prove a transfer, move, result or delivered speech.`
     );
   }
 
@@ -167,9 +167,12 @@ ${block}`
       `## What just landed on you
 ${ctx.landedChecks.map((line) => `- ${line}`).join("\n")}
 
-Someone just said something to you and you cannot brush it off: you have to
-answer them. This is how you feel right now, not a record of anything you
-did. What you say, and how much you say, is up to you in your next action.`
+These prompts ask you to weigh the supported force of an attempt only insofar
+as your actual perception supplies it. They are not new sensory evidence,
+proof of spoken words, or a feeling or response already chosen for you.
+Do not infer an unseen approach or a hidden motive from this section.
+What to do is up to you in your next action, including an answer, refusal or
+silence. Your belief remains your own. Keep your commitments and practical constraints in view.`
     );
   }
 
@@ -209,6 +212,9 @@ between you, what you learned, what you promised or were promised, what you
 carried, what changed and what it cost. Drop the minute-by-minute — the
 walking, the waiting, the weather that mattered to nobody. Where a thing
 matters because of when or where it happened, keep the when and the where.
+Keep attempts, promises, hearsay and your inferences distinct from observed
+results. An unfinished plan stays unfinished; an old position does not become
+a current one. Do not invent missing transitions to make a continuous story.
 
 Anything in square brackets — \`[item.clinic_upstairs.gramophone]\`,
 \`[stranger_a]\`, \`[SCN_clinic_waiting]\` — is a handle, not a word. Carry every one you keep
@@ -239,6 +245,10 @@ line that stands in for several you are deleting.
 
 Lines stamped \`[${closing.protectedFrom}]\` or later are what you are in
 the middle of — leave every one of them exactly as it is.
+
+Preserve who supplied a claim, when it held, and whether it was an observation,
+a promise or your own uncertain inference. Merging memories does not turn a
+plan into an achievement or make an earlier event happen again.
 
 How to judge each kind:
 - \`relationship\`: one line per person, saying how it stands between you
@@ -275,6 +285,12 @@ ONLY ids you may put in
 perceive with no tag is something you cannot act on this minute. Your
 in-character prose goes in \`description\` (and the exact words you speak
 in \`utterance\`) — never the tags.
+
+For \`act\`, submit only the next atomic action, with one immediate objective.
+Do not bundle separately completable tasks or later decisions into its duration.
+An action may span several ticks; use \`continue\` if the current one should
+keep running. Words attached to an act arrive at its end; speak separately
+first when they must precede a longer task.
 
 Call one tool now — \`act\` or \`continue\`, plus any \`writeMemory\`
 worth keeping from what you just perceived. Write content in ${langName}.`

@@ -25,17 +25,18 @@ darkness are the binding inputs.
 
 ## Success levels
 
-- **Regular** — The maneuver is flown. Rough, and it costs fuel and airframe.
+- **Regular** — The maneuver is flown. Normal fuel use is possible; airframe damage is not a default success cost.
 - **Hard** — Flown precisely, on the intended line, without further damage.
-- **Extreme** — Something the airframe should not have survived: a field
-  landing intact, a recovery from a state that normally ends the flight.
+- **Extreme** — An exceptionally controlled feasible recovery or landing;
+  do not exceed the supplied airframe, weather, fuel and route constraints.
 
 ## Failure
 
 - The maneuver is not achieved: a go-around, altitude lost, the approach
   abandoned. Fuel is spent and the situation is tighter than before.
-- **Fumble** — A crash or a structural failure. Damage the aircraft severely,
-  apply HP loss to those aboard, and change the scene where it comes down.
+- **Fumble** — A supported loss of control, impact or structural failure.
+  Scale consequences to altitude, speed, protection and actual force. A fumble
+  does not automatically mean a fatal crash or injury to every occupant.
 
 ## State surface
 

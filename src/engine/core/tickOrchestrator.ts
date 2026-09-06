@@ -355,7 +355,7 @@ export class TickOrchestrator {
       ...(settlement?.resolution.transitions ?? []),
     ];
 
-    // Every action that ended must leave the actor something to perceive.
+    // Failures outside the settlement need an actor-visible explanation.
     // The validator asks the Engine for this, but some terminal transitions
     // never reach the Engine at all — a command failed here because the actor
     // is dead, a movement leg whose route could not be planned, a resolution
@@ -365,8 +365,20 @@ export class TickOrchestrator {
     // same doomed action. Observed live as a seven-tick loop.
     const occurrences = [...(settlement?.resolution.occurrences ?? [])];
     const traced = new Set(occurrences.flatMap((occ) => occ.sourceActionIds));
+    // A validated settlement may deliberately close an observation/wait with
+    // no new result. Its transition still wakes the actor; do not synthesize
+    // an event or an observation recap. Fallbacks are for transitions outside
+    // the settlement (dead actor, failed route, failed resolution, etc.).
+    const settled = new Set(
+      settlement?.resolution.transitions.map((t) => t.actionId) ?? []
+    );
     for (const t of transitions) {
-      if (t.to === "active" || traced.has(t.actionId)) continue;
+      if (
+        t.to === "active" ||
+        traced.has(t.actionId) ||
+        settled.has(t.actionId)
+      )
+        continue;
       const action = this.deps.actionStore.get(t.actionId);
       if (!action) continue;
       const occurrenceId = `occ_${nextTickTime}_fallback_${t.actionId}`;

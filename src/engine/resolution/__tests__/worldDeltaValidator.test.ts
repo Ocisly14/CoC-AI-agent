@@ -444,7 +444,7 @@ describe("validateRawResolution — outcome, talk and the bar", () => {
       ended({ outcome: "  " }),
       runningContext()
     );
-    expect(text(errors)).toContain("an ending requires an outcome");
+    expect(text(errors)).toContain("an outcome ending requires");
   });
 
   it("takes an outcome on a checked ending too — consistent with the roll, not instead of it", () => {
@@ -548,7 +548,7 @@ describe("validateRawResolution — outcome, talk and the bar", () => {
     ];
     const missing = validateRawResolution({ occurrences: both }, talking());
     expect(text(missing)).toContain("was not answered");
-    expect(text(missing)).toContain("speech true");
+    expect(text(missing)).toContain("speech:true");
 
     const answered = validateRawResolution(
       {
@@ -1271,7 +1271,7 @@ describe("an entry in the wrong list gets one instruction, not a review", () => 
     // The two that contradicted it: both demand the misfiled ending be
     // completed rather than moved.
     const all = text(errors);
-    expect(all).not.toContain("an ending requires an outcome");
+    expect(all).not.toContain("an outcome ending requires");
   });
 });
 

@@ -34,6 +34,20 @@ true, including every valid `[reference-id]`, and remove references to things
 that are no longer visibly present. It changes description, not topology or
 item ownership; pair it with the structural operation that caused the rewrite.
 
+Before submitting, compare CURRENT place prose with accepted outcomes AND
+accepted character and item changes. Check stated placement, posture, visible
+presence and physical condition, including claims with no bracketed reference.
+An object's holder or description being corrected does not correct the scene's
+sentences about it. If a map was folded and taken off a table, remove the claim
+that it is spread there; preserve the table and all other still-true details.
+If a person changes position, repair any existing scene sentence that places
+them in the old position, without adding a roster of everyone present.
+
+No topology, environment or condition change does NOT mean no description
+change. Conversely, do not rewrite a scene whose prose already matches the
+accepted facts. Submit `[]` only after checking for obsolete descriptive claims
+as well as structural changes. Never invent an event to make old prose true.
+
 ## Passages
 
 A connection id identifies one exact passage, not a whole place.

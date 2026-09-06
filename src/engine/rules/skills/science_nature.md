@@ -22,7 +22,8 @@ sample quality bound the result as hard as the roll does.
   state the missing thing — and for medical treatment of a person
   (Medicine & Psychology) or supernatural phenomena (Occult).
 - A phenomenon with no natural explanation does not acquire one on a good
-  roll. The correct outcome is a precise account of what it is NOT.
+  roll. Report only exclusions the available method and evidence establish;
+  otherwise the phenomenon remains unexplained.
 
 ## Success levels
 
@@ -30,15 +31,16 @@ sample quality bound the result as hard as the roll does.
   the method allows.
 - **Hard** — The result plus its significance: the concentration, not just the
   substance; the mechanism, not just the effect.
-- **Extreme** — The actor gets an answer the method should not quite reach —
-  an anomaly worth pursuing, a contamination that points somewhere, a
-  prediction that will hold.
+- **Extreme** — The method yields its best supported detail: an existing
+  anomaly, measured contamination or a bounded prediction. Never exceed the
+  method's resolving power or guarantee an unobserved future event.
 
 ## Failure
 
 - Inconclusive. The sample says nothing, or the calculation will not close.
   Consumed reagents are gone.
-- **Fumble** — A wrong result taken as right, or the procedure goes physically
+- **Fumble** — An erroneous measurement or analysis, explicitly distinguished from
+  world truth without choosing the actor's belief; or the procedure goes physically
   wrong: a spill, a fire, a broken instrument, an exposure. Apply the real
   consequence to scene or character, not just to the finding.
 

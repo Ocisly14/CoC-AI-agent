@@ -51,6 +51,7 @@ import {
   validateCharacterChange,
   validateEndOutcome,
   validateEndingTarget,
+  validateNoChangeEnding,
   validateItemChange,
   validateOccurrence,
   validateSceneChange,
@@ -199,14 +200,23 @@ function validateEndingsPhase(
       continue;
     }
     const mode = row.mode;
-    if (mode !== "outcome" && mode !== "pure_speech") {
+    if (mode !== "outcome" && mode !== "pure_speech" && mode !== "no_change") {
       at(target, [
-        `mode must be "outcome" or "pure_speech" — got ${JSON.stringify(mode)}. "outcome" carries one objective paragraph of what came of the action; "pure_speech" says the whole of what happened was the words the actor's command already carries`,
+        `mode must be "outcome" or "pure_speech" or "no_change" — got ${JSON.stringify(mode)}. "outcome" carries an objective result; "pure_speech" delivers only the command's words; "no_change" closes an action with no new result, check or utterance`,
       ]);
       continue;
     }
     if (mode === "outcome") {
       at(target, validateEndOutcome(row.outcome));
+      continue;
+    }
+    if (mode === "no_change") {
+      at(target, validateNoChangeEnding(actionId, lookup));
+      if ("outcome" in row) {
+        at(target, [
+          "no_change carries no outcome field — do not add an observation recap or a no-new-information finding",
+        ]);
+      }
       continue;
     }
     if (typeof row.outcome === "string" && row.outcome.trim()) {
@@ -230,14 +240,14 @@ function validateEndingsPhase(
       // what came of the attempt is an outcome, and the words still get their
       // speech row in the occurrences phase.
       at(target, [
-        `mode is "pure_speech", but this action carried a check — it attempted something even if no diceRoll is available. Decide it as mode "outcome": one objective paragraph of what came of the attempt, consistent with any supplied roll (what the probe got, whether the lie held, what the hands achieved). Its words are still delivered by their own speech:true row later`,
+        `mode is "pure_speech", but this action carried a check — it attempted something even if no diceRoll is available. Decide it as mode "outcome": one objective paragraph of what came of the attempt, consistent with any supplied roll (the actor's delivery, any exposed tell, what the hands achieved — never an invented target reply or reaction). Its words are still delivered by their own speech:true row later`,
       ]);
     }
   }
   for (const required of worklist.ending) {
     if (seen.has(required)) continue;
     at({ kind: "resolution" }, [
-      `ending action "${required}" has no decision — every id the trigger lists under \`ending\` takes exactly one entry here: mode "outcome" with the paragraph of what came of it, or mode "pure_speech" if the whole of it was the words its command carries`,
+      `ending action "${required}" has no decision — every id under \`ending\` takes exactly one entry: "outcome" for a new objective result, "pure_speech" for words alone, or "no_change" when there is no new result, check or utterance`,
     ]);
   }
   return errors;
@@ -374,7 +384,7 @@ function validateOccurrencesPhase(
       validateOccurrence(o as unknown as RawOccurrence, lookup, endingIds)
     );
   }
-  // Every ending decision has to be traceable in these rows, and the two modes
+  // Result and speech decisions need traces; no_change must have none. The modes
   // are traceable in opposite ways. Same rule the gate enforces through
   // `validateEnd` and its unanswered-trigger sweep, stated here in the terms
   // the model is working in — the decision it made in the first phase.
@@ -386,10 +396,18 @@ function validateOccurrencesPhase(
       kind: "occurrence",
       actionIds: [decision.actionId],
     };
+    if (decision.mode === "no_change") {
+      if (trace.length > 0) {
+        at(target, [
+          "no_change must not source an occurrence — actual events retain their own source actions; do not turn them into an observer's recap",
+        ]);
+      }
+      continue;
+    }
     if (decision.mode === "outcome") {
       if (physical.length === 0) {
         at(target, [
-          `"${decision.actionId}" was decided as an ending with an outcome, but no speech:false row cites it — the actor perceives nothing, concludes nothing happened, and re-issues the same action next minute. Add a speech:false row with this actionId in its "actionIds", stating what happened`,
+          `"${decision.actionId}" was decided as an ending with an outcome, but no speech:false row cites it — the required routed trace of this result is missing. Add a speech:false row with this actionId in its "actionIds", stating what happened`,
         ]);
       }
       continue;
@@ -445,6 +463,28 @@ export function validatePhase(
   const rows = read.rows;
   const lookup = buildLookup(context);
   const worklist = resolutionWorklist(context);
+  if (["characterChanges", "itemChanges", "sceneChanges"].includes(phase)) {
+    const noChange = new Set(
+      (draft.endings ?? [])
+        .filter((d) => d.mode === "no_change")
+        .map((d) => d.actionId)
+    );
+    const conflicts: ResolutionError[] = [];
+    for (const row of rows) {
+      if (
+        isRecord(row) &&
+        typeof row.sourceActionId === "string" &&
+        noChange.has(row.sourceActionId)
+      ) {
+        conflicts.push({
+          target: { kind: "action", actionId: row.sourceActionId },
+          message:
+            "no_change must not source a new world change — the ending decision must account for an actual result",
+        });
+      }
+    }
+    if (conflicts.length > 0) return conflicts;
+  }
   switch (phase) {
     case "endings":
       return validateEndingsPhase(rows, lookup, worklist);
@@ -601,6 +641,11 @@ export function retainedRows(
       .filter((d) => d.mode === "pure_speech")
       .map((d) => d.actionId)
   );
+  const noChange = new Set(
+    (draft.endings ?? [])
+      .filter((d) => d.mode === "no_change")
+      .map((d) => d.actionId)
+  );
   const shocked = new Set<string>();
   for (const row of rows) {
     if (!isRecord(row)) {
@@ -609,6 +654,7 @@ export function retainedRows(
     }
     const occ = row as unknown as RawOccurrence;
     let ok = validateOccurrence(occ, lookup, endingIds).length === 0;
+    if (ok && citedActionIds(occ).some((id) => noChange.has(id))) ok = false;
     // A speech:false row citing a pure-speech decision is the one conflict
     // the phase reports at the DECISION rather than at the row.
     if (ok && !isSpeechRow(occ)) {
@@ -681,7 +727,8 @@ export function mergeRows(
  * The six accepted phases as the one shape the final gate, `finalizeResolution`
  * and the Applier already understand.
  *
- * The only conversion is the endings one: a `pure_speech` decision produces NO
+ * Endings are converted: no_change becomes an explicit null outcome, while
+ * a `pure_speech` decision produces NO
  * ending row. That is what the intermediate `EndingDecision` exists for — the
  * final resolution has no way to say "answered by talk alone" except by the
  * absence of a row, and an absence is not a thing the model can be corrected
@@ -695,12 +742,16 @@ export function assembleRawResolution(
 ): RawTickResolution {
   return {
     starting: draft.starting ?? [],
-    ending: (draft.endings ?? [])
-      .filter(
-        (d): d is Extract<EndingDecision, { mode: "outcome" }> =>
-          d.mode === "outcome"
-      )
-      .map((d) => ({ actionId: d.actionId, outcome: d.outcome })),
+    ending: (draft.endings ?? []).flatMap((d) =>
+      d.mode === "pure_speech"
+        ? []
+        : [
+            {
+              actionId: d.actionId,
+              outcome: d.mode === "outcome" ? d.outcome : null,
+            },
+          ]
+    ),
     characterChanges: draft.characterChanges ?? [],
     itemChanges: draft.itemChanges ?? [],
     sceneChanges: draft.sceneChanges ?? [],

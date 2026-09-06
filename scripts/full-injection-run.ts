@@ -20,8 +20,12 @@
 // RESUMABLE. The runner persists the world, the tick-engine state and the
 // perception stream after every tick, so an interrupted run resumes from the
 // last completed tick: re-invoke with the same session id and it picks up
-// where it stopped. Ctrl-C stops after the tick in flight rather than in the
-// middle of one.
+// where it stopped. Ctrl-C or SIGTERM stops after the tick in flight and its
+// checkpoint. Repeated SIGTERM keeps waiting; Ctrl-C while stopping forces exit.
+// Signals are appended immediately to full-injection-<session>.signals.jsonl
+// with timestamp, PID, phase and tick positions. Progress/report files also
+// carry stopSignal; interrupted is set before the last progress file is written.
+// SIGKILL cannot be handled, and native-library teardown faults remain separate.
 //
 // STOPS ON REPEATED ERRORS. Every console warning and error is normalised to
 // a signature (ids and numbers stripped); when one signature repeats
@@ -42,7 +46,7 @@
 // who perceived anything, and each of those pays a render and a decision — so
 // a full town costs far more per tick than a staged case. Start small.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { NpcMemoryManager } from "../src/memory/NpcMemoryManager.js";
@@ -72,6 +76,7 @@ import {
 // =========================================================================
 
 import { ErrorWatch, type TickDiagnostics } from "./lib/errorWatch.js";
+import { installRunStopHandlers } from "./lib/runStop.js";
 
 const argv = process.argv.slice(2);
 const flag = (name: string): string | undefined => {
@@ -99,6 +104,37 @@ const PROGRESS_FILE = path.join(
   `full-injection-${SESSION_ID}.progress.json`
 );
 const REPORT_FILE = path.join(LOG_DIR, `full-injection-${SESSION_ID}.json`);
+const SIGNAL_FILE = path.join(
+  LOG_DIR,
+  `full-injection-${SESSION_ID}.signals.jsonl`
+);
+
+// Install before preparation and retain through database cleanup. A signal
+// requests a boundary stop; it must not abort the active tick or checkpoint.
+let runPhase = "preparing";
+let lastCompletedTick: number | null = null;
+let inFlightTick: number | null = null;
+mkdirSync(LOG_DIR, { recursive: true });
+const stop = installRunStopHandlers((record) => {
+  const entry = {
+    ...record,
+    sessionId: SESSION_ID,
+    phase: runPhase,
+    lastCompletedTick,
+    inFlightTick,
+  };
+  try {
+    appendFileSync(SIGNAL_FILE, `${JSON.stringify(entry)}\n`);
+  } catch (error) {
+    console.error("[full-injection] could not persist signal audit:", error);
+  }
+  console.log(`[full-injection] signal ${JSON.stringify(entry)}`);
+  console.log(
+    record.action === "force-exit"
+      ? "[full-injection] forcing exit; the in-flight tick may not be saved"
+      : "[full-injection] stopping after current work and checkpoint; repeated SIGTERM keeps waiting, Ctrl-C forces exit"
+  );
+});
 
 // =========================================================================
 // Error watch
@@ -259,19 +295,11 @@ async function main(): Promise<void> {
   resetUsageStats();
 
   const { runner, resumedAtTick, npcCount } = await prepare();
+  lastCompletedTick = resumedAtTick;
+  runPhase = "between-ticks";
 
   const watch = new ErrorWatch(MAX_REPEAT);
   watch.install();
-
-  let interrupted = false;
-  const onSigint = (): void => {
-    if (interrupted) process.exit(130);
-    interrupted = true;
-    console.log(
-      "\n[full-injection] stopping after the tick in flight — re-run to resume"
-    );
-  };
-  process.on("SIGINT", onSigint);
 
   const startedAt = Date.now();
   const ticks: Array<{
@@ -281,16 +309,27 @@ async function main(): Promise<void> {
     calls: Array<{ operation: string; calls: number; prompt: number }>;
     diagnostics: TickDiagnostics;
   }> = [];
-  let stopReason: string | null = null;
+  let stopReason: string | null = stop.requested ? "interrupted" : null;
 
   try {
     for (let i = 0; i < TICKS; i++) {
+      if (stop.requested) {
+        stopReason ??= "interrupted";
+        break;
+      }
       const before = getUsageStats();
       const t0 = Date.now();
-      watch.beginTick(runner.getStatus().ticksExecuted + 1);
+      inFlightTick = runner.getStatus().ticksExecuted + 1;
+      runPhase = "tick-and-checkpoint";
+      watch.beginTick(inFlightTick);
       await runner.step(1);
+      // step() awaits perception/runtime persistence before returning.
+      lastCompletedTick = runner.getStatus().ticksExecuted;
+      inFlightTick = null;
+      runPhase = "between-ticks";
       const observed = watch.endTick();
-      stopReason = observed.stopReason;
+      stopReason =
+        observed.stopReason ?? (stop.requested ? "interrupted" : null);
       const ms = Date.now() - t0;
       const status = runner.getStatus();
       const calls = usageDelta(before, getUsageStats());
@@ -331,6 +370,8 @@ async function main(): Promise<void> {
             errors: watch.top(),
             diagnostics: observed.diagnostics,
             stopReason,
+            stopSignal: stop.signal ?? null,
+            signals: stop.records,
           },
           null,
           2
@@ -338,15 +379,12 @@ async function main(): Promise<void> {
       );
 
       if (stopReason) break;
-      if (interrupted) {
-        stopReason = "interrupted";
-        break;
-      }
     }
   } finally {
-    process.off("SIGINT", onSigint);
     watch.uninstall();
   }
+
+  runPhase = "reporting";
 
   const usage = getUsageStats();
   console.log(`\n--- LLM 花费 ---\n${formatUsageReport(usage, "  ")}`);
@@ -378,6 +416,8 @@ async function main(): Promise<void> {
         ticksRequested: TICKS,
         finishedAtTick: runner.getStatus().ticksExecuted,
         stopReason,
+        stopSignal: stop.signal ?? null,
+        signals: stop.records,
         elapsedMs: Date.now() - startedAt,
         ticks,
         usage,
@@ -402,5 +442,10 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await getPrismaClient().$disconnect();
+    runPhase = "cleanup";
+    try {
+      await getPrismaClient().$disconnect();
+    } finally {
+      stop.dispose();
+    }
   });

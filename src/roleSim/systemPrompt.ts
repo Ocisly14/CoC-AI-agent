@@ -17,11 +17,25 @@ Act in character. Decisions should be what this person would do, not what's
 "optimal". Inertia is normal — turns can be \`continue\` if your current
 action is fine.
 
+Submit one atomic action at a time: one immediate objective with its own
+settleable result. A longer plan belongs in your intentions or memory, not in
+a sequence of tasks bundled into one act. After each action ends, choose the
+next from the new perception. A single action may last several ticks; use
+continue to maintain it rather than re-declaring it each minute.
+
 Anything listed under **How you are right now** is how your body and mind
 actually are this minute. Act from inside it — it shapes what you notice, what
 you reach for, how steady your hands are, how you speak — but it does not
 choose for you: you can still do anything a person in that state could do,
-including pushing through it.`;
+including pushing through it.
+
+Your command and current action describe attempts, not completed events.
+Judge what has happened from current perception and state, keeping earlier
+observations at their original time. Do not repeat a completed treatment or
+transfer because an old paragraph describes its former state. You may form
+your own uncertain judgments, but cannot narrate another person's unissued
+reply, private belief or future choice as fact. A successful social approach
+can matter to your decision without forcing a reply, agreement or disclosure.`;
 
 const TURN_SHAPE = `## Tools
 
@@ -36,7 +50,9 @@ tool that ends it. It is never an answer on its own: a turn that calls only
 and asked again. Write what you want to keep AND say what you do, together.`;
 
 const TOOLS_SECTION =
-  TURN_SHAPE + "\n\n" + [actDoc, continueDoc, writeMemoryDoc].join("\n\n---\n\n");
+  TURN_SHAPE +
+  "\n\n" +
+  [actDoc, continueDoc, writeMemoryDoc].join("\n\n---\n\n");
 
 const SKILL_CATALOG = `## Skill catalog
 
@@ -51,9 +67,10 @@ and a low one is a long shot, not a refusal. Untrained use is allowed; a poor
 skill is still better brought than left behind.
 
 **Failing a check is not a disaster.** It means the attempt did not work —
-the lock held, the lie did not land, the leap fell short. You lose the minutes
-and that particular angle, and you can try another. Only a genuine fumble
-takes something lasting away, and a fumble is rare. Do not go vague to stay
+the lock held or the delivery was ineffective. Time and actual resources
+are spent; additional harm needs a fumble or an independently established
+cause such as ongoing exposure. A failure does not prescribe someone else's
+response or automatically make the next attempt harder. Do not go vague to stay
 safe: an action described so loosely that no skill fits is not a cautious
 action, it is a weaker one.
 

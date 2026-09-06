@@ -25,22 +25,26 @@ matter more than the label of the attack.
 
 ## Success levels
 
-Combat is an opposed check. The Engine names the defender and their defense
-skill; the defender's roll comes from the opposed-roll tool and the actor's
-existing roll is never re-rolled. Higher success level wins, the defender wins
-ties. Damage comes from the damage-roll tool, never from estimation.
+For active resistance, name the defender and an applicable defense skill
+in the starts phase. Code supplies the resolved dice verdict, including
+opposition, at settlement; there is no opposed-roll tool here. Use `diceRoll.met`,
+not the actor's success level alone. Damage, when the attempted effect deals it,
+comes from `damageRoll`. A disarm or restraint need not deal HP damage.
+
+The levels below describe possible quality, not automatic extra injuries.
+Every displacement, disarm or impairment needs the actual attack and physical
+effect to support it; a good roll alone never makes a healthy target unconscious.
 
 - **Regular** — The blow lands as struck. Apply the rolled damage.
-- **Hard** — Landed well: rolled damage plus a positional consequence —
-  staggered, disarmed, driven back, grip established.
-- **Extreme** — Decisive. Apply damage and a real condition that ends the
-  target's participation for now: unconscious, pinned, an arm that will not
-  work.
+- **Hard** — Precise execution of the declared attack. A positional
+  consequence is possible only where its force and method support it.
+- **Extreme** — The best feasible execution. Apply only rolled damage and
+  supported effects; incapacitation still needs an adequate physical cause.
 
 ## Failure
 
 - The attack misses or is turned. The actor is where the exchange left them
-  and has spent the effort; fatigue accrues.
+  and has spent the effort; do not duplicate code-owned fatigue.
 - **Fumble** — The actor is exposed: the weapon is dropped or breaks, footing
   is lost, or the swing hits something that was not the target. Apply the real
   consequence, including damage to the wrong thing.
@@ -51,13 +55,14 @@ Typical deltas this domain produces. Not a requirement and never a substitute
 for what actually happened — a one-off descriptive result is occurrence
 `content`, not a state change.
 
-- `character.hp` — the damage from the damage-roll tool, never estimated.
+- `character.hp` — damage from `damageRoll`, never estimated.
 - `character.addCondition` — bleeding, stunned, pinned, unconscious, a limb
   that will not work; `removeCondition` when a hold is broken.
 - `character.spot` — driven back or grappled elsewhere in the same scene;
   `character.position` when a throw or drag truly crosses into another scene.
 - `item.move` — a weapon knocked away; `item.set` when damaged but still in
   play, or `item.destroy` when irreversibly broken.
-- `character.fatigue` — every exchange costs it.
-- Being attacked is an occurrence the target perceives, vividly. What it does
+- `character.fatigue` — actual exertion not already applied by code.
+- An attack is an occurrence for those with supported sensory access;
+  a target does not automatically see an unseen attacker. What it does
   to their view of the attacker is theirs to write.

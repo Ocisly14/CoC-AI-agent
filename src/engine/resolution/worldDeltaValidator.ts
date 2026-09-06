@@ -781,10 +781,32 @@ export function validateEndingTarget(
 export function validateEndOutcome(outcome: unknown): string[] {
   if (typeof outcome !== "string" || !outcome.trim()) {
     return [
-      "an ending requires an outcome — one objective paragraph of what came of it, which the actor is told",
+      "an outcome ending requires one objective paragraph of its new result; use no_change when an unchecked, non-speaking action has no new result",
     ];
   }
   return [];
+}
+
+/** A lifecycle-only ending cannot hide a check result or undelivered words.
+ * Whether there was a new physical result is adjudicated by the Engine; its
+ * later deltas and occurrences must agree with this decision. */
+export function validateNoChangeEnding(
+  actionId: string,
+  lookup: Lookup
+): string[] {
+  const known = lookup.actionById.get(actionId);
+  const errors: string[] = [];
+  if (known?.check || known?.checkOutcome) {
+    errors.push(
+      'no_change cannot discard a check — use mode "outcome" for the objective result of the attempt'
+    );
+  }
+  if (known?.command.utterance?.trim()) {
+    errors.push(
+      'no_change cannot discard an utterance — use "pure_speech" for words alone or "outcome" for an attempt that also speaks'
+    );
+  }
+  return errors;
 }
 
 function validateEnd(
@@ -799,6 +821,15 @@ function validateEnd(
   const errs: string[] = [];
 
   const trace = occurrencesCiting(entry.actionId, occurrences);
+  if (entry.outcome === null) {
+    errs.push(...validateNoChangeEnding(entry.actionId, lookup));
+    if (trace.length > 0) {
+      errs.push(
+        "no_change ending must not source an occurrence — route actual events from the actions that caused them; do not replay them as an observer's result"
+      );
+    }
+    return errs;
+  }
   if (trace.length === 0) {
     // The guarantee the nested `occurrence` slot used to give, now a check.
     // Without a trace the actor perceives nothing, concludes nothing
@@ -1409,7 +1440,7 @@ export function validateOccurrence(
         );
       } else if (!endingIds.has(id)) {
         errs.push(
-          `speech is true, but "${id}" does not end this tick — its words are delivered next minute, when it appears under \`endingWithUtterance\`. Leave this row out of the resubmission; the starting entry is all it needs now`
+          `speech is true, but "${id}" does not end this tick — its words are delivered when it ends and appears under \`endingWithUtterance\`. Leave this row out of the resubmission; the starting entry is all it needs now`
         );
       }
     }
@@ -1713,6 +1744,22 @@ export function validateRawResolution(
   // An ending answered by talk alone has no entry: its speech row is the
   // answer. Anything else in the trigger's two lists needs an entry.
   const endingIds = new Set(resolutionWorklist(context).ending);
+  const noChangeIds = new Set(
+    (raw.ending ?? []).filter((e) => e?.outcome === null).map((e) => e.actionId)
+  );
+  for (const [domain, changes] of [
+    ["characterChanges", raw.characterChanges],
+    ["itemChanges", raw.itemChanges],
+    ["sceneChanges", raw.sceneChanges],
+  ] as const) {
+    for (const change of changes ?? []) {
+      if (change && noChangeIds.has(change.sourceActionId)) {
+        at({ kind: "action", actionId: change.sourceActionId }, [
+          `no_change ending sources ${domain} — a new world change needs an outcome decision`,
+        ]);
+      }
+    }
+  }
   const pureSpeechAnswer = (actionId: string): boolean => {
     const trace = occurrencesCiting(actionId, raw.occurrences);
     if (trace.length === 0 || !trace.every(isSpeechRow)) return false;
@@ -1730,7 +1777,7 @@ export function validateRawResolution(
         ? lookup.actionById.get(required)?.checkOutcome ||
           lookup.actionById.get(required)?.check
           ? `triggering action "${required}" was not answered — it ends this tick and it carried a check, so it was an attempt, not talk: give it an "ending" entry with an outcome consistent with its diceRoll plus a speech:false occurrence citing it (its words still get their own speech:true row)`
-          : `triggering action "${required}" was not answered — it ends this tick: give it an "ending" entry with an outcome plus a speech:false occurrence citing it, or, if the whole of it was words said, one occurrence with speech true citing it and no ending entry`
+          : `triggering action "${required}" was not answered — it ends this tick: give it an "ending" entry with an outcome plus a speech:false occurrence citing it; for no new result and no check or utterance give it an explicit null outcome with no occurrence; for words alone use a speech:true occurrence and no ending entry`
         : `triggering action "${required}" was not answered — it starts this tick and needs a "starting" entry`,
     ]);
   }

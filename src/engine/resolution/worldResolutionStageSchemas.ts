@@ -121,17 +121,15 @@ export const PHASE_FIELDS: Record<ResolutionPhase, string> = {
 /**
  * One decision about one ending action.
  *
- * This is an INTERMEDIATE contract, not a `RawActionEnd`. The final resolution
- * has no row at all for an action that was nothing but words — its whole answer
- * is a `speech: true` occurrence — and an absent row is a thing the model
- * cannot be corrected about precisely: "you left one out" and "you decided it
- * was pure speech" look identical on the wire. So the phase demands a decision
- * for every id and names the two kinds, and `assembleRawResolution` drops the
- * pure-speech ones on the way to `ending`.
+ * This intermediate contract requires a decision for every ending id.
+ * outcome accounts for a new objective result; pure_speech is delivered by
+ * its speech occurrence; no_change closes the lifecycle without new prose,
+ * deltas or events. Assembly preserves no_change as an explicit null outcome.
  */
 export type EndingDecision =
   | { actionId: string; mode: "outcome"; outcome: string }
-  | { actionId: string; mode: "pure_speech" };
+  | { actionId: string; mode: "pure_speech" }
+  | { actionId: string; mode: "no_change" };
 
 /** What has been ACCEPTED so far, phase by phase. A phase key is absent until
  *  its validator accepted it — an absent key and an accepted empty array are
@@ -148,12 +146,9 @@ export interface AcceptedResolutionDraft {
 // ==================== The endings array ====================
 
 /**
- * Two closed branches chosen by `mode`, rather than one object with an optional
- * `outcome`. Optional-and-conditionally-required is the shape this codebase has
- * already paid for once (`RawActionStart`/`RawActionEnd` were split for the same
- * reason): a grammar cannot express "required unless", so the field silently
- * goes missing and the validator punishes the model for reading the schema. Two
- * branches make the choice explicit and let the grammar close both.
+ * Closed branches make the choice explicit before any prose is generated.
+ * no_change has no outcome field: ordinary observation or waiting must not
+ * require a personal recap just to close its clock.
  */
 const ENDING_DECISION_ITEM = {
   anyOf: [
@@ -168,7 +163,7 @@ const ENDING_DECISION_ITEM = {
         outcome: {
           type: "string",
           description:
-            'What came of it, objectively — the FINISHED account, not your working. It is narrated to the actor and kept in the log, so it is third-person and final: no reasoning, no corrections, no second thoughts, no addressing yourself — never "wait", "actually", "let me reconsider", or a note about which character is which. Settle all of that before you write, then write only the result. A `diceRoll` you were given is input: never restate it and never contradict it. Never the target\'s reply or reaction — that is theirs, next minute.',
+            "The new objective result of this action, third-person, final and without model reasoning. State world facts, never a personal account of what someone saw, heard, understood or learned over an interval. Ordinary observation and waiting use no_change when there is no new result to settle. If this action also changes the world, account only for that change, not a recap of surrounding events. A supplied `diceRoll` constrains the attempt; never restate it or invent another actor's reply, silence, belief or reaction. Pending speech cannot be paraphrased here. Route newly exposed evidence through occurrences with actual perceivers and clarity; character interpretation belongs to the character.",
         },
       },
       required: ["mode", "actionId", "outcome"],
@@ -186,13 +181,26 @@ const ENDING_DECISION_ITEM = {
       required: ["mode", "actionId"],
       additionalProperties: false,
     },
+    {
+      type: "object",
+      properties: {
+        mode: { const: "no_change" },
+        actionId: {
+          type: "string",
+          description:
+            "An ending id with no new result, check or utterance to settle. Routine observation or waiting ends without a retrospective account.",
+        },
+      },
+      required: ["mode", "actionId"],
+      additionalProperties: false,
+    },
   ],
 } as const;
 
 const ENDINGS_LIST = {
   type: "array",
   description:
-    'One decision for every id the trigger lists under `ending` — exactly one per id, every one of them, and no id that is not on that list. An action that is merely still running is not an ending and gets no entry. Choose `mode: "pure_speech"` only for an action whose command carries an `utterance` and whose whole result was those words; anything the action also DID makes it `mode: "outcome"`, and an action that carried a `check` (a `diceRoll` on its row) is always `mode: "outcome"` — the dice answered an attempt, and the outcome says what came of it. A pure-speech decision writes no outcome: the line is delivered later as its own occurrence, and code attaches the words.',
+    "One decision for every id the trigger lists under `ending`, and no others. outcome carries a new objective result, including a checked attempt. pure_speech carries no outcome and is only for an unchecked action whose whole result is its `utterance`. no_change carries no outcome and closes an action with no new objective result, no check and no utterance; ordinary observation or waiting does not require a retrospective summary. no_change must source no changes or occurrences. Events perceived during a wait retain their own source actions and are already routed when they happen.",
   items: ENDING_DECISION_ITEM,
 } as const;
 
@@ -207,7 +215,7 @@ const PHASE_DESCRIPTIONS: Record<ResolutionPhase, string> = {
   starts:
     "The START JUDGEMENT — the Engine's first function, one phase. One entry for every action id the trigger lists under `starting`, and only those: for a non-travel action how long it should take and how hard it is — judged by what it ATTEMPTS, not by whether it speaks: plain talk takes 1 minute and no check, an attempt made while speaking takes the attempt's minutes and a check where the declared skill covers it — for travel the route the actor stated (and the vehicle, when they drive). Never an outcome — a starting action's time has not been spent yet, and a starting action's `utterance` is not spoken yet either. What comes of it is the settlement's business, on the tick its time runs out.",
   endings:
-    "Phase 1 of 5 of the SETTLEMENT — ENDINGS. Decide what became of every action that finishes this tick, and nothing else: no starts, no world changes, no occurrences. Each decision is one of two shapes, chosen by `mode`. `outcome` — the action produced something to account for, and `outcome` is that account: objective, third-person, final, never a restatement of or an argument with a `diceRoll` you were given. `pure_speech` — the action's command carries an `utterance` and its whole result was those words, so there is nothing to account for; never for an action that carried a `check`, whose dice decided an attempt. Roll damage with the deterministic tool before you decide; a damage number is never yours to invent.",
+    "Phase 1 of 5 of the SETTLEMENT — ENDINGS. One decision for every finishing action: outcome for a new objective result; pure_speech for an unchecked action consisting only of its utterance; no_change for an unchecked action with no utterance and no new result. no_change closes the clock without generating a personal observation recap, changes or occurrences. A checked attempt always needs outcome. This phase writes no state changes or events. Roll actual damage with the deterministic tool before deciding; never invent damage.",
   characterChanges:
     "Phase 2 of 5 of the SETTLEMENT — CHARACTER CHANGES. The persistent changes this tick's actions make to characters — one row per change, each sourced to the action that caused it. A result that is merely described, and leaves no state behind, is not a change and belongs to the occurrence phase.",
   itemChanges:
@@ -215,7 +223,7 @@ const PHASE_DESCRIPTIONS: Record<ResolutionPhase, string> = {
   sceneChanges:
     "Phase 4 of 5 of the SETTLEMENT — SCENE CHANGES. What this tick's actions do to places and to the passages between them — one row per change, each sourced to the action that caused it. This is also where a place's prose is brought back into agreement with the items that left it or ceased to exist.",
   occurrences:
-    "Phase 5 of 5 of the SETTLEMENT — OCCURRENCES. Every objective thing that happened this tick that somebody could perceive, one flat row and one paragraph each, tied by `actionIds` to the actions it is the trace of. Every ending accepted in the endings phase must be cited by at least one row here, and every pure-speech decision must have its `speech: true` row.",
+    "Phase 5 of 5 of the SETTLEMENT — OCCURRENCES. Every objective thing that happened this tick that somebody could perceive, one flat row and one paragraph each, tied by `actionIds` to the actions it is the trace of. Every outcome decision needs a speech:false row, and every pure-speech decision needs a speech:true row. A no_change decision must not source a row: elapsed observation or waiting creates no new event. Route actual events when they happen, citing their own source actions.",
 };
 
 /** The array schema each tool wraps. Five are the very objects the terminal

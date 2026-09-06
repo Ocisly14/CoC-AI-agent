@@ -28,22 +28,25 @@ is exposed, bypassed, or left behind on failure.
 
 ## Success levels
 
-- **Regular** — The actor gets through or goes unnoticed, and there are traces:
-  scratches on the keyway, a coat out of place, a hesitation someone saw.
-- **Hard** — Clean. The lock is undamaged and could be relocked; nobody looked
-  twice; the copy passes a normal reading.
-- **Extreme** — Clean and reusable — the route can be walked again, the lock is
-  now understood, the forgery survives an expert's attention.
+- **Regular** — The feasible access or concealment attempt succeeds. Describe
+  supported traces only; success does not require scratches or a witness.
+- **Hard** — Precise work with fewer supported traces. An intact lock stays
+  intact; a convincing copy has suitable detail. Do not write a reader's
+  acceptance or someone deciding not to look.
+- **Extreme** — Especially precise work within the available tools and access.
+  A one-person passage does not open the route globally; a forgery does not
+  predetermine a future examiner's judgment.
 
 ## Failure
 
-- No entry, or the actor is seen. The lock holds, the disguise draws a second
-  look, the lift is felt. Time is spent and the approach is spent with it.
-- **Fumble** — Something breaks or someone is certain: a pick snaps off in the
-  keyway and jams the lock permanently, the disguise is recognized as a
-  disguise, the forgery names its forger. Apply the item damage and emit an
-  occurrence the observers can perceive; an alarmed or watched target raises
-  the alert.
+- The attempted access or concealment fails: the lock holds or the
+  actor leaves perceptible evidence. Assign actual observers and clarity from
+  the supplied conditions; no automatic second look, recognition or retry penalty.
+- **Fumble** — A supported tool breaks, a mechanism jams, or a concrete flaw
+  exposes the attempt. Damage is proportional and is not automatically permanent.
+  Route perceptible evidence; do not invent recognition, identification of the
+  forger, or a target raising an alarm. An existing automatic alarm can trigger
+  only when its supplied mechanism and the attempt support it.
 
 ## State surface
 
@@ -58,5 +61,6 @@ for what actually happened — a one-off descriptive result is occurrence
   play; `item.destroy` when a pick or mechanism is irreversibly ruined.
 - `item.move` / `item.create` — something taken, planted, or forged into
   existence.
-- A clean unseen passage often produces NO delta: that nobody noticed is an
-  occurrence with an empty or narrow perceiver list, not a state change.
+- A clean unseen passage often produces NO delta: emit only traces with at least one supported perceiver.
+  Empty perceiver lists are invalid, and absence of an observer is not an event
+  stating that everyone chose to ignore the actor.

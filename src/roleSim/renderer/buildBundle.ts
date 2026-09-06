@@ -63,9 +63,7 @@ function resolveScenePresentCharacters(
     .map((id): ScenePresentCharacter | null => {
       const profile = dgsm.getNpcProfile(id);
       if (!profile) return null;
-      const activeAction = engine
-        .getActorActions(id)
-        .find((a) => a.status === "active");
+      const currentAction = resolveOwnAction(id, undefined, engine);
       const spot = dgsm.getCharacterSpot(id);
       return {
         id,
@@ -73,7 +71,7 @@ function resolveScenePresentCharacters(
         appearance: profile.appearance,
         ...(spot ? { spot } : {}),
         conditions: profile.status?.conditions ?? [],
-        currentActionText: activeAction?.command.description,
+        ...(currentAction.kind === "ongoing" ? { currentAction } : {}),
       };
     })
     .filter((c): c is ScenePresentCharacter => c !== null);

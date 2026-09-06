@@ -25,19 +25,22 @@ or carrying decide the difficulty far more than distance does.
 
 ## Success levels
 
-- **Regular** — The actor makes it, winded. Anything loosely held may be gone.
+- **Regular** — The feasible swimming task succeeds. Item loss is not a default
+  cost of success; it requires a supplied current, impact or other concrete cause.
 - **Hard** — Made with control: cargo kept, breath kept, arriving able to act
   immediately.
-- **Extreme** — The actor manages what the water should not have allowed —
-  reaching a person going under, holding a dive long enough to finish the job.
+- **Extreme** — Exceptional control within the body, equipment and water
+  conditions. Success does not grant impossible breath or instant completion.
 
 ## Failure
 
 - No progress. The actor is swept back, loses the line, or surfaces where they
-  started. Fatigue is spent and loose items may be lost to the water.
+  started. Apply actual exertion only if code has not already done so. Additional loss
+  requires a fumble or an independently established cause.
 - **Fumble** — The actor goes under: water inhaled, an HP loss, and a drowning
   or exhaustion condition that persists until someone or something resolves
-  it. A rescue attempt that fumbles endangers both.
+  it, when supported by actual immersion and exposure. A rescue fumble
+  does not automatically injure both people.
 
 ## State surface
 
@@ -48,8 +51,9 @@ for what actually happened — a one-off descriptive result is occurrence
 - `movement.route` — ordinary swimming through connected places;
   `character.position` only for discontinuous displacement, and
   `character.spot` for a different place within the same scene.
-- `character.fatigue` — always, and faster in cold or current.
+- `character.fatigue` — actual effort not already owned by code.
 - `character.hp` and `character.addCondition` — water inhaled, hypothermia,
   exhaustion. These persist until something resolves them.
 - `item.move` / `item.destroy` — carried items lost to the water or ruined by
-  it. Paper and powder do not survive.
+  it. Check material, waterproofing and duration of exposure rather than
+  automatically destroying all carried paper or ammunition.

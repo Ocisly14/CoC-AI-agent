@@ -243,6 +243,45 @@ describe("occurrence routing", () => {
     expect(h.decisions).toContain("npc_3");
   });
 
+  it("delivers events during a wait, then wakes the ending actor without replaying those events", async () => {
+    const actions = [
+      liveAction("npc_1"),
+      liveAction("npc_2"),
+      liveAction("npc_3"),
+    ];
+    const h = harness({ liveActions: actions });
+    const occ = occurrence(["npc_3"]);
+    await h.fire(makeReport({ occurrences: [occ] }));
+    const calls = () =>
+      buildPerceivedBundle.mock.calls.map(
+        (c) => c[0] as { npcId: string; occurrencesForNpc?: Occurrence[] }
+      );
+    expect(
+      calls().filter((c) => c.npcId === "npc_3")[0].occurrencesForNpc
+    ).toEqual([occ]);
+    buildPerceivedBundle.mockClear();
+    h.decisions.length = 0;
+    actions[2].status = "completed"; // The engine applies transitions before reporting them.
+    await h.fire(
+      makeReport({
+        gameDateTime: "1923-04-02T09:06:00",
+        occurrences: [],
+        transitions: [
+          {
+            actionId: "action_npc_3",
+            actorId: "npc_3",
+            from: "active",
+            to: "completed",
+            progressDeltaMinutes: 0,
+          },
+        ],
+      })
+    );
+    expect(h.decisions).toEqual(["npc_3"]);
+    expect(calls()).toHaveLength(1);
+    expect(calls()[0].occurrencesForNpc).toBeUndefined();
+  });
+
   it("writes NO memory itself — the character records its own via writeMemory", async () => {
     // Perception is injected raw and fades; nothing is persisted on the
     // character's behalf, whether they merely perceived something or their

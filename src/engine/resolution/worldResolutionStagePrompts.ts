@@ -226,7 +226,11 @@ ${tools} Call it once, with the complete array; a phase with nothing to report s
     case "endings":
       return `${head}
 
-Decide what became of every action whose time is up this tick — and only that. Each decision is one of two shapes, chosen by \`mode\`: \`outcome\`, with an objective third-person account of what came of it, for an action that produced something to account for; \`pure_speech\`, with no outcome at all, for an action whose command carries an \`utterance\` and whose whole result was those words. An action whose row carries a \`diceRoll\` is never pure speech: a check was set because it attempted something, and the outcome says what the dice made of the attempt — the probe that got nothing, the lie that held or was read, the dressing that stopped the bleeding or did not. Its words are still delivered later by their own speech row.
+Decide each ending action's objective result or absence of a new result. There are three closed modes: \`outcome\` for a new objective result; \`pure_speech\` for an unchecked action consisting only of its \`utterance\`; \`no_change\` for an action with no new result, no check and no utterance. A check always needs \`outcome\`, consistent with the supplied verdict. Its words, if any, still get their own speech row later.
+
+Routine observation, listening or waiting does not create a retrospective result. Events reach their perceivers through occurrences when they happen and are rendered then. At the observer's ending, use \`no_change\` if nothing new needs settling. Do not summarize the interval, repeat events already delivered, or claim "no new information" or "nobody spoke". If the command also caused an actual change (sitting down, moving an item), use \`outcome\` for only that supported change; do not append a report of other people's activity. A checked search may expose a supported clue: state the objective evidence and route it in occurrences, leaving its interpretation to the character.
+
+The Engine describes objective world facts and determines sensory reach; the Renderer supplies the personal perspective. Another person's conduct needs its own established source and time. No pending speech, invented replies, chosen silence, private beliefs or group reactions. An observer's action never executes someone else's command.
 
 ### Damage is rolled, never written
 
@@ -242,7 +246,7 @@ You set how long an action should take and how hard it is. You do not set whethe
 
 ### Action before speech
 
-Judge every entry by what the command ATTEMPTS, never by whether it carries words. A command that is nothing but its words — a greeting, a remark, an answer that stakes nothing — is talk: \`resolvedDurationTicks: 1\`, no check. A command that also does something — treats a wound, works a lock, pries, deceives, stalls, sizes someone up — is an action that happens to speak: clock the attempt (the actor's proposal is your starting point), and give it a \`check\` wherever the declared skill covers the attempt and success is in doubt. Prying, deceiving, stalling, intimidating and persuading declared as \`Social\` are attempts, not talk: they take a check, and the person they work on is \`opposedBy\` with the skill they resist with. Words quoted only in \`description\` do not count as an \`utterance\`. A declared skill is a stake the actor put down — the default is to check it; omit the check only when the attempt cannot fail or the skill does not cover it. An id listed under \`startingWithoutSkill\` takes no check at all, however obviously one seems called for. Code rolls after this phase and hands the result to the tick in which the action ends.`;
+Judge every entry by what the command ATTEMPTS, never by whether it carries words. A command that is nothing but its words — a greeting, a remark, an answer that stakes nothing — is talk: \`resolvedDurationTicks: 1\`, no check. A command that also does something — treats a wound, works a lock, pries, deceives, stalls, sizes someone up — is an action that happens to speak: clock the attempt (the actor's proposal is your starting point), and give it a \`check\` wherever the declared skill covers the attempt and success is in doubt. Prying, deceiving, stalling, intimidating and persuading declared as \`Social\` are attempts, not talk: check them when the declared skill covers the uncertain attempt. Use \`opposedBy\` only for supported active resistance, not merely because someone is a target. Words quoted only in \`description\` do not count as an \`utterance\` and cannot later be narrated as delivered speech. A declared skill is a stake the actor put down — the default is to check it; omit the check only when the attempt cannot fail or the skill does not cover it. An id listed under \`startingWithoutSkill\` takes no check at all, however obviously one seems called for. Code rolls after this phase and hands the result to the tick in which the action ends.`;
     case "characterChanges":
       return `${head}
 
@@ -258,7 +262,7 @@ Report what this tick's actions do to places and to the passages between them �
     case "occurrences":
       return `${head}
 
-Report every objective thing that happened this tick that somebody could perceive, one flat row per fact, tied by \`actionIds\` to the actions it is the trace of. An outcome needs a \`speech:false\` row even if that action also spoke. Every ending command with an utterance additionally needs its own \`speech:true\` row: code supplies the words. These are separate obligations, not competing alternatives. This is the last phase: everything above is decided, and the whole resolution is checked once you submit.`;
+Report every objective thing that happened this tick that somebody could perceive, one flat row per fact, tied by \`actionIds\` to the actions it is the trace of. An outcome needs a \`speech:false\` row even if that action also spoke. Every ending command with an utterance additionally needs its own \`speech:true\` row: code supplies the words. These are separate obligations, not competing alternatives. Never cite a no_change ending or replay events as an observer's result. This is the last phase: everything above is decided, and the whole resolution is checked once you submit.`;
   }
 }
 
@@ -502,12 +506,12 @@ export function renderContextSegments(context: EngineResolutionContext): {
         // Phase-neutral: what each list MEANS, never which call answers it.
         // The phase instruction that follows the context names the one list
         // this request is about and demands it.
-        note: "`starting` and `ending` are the ids this tick asks about, and they are the only ones. `stillRunning` is FYI: those actions keep running by themselves and are asked about nowhere. Every id under `starting` is an action that begins this minute — its time has not been spent, so it has no result yet. Every id under `ending` is an action whose time is up: either it produced something to account for, or it was nothing but words said. `endingWithUtterance` lists the ending actions whose command carries an `utterance`: code attaches those exact words verbatim wherever they are delivered — never restate them; what is written about such a moment is what the words were NOT. `startingWithUtterance` lists starting actions whose command carries an `utterance`: those words are NOT said yet — they are delivered when the action ends (one minute for plain talk, the attempt's own clock for a command that also does something), when the id returns under `endingWithUtterance`. A `diceRoll` on an action row is what code rolled, and it is INPUT — judge consistently with it, never contradict it. `startingWithoutSkill` lists actors who declared no skill: those actions take no `check` at all, however obviously one seems called for — the actor chose to stake nothing, and it is settled on its own merits. `replaced` lists endings the actor themselves cut short by issuing a new command this tick (the one in `starting` with a matching `replacesActionId`): account for what was done up to this minute and stop there — never narrate how it would have finished, and never let it and its successor both happen in full.",
+        note: "`starting` and `ending` are the ids this tick asks about, and they are the only ones. `stillRunning` owes no ending entry. These actions stay active; a settlement may record supported intermediate effects without completing their pending steps. Every id under `starting` is an action that begins this minute — its time has not been spent, so it has no result yet. Every id under `ending` is an action whose time is up: choose outcome for a new objective result, pure_speech for words alone, or no_change when an unchecked, non-speaking action ends without a new result. Ordinary observation or waiting needs no retrospective summary. `endingWithUtterance` lists the ending actions whose command carries an `utterance`: code attaches those exact words verbatim wherever they are delivered — never restate them; what is written about such a moment is what the words were NOT. `startingWithUtterance` lists starting actions whose command carries an `utterance`: those words are NOT said yet — they are delivered when the action ends (one minute for plain talk, the attempt's own clock for a command that also does something), when the id returns under `endingWithUtterance`. A `diceRoll` on an action row is what code rolled, and it is INPUT — judge consistently with it, never contradict it. `startingWithoutSkill` lists actions whose actors declared no skill: those actions take no `check` at all, however obviously one seems called for — the actor chose to stake nothing, and it is settled on its own merits. `replaced` lists endings the actor themselves cut short by issuing a new command this tick (the separately submitted successor with a matching `replacesActionId`): account for what was done up to this minute and stop there — never narrate how it would have finished, and never let it and its successor both happen in full.",
       },
     }),
     section("Tick", context.tick),
     section(
-      "New Commands (this tick — `utterance` is what the actor will have said when the action ends: it is spoken next minute, not now, and gets no occurrence yet; `proposedDurationTicks` is advisory)",
+      "New Commands (this tick — `utterance` is what the actor will have said when the action ends: it is spoken when the action ends, not on submission, and gets no occurrence yet; `proposedDurationTicks` is advisory)",
       newCommands
     ),
     section("Active Actions (in flight)", activeActions),
@@ -573,6 +577,9 @@ function phaseWorklistSection(
     endedWithOutcome: endings
       .filter((d) => d.mode === "outcome")
       .map((d) => d.actionId),
+    endedWithoutNewResult: endings
+      .filter((d) => d.mode === "no_change")
+      .map((d) => d.actionId),
     endedAsPureSpeech: endings
       .filter((d) => d.mode === "pure_speech")
       .map((d) => d.actionId),
@@ -581,7 +588,7 @@ function phaseWorklistSection(
   };
   return `## The actions of this tick\n${json(
     actions
-  )}\n\nThese are the ids of this tick. Every id you write — a \`sourceActionId\`, an occurrence's \`actionIds\` — names one of them. \`stillRunning\` owes no entry anywhere and needs no mention merely to say it continues, but it may be cited when something perceptible or persistent actually came of it this minute.`;
+  )}\n\nThese are the ids of this tick. The ids under \`endedWithoutNewResult\` close without changes or occurrences and MUST NOT be cited. All other listed ids are potential sources. Every id you write — a \`sourceActionId\`, an occurrence's \`actionIds\` — names one of them. \`stillRunning\` owes no ending entry and needs no mention merely to say it continues, but it may be cited when something perceptible or persistent actually came of it this minute.`;
 }
 
 /** What each starting action needs from its entry, in the terms the validator
@@ -645,22 +652,29 @@ function phaseObligations(
   }
   if (phase === "endings") {
     return worklist.ending.length
-      ? `All ${worklist.ending.length} ending ids above are mandatory. An empty array is invalid.`
+      ? `All ${worklist.ending.length} ending ids above are mandatory. An empty array is invalid. Use no_change without an outcome for routine observation/waiting with no new result, check or utterance. A mixed command settles only its actual new effects. Do not reconstruct personal experience or claim no new information. Do not execute another active command inside this result. Keep world facts objective and route evidence through occurrences; perspective and interpretation are downstream responsibilities.`
       : "No endings are due; submit an empty array.";
   }
   if (phase === "occurrences") {
     const required = occurrenceObligations(context, draft);
-    return `## Required occurrence coverage (${required.length} obligations)\n${json(required)}\n\n${OCCURRENCE_PAIR_RULES} ${required.length ? "An empty array is invalid." : "An empty array is allowed only if nothing else perceptible happened."}`;
+    return `## Required occurrence coverage (${required.length} obligations)\n${json(required)}\n\n${OCCURRENCE_PAIR_RULES} Do not invent replies, chosen silence or group reactions to join these rows. Other people's responses require their own settled source; an absent response is not evidence of silence. An ongoing id may source a supported intermediate attempt, never its entire planned sequence or pending speech. Do not introduce position, transfer or other persistent results missing from the accepted state changes. Preserve earlier events as earlier, not new occurrences. ${required.length ? "An empty array is invalid." : "An empty array is allowed only if nothing else perceptible happened."}`;
   }
-  const guidance: Record<string, string> = {
+  return renderStateChangeCheck(phase);
+}
+
+/** Shared closing check for the three phases that reconcile world state. */
+export function renderStateChangeCheck(
+  phase: "characterChanges" | "itemChanges" | "sceneChanges"
+): string {
+  const guidance = {
     characterChanges:
-      "Reconcile each accepted outcome with the character's CURRENT state. Record only resulting persistent differences. A narrated effect does not require a state row when the state already matches — but state that still ASSERTS what the outcome undid does not match, and that is a change you must write: a condition the action ended is a `removeCondition`, and appearance prose still claiming a wound, blood or disorder the action dealt with is a `setAppearance`. Left alone it is read as current by every later tick, which is how a treated wound comes back untreated and gets treated again. Each row names its real characterId and sourceActionId.",
+      "Compare each accepted outcome with CURRENT character appearance, conditions and position. Repair every existing descriptive claim the outcome made false, even when HP is unchanged, no condition exists, or the visible result is temporary. If bleeding stopped, appearance must no longer say it is bleeding: use `setAppearance`, preserve unrelated details, and do not turn treatment into an unsupported cure. Do not invent a condition or healing delta to stand in for this repair. Each row names its real characterId and sourceActionId.",
     itemChanges:
-      "Reconcile accepted outcomes with CURRENT item ownership, existence and descriptions. Preserve conservation: no duplicate ownership or invented supplies. Mere handling is not a change. Each row names its sourceActionId.",
+      "Compare accepted outcomes with CURRENT item holder, existence, description and functional fields separately. A `move` never rewrites description: when a map is folded and taken off a table, submit the transfer AND a `set.description` replacing the claim that it is spread there, preserving material and markings. Do not append a contradiction. Repair item prose here even though the scene phase will repair place prose separately. Preserve conservation: no duplicate ownership or invented supplies. Mere handling with no changed state needs no row. Each row names its sourceActionId.",
     sceneChanges:
-      "Reconcile accepted outcomes AND accepted item changes with CURRENT places and passages. Repair stale place prose after an item moved or was destroyed. A one-use passage grant does not remove the obstacle. Each row names its real sceneId and sourceActionId.",
+      "Compare accepted outcomes AND accepted character and item changes with CURRENT place prose and passages. Repair obsolete claims about placement, visible presence and physical condition, with or without an explicit reference. Correct item ownership or character position does not correct the scene description. Remove a taken map's obsolete table placement while preserving the table and other true details; do not rewrite prose that already matches. A one-use passage grant does not remove the obstacle. Each row names its real sceneId and sourceActionId.",
   };
-  return `## This phase's check\n${guidance[phase]} Submit an empty array only when this domain has no actual persistent changes; there is no one-row-per-action quota.`;
+  return `## This phase's check\n${guidance[phase]} Before submitting, check BOTH structural fields and existing prose against the supported accepted effects and code-applied state. Check source action and timing before treating an outcome clause as a change: an observer's outcome does not settle another actor's pending task. A supported intermediate effect may require a row, but never finish the rest of its ongoing command or apply an earlier effect again. An empty array is allowed only if neither requires an update; absence of a numeric or condition change is not enough. There is no one-row-per-action quota.`;
 }
 
 /** The upstream phases' accepted output, verbatim, as the read-only facts they
@@ -691,7 +705,7 @@ function acceptedSoFarSection(
   return [
     "## Accepted so far (read-only)",
     "",
-    "These are settled facts of this tick, already validated. Read them and stay consistent with them. Do not restate them, do not submit any part of them again, and do not try to revise them here — this call carries only this phase's array. If something in them is genuinely wrong, say nothing about it: the whole resolution is checked once more at the end, and a fault there sends the tick back to the phase that owns it.",
+    "These arrays have passed the implemented checks and are read-only. Read them and stay consistent with supported accepted effects; do not resubmit earlier arrays and do not try to revise them here. Acceptance is not a semantic guarantee of every sentence. Apply the root evidence and timing boundaries: never expand an unsupported clause into pending speech, another actor's behavior or a new state change. The final validator can rewind faults it detects; do not assume it detects every prose inconsistency.",
     "",
     blocks.join("\n\n"),
   ].join("\n");
@@ -717,9 +731,9 @@ function phaseDemand(phase: ResolutionPhase): string {
   const call = `Call ${toolRef(phase)} now with ${fieldRef(phase)}`;
   switch (phase) {
     case "endings":
-      return `${call}: exactly one decision for every id listed under \`ending\` above, and no other id. \`mode: "outcome"\` with an objective, third-person, final \`outcome\` paragraph for an action that produced something to account for — never a restatement of, and never an argument with, a \`diceRoll\` you were given. \`mode: "pure_speech"\`, carrying no outcome at all, only for an action whose command holds an \`utterance\` and whose whole result was those words — never for an action whose row carries a \`diceRoll\`. If damage is actually dealt this tick, issue every \`damageRoll\` first, all in one turn, with real formulas.`;
+      return `${call}: exactly one decision for every ending id. \`mode: "outcome"\` with the new objective result; \`mode: "pure_speech"\` without outcome for unchecked words alone; or \`mode: "no_change"\` without outcome when there is no new result, check or utterance. Ordinary observation/waiting ends without a recap of personal experience. Do not reconstruct the interval or execute other active commands. For mixed commands, settle only actual new changes. Roll any actual damage first with real formulas.`;
     case "starts":
-      return `${call}: exactly one entry for every id listed under \`starting\` above, and no other id. A non-travel action gets \`resolvedDurationTicks\` in whole minutes, at least 1 — 1 for plain talk, the attempt's minutes for a command that speaks while it does something; a travel action gets \`movement\` with the route the actor stated (and \`vehicleId\` when they drive) and no duration, because code derives travel time from the route. A \`check\` wherever the declared skill covers the attempt and success is in doubt — prying, deceiving, stalling and reading a person included, with the person worked on in \`opposedBy\` — and none at all for an id under \`startingWithoutSkill\`. No outcome and no speech: nothing has happened yet.`;
+      return `${call}: exactly one entry for every id listed under \`starting\` above, and no other id. A non-travel action gets \`resolvedDurationTicks\` in whole minutes, at least 1 — 1 for plain talk, the attempt's minutes for a command that speaks while it does something; a travel action gets \`movement\` with the route the actor stated (and \`vehicleId\` when they drive) and no duration, because code derives travel time from the route. A \`check\` wherever the declared skill covers the attempt and success is in doubt — prying, deceiving, stalling and reading a person included, with \`opposedBy\` only for supported active resistance — and none at all for an id under \`startingWithoutSkill\`. No outcome and no speech: nothing has happened yet.`;
     case "characterChanges":
       return `${call}: one row for every persistent change this tick's actions actually made to a character, each naming its \`sourceActionId\` and \`characterId\`. Only state that CHANGED — a moment worth describing that leaves nothing behind is not a change and is not written here. Nothing changed is \`[]\`.`;
     case "itemChanges":
@@ -727,7 +741,7 @@ function phaseDemand(phase: ResolutionPhase): string {
     case "sceneChanges":
       return `${call}: one row for every persistent change this tick's actions made to a place or a passage, each naming its \`sourceActionId\` and \`sceneId\`. A \`passBlockedConnectionId\` on an accepted start already got that one walker through and leaves the passage shut for everybody else — so it is never paired with \`connectionBlock {blocked:false}\` for the same passage, which says the obstacle itself is gone. Nothing changed is \`[]\`.`;
     case "occurrences":
-      return `${call}: one \`speech:false\` row citing every ending decided \`mode: "outcome"\` above, and one \`speech:true\` row for EVERY id under \`endingWithUtterance\`, including endings with an outcome. An action that both spoke and did something needs both rows. Never a speech row for an id that is starting this tick — its words are delivered next minute. Each row states one objective fact at full detail and lists in \`perceivers\` every character the evidence actually reached, with that character's \`clarity\`; write \`content\` last, after the row's ids and perceivers are settled. Complete every required coverage pair listed above.`;
+      return `${call}: one \`speech:false\` row citing every ending decided \`mode: "outcome"\` above, and one \`speech:true\` row for EVERY id under \`endingWithUtterance\`, including endings with an outcome. An action that both spoke and did something needs both rows. Never a speech row for an id that is starting this tick — its words are delivered only when it ends under \`endingWithUtterance\`. Each row states one objective fact at full detail and lists in \`perceivers\` every character the evidence actually reached, with that character's \`clarity\`; write \`content\` last, after the row's ids and perceivers are settled. Complete every required coverage pair listed above. Never cite a no_change ending, and never add an interval recap for an observer.`;
   }
 }
 

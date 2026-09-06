@@ -76,7 +76,8 @@ export interface RawCheck {
 /**
  * Two scalars. The trace an ending leaves is NOT here: it is an entry in
  * `occurrences` whose `actionIds` cite this action, and the validator refuses
- * an ending nothing cites. It used to be a nested `occurrence` object on this
+ * an outcome ending nothing cites; an explicit null outcome is a no_change
+ * ending with no new event. It used to be a nested `occurrence` object on this
  * entry, and that nesting was where DeepSeek lost count of its braces.
  *
  * What the entry lost since (measured over a 30-tick run, 188 repair lines):
@@ -92,13 +93,14 @@ export interface RawCheck {
  * phase decides it `mode: "pure_speech"`, and its `speech: true` occurrence is
  * the whole answer (who was addressed, who heard, and code carries the words).
  * Talk is delivered, not judged — but an action that carried a check was an
- * attempt, not talk, and it gets a row like any other.
+ * attempt, not talk, and it gets a result row. An unchecked, non-speaking
+ * action with no new result gets an explicit null outcome and no occurrence.
  */
 export interface RawActionEnd {
   actionId: string;
-  /** What came of it, objectively — the finished account the actor is told
-   *  and the log keeps. Never the target's reaction. */
-  outcome: string;
+  /** Objective result, or explicit null for a no_change ending. Null closes
+   *  the action without inventing a result or requiring an occurrence. */
+  outcome: string | null;
 }
 
 export interface RawSourcedDelta {
@@ -168,8 +170,8 @@ export interface RawPerceiver {
 }
 
 export interface RawOccurrence {
-  /** The actions this is the trace of — at least one. Every ending decision
-   *  must be cited by at least one occurrence. Two rows cite the same action
+  /** The actions this is the trace of — at least one. Every outcome or pure-speech ending
+   *  must be cited; a no_change ending must not be cited. Two rows cite the same action
    *  only when
    *  the audiences receive different FACTS in different places (the departure
    *  in one room, the landing in the courtyard); different degrees of one
@@ -443,7 +445,7 @@ export const ITEM_OPS: OperationSpec[] = [
   {
     kinds: ["set"],
     fields:
-      "any of — description:string (REPLACES the whole description; write everything still true of the thing) · appendDescription:string (adds one sentence to what is there; how damage is recorded — say who or what did it, and do not repeat what the description already says) · hidden:boolean (false REVEALS a concealed item to characters, true conceals it) · isLightSource:boolean (false when it no longer lights the room, e.g. smashed) · lightLevel:number",
+      "any of — description:string (REPLACES the whole description; write everything still true of the thing) · appendDescription:string (adds a supported detail only when the existing description remains true; replace description instead if damage or displacement made an old claim false) · hidden:boolean (false REVEALS a concealed item to characters, true conceals it) · isLightSource:boolean (false when it no longer lights the room, e.g. smashed) · lightLevel:number",
     schema: {
       properties: {
         description: STR,
@@ -525,7 +527,7 @@ export const OCCURRENCE_ITEM = {
       items: { type: "string" },
       minItems: 1,
       description:
-        "The action(s) this is the trace of — at least one. Every id under the trigger's `ending` MUST be cited by at least one occurrence, of the kind its endings-phase decision calls for — a decision nothing cites is refused. Two rows cite the same action only when the audiences receive different FACTS in different places (the shove in one room, the landing in the courtyard); different degrees of one fact are ONE row with a per-perceiver clarity.",
+        "The action(s) this is the trace of — at least one. Every id under the trigger's `ending` MUST be cited by at least one occurrence, of the kind its endings-phase decision calls for — a decision nothing cites is refused. Separate rows may cite one action for distinct facts (its speech and physical result, or the shove in one room and landing elsewhere); different clarity grades of the same fact belong in ONE row.",
     },
     speech: {
       type: "boolean",
@@ -607,7 +609,7 @@ export const OCCURRENCE_ITEM = {
     content: {
       type: "string",
       description:
-        "Write this LAST. One objective, third-person paragraph of what happened — world-true, no character-perspective wording, no reasoning, no corrections: settle who did what before writing it. REQUIRED when speech is false. On a speech row, optional: what the words were NOT — how they were said, what the hands did, who turned to look. Never the words themselves: code adds them, and never anyone else's reply.",
+        "Write this LAST. One objective, third-person paragraph of what happened — world-true, no character-perspective wording, no reasoning, no corrections: settle who did what before writing it. REQUIRED when speech is false. On a speech row, optional: what the words were NOT — the speaker's supported delivery or accompanying gesture. A listener turning to look needs its own established source. Never the words themselves: code adds them, and never an invented reply. No summary of pending speech, replay of an earlier event, or unsupported completion of an ongoing plan. Position and ownership claims must agree with the accepted state.",
     },
   },
   required: ["actionIds", "speech", "perceivers"],
@@ -628,7 +630,7 @@ const SUBMISSION_PROPERTIES = {
   starting: {
     type: "array",
     description:
-      "Actions that BEGIN this tick — the ids the trigger section lists under `starting`. For a non-travel action: how long it should take and how hard it is. For travel: only the route (and vehicle) — the clock is derived from it. Never an outcome: its time has not been spent yet. A starting action's `utterance` is not spoken yet either: it is delivered next minute, when the id returns under `endingWithUtterance`. Write no occurrence for a starting id.",
+      "Actions that BEGIN this tick — the ids the trigger section lists under `starting`. For a non-travel action: how long it should take and how hard it is. For travel: only the route (and vehicle) — the clock is derived from it. Never an outcome: its time has not been spent yet. A starting action's `utterance` is not spoken yet either: it is delivered when the action ends and the id returns under `endingWithUtterance`, not necessarily next minute. Write no occurrence for a starting id.",
     items: {
       type: "object",
       properties: {
@@ -712,7 +714,7 @@ const SUBMISSION_PROPERTIES = {
   occurrences: {
     type: "array",
     description:
-      "Every objective thing that happened this tick, one flat row and one paragraph each: the trace of every ending decision the endings phase made (cite its action in `actionIds` — an `outcome` decision no `speech: false` row cites is refused), one `speech: true` row for each id under `endingWithUtterance` (those are the only spoken lines delivered this tick — the row IS the answer for that action, code adds the words; a starting action's utterance is not said yet and gets no row), and anything else worth perceiving (speech false) — a noise, a visible attempt in progress. Write each row's `content` last. Content is world-true, third-person, no character-perspective wording.",
+      "Every objective thing that happened this tick, one flat row and one paragraph each: the trace of every outcome or pure-speech decision (never cite a no_change ending; otherwise cite its action in `actionIds` — an `outcome` decision no `speech: false` row cites is refused), one `speech: true` row for each id under `endingWithUtterance` (those are the only spoken lines delivered this tick — the row IS the answer for that action, code adds the words; a starting action's utterance is not said yet and gets no row), and anything else worth perceiving (speech false) — a noise, a visible attempt in progress. Write each row's `content` last. Content is world-true, third-person, no character-perspective wording.",
     items: OCCURRENCE_ITEM,
   },
 } as const;

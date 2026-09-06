@@ -5,7 +5,7 @@ description: "Read, write, speak, translate, or interpret languages and speciali
 durationGuidance:
   default: 10
   range: "2-120"
-  notes: "a short passage or a brief spoken translation 2-5 min; a conversation or a dense archaic text 15-30 min; a full document or book-length translation 60-120 min; a spoken line itself is one minute by code — these ranges are for the wordless work of a reading or a written translation"
+  notes: "a short passage or a brief spoken translation 2-5 min; a conversation or a dense archaic text 15-30 min; a full document or book-length translation 60-120 min; plain talk takes one minute; checked translation or comprehension uses the assessed task duration and any utterance is delivered only when it ends"
 ---
 
 # Languages guidance
@@ -20,8 +20,9 @@ that language's number.
 
 ## A native tongue is never checked
 
-Nobody rolls to speak the language they think in. An action carried out in a
-character's own tongue reaches you with NO declared skill and no check, and
+Nobody rolls to speak the language they think in. A declaration of Languages for a native tongue is removed at intake,
+leaving no language check; an independently declared applicable skill such
+as Social is still checked, and
 that is correct — settle it on its merits like any other unskilled action.
 Do not reach for a bar because speech was involved.
 
@@ -32,8 +33,7 @@ if the actor declared it.
 
 ## Applicability
 
-- Accepted for translation, comprehension of speech or text, passing as a
-  speaker, and reading a technical register the actor is not trained in —
+- Accepted for translation, comprehension of speech or text, using a learned tongue, and decoding unfamiliar linguistic terminology —
   always in a NAMED language the actor has learned.
 - Rejected for what the text MEANS in its field once translated — that is
   Knowledge & Craft, Science & Nature, or Occult by subject.
@@ -43,22 +43,29 @@ if the actor declared it.
   difficulty of THIS passage: condition of the text, archaism, dialect, noise,
   speed of speech, how much hangs on precision.
 
+Only supplied readable text or speech already delivered can be translated or
+understood. Pending speech and hidden text are not sources. A private reading
+is not automatically heard or understood by nearby people.
+
 ## Success levels
 
 - **Regular** — The gist, reliably: the actor knows what is being said or
   asked, with rough edges and gaps.
 - **Hard** — Accurate and complete, including idiom, register, and what the
   phrasing implies about the speaker or writer.
-- **Extreme** — Nuance the text was not meant to give up — a regional origin,
-  a deliberate ambiguity, a hand that is imitating another.
+- **Extreme** — Subtle distinctions supported by the supplied text or delivered
+  speech. An accent may suggest a region but does not establish a speaker's
+  identity or hidden intention.
 
 ## Failure
 
 - Not understood, or understood so partially it cannot be acted on. Time is
   spent on the passage.
-- **Fumble** — Confidently mistranslated. Emit the wrong reading as what the
-  actor came away with, and let the world contradict it later; if the actor
-  spoke, the error is heard and may offend or expose them.
+- **Fumble** — A mistranslation or linguistic error may result. Distinguish
+  the erroneous analysis from the original meaning; do not force belief or
+  invent an offended listener. Code delivers a command's utterance verbatim:
+  a failed check never authorizes rewriting those words. Describe only supported
+  delivery or comprehension limitations, without changing quoted text.
 
 ## State surface
 
@@ -70,6 +77,6 @@ for what actually happened — a one-off descriptive result is occurrence
   listener in `perceivers` at `full`.
 - `item.create` — a written translation or transcription that now exists;
   `item.set` when the actor annotates the original.
-- A register that offends, or a fluency that opens someone up, is an
-  OCCURRENCE the other party perceives — what they now make of the speaker is
+- An audible register or fluent delivery is an occurrence only to those
+  who actually perceive it — what they now make of the speaker is
   theirs to write, not yours to assert.

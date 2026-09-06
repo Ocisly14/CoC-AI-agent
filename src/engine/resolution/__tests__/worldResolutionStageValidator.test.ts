@@ -15,7 +15,10 @@ import {
   formatErrorTarget,
 } from "../types.js";
 import type { RawOccurrence } from "../worldDeltaSchema.js";
-import { validateRawResolution } from "../worldDeltaValidator.js";
+import {
+  finalizeResolution,
+  validateRawResolution,
+} from "../worldDeltaValidator.js";
 import type {
   AcceptedResolutionDraft,
   EndingDecision,
@@ -328,7 +331,7 @@ describe("endings phase", () => {
       makeContext(),
       {}
     );
-    expect(text(errors)).toContain("an ending requires an outcome");
+    expect(text(errors)).toContain("an outcome ending requires");
   });
 
   it("refuses pure speech for an action whose command carries no words", () => {
@@ -1387,5 +1390,192 @@ describe("review regressions", () => {
     expect(
       text(validateRawResolution(assembleRawResolution(draft), ctx))
     ).toContain("carried a check");
+  });
+});
+
+describe("no_change closes observation without manufacturing a result", () => {
+  const context = (
+    action = activeAction({
+      command: command({ description: "I wait and watch the room." }),
+    })
+  ) =>
+    makeContext({
+      newCommands: [],
+      activeActions: [action],
+      triggerActionIds: [ENDING],
+    });
+  const draft: AcceptedResolutionDraft = {
+    endings: [{ actionId: ENDING, mode: "no_change" }],
+    characterChanges: [],
+    itemChanges: [],
+    sceneChanges: [],
+    occurrences: [],
+  };
+
+  it("passes every phase and the final gate with no prose or events, but still completes", () => {
+    const ctx = context();
+    for (const phase of [
+      "endings",
+      "characterChanges",
+      "itemChanges",
+      "sceneChanges",
+      "occurrences",
+    ] as const) {
+      expect(
+        validatePhase(phase, { [phase]: draft[phase] }, ctx, draft)
+      ).toEqual([]);
+    }
+    expect(occurrenceObligations(ctx, draft)).toEqual([]);
+    const raw = assembleRawResolution(draft);
+    expect(raw.ending).toEqual([{ actionId: ENDING, outcome: null }]);
+    expect(validateRawResolution(raw, ctx)).toEqual([]);
+    const resolved = finalizeResolution(raw, ctx).resolution;
+    expect(resolved.transitions).toEqual([
+      expect.objectContaining({ actionId: ENDING, to: "completed" }),
+    ]);
+    expect(resolved.transitions[0].reason).toBeUndefined();
+    expect(resolved.occurrences).toEqual([]);
+  });
+
+  it("preserves interruption timing without inventing partial observations", () => {
+    const ctx = context(activeAction({ progressMinutes: 2 }));
+    ctx.trigger.triggers = [{ actionIds: [ENDING], reason: "interrupted" }];
+    const raw = assembleRawResolution(draft);
+    expect(validateRawResolution(raw, ctx)).toEqual([]);
+    expect(
+      finalizeResolution(raw, ctx).resolution.transitions[0]
+    ).toMatchObject({ to: "interrupted" });
+  });
+
+  it.each([
+    activeAction({
+      check: { skillId: "Investigation", requiredLevel: "regular" },
+    }),
+    activeAction({ command: command({ utterance: "I will watch." }) }),
+  ])("cannot discard checks or words in either validator", (action) => {
+    const ctx = context(action);
+    expect(
+      validatePhase("endings", { endings: draft.endings }, ctx, {})
+    ).not.toEqual([]);
+    expect(
+      validateRawResolution(assembleRawResolution(draft), ctx)
+    ).not.toEqual([]);
+  });
+
+  it("rejects an outcome smuggled onto the closed no_change branch", () => {
+    expect(
+      validatePhase(
+        "endings",
+        {
+          endings: [
+            {
+              actionId: ENDING,
+              mode: "no_change",
+              outcome: "Nothing new was learned.",
+            },
+          ],
+        },
+        context(),
+        {}
+      )
+    ).not.toEqual([]);
+  });
+
+  it("rejects a retrospective occurrence at both gates and does not retain it during repair", () => {
+    const rows: RawOccurrence[] = [
+      {
+        actionIds: [ENDING],
+        speech: false,
+        perceivers: [{ characterId: "npc_1", clarity: "full" }],
+        content: "The observer saw everyone working.",
+      },
+    ];
+    const ctx = context();
+    expect(
+      validatePhase("occurrences", { occurrences: rows }, ctx, draft)
+    ).not.toEqual([]);
+    expect(
+      validateRawResolution(
+        assembleRawResolution({ ...draft, occurrences: rows }),
+        ctx
+      )
+    ).not.toEqual([]);
+    expect(retainedRows("occurrences", rows, ctx, draft)).toEqual({
+      retained: [],
+      faulty: rows,
+    });
+  });
+
+  it.each([
+    [
+      "characterChanges",
+      {
+        characterId: "npc_1",
+        operation: { kind: "spot", spot: "by the door" },
+      },
+    ],
+    [
+      "itemChanges",
+      { itemId: "pick_1", operation: { kind: "move", to: "npc_2" } },
+    ],
+    [
+      "sceneChanges",
+      {
+        sceneId: "SCN_1",
+        operation: { kind: "setDescription", description: "A searched study." },
+      },
+    ],
+  ] as const)("cannot conceal a new %s behind no_change", (phase, change) => {
+    const rows = [{ ...change, sourceActionId: ENDING }];
+    const ctx = context();
+    expect(
+      validatePhase(phase, { [phase]: rows }, ctx, draft).some((e) =>
+        e.message.includes("no_change")
+      )
+    ).toBe(true);
+    const raw = assembleRawResolution(draft);
+    Object.assign(raw, { [phase]: rows });
+    expect(
+      validateRawResolution(raw, ctx).some((e) =>
+        e.message.includes("no_change")
+      )
+    ).toBe(true);
+  });
+
+  it("still routes other actions' new events to an observer whose own wait ends", () => {
+    const ctx = makeContext({
+      newCommands: [],
+      activeActions: [activeAction(), talkingAction()],
+      triggerActionIds: [ENDING, TALKING],
+    });
+    const combined: AcceptedResolutionDraft = {
+      ...draft,
+      endings: [...draft.endings!, { actionId: TALKING, mode: "pure_speech" }],
+      occurrences: [
+        {
+          actionIds: [TALKING],
+          speech: true,
+          targetIds: ["npc_2"],
+          perceivers: [{ characterId: "npc_2", clarity: "full" }],
+        },
+      ],
+    };
+    expect(
+      validatePhase(
+        "occurrences",
+        { occurrences: combined.occurrences },
+        ctx,
+        combined
+      )
+    ).toEqual([]);
+    const raw = assembleRawResolution(combined);
+    expect(validateRawResolution(raw, ctx)).toEqual([]);
+    const result = finalizeResolution(raw, ctx).resolution;
+    expect(result.occurrences).toHaveLength(1);
+    expect(result.occurrences[0].sourceActionIds).toEqual([TALKING]);
+    expect(result.occurrences[0].perceivers).toContainEqual({
+      characterId: "npc_2",
+      clarity: "full",
+    });
   });
 });

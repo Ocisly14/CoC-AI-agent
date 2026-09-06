@@ -187,7 +187,7 @@ describe("formatLandedCheck", () => {
     } as unknown as DynamicGameStateManager;
     const tag = aliasFor("npc_joel", "npc_owen");
     expect(formatLandedCheck(landed, dgsm, "zh")).toBe(
-      `那个人 [${tag}] 刚才的话让你无法回避，你不得不回答。`
+      `那个人 [${tag}] 的尝试若已被你实际察觉，应认真权衡其表达或证据；如何回应由你决定。`
     );
     expect(formatLandedCheck(landed, dgsm, "en")).toContain(
       `the person [${tag}]`
@@ -200,7 +200,7 @@ describe("formatLandedCheck", () => {
       getRelationship: () => ({ knownAs: "Owen" }),
     } as unknown as DynamicGameStateManager;
     expect(formatLandedCheck(landed, dgsm, "zh")).toBe(
-      "Owen [npc_owen] 刚才的话让你无法回避，你不得不回答。"
+      "Owen [npc_owen] 的尝试若已被你实际察觉，应认真权衡其表达或证据；如何回应由你决定。"
     );
   });
 });

@@ -26,16 +26,22 @@ required level.
 
 ## Success levels
 
-Combat is an opposed check. The Engine names the defender and their defense
-skill; the defender's roll comes from the opposed-roll tool and the actor's
-existing roll is never re-rolled. Higher success level wins, the defender wins
-ties. Damage comes from the damage-roll tool, never from estimation.
+For active resistance, name the defender and an applicable defense skill
+in the starts phase. Code supplies the resolved dice verdict, including
+opposition, at settlement; there is no opposed-roll tool here. Use `diceRoll.met`,
+not the actor's success level alone. Damage, when the attempted effect deals it,
+comes from `damageRoll`. A disarm or restraint need not deal HP damage.
+
+The levels below describe possible quality, not automatic extra injuries.
+Every displacement, disarm or impairment needs the actual attack and physical
+effect to support it; a good roll alone never makes a healthy target unconscious.
 
 - **Regular** — A hit. Apply the rolled damage.
-- **Hard** — Well placed: rolled damage plus a consequence — the target is
-  pinned, drops what it held, or loses the use of a limb.
-- **Extreme** — Decisive placement. Apply damage and a condition that removes
-  the target from the exchange.
+- **Hard** — Well placed within the stated aim. An involuntary drop or limb
+  impairment needs the actual impact to support it; taking cover is the
+  target's decision, not an automatic effect of covering fire.
+- **Extreme** — The best feasible placement. Injury follows rolled damage
+  and actual impact, not an automatic removal of the target from the exchange.
 
 ## Failure
 
@@ -51,12 +57,12 @@ Typical deltas this domain produces. Not a requirement and never a substitute
 for what actually happened — a one-off descriptive result is occurrence
 `content`, not a state change.
 
-- `character.hp` — the damage from the damage-roll tool, never estimated.
+- `character.hp` — damage from `damageRoll`, never estimated.
 - `character.addCondition` — bleeding, pinned, unconscious, a limb disabled.
 - `item.set` — rounds and arrows spent, magazines emptied, or a weapon jammed
   or damaged but still in play; `item.destroy` for irreversible breakage.
-- `scene.addCondition` — what the misses hit: a shattered lamp that leaves the
-  room dark, a holed wall; `scene.environmentHazard` when the round finds fuel
-  or lamp oil.
+- `scene.addCondition` / `scene.environmentHazard` — an actual supported
+  impact and its lasting consequence. A miss alone does not authorize choosing
+  a lamp or fuel drum to add damage; require a fumble or an independent cause.
 - The noise reaches everyone in earshot. That is an occurrence with a wide
   perceiver list, not a state change.

@@ -33,14 +33,14 @@ export const actTool: ToolSpec = {
   // `skillId`/`language`/`utterance` with `""` rather than leave them out.
   noGrammar: true,
   description:
-    "Declare the ONE thing you now set out to do in the world (intent only — the engine decides outcomes and real duration). Terminates this decision and consumes a tick. See the act section of the system prompt for granularity rules.",
+    "Declare ONE atomic action with one immediate objective and an independently settleable result (intent only; the engine decides outcomes and duration). Submit only the next action, not a sequence or a plan for the engine to split. A single action may span several ticks. Terminates this decision. See the act section for granularity rules.",
   inputSchema: {
     type: "object",
     properties: {
       description: {
         type: "string",
         description:
-          "One or two in-character sentences describing what you attempt and how — never its outcome.",
+          "One or two in-character sentences for ONE immediate action and how you attempt it, never its outcome. Separate independently completable tasks: thanking someone, making a bed and keeping watch are separate acts chosen as each preceding action ends. Incidental posture and an accompanying remark do not require separate hand-motion acts.",
       },
       objectRefs: {
         type: "array",
@@ -70,7 +70,7 @@ export const actTool: ToolSpec = {
         type: "integer",
         minimum: 1,
         description:
-          "How many ticks (1 tick = 1 in-world minute) you expect or are willing to invest. Your estimate only — the engine sets the authoritative duration.",
+          "Ticks (1 tick = 1 in-world minute) for THIS single action, not a sequence of future tasks. Atomic does not mean one tick. Your estimate only; the engine sets the authoritative duration.",
       },
       skillId: {
         // Enumerated rather than free text, for two reasons found in one run
@@ -81,17 +81,17 @@ export const actTool: ToolSpec = {
         type: "string",
         enum: SKILL_CATALOG.map((skill) => skill.name),
         description:
-          "The skill you consciously bring to bear. Declare it whenever your training is what you are relying on — talking someone round, moving unseen, forcing a lock, reading a document, landing a blow — and declare it even when you are poor at it: missing a check costs the minutes and that approach, nothing more. Omitting it is a real choice and not a default: an action with no declared skill is settled on its own merits and your training counts for nothing. Never values, difficulties or rolls — only which skill.",
+          "The skill you consciously bring to bear. Declare it whenever your training is what you are relying on — talking someone round, moving unseen, forcing a lock, reading a document, landing a blow — and declare it even when you are poor at it: a failed attempt spends time and actual resources; additional harm needs a fumble or an independent cause. Omitting it is a real choice and not a default: an action with no declared skill is settled on its own merits and your training counts for nothing. Never values, difficulties or rolls — only which skill.",
       },
       language: {
         type: "string",
         description:
-          'Required with skillId "Languages", and meaningless without it: name the tongue you are reading or speaking, exactly as it appears under "What you can do". A language you grew up with needs no skillId at all — you simply speak it.',
+          'Required with skillId "Languages", and meaningless without it: name the tongue you are reading or speaking, exactly as it appears under "What you can do". A native tongue needs no Languages declaration; another applicable skill such as Social can still be declared.',
       },
       utterance: {
         type: "string",
         description:
-          "Optional: the exact words you speak, verbatim. Omit when silent.",
+          "Optional: exact words intended for delivery at the END of this same action. If they must be heard before subsequent work, submit speech as a separate short act first. Do not attach an immediate announcement to a long watch. Omit when silent; description alone delivers no words.",
       },
     },
     required: ["description", "objectRefs", "proposedDurationTicks"],

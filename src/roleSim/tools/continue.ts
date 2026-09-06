@@ -8,10 +8,13 @@ description: Keep your IN-FLIGHT action running. Terminates this decision.
 # continue
 
 Don't start anything new: let your current in-flight action keep running.
+It does not advance to the next task in a plan. Once the current action ends,
+choose a new atomic act from the perception you receive.
 
 \`continue\` continues an ACTION, not a mood. If the situation shows no
-"Currently doing" section, you have no action running — you are standing
-there doing literally nothing, and \`continue\` keeps it that way.
+"Currently doing" section, you have no tracked action running. \`continue\`
+starts no new task and establishes no new speech, gesture or deliberate
+silence toward someone. Your supplied posture and bodily state still apply.
 
 ## When to use
 - Your current in-flight action is still right — nothing has changed enough to warrant switching

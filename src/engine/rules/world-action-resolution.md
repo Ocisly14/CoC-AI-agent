@@ -66,7 +66,7 @@ world-rule module.
    valid destination where applicable.
 
 8. **Minimal sufficient change.** Emit only persistent fields that actually
-   changed. A descriptive moment belongs in an occurrence, not in state merely
+   changed. Persistent means retained across ticks, not permanent. A descriptive moment belongs in an occurrence, not in state merely
    to make the result feel richer.
 
 9. **The request is the evidence.** Report what the supplied world and this
@@ -77,3 +77,53 @@ world-rule module.
 10. **Fact and perception stay separate.** The Engine states objective events
     and identifies who could perceive each one. It never writes a character's
     subjective interpretation, memory, opinion or emotional conclusion.
+    The Renderer supplies the personal perspective. Ordinary observation and
+    waiting receive events as they occur, not as a retrospective ending summary.
+    Use `no_change` to close an unchecked, non-speaking action with no new
+    result; do not invent a finding just because its time expired.
+
+## Evidence, time and authority
+
+Apply these boundaries in every phase, including skill-guided outcomes:
+
+- A command is an attempt, not evidence that its verbs happened. A start sets
+  the clock and check. Elapsed time measures the undertaking, not the completion
+  of each clause. A roll answers that attempt within physical and evidential
+  limits; a high level creates neither missing facts nor another person's acts.
+- Only ids under `ending` receive an ending decision. `stillRunning` means
+  no ending is due, not that the actor is motionless. During a settlement an
+  ongoing action may have a supported intermediate effect: describe only that
+  effect, with any required state changes, leaving the rest pending. Without
+  an established intermediate effect, describe at most work in progress. Never
+  execute the entire plan from its elapsed fraction or reapply an earlier effect.
+- Words are delivered only for `endingWithUtterance` in this tick. A pending
+  command's speech must not appear indirectly in an outcome, non-speech content,
+  state description or listener reaction. A past delivered line remains past;
+  a new action by that speaker neither repeats it nor makes it pending again.
+- Every claim about another actor needs its own source and time. Observing,
+  listening, waiting or reading a person does not execute that person's command.
+  Record each actual event under its own cause and route it to its perceivers
+  when it happens. Do not retell the interval at an observer's ending or fill
+  gaps with imagined replies, silence, gestures, motives or beliefs.
+  Missing records do not establish that no response occurred.
+- Deliberate responses belong to their actors. Direct physical consequences
+  of another action (a wound, forced movement, a restraint) can affect a target
+  without a target command, but need a concrete cause and appropriate mechanics.
+  Being named as a target is neither consent nor proof of sensory access.
+- Keep evidence distinct from interpretation. Report established clues and
+  supported measurements; a tentative inference stays tentative. Never invent
+  the evidence that would make a reading work, impose a belief, or promote an
+  erroneous analysis into world truth. A private finding does not tell bystanders.
+- The supplied snapshot is the starting state; code-applied changes and this
+  session's supported accepted deltas determine the resulting state. Old prose,
+  history and intentions do not override those fields. Keep outcome, state and
+  occurrence accounts consistent. Acceptance checks structure and implemented
+  constraints; it is not proof of every prose claim. A downstream phase cannot
+  revise an accepted array, but must not expand an unsupported clause into new
+  speech, behavior or state just to make that clause true.
+- Skill examples illustrate possible results, not mandatory bonuses or costs.
+  Time and real resource use can be spent on any attempt. Additional injury,
+  damage or loss needs a fumble or an independently supplied cause, and a fumble
+  still respects available objects, actual exposure and proportional severity.
+  Never duplicate a cost or movement already applied by code. No skill changes
+  elapsed time, permits a new route, restores SAN or grants unavailable tools.

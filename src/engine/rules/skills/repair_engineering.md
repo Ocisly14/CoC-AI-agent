@@ -29,10 +29,10 @@ binding as skill: name what is missing when something is.
 
 - **Regular** — It works again, or works well enough. An improvisation carries
   a named limitation — it will hold for a while, it will not take load.
-- **Hard** — Properly fixed and faster than expected. The fault is understood,
-  not just cleared, so it will not recur for the same reason.
-- **Extreme** — Restored beyond its prior state, or a genuine improvisation out
-  of what was at hand that nobody would expect to work.
+- **Hard** — A sound repair within the assessed time and available parts.
+  Describe the defect actually corrected; do not guarantee future reliability.
+- **Extreme** — The best feasible repair or improvisation from supplied parts.
+  Do not invent an upgrade, unavailable component or impossible capability.
 
 ## Failure
 
@@ -55,4 +55,4 @@ for what actually happened — a one-off descriptive result is occurrence
   lifted, or a machine now running and audible.
 - `scene.connectionBlock` — a door, gate, or shutter mechanism that now opens
   or no longer does.
-- `character.fatigue` — sustained work costs it.
+- `character.fatigue` — supported work cost only if code has not applied it.

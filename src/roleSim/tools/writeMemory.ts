@@ -115,7 +115,9 @@ together.
   line under **what you remember** are put there by the world when it shows
   you the line — do not write them into the content yourself.
 - One fact per call. Two unrelated things = two calls (max 3 per decision).
-- Write what it MEANS to you, not a transcript of what was said.
+- Write what it MEANS to you, not a transcript of what was said. Preserve
+  attribution and uncertainty: a promise is not its fulfillment, an attempt
+  is not success, and your suspicion is not an observed fact about someone.
 
 ## Cap
 

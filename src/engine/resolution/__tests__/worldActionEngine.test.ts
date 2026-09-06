@@ -625,6 +625,27 @@ describe("resolveTick — the staged runner", () => {
     expect(last).toContain("### `itemChanges` — accepted in phase 3\n[]");
   });
 
+  it("settles a routine wait through all five phases without generating an outcome or event", async () => {
+    script(
+      ...settlementPath({
+        endings: { endings: [{ actionId: LIVE, mode: "no_change" }] },
+      })
+    );
+    const ctx = makeContext({ kind: "settlement", ending: true });
+    ctx.actions.activeActions[0].command.description =
+      "I wait and watch the room.";
+    const result = await resolveTick(ctx, makeDeps());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.resolution.transitions).toEqual([
+      expect.objectContaining({ actionId: LIVE, to: "completed" }),
+    ]);
+    expect(result.resolution.transitions[0].reason).toBeUndefined();
+    expect(result.resolution.occurrences).toEqual([]);
+    expect(gate).toHaveBeenCalledTimes(1);
+    expect(phasesRequested()).toEqual([...SESSION_PHASES.settlement]);
+  });
+
   it("pure speech: a pure_speech decision plus its speech row ends the action with no ending row", async () => {
     script(
       ...settlementPath({

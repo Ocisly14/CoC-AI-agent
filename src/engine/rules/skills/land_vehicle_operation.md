@@ -20,7 +20,7 @@ vehicle's condition are inputs to the required level.
   precise placement of a heavy machine — and for operating machinery the actor
   is not obviously trained on.
 - Rejected for routine travel with nothing pressing it: that is movement, and
-  duration comes from movementCost, not from a check.
+  duration is derived by code from the route, not from a check.
 - Rejected for fixing the vehicle (Repair & Engineering) and for boats or
   aircraft (their own domains).
 
@@ -28,18 +28,19 @@ vehicle's condition are inputs to the required level.
 
 - **Regular** — The maneuver comes off. The vehicle ends where the actor
   intended, with wear and noise.
-- **Hard** — Controlled and quick: distance opened on a pursuer, a load placed
-  exactly, no damage taken.
-- **Extreme** — Something the vehicle should not have done — a gap taken, a
-  skid held, a lift that clears by inches.
+- **Hard** — Controlled handling or a load placed accurately within the
+  assessed time and code-applied travel; no extra distance from the roll alone.
+- **Extreme** — Exceptional control within the vehicle's real capacity,
+  footing and clearance. No impossible gap or unsupported load.
 
 ## Failure
 
 - The maneuver does not come off: ground lost, the vehicle stalls, the load
   swings wide. The actor keeps control but not the advantage.
-- **Fumble** — A collision or a rollover. Damage the vehicle, apply HP loss to
-  occupants proportional to speed, and change the scene where it happened —
-  blocked road, wreck, fire risk. Bystanders perceive it.
+- **Fumble** — A supported collision, rollover or loss of control. Resolve
+  actual impact and protection before applying damage; not every occupant is
+  automatically hurt. A wreck, blockage or fire needs its own physical cause
+  and observers need actual sensory access.
 
 ## State surface
 

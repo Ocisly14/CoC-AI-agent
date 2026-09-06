@@ -6,6 +6,7 @@
 // and what the place looks like, so the geometry is the renderer's to read.
 
 import { describe, expect, it, vi } from "vitest";
+import type { PerceivedBundle } from "../types.js";
 
 const generateText = vi.fn();
 vi.mock("../../../models/index.js", async () => {
@@ -119,6 +120,39 @@ async function render(adjacent: boolean) {
 }
 
 describe("other entities carry their place", () => {
+  it("separates another person's pending intent from delivered occurrence speech", async () => {
+    const bundle = bundleWith(false) as PerceivedBundle;
+    bundle.charactersInScene = [
+      {
+        id: "npc_2",
+        name: "Denny",
+        conditions: [],
+        currentAction: {
+          kind: "ongoing",
+          description: "I offer to take first watch.",
+          progressMinutes: 2,
+          resolvedDurationTicks: 90,
+          utterancePending: true,
+        },
+      },
+    ];
+    generateText.mockReset();
+    generateText.mockResolvedValueOnce("丹尼站在门边。");
+    await renderViaLLM({ npcId: "npc_1", bundle, dgsm, language: "zh" });
+    const context = generateText.mock.calls[0][0].context as string;
+    expect(context).toContain(
+      "Ongoing action (intent, NOT an observed result)"
+    );
+    expect(context).toContain("~2 min in; expected ~90 min total");
+    expect(context).toContain("words of THIS action are NOT yet spoken");
+    expect(context).toContain("Intent only: I offer to take first watch.");
+    // A pending action must not hide speech already delivered by another event.
+    expect(context).toContain(
+      "fact (speech): Denny says he is doing homework."
+    );
+    expect(context).not.toContain("Currently: I offer");
+  });
+
   it("says a participant in the next room is NOT here, names the way, and shows that room", async () => {
     const context = await render(true);
     const section = context.split("# Other entities involved in events")[1];

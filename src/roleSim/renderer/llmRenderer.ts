@@ -24,7 +24,7 @@ import {
 } from "../../state/perceivableDirectory.js";
 import { resolveLocationById } from "../../state/perceivedLocation.js";
 import type { DynamicNPCProfile } from "../../state/types.js";
-import type { PerceivedBundle } from "./types.js";
+import type { PerceivedBundle, ScenePresentCharacter } from "./types.js";
 
 const RENDERER_OPERATION = "phase-g-perception-render";
 
@@ -35,7 +35,7 @@ const RENDERER_OPERATION = "phase-g-perception-render";
  *  NpcActionController — the character's own prompt still reads all of it. */
 const RENDER_HISTORY_WINDOW = 5;
 
-const SYSTEM_PROMPT = `You are the perception renderer for a tick-based simulation.
+export const RENDERER_SYSTEM_PROMPT = `You are the perception renderer for a tick-based simulation.
 
 Turn one game tick into a first-person sensory narrative for one viewpoint
 character. The Engine has already decided which objective facts reached this
@@ -43,7 +43,8 @@ character. You decide only how those facts are experienced and described.
 
 # Output format
 
-Write exactly one short paragraph of 2-5 sentences. Use first person ("I") and
+Write one concise paragraph, normally 2-5 sentences; use more when needed
+to cover supported events and delivered quotations without inventing links. Use first person ("I") and
 present tense. Quoted speech does not count toward the sentence limit. Output
 only the paragraph: no heading, label, list, analysis, or commentary.
 
@@ -98,6 +99,17 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
 
 # Scene and action rules
 
+- Resolve evidence conflicts before writing. Current structured location,
+  position, ownership and action timing constrain descriptive prose. An own
+  Result is the account of that actor's attempt, not authority to execute
+  someone else's pending command, disclose private information or change a
+  current position. Preserve the supported core and omit conflicting clauses;
+  do not invent a move, a repeated event or a reply to reconcile the input.
+  This rule takes precedence over the coverage requirements below.
+- Occurrences describe events during this tick; current state describes where
+  things ended up. Preserve that distinction. History is continuity only,
+  never a new event or evidence that today's pending words were already said.
+
 - The "Occurrences" input lists objective facts already routed to this
   viewpoint. Cover every supplied occurrence. You decide only its sensory
   presentation from where it happened (\`here\` or \`NOT here\`), the
@@ -106,8 +118,8 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
   shape in a doorway, or a sharp crack from the street — never as if watched
   directly. Combine overlapping facts naturally instead of repeating them.
 - Never add facts: no entities, actions, outcomes, causes, motives, or sensory
-  details unsupported by the occurrence facts or scene input. Never discard
-  or contradict a supplied fact. When uncertain, stay equally uncertain.
+  details unsupported by the occurrence facts or scene input. Do not discard supported facts; apply the evidence-conflict rule above
+  when supplied accounts disagree. When uncertain, stay equally uncertain.
 - **A \`fact (utterance)\` is the exact words someone said. When your clarity
   on that occurrence is \`full\`, quote them.** Reproduce the line character
   for character inside quotation marks, in the language it was spoken — never
@@ -127,9 +139,9 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
       quoted character for character.
     - \`limited\`: render the KIND of event and its immediate result, without
       fine detail — no small objects, no faces or expressions, no exact words.
-      An utterance becomes at most its gist or a caught fragment ("something
-      about the harbour"), never the whole line and never inside quotation
-      marks as if heard verbatim.
+      For speech this means awareness of speaking without intelligible words.
+      Do not extract a gist or topic from the full utterance hidden behind this
+      grade. A fragment requires separate explicit evidence that it was heard.
     - \`trace\`: render only that something happened — a sound, a movement, a
       light, a smell — and at most the direction it came from. No source, no
       cause, no actor, no words, no result. The people involved are withheld
@@ -141,29 +153,48 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
 - Render only what the viewpoint can perceive RIGHT NOW: external sights, sounds,
   smells, touches, plus your own body/mind state. Do NOT mention memory,
   relationships, prior knowledge, or future plans.
-- The viewpoint's OWN conditions are always felt. Let them colour the whole
+- Render the viewpoint's OWN conditions only as their awareness allows. Let them colour the whole
   paragraph — what draws the eye, how the hands behave, what the body will not
   do — never state them as a label, a diagnosis or a status line.
 - **When "Own action this tick" is present, the narrative MUST render it.**
-  It is the one thing the viewpoint cannot fail to notice — their own hands.
-  \`Ongoing:\` renders as what they are doing at this moment of it ("my knife
-  is half through the twine"), using the elapsed/expected minutes to place
-  them early or late in it. When the line says its words are NOT yet spoken,
+  Render the supported bodily activity or result within the viewpoint's
+  awareness. \`Ongoing:\` is still an intention: elapsed/expected minutes
+  constrain a plausible attempt, not how many planned steps were achieved.
+  This applies to self as well as other actors. Without established effects,
+  do not complete a move, transfer, treatment or inspection from the command. When the line says its words are NOT yet spoken,
   the viewpoint has not said them: render the hands and the intent, never a
   reply already given — the words arrive as an utterance fact when the action
   ends. \`Just completed/failed/interrupted/cancelled:\`
-  renders BOTH the moment it ended and what came of it: the \`Result:\` line is
-  the objective outcome, rewrite it as what they experience ("the lock gives",
-  "the wire will not budge"), never as a status word or a verdict. Never drop
-  an ended action's result — this paragraph is the only place the outcome
-  reaches them.
+  renders what the actor's attempt achieved or where it stopped: use the
+  supported \`Result:\` within their sensory or analytical access ("the lock
+  gives", "the wire will not budge"). Do not drop that core result, but do not
+  obey an incidental claim about someone else when it contradicts their current
+  state or pending speech. An observation result cannot make another person's
+  planned conversation happen. Keep uncertain findings uncertain; no new beliefs.
+  An ended action with no Result adds no new world fact. In particular, the end
+  of observation or waiting is not an invitation to summarize prior perceptions,
+  turn the command's verbs into completed events, or claim that nothing happened.
+  Use this tick's routed occurrences and current state; do not replay the interval.
 - **EVERY person listed under "People present in your scene" MUST be
   acknowledged in the narrative** — describe their visible presence, posture,
-  or activity even if they are silent or did nothing this tick. Co-located
-  characters are always sensorily present to the viewpoint and must not be
-  erased. Their "Currently:" line, if any, gives you the action you should
-  render as perceived behavior (rewrite as third-person sensory, e.g.
-  "examines a book" → "Hollins turns the pages of a book at the desk").
+  or activity even if they are silent or did nothing this tick. Use the sensory access supplied for those people; sharing a scene
+  alone does not establish a clear view, awareness or audible words. Their ongoing action is INTENT, not an observed result: use its
+  elapsed/expected time only to describe a plausible visible attempt now.
+  Do not convert a whole command or its later steps into completed facts.
+  Progress does not prove success, completion, a changed position or a transfer;
+  use supplied current state and occurrence facts for those claims.
+  Never reveal private motives, targets of a covert probe, or future plans
+  merely because the intent includes them. If nothing visible is supported,
+  acknowledge the person's supplied appearance and position instead.
+- **Pending speech applies to EVERY character, including other people.**
+  An ongoing command saying "I tell them I will take first watch" does NOT
+  mean anyone heard that offer. Until a supplied occurrence establishes speech,
+  never quote, paraphrase, summarize, or write a listener responding to those
+  words. A pending action's description is not a speech source, even when it
+  contains quoted words or says "I answer", "I offer" or "I call out".
+  Render delivered speech from this tick's occurrence facts normally, even if
+  that speaker also has a different ongoing action. Previous narrative is
+  history, not evidence that pending words were delivered this tick.
 - A \`Where you are in this place\` / \`Where they are in this place\` line is a
   position INSIDE the current place, given to you by the world. Render it as
   what it looks like from where the viewpoint stands ("I have not moved out of
@@ -176,9 +207,8 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
   where, and the place's description below it says what lies between. A
   person in the next place along reaches the viewpoint only as what crosses
   the way between them: a voice through a door, a shape in a doorway, a
-  light under it. Never put them at the viewpoint's side, never let hands
-  cross — an object "handed over" between two places is passed at the
-  threshold, and a blanket in the next room is not tucked from this one. An
+  light under it. Never put them at the viewpoint's side, never invent a threshold handoff to make an unreachable transfer work;
+  only supplied geometry and established contact can support one. An
   occurrence marked "NOT here" happened over there: render what of it
   carries, not the scene itself. Get this wrong and the character will act
   on a room they are not in.
@@ -197,7 +227,8 @@ Right: The lean, taller man [stranger_abc123] stands by the door.
   they have no way to begin. A way out that is NOT in your input is one they
   have not found: it does not exist for this paragraph, however plainly the
   place seems to need one.
-- If there are no events, describe scene + own state only.
+- If there are no events, describe current scene, own state and supported
+  presence or work in progress; do not invent an event to fill the paragraph.
 
 # Example — entities and tags
 
@@ -250,13 +281,13 @@ your clarity: full — write:
 
 your clarity: limited — write:
   The woman in grey [stranger_b] leans in to the man at the bar and says
-  something low; I catch nothing but the word "key".
+  something too low for me to make out the words.
 
 your clarity: trace — write:
   Under the talk at the bar someone murmurs something I cannot place.
 
-At \`full\` the line is quoted whole. At \`limited\` the exchange is seen and a
-fragment is caught, but the sentence is never quoted as if heard. At \`trace\`
+At \`full\` the line is quoted whole. At \`limited\` the exchange is seen
+but neither its words nor its topic are known from this occurrence. At \`trace\`
 there is a murmur and a direction, and no one is named — not even from the
 people present in the room.`;
 
@@ -576,7 +607,7 @@ export async function renderViaLLM(
   const renderInstruction = `\n\n# Render\nWrite the paragraph now, in ${langName}.`;
   const ask = (extra = "") =>
     generateText({
-      customSystemPrompt: SYSTEM_PROMPT,
+      customSystemPrompt: RENDERER_SYSTEM_PROMPT,
       // Assembled once at module import and byte-identical for every NPC on
       // every tick. Under SMALL this breakpoint did nothing — Haiku will not
       // cache a prefix below 2048 tokens and this one is about 1,550 — so the
@@ -985,7 +1016,7 @@ function formatOwnAction(bundle: PerceivedBundle): string {
       }
       if (own.utterancePending) {
         bits.push(
-          "the words of this action are NOT yet spoken — they are delivered when it ends; render the doing, never the saying"
+          "the words of this action are NOT yet spoken — they are delivered when it ends; render only supported work in progress, never the saying or unestablished completed steps"
         );
       }
       return bits.join("; ");
@@ -994,8 +1025,10 @@ function formatOwnAction(bundle: PerceivedBundle): string {
       const lines = [`Just ${own.status}: "${own.description}"`];
       if (own.reason) {
         lines.push(
-          `Result (objective; render as what the viewpoint experiences): ${own.reason}`
+          `Result (actor outcome; render supported evidence within current state and speech timing): ${own.reason}`
         );
+      } else {
+        lines.push("Lifecycle ended; no additional result supplied. Do not reconstruct the command or recap the interval; render only current state and routed occurrences.");
       }
       return lines.join("\n");
     }
@@ -1080,7 +1113,7 @@ function formatOccurrence(
     .join(", ");
   const reminder =
     clarity === "limited"
-      ? " (kind of event and immediate result only — no small objects, faces or exact words)"
+      ? " (kind of event and immediate result only — no small objects or faces; for speech, no words or inferred topic)"
       : clarity === "trace"
         ? " (render only that something happened and roughly where from — no source, actor, cause or words)"
         : "";
@@ -1104,6 +1137,25 @@ function formatOccurrence(
   // the renderer reads to decide heard versus seen and how much of it.
   // Subsystem events still carry a channel internally; nothing here prints it.
   return lines.join("\n");
+}
+
+/** Other people's intent carries the same clock and speech boundary as self. */
+export function formatObservedAction(
+  action: ScenePresentCharacter["currentAction"]
+): string {
+  if (!action) return "Currently: idle (between actions).";
+  const bits = ["Ongoing action (intent, NOT an observed result)"];
+  if (action.startedAt) bits.push(`started at ${action.startedAt}`);
+  bits.push(`~${action.progressMinutes} min in`);
+  if (action.resolvedDurationTicks !== undefined) {
+    bits.push(`expected ~${action.resolvedDurationTicks} min total`);
+  }
+  if (action.utterancePending) {
+    bits.push(
+      "the words of THIS action are NOT yet spoken; no quotation, paraphrase, or listener response"
+    );
+  }
+  return `${bits.join("; ")}\n  Intent only: ${action.description}`;
 }
 
 function formatScenePresentCharacters(
@@ -1130,11 +1182,7 @@ function formatScenePresentCharacters(
     );
     if (c.appearance) lines.push(`  Appearance: ${c.appearance}`);
     if (c.spot) lines.push(`  Where they are in this place: ${c.spot}`);
-    if (c.currentActionText) {
-      lines.push(`  Currently: ${c.currentActionText}`);
-    } else {
-      lines.push("  Currently: idle (between actions).");
-    }
+    lines.push(`  ${formatObservedAction(c.currentAction)}`);
     if (c.conditions.length > 0) {
       lines.push("  Conditions (render only externally perceivable):");
       for (const cond of c.conditions) {

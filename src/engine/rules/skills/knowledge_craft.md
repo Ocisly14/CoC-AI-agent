@@ -33,15 +33,18 @@ knows or can build is bounded by their background and what is in front of them.
 - **Hard** — Specifics come with it — the maker, the statute that governs it,
   the discrepancy in the ledger, a piece made well enough to pass inspection.
 - **Extreme** — The actor sees what the object or record implies beyond
-  itself: who wrote it and why, what is deliberately missing, a piece of work
-  that is genuinely superior. Surface it as occurrence `content`.
+  itself: supported provenance or discrepancies, or a piece of superior work.
+  Unknown authorship, intent and deliberately missing entries remain uncertain
+  unless supplied evidence establishes them.
 
 ## Failure
 
 - No usable conclusion. The actor cannot place it, or a made piece comes out
   crude and obviously so. Materials and time are spent either way.
-- **Fumble** — A confidently wrong conclusion, or the work is ruined: the
-  artifact is damaged, the ledger entry is defaced, the material is wasted.
+- **Fumble** — An erroneous analysis or defective artifact may result; describe
+  the actual error without forcing the actor to believe it or changing world
+  truth to match it. Physical spoilage can mean an artifact damaged, a ledger defaced or
+  material wasted.
   Record the damage as a real item change.
 
 ## State surface
@@ -50,9 +53,10 @@ Typical deltas this domain produces. Not a requirement and never a substitute
 for what actually happened — a one-off descriptive result is occurrence
 `content`, not a state change.
 
-- `item.create` — a made, forged, or restored object that now exists.
+- `item.create` — a new object actually made from supplied materials. Restoration
+  preserves the existing item id and uses `set`, not a duplicate `create`.
 - `item.set` — an object worked on, damaged or altered but still in play;
   `item.destroy` when the work ruins it or consumes the material.
-- Knowing something is NOT a state change. Put the conclusion in occurrence
+- Knowing something is NOT a state change. Put supported findings or explicitly tentative analysis in occurrence
   `content` with the actor in `perceivers` at `full`; the character records it
   or does not.

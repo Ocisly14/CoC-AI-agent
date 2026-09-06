@@ -2,6 +2,7 @@
 
 Character changes represent persistent, objective state. Each entry names the
 action that caused it with `sourceActionId` and the affected `characterId`.
+Persistent means retained across ticks until changed, not permanent.
 Momentary description belongs in an occurrence.
 
 ## Available operations
@@ -42,16 +43,16 @@ memory pipeline.
 ## Appearance
 
 `setAppearance` replaces the whole persistent appearance, so preserve every
-part that remains true and change only what the action permanently altered.
-Use it for durable changes such as a new scar, shaved hair or a lasting bodily
-alteration.
+part that remains true and change only what the accepted outcome altered.
+This includes durable changes such as a new scar or shaved hair, and repairs
+to existing prose whose claims about the current body are no longer true.
 
-Temporary visible states—wet clothing, fresh blood, a bandage—belong in a
-condition when they satisfy the persistence and functional rules. Do not turn
-a one-tick visual detail into permanent appearance.
+A visible state that remains relevant across ticks, such as a dressing or wet
+clothing, can be recorded in appearance without making it permanent. Use a
+condition only for a major functional impairment meeting all three tests.
+A passing gesture or momentary expression belongs only in an occurrence.
 
-But appearance you were GIVEN is a claim about the body that outranks that
-caution. When it already states a visible bodily state—a split hand still
+Existing appearance is also a claim about the current body. When it already states a visible bodily state—a split hand still
 bleeding, a face still filthy—and this tick's outcome changed that state,
 `setAppearance` is the only place the change can land, whether or not the
 state was ever severe enough to be a condition. Rewrite the sentence that has
@@ -59,6 +60,17 @@ become false and leave every other part of the prose untouched. Appearance
 left asserting what the action undid is read as current by every tick after
 this one: the next settlement sees a wound nobody treated, narrates it as
 still open, and someone dresses it a second time.
+
+Before submitting, compare each affected character's CURRENT appearance,
+conditions and position with the accepted outcomes. No HP change and no
+existing condition do NOT excuse stale appearance. If the outcome says a
+bleeding wound was cleaned, dressed and stopped bleeding, replace appearance
+that still says it is bleeding with the supported treated state. Do not claim
+the wound healed or vanished unless the outcome says so. Preserve unrelated
+features, clothing and injuries. A temporary result can invalidate existing
+prose even when it does not qualify as a new condition: repairing that claim
+is required, not an optional cosmetic addition. Submit `[]` only after this
+comparison finds no differences to record.
 
 ## SAN
 
