@@ -1,4 +1,5 @@
 import { distanceToRoad, elevation, landmarks, seededRandom, shoreline } from "./layout";
+import { REDWOOD_RING } from './redwoodRingLayout';
 
 // Three selected tapered silhouettes. Keep the same number of choices and
 // seeded draws so replacing the artwork does not rearrange the forest.
@@ -61,6 +62,7 @@ export function forestDensity(x: number, z: number) {
 }
 
 export function forestClearance(x: number, z: number) {
+  if (Math.hypot(x - REDWOOD_RING.x, z - REDWOOD_RING.z) < REDWOOD_RING.reserveRadius) return false;
   if (x < shoreline(z) + 18 || distanceToRoad([x, z]) < 6) return false;
   if (x > -79 && x < 125 && z > -43 && z < 139) return false;
   if (x < -62 && z > 117 && z < 263) return false;

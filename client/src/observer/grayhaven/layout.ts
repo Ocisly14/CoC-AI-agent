@@ -86,6 +86,10 @@ export function waterline(z: number) {
   return shoreline(z) - coastWidth(z);
 }
 
+// An elongated hollow cut into the eastern slope, opening toward the western trails.
+// Shared with the local mist so its bank remains inside the lowered terrain.
+export const FOG_HOLLOW = { x: 208, z: -65, radiusX: 62, radiusZ: 92, floor: 56, mistDepth: 22 };
+
 function rawElevation(x: number, z: number) {
   const hill = (cx: number, cz: number, sx: number, sz: number, height: number) =>
     height * Math.exp(-(((x - cx) / sx) ** 2) - ((z - cz) / sz) ** 2);
@@ -100,7 +104,13 @@ function rawElevation(x: number, z: number) {
   const inland = 13 + ridges * (1 - basin * 0.96) + variation;
   const coast = 4 + 43 * Math.exp(-(((z + 265) / 85) ** 2)) + 39 * Math.exp(-(((z - 240) / 65) ** 2));
   const coastalBlend = Math.exp(-Math.max(0, x - shoreline(z)) / 48);
-  return inland * (1 - coastalBlend) + coast * coastalBlend;
+  const height = inland * (1 - coastalBlend) + coast * coastalBlend;
+  const radius = Math.hypot((x - FOG_HOLLOW.x) / FOG_HOLLOW.radiusX, (z - FOG_HOLLOW.z) / FOG_HOLLOW.radiusZ);
+  const t = Math.max(0, Math.min(1, (radius - .28) / .72));
+  const hollow = 1 - t*t*t*(t*(t*6-15)+10);
+  const floor = FOG_HOLLOW.floor + (x - FOG_HOLLOW.x) * .035 + (z - FOG_HOLLOW.z) * .018;
+  // Only excavate: the low western approach stays open, and the outer slope has no seam.
+  return height - Math.max(0, height - floor) * hollow;
 }
 
 const terraces = landmarks.filter(l => ["SCN_station_yard", "SCN_sawmill", "SCN_lighthouse_cliff", "SCN_dock"].includes(l.id))

@@ -34,10 +34,23 @@ fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/beachScene.gener
   sceneId: dock.id, items: dock.references.items.map(({ id, name, description }) => ({ id, name, description })),
 }, null, 2) + '\n');
 
+const redwood = places.find(place => place.id === 'SCN_redwood_ring');
+fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/redwoodRingScene.generated.json'), JSON.stringify({
+  sceneId: redwood.id, items: redwood.references.items.map(({ id, name, description }) => ({ id, name, description })),
+}, null, 2) + '\n');
+
 // Exact authored room/item/connection records; upstairs visual zones remain one SCN.
 fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/buildingScenes.generated.json'), JSON.stringify(
   ['SCN_bluebird_dining', 'SCN_bluebird_kitchen', 'SCN_bluebird_upstairs'].map(id => {
     const scene = places.find(p => p.id === id);
     if (!scene || scene.parentLocationId !== 'bluebird_diner' || !scene.indoor) throw Error(`Invalid interior: ${id}`);
+    return scene;
+  }), null, 2) + '\n');
+
+// Sheriff rooms retain exact source IDs for room and object navigation.
+fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/sheriffScenes.generated.json'), JSON.stringify(
+  ['SCN_sheriff_front', 'SCN_sheriff_office', 'SCN_sheriff_cell'].map(id => {
+    const scene = places.find(p => p.id === id);
+    if (!scene || scene.parentLocationId !== 'sheriff_office' || !scene.indoor) throw Error(`Invalid interior: ${id}`);
     return scene;
   }), null, 2) + '\n');

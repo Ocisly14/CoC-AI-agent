@@ -18,7 +18,7 @@ await mkdir(path.join(destination, "src/grayhaven/assets"), { recursive: true })
 await mkdir(path.join(destination, ".openai"), { recursive: true });
 await writeFile(path.join(destination, ".openai/hosting.json"), config);
 const source = path.join(repo, "client/src/observer/grayhaven");
-for (const filename of ["GrayhavenSandboxPage.tsx", "GrayhavenWorld.ts", "painterlyArt.ts", "architectureMaterials.ts", "forestLayout.ts", "lighting.ts", "daylight.ts", "lightingPatch.ts", "globalIllumination.ts", "softShadows.ts", "proceduralSky.ts", "worldLightAtlas.ts", "waterDynamics.ts", "seaMist.ts", "mainStreet.ts", "buildingInteriors.ts", "buildingScenes.generated.json", "bluebirdShell.ts", "bluebirdInterior.ts", "interiorLighting.ts", "beachScene.ts", "beachScene.generated.json", "layout.ts", "grayhaven.css", "grayhaven.generated.json"]) {
+for (const filename of ["GrayhavenSandboxPage.tsx", "GrayhavenWorld.ts", "painterlyArt.ts", "architectureMaterials.ts", "forestLayout.ts", "lighting.ts", "daylight.ts", "roadLighting.ts", "lightingPatch.ts", "depthReveal.ts", "globalIllumination.ts", "softShadows.ts", "proceduralSky.ts", "worldLightAtlas.ts", "waterDynamics.ts", "seaMist.ts", "mainStreet.ts", "buildingInteriors.ts", "buildingScenes.generated.json", "bluebirdShell.ts", "bluebirdInterior.ts", "sheriffInterior.ts", "sheriffShell.ts", "sheriffScenes.generated.json", "interiorLighting.ts", "beachScene.ts", "beachScene.generated.json", "redwoodRingLayout.ts", "redwoodRingScene.ts", "redwoodRingScene.generated.json", "layout.ts", "grayhaven.css", "grayhaven.generated.json"]) {
   await cp(path.join(source, filename), path.join(destination, "src/grayhaven", filename));
 }
 for (const filename of ["main-street-materials-v1.png", "coastal-materials-v1.png", "redwood-tapered-v1.png", "sequoia-giants-v1.png", "README.md"]) {
@@ -47,7 +47,7 @@ await writeFile(path.join(destination, "package.json"), JSON.stringify({
   dependencies: Object.fromEntries(["react", "react-dom", "three"].map(name => [name, versions[name]])),
   devDependencies: Object.fromEntries(["vite", "@vitejs/plugin-react"].map(name => [name, versions[name]])),
 }, null, 2) + "\n");
-await writeFile(path.join(destination, ".gitignore"), "node_modules/\ndist/\n.env*\n");
+await writeFile(path.join(destination, ".gitignore"), "node_modules\ndist/\n.env*\n");
 await writeFile(path.join(destination, "README.md"), "# Grayhaven 静态沙盘\n\n独立导出的户外地图与地点手记。安装依赖后运行 npm run build；Sites 发布 dist 静态目录。无需后端或 API 密钥。素材说明见 src/grayhaven/assets/README.md。\n");
 if (!await lstat(path.join(destination, "node_modules")).catch(error => {
   if (error.code !== "ENOENT") throw error;

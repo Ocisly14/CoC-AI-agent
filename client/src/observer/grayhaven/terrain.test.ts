@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { coastalElevation, coastWidth, elevation, landmarks, shoreline, waterline } from "./layout";
 
 describe("Grayhaven crescent bay terrain", () => {
+  it("cuts Fog Hollow below its north, east and south slopes with an open western approach", () => {
+    const floor = elevation(208, -65);
+    expect(floor).toBeGreaterThan(40);
+    expect(floor).toBeLessThan(65);
+    for (const [x, z] of [[208, -130], [270, -65], [208, 0]]) {
+      expect(elevation(x, z)).toBeGreaterThan(floor + 35);
+    }
+    expect(elevation(155, -65)).toBeLessThan(floor + 5);
+    // A walkable broad floor, rather than a narrow spike at the landmark.
+    for (let x = 195; x <= 220; x += 5) {
+      expect(Math.abs(elevation(x, -65) - floor)).toBeLessThan(2);
+    }
+  });
+
   it("places the bay inland of both projecting headlands", () => {
     expect(waterline(0)).toBeGreaterThan(waterline(-280) + 120);
     expect(waterline(0)).toBeGreaterThan(waterline(280) + 120);

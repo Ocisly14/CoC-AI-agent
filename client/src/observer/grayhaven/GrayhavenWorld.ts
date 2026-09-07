@@ -16,11 +16,16 @@ import { mainStreetPlots } from "./mainStreet";
 import moduleData from "./grayhaven.generated.json";
 import { createCoastalWater } from "./waterDynamics";
 import { createSeaMist } from "./seaMist";
+import { createRoadLighting } from "./roadLighting";
+import { createDepthReveal, type RevealTarget } from './depthReveal';
 import { BEACH_VIEW, createBeachScene } from "./beachScene";
-import { BLUEBIRD, CLOSED_INTERIOR, isBluebird, roomCenter, roomFloor, projectedBuilding, cutawayDecision, type InteriorState } from './buildingInteriors';
-import { createBluebirdShadowShell } from './bluebirdShell';
+import { createRedwoodRingScene } from './redwoodRingScene';
+import { REDWOOD_VIEW, REDWOOD_TREES } from './redwoodRingLayout';
+import { BLUEBIRD, SHERIFF, CLOSED_INTERIOR, isBluebird, buildingForRoom, interiorBuilding, interiorFrame, type BuildingId, roomFloor, projectedBuilding, cutawayDecision, interiorRevealTarget, type InteriorState } from './buildingInteriors';
+import { createBluebirdShadowShell, exteriorWallGeometry } from './bluebirdShell';
 import { createInteriorLighting } from './interiorLighting';
 import type { BluebirdInterior } from './bluebirdInterior';
+import { createSheriffShadowShell } from './sheriffShell';
 
 import { normalizeHour, sampleDaylight, lightingRefresh } from "./daylight";
 export type WorldOptions = { initialHour?: number; onSelect: (id: string) => void; onZoom: (zoom: number) => void; onError: (message: string) => void; onInterior?: (state: InteriorState) => void; onTime?: (hour: number) => void };
@@ -72,12 +77,24 @@ export class GrayhavenWorld {
   private labelVisible = true;
   private selectedId: string | null = null;
   private seaMist = createSeaMist();
+  private depthReveal = createDepthReveal();
+  private roadLamps!: ReturnType<typeof createRoadLighting>;
   private beach!: ReturnType<typeof createBeachScene>;
+  private redwoodRing!: ReturnType<typeof createRedwoodRingScene>;
   private dinerExterior!: THREE.Group;
   private dinerInverse = new THREE.Matrix4();
   private dinerLight!: ReturnType<typeof createInteriorLighting>;
   private dinerModel: BluebirdInterior | null = null;
   private dinerLoading: Promise<void> | null = null;
+  private sheriffExterior!: THREE.Group;
+  private sheriffInverse = new THREE.Matrix4();
+  private sheriffLight!: ReturnType<typeof createInteriorLighting>;
+  private sheriffModel: BluebirdInterior | null = null;
+  private sheriffLoading: Promise<void> | null = null;
+  private get activeBuilding() { return interiorBuilding(this.interiorState); }
+  private get activeExterior() { return this.activeBuilding==='sheriff'?this.sheriffExterior:this.dinerExterior; }
+  private get activeModel() { return this.activeBuilding==='sheriff'?this.sheriffModel:this.dinerModel; }
+  private get activeInverse() { return this.activeBuilding==='sheriff'?this.sheriffInverse:this.dinerInverse; }
   private interiorState: InteriorState = { ...CLOSED_INTERIOR };
   private interiorRequest = 0;
   private candidateSince: number | null = null;
@@ -153,10 +170,12 @@ export class GrayhavenWorld {
     this.buildRoads();
     this.buildTown();
     this.buildLandmarks();
+    this.roadLamps=createRoadLighting((color,surface)=>this.material(color,surface),this.beaconHalo.map!);
+    this.scene.add(this.roadLamps.root);
     this.buildForest();
     this.buildLabels();
     // Static occlusion bake needs every building, rock, pier and tree proxy in place.
-    this.lightAtlas.bakeStatic(this.renderer, this.scene);
+    this.depthReveal.withoutReveal(() => this.lightAtlas.bakeStatic(this.renderer, this.scene));
     this.ring = new THREE.Mesh(new THREE.RingGeometry(10.5, 11.1, 64), new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.visible = false;
@@ -542,13 +561,14 @@ export class GrayhavenWorld {
       };
       if (plot.kind === "diner") {
         // Wide two-storey street block with a low rear kitchen wing.
-        box(w,h*.49,d,wall,0,h*.245+.4,0);
+        this.mesh(exteriorWallGeometry(w,h*.49,d),wall,[0,h*.245+.4,0],group);
         box(w-.4,h*.49-.25,.06,this.material(plot.paint,"boardBatten"),0,h*.245+.4,-front-.04);
-        box(w,h*.51,d*.6,wall,0,h*.745+.4,d*.2);
+        this.mesh(exteriorWallGeometry(w,h*.51,d*.6),wall,[0,h*.745+.4,d*.2],group);
         box(w+.7,.5,d*.4+.4,this.material(0xd5d5ce,"metalRoof"),0,h*.49+.7,-d*.3);
         roofForm(w+.8,d*.6+1,h+.45,1.8,d*.2);
       } else {
-        box(w,h,d,wall,0,h/2+.4,0);
+        if(plot.kind==='sheriff')this.mesh(exteriorWallGeometry(w,h,d),wall,[0,h/2+.4,0],group);
+        else box(w,h,d,wall,0,h/2+.4,0);
         if (plot.kind === "clinic") roofForm(w+1.3,d+1.3,h+.4,3.8,0,true);
         else if (plot.kind === "repair") roofForm(w+.8,d+1,h+.4,2.7);
         else if (plot.kind === "grocery") {
@@ -569,11 +589,17 @@ export class GrayhavenWorld {
         }
       }
       // Applied corner boards, sill and fascia: smooth painted joinery, not wall texture.
-      for (const side of [-1,1]) for (const face of [-1,1])
-        box(.3,h,.3,trim,side*(w/2-.1),h/2+.4,face*(front-.02));
+      // Joinery follows the built massing: the diner's rear wing is a single storey,
+      // so its boards stop at the wing roof and the tall block starts its own set.
+      const rearHeight = plot.kind === "diner" ? h*.49 : h;
+      const step = plot.kind === "diner" ? -d*.1 : -front;
       for (const side of [-1,1]) {
+        box(.3,h,.3,trim,side*(w/2-.1),h/2+.4,front-.02);
+        box(.3,rearHeight,.3,trim,side*(w/2-.1),rearHeight/2+.4,-front+.02);
+        if (step > -front) box(.3,h-rearHeight-.35,.3,trim,side*(w/2-.1),(h+rearHeight+.35)/2+.4,step+.02);
         box(.2,.3,d,trim,side*(w/2+.07),.65,0);
-        box(.35,.3,d+.35,trim,side*(w/2+.06),h+.35,0);
+        box(.35,.3,front-step+.35,trim,side*(w/2+.06),h+.35,(front+step)/2);
+        if (step > -front) box(.35,.3,front+step+.2,trim,side*(w/2+.06),rearHeight+.32,(step-front)/2-.1);
       }
       box(w+.35,.32,.65,trim,0,5.18,front+.2);
       box(w+.15,.18,.36,accent,0,4.92,front+.17);
@@ -623,8 +649,19 @@ export class GrayhavenWorld {
       }
       // Rear service elevations matter from the original coastal overview camera.
       framedWindow(-w*.22,3,w*.22,1.85,-front-.14,-1,true);
-      box(1.45,3.1,.16,accent,w*.27,2,-front-.14);
-      box(w+.25,.22,.4,trim,0,h+.15,-front-.08);
+      if (plot.kind === "diner") {
+        // The module's kitchen has no back door: a second window where the service door was.
+        framedWindow(w*.275,2.95,1.9,1.9,-front-.14,-1,true);
+        // Booth-side sash windows on the grocery side, matching the cutaway shell's wall gaps.
+        for (const z of [1,4.35,7.7]) {
+          box(.18,2.82,2.72,trim,-w/2-.14,2.95,z);
+          box(.1,2.5,2.4,this.windowMaterial,-w/2-.26,2.95,z);
+          box(.42,.18,2.88,trim,-w/2-.24,1.55,z);
+          box(.16,.12,2.4,trim,-w/2-.34,2.95,z);
+        }
+      } else box(1.45,3.1,.16,accent,w*.27,2,-front-.14);
+      box(w+.25,.22,.4,trim,0,rearHeight+.15,-front-.08);
+      if (step > -front) box(w+.25,.22,.4,trim,0,h+.15,step-.08);
       if (plot.signIndex !== undefined) {
         const geo = new THREE.PlaneGeometry(w*.86, 1.45), uv = geo.attributes.uv;
         const col = plot.signIndex % 2, row = Math.floor(plot.signIndex / 2);
@@ -638,9 +675,12 @@ export class GrayhavenWorld {
         box(1.55,3,.25,boards,doorX,2.6,front+.43);
       }
       if (plot.kind === "diner") {
-        box(w*.56,.3,1.1,boards,-w*.15,.95,front+1.35);
-        box(w*.56,.95,.2,boards,-w*.15,1.6,front+1.7);
-        for (const x of [-w*.36,w*.07]) box(.25,.85,.9,accent,x,.5,front+1.35);
+        // The module's bench: a short, paint-worn seat beside the door, not across it.
+        box(2.2,.12,.6,boards,-1.75,.98,front+.75);
+        box(2.2,.5,.16,boards,-1.75,1.35,front+.5);
+        for (const x of [-2.6,-.9]) box(.18,.55,.55,accent,x,.68,front+.75);
+        // Hand-painted open/closed board hanging in the door glass.
+        box(.5,.3,.03,boards,doorX,2.35,front+.33);
       }
       if (plot.kind === "grocery") {
         box(1.1,1.7,.9,this.material(0x64869b),-w*.38,1.2,front+1.35);
@@ -666,11 +706,21 @@ export class GrayhavenWorld {
         const hit=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
         hit.position.set(0,h/2,0); group.add(hit); hit.userData.locationId=plot.id; this.hits.push(hit);
       }
+      if (plot.kind === 'sheriff') {
+        this.sheriffExterior=group;group.updateMatrixWorld(true);
+        this.sheriffInverse.copy(group.matrixWorld).invert();
+        this.sheriffLight=createInteriorLighting(this.art,this.sheriffInverse,this.softShadows?this.softShadow:undefined,true);
+        const physical=createSheriffShadowShell();physical.position.copy(group.position);physical.quaternion.copy(group.quaternion);
+        physical.traverse(o=>o.layers.enable(BAKE_LAYER.bounce));this.scene.add(physical);
+        group.traverse(o=>{if(o instanceof THREE.Mesh)o.castShadow=false;});
+        const hit=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
+        hit.position.set(0,h/2,0);group.add(hit);hit.userData.locationId=plot.id;this.hits.push(hit);
+      }
       if (plot.kind !== 'vacant') {
         // Anchor names to the built roof, not the module's street entrance coordinate.
         const roofBounds=new THREE.Box3().setFromObject(group);
         const point=new THREE.Vector3(group.position.x,roofBounds.max.y+.6,group.position.z);
-        const label=document.createElement(plot.kind==='diner'?'button':'span');
+        const label=document.createElement(plot.kind==='diner'||plot.kind==='sheriff'?'button':'span');
         label.className='gh-map-label gh-building-label';
         label.textContent=moduleData.locations.find(location=>location.id===plot.id)!.name.split('·')[0];
         if(label instanceof HTMLButtonElement) {
@@ -763,6 +813,18 @@ export class GrayhavenWorld {
     this.beach = createBeachScene((color, surface) => this.material(color, surface));
     this.scene.add(this.beach.root);
     this.beach.update(this.camera.zoom, this.progress);
+    const redwoodBark = new THREE.MeshStandardMaterial({ map: this.art.sequoias[0], bumpMap: this.art.sequoias[0], bumpScale: .035, color: 0xb9aaa0, roughness: .94 });
+    const redwoodCrown = new THREE.MeshStandardMaterial({ map: this.art.sequoias[0], alphaTest: .12, alphaToCoverage: true, side: THREE.DoubleSide, color: 0xe8e1d2, roughness: 1 });
+    lightPaintedFoliage(redwoodCrown);
+    const lightCrown = redwoodCrown.onBeforeCompile;
+    redwoodCrown.onBeforeCompile = (shader, renderer) => {
+      lightCrown(shader, renderer);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <alphatest_fragment>', 'diffuseColor.a *= smoothstep(.38, .46, vMapUv.y);\n#include <alphatest_fragment>');
+    };
+    redwoodCrown.customProgramCacheKey = () => 'grayhaven-high-sequoia-crown-v1';
+    this.attachLighting(redwoodBark); this.attachLighting(redwoodCrown);
+    this.redwoodRing = createRedwoodRingScene((color, surface) => this.material(color, surface), redwoodBark, redwoodCrown);
+    this.scene.add(this.redwoodRing.root); this.redwoodRing.update(this.camera.zoom);
     const [lx, lz] = landmarks.find(l => l.id === "SCN_lighthouse_cliff")!.position;
     const ly = elevation(lx, lz);
     this.mesh(new THREE.CylinderGeometry(7, 9, 1.2, 16), this.material(0xa39b83), [lx, ly + 0.4, lz]);
@@ -828,7 +890,7 @@ export class GrayhavenWorld {
 
   private buildForest() {
     const trees = makeForestLayout();
-    this.lightAtlas.setTrees(trees);
+    this.lightAtlas.setTrees([...trees, ...REDWOOD_TREES.map(tree => ({ ...tree, width: tree.height * .38, crownWidth: tree.height * .28, sequoia: true }))]);
     const dummy = new THREE.Object3D(), color = new THREE.Color();
     // The fixed overview camera permits upright painted cards without turn-to-
     // camera animation. Instancing preserves depth and keeps forest draw calls low.
@@ -950,7 +1012,7 @@ export class GrayhavenWorld {
     const refresh=lightingRefresh(time,this.lastLightingUpdate,this.lastIndirectUpdate,this.lastTimeInput,this.timePlaying,this.lightingDirty,this.indirectDirty);
     if(refresh.direct || refresh.indirect) {
       const p=sampleDaylight(this.dayHour),gi=p.gi;
-      this.dinerLight?.setDaylight(p.daylight);
+      this.dinerLight?.setDaylight(p.daylight);this.sheriffLight?.setDaylight(p.daylight);
       (this.scene.background as THREE.Color).copy(p.sky);
       (this.scene.fog as THREE.Fog).color.copy(p.sky);
       this.seaMist.setAtmosphere(this.fogAmount,p.sky,p.daylight);
@@ -961,6 +1023,9 @@ export class GrayhavenWorld {
       this.windowMaterial.color.set(0x25323e).lerp(new THREE.Color(0x34474c),p.daylight);
       this.glazing.setLight(p.fill,p.bounce);this.frostedGlazing.setLight(p.fill,p.bounce);
       this.litWindowMaterial.emissiveIntensity=p.lamps*1.5;
+      this.roadLamps.setNight(p.lamps);
+      this.glazing.material.emissive.set(0xffc98b);this.glazing.material.emissiveIntensity=p.lamps*.32;
+      this.frostedGlazing.material.emissive.set(0xffd3a3);this.frostedGlazing.material.emissiveIntensity=p.lamps*.23;
       this.beacon.intensity=p.beacon;this.porchLight.intensity=p.porch;this.harborLight.intensity=p.harbor;
       this.beaconGlass.emissiveIntensity=p.glow;this.lampGlass.emissiveIntensity=p.lamps*p.glow;
       this.beaconHalo.opacity=.08+p.lamps*.47;
@@ -980,7 +1045,7 @@ export class GrayhavenWorld {
         this.scene.environment=this.sky.update({zenith:gi.zenith,horizon:p.sky,ground:gi.ground,sunColor:p.sun,sunDirection:p.direction,sunGlow:gi.sunGlow});
         this.lightAtlas.updateCanopy(p.direction,p.dapple*(1-this.fogAmount*.55));
         const exteriorVisible=this.dinerExterior.visible;this.dinerExterior.visible=true;
-        try {this.lightAtlas.bakeBounce(this.renderer,this.scene);}
+        try {this.depthReveal.withoutReveal(() => this.lightAtlas.bakeBounce(this.renderer,this.scene));}
         finally {this.dinerExterior.visible=exteriorVisible;}
         this.indirectDirty=false;this.lastIndirectUpdate=time;
       }
@@ -1000,7 +1065,7 @@ export class GrayhavenWorld {
   select(id: string | null, navigate = true) {
     const same=this.selectedId===id;
     this.selectedId = id;
-    if (isBluebird(id)) {
+    if (buildingForRoom(id)) {
       this.ring.visible=false;
       if(navigate && (!same || this.interiorState.status==='closed'))this.openInterior(id!);
       return;
@@ -1013,8 +1078,9 @@ export class GrayhavenWorld {
     const [x, z] = landmark.position, y = elevation(x, z);
     this.ring.position.set(x, y + 0.7, z);
     if (navigate) {
-      this.focusTarget = id === "SCN_dock" ? new THREE.Vector3(BEACH_VIEW.x, BEACH_VIEW.y, BEACH_VIEW.z) : new THREE.Vector3(x, y, z);
-      this.focusZoom = id === "SCN_dock" ? BEACH_VIEW.zoom : 2.35;
+      const view = id === 'SCN_dock' ? BEACH_VIEW : id === 'SCN_redwood_ring' ? REDWOOD_VIEW : null;
+      this.focusTarget = view ? new THREE.Vector3(view.x, view.y, view.z) : new THREE.Vector3(x, y, z);
+      this.focusZoom = view?.zoom ?? 2.35;
     }
   }
 
@@ -1023,23 +1089,34 @@ export class GrayhavenWorld {
     this.host.dataset.interior=JSON.stringify(state);
   }
 
-  private loadInterior() {
+  private loadInterior(building:BuildingId=this.activeBuilding) {
+    if(building==='sheriff') {
+      if(this.sheriffModel)return Promise.resolve();
+      if(this.sheriffLoading)return this.sheriffLoading;
+      this.sheriffLoading=import('./sheriffInterior').then(({createSheriffInterior})=>{
+        if(this.disposed)return;
+        const model=createSheriffInterior(this.sheriffLight);
+        model.root.position.copy(this.sheriffExterior.position);model.root.quaternion.copy(this.sheriffExterior.quaternion);
+        model.root.visible=false;this.scene.add(model.root);this.sheriffModel=model;
+      }).finally(()=>{this.sheriffLoading=null;});
+      return this.sheriffLoading;
+    }
     if(this.dinerModel)return Promise.resolve();
     if(this.dinerLoading)return this.dinerLoading;
     this.dinerLoading=import('./bluebirdInterior').then(({createBluebirdInterior})=>{
       if(this.disposed)return;
-      const view=new THREE.Vector3().subVectors(this.camera.position,this.controls.target).transformDirection(this.dinerInverse);
-      const model=createBluebirdInterior(this.dinerLight,view);
+      const model=createBluebirdInterior(this.dinerLight);
       model.root.position.copy(this.dinerExterior.position);model.root.quaternion.copy(this.dinerExterior.quaternion);
       model.root.visible=false;this.scene.add(model.root);this.dinerModel=model;
     }).finally(()=>{this.dinerLoading=null;});
     return this.dinerLoading;
   }
 
-  private openInterior(room: string | null, automatic=false) {
+  private openInterior(room: string | null, automatic=false, building:BuildingId=buildingForRoom(room)??this.activeBuilding) {
+    if(this.interiorState.status!=='closed' && building!==this.activeBuilding)this.closeInterior();
     if(this.interiorState.status==='open') {
       const floor=room?roomFloor(room):this.interiorState.floor;
-      this.dinerModel!.setFloor(floor);
+      this.activeModel!.setFloor(floor);
       this.setInteriorState({...this.interiorState,floor,room,item:this.interiorState.room===room?this.interiorState.item:null});
       if(!automatic)this.fitInterior(room);
       return;
@@ -1051,17 +1128,17 @@ export class GrayhavenWorld {
     if(!this.streetView)this.streetView={target:this.controls.target.clone(),zoom:this.camera.zoom};
     this.suppressAutoInterior=false;this.interiorCloseZoom=0;
     const request=++this.interiorRequest;
-    this.setInteriorState({status:'loading',floor:room?roomFloor(room):0,room,item:null});
-    this.loadInterior().then(()=>{
-      if(this.disposed || request!==this.interiorRequest || !this.dinerModel)return;
-      this.dinerExterior.visible=false;this.dinerModel.root.visible=true;
-      this.dinerModel.setFloor(this.interiorState.floor);
-      this.seaMist.setInterior(this.dinerInverse,true);
+    this.setInteriorState({status:'loading',building,floor:room?roomFloor(room):0,room,item:null});
+    this.loadInterior(building).then(()=>{
+      if(this.disposed || request!==this.interiorRequest || !this.activeModel)return;
+      this.activeModel.root.visible=true;
+      this.activeModel.setFloor(this.interiorState.floor);
+      this.seaMist.setInterior(this.activeInverse,true,building==='sheriff');
       this.setInteriorState({...this.interiorState,status:'open'});
       if(!automatic)this.fitInterior(this.interiorState.room);
     }).catch(cause=>{
       if(this.disposed || request!==this.interiorRequest)return;
-      console.error('Bluebird interior could not load',cause);
+      console.error('Building interior could not load',cause);
       this.setInteriorState({...this.interiorState,status:'error'});
     });
   }
@@ -1069,13 +1146,14 @@ export class GrayhavenWorld {
   private closeInterior() {
     this.interiorRequest++;this.candidateSince=null;
     this.dinerExterior.visible=true;if(this.dinerModel)this.dinerModel.root.visible=false;
-    this.seaMist.setInterior(this.dinerInverse,false);
+    if(this.sheriffExterior)this.sheriffExterior.visible=true;if(this.sheriffModel)this.sheriffModel.root.visible=false;
+    this.seaMist.setInterior(this.activeInverse,false);
     if(this.interiorState.status!=='closed')this.setInteriorState({...CLOSED_INTERIOR});
   }
   retryInterior() {this.openInterior(this.interiorState.room);}
   setInteriorFloor(floor:0|1) {
-    if(this.interiorState.status!=='open')return;
-    this.dinerModel!.setFloor(floor);
+    if(this.interiorState.status!=='open' || this.activeBuilding==='sheriff' && floor!==0)return;
+    this.activeModel!.setFloor(floor);
     this.setInteriorState({...this.interiorState,floor,room:null,item:null});this.fitInterior(null);
   }
   returnToBuilding() {
@@ -1083,10 +1161,26 @@ export class GrayhavenWorld {
     this.setInteriorState({...this.interiorState,room:null,item:null});this.fitInterior(null);
   }
   returnToStreet() {
-    const saved=this.streetView;this.closeInterior();this.suppressAutoInterior=true;this.streetView=null;
-    this.focusTarget=saved?.target??this.dinerExterior.position.clone();this.focusZoom=saved?.zoom??3.5;
+    const saved=this.streetView,fallback=this.activeExterior.position.clone();this.closeInterior();this.suppressAutoInterior=true;this.streetView=null;
+    this.focusTarget=saved?.target??fallback;this.focusZoom=saved?.zoom??3.5;
   }
   /** Refit after the notes panel mounts/resizes, without changing the fixed viewing angle. */
+  fitSelectedDetail() {
+    if(this.interiorState.status==='open'){this.fitInterior();return;}
+    if(this.selectedId!=='SCN_redwood_ring')return;
+    const {width,height}=this.canvasSize;
+    const panel=this.host.parentElement?.querySelector('.gh-place')?.getBoundingClientRect();
+    const host=this.host.getBoundingClientRect();
+    const left=width>650 && panel?panel.right-host.left+20:24, right=70, top=130;
+    const bottom=width<=650 && panel?host.bottom-panel.top+18:115;
+    const availW=Math.max(160,width-left-right),availH=Math.max(140,height-top-bottom);
+    const zoom=THREE.MathUtils.clamp(Math.min(availW/85,availH/45)*524/height,3.5,REDWOOD_VIEW.zoom);
+    const target=new THREE.Vector3(REDWOOD_VIEW.x,elevation(REDWOOD_VIEW.x,REDWOOD_VIEW.z)+5,REDWOOD_VIEW.z);
+    const rightVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,0),upVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,1);
+    target.addScaledVector(rightVec,-(left+availW/2-width/2)*(this.camera.right-this.camera.left)/width/zoom);
+    target.addScaledVector(upVec,-(height/2-top-availH/2)*(this.camera.top-this.camera.bottom)/height/zoom);
+    this.focusTarget=target;this.focusZoom=zoom;
+  }
   fitInterior(room: string | null = this.interiorState.room) {
     if(this.interiorState.status!=='open')return;
     const {width,height}=this.canvasSize;
@@ -1096,16 +1190,14 @@ export class GrayhavenWorld {
     let left=30,right=80,top=Math.max(130,toolbar?toolbar.bottom-host.top+15:130),bottom=120;
     if(panel) {if(width>650)left=panel.right-host.left+25;else bottom=host.bottom-panel.top+20;}
     const availW=Math.max(140,width-left-right),availH=Math.max(120,height-top-bottom);
-    const floor=this.interiorState.floor;
-    const center=room?roomCenter(room):new THREE.Vector3(0,floor?9.2:3.3,floor?4.4:0);
-    const halfWidth=7.4,halfDepth=room?(room==='SCN_bluebird_kitchen'?4.8:7):floor?7:11.5;
+    const {center,halfWidth,halfDepth,halfHeight}=interiorFrame(this.interiorState,room);
     // Project a complete room-height box at zoom=1; fit both dimensions into unobstructed pixels.
     const probe=this.camera.clone();probe.zoom=1;probe.updateProjectionMatrix();
-    const pts=[-1,1].flatMap(x=>[-1,1].flatMap(z=>[-1,1].map(y=>center.clone().add(new THREE.Vector3(x*halfWidth,y*3.1,z*halfDepth)).applyMatrix4(this.dinerExterior.matrixWorld).project(probe))));
+    const pts=[-1,1].flatMap(x=>[-1,1].flatMap(z=>[-1,1].map(y=>center.clone().add(new THREE.Vector3(x*halfWidth,y*halfHeight,z*halfDepth)).applyMatrix4(this.activeExterior.matrixWorld).project(probe))));
     const spanX=(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x)))*width/2;
     const spanY=(Math.max(...pts.map(p=>p.y))-Math.min(...pts.map(p=>p.y)))*height/2;
     const zoom=THREE.MathUtils.clamp(Math.min(availW*.78/spanX,availH*.83/spanY),this.controls.minZoom,32);
-    const target=center.applyMatrix4(this.dinerExterior.matrixWorld);
+    const target=center.applyMatrix4(this.activeExterior.matrixWorld);
     const screenX=(left+availW/2-width/2)/width*2,screenY=(height/2-top-availH/2)/height*2;
     const rightVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,0),upVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,1);
     target.addScaledVector(rightVec,-screenX*(this.camera.right-this.camera.left)/zoom/2);
@@ -1114,30 +1206,60 @@ export class GrayhavenWorld {
     this.focusTarget=target;this.focusZoom=zoom;
   }
   private updateInterior(time:number) {
-    const {size,inView}=projectedBuilding(this.camera,this.dinerExterior.matrixWorld);
+    const candidates=([['bluebird',this.dinerExterior,BLUEBIRD],['sheriff',this.sheriffExterior,SHERIFF]] as const)
+      .filter(([,exterior])=>!!exterior).map(([building,exterior,bounds])=>({building,
+        ...projectedBuilding(this.camera,exterior.matrixWorld,bounds.width,bounds.depth)}));
+    const candidate=this.interiorState.status==='closed'
+      ? candidates.filter(c=>c.inView).sort((a,b)=>b.size-a.size)[0]
+      : candidates.find(c=>c.building===this.activeBuilding);
+    if(!candidate){this.candidateSince=null;this.suppressAutoInterior=false;return;}
+    const {size,inView,building}=candidate;
     const action=cutawayDecision(size,inView,this.interiorState.status==='open');
     if(this.suppressAutoInterior) {if(size<.16 || !inView)this.suppressAutoInterior=false;else return;}
     if(action==='close') {
-      // Programmatic room travel may temporarily move the building outside the viewport.
       if(!this.focusTarget && this.focusZoom===null && (!inView || !this.interiorCloseZoom || this.camera.zoom<this.interiorCloseZoom)){this.closeInterior();this.streetView=null;}
       return;
     }
     if(this.interiorState.status==='error')return;
-    if(action==='prefetch' && !this.dinerModel && !this.dinerLoading)this.loadInterior().catch(()=>{});
+    if(action==='prefetch')this.loadInterior(building).catch(()=>{});
     if(action==='open' && this.interiorState.status==='closed') {
       this.candidateSince??=time;
-      if(time-this.candidateSince>=200)this.openInterior(null,true);
+      if(time-this.candidateSince>=200)this.openInterior(null,true,building);
     }else this.candidateSince=null;
   }
 
   private cancelFocus = () => { this.focusTarget = null; this.focusZoom = null; };
+  private revealTarget(): RevealTarget | null {
+    if(this.interiorState.status==='open') {
+      const target=interiorRevealTarget(this.camera,this.activeExterior.matrixWorld,this.interiorState)!;
+      // A mobile notes panel can fit a room below the automatic opening footprint.
+      // Manual framing uses its own closing zoom so a fitted room still opens fully.
+      target.strength=this.interiorCloseZoom
+        ? THREE.MathUtils.smoothstep(this.camera.zoom,this.interiorCloseZoom,this.interiorCloseZoom*1.35)
+        : THREE.MathUtils.smoothstep(projectedBuilding(this.camera,this.activeExterior.matrixWorld,...(this.activeBuilding==='sheriff'?[15,12] as const:[14,22] as const)).size,.16,.27);
+      return target;
+    }
+    // Only authored underlying scenes are eligible. Ordinary buildings and failed
+    // or pending room loads must never open a window onto bare terrain.
+    for(const [id,view,radii] of [
+      ['SCN_redwood_ring',REDWOOD_VIEW,new THREE.Vector2(38,29)],
+      ['SCN_dock',BEACH_VIEW,new THREE.Vector2(38,28)],
+    ] as const) {
+      const distance=Math.hypot(this.controls.target.x-view.x,this.controls.target.z-view.z);
+      if(this.selectedId===id || !this.selectedId && distance<35) {
+        return {center:new THREE.Vector3(view.x,view.y,view.z),radii,strength:THREE.MathUtils.smoothstep(this.camera.zoom,2.9,4.6)};
+      }
+    }
+    return null;
+  }
   private pointerDown = (e: PointerEvent) => { this.pointerStart = { x: e.clientX, y: e.clientY }; };
   private pointerUp = (e: PointerEvent) => {
     if (e.button !== 0 || Math.hypot(e.clientX - this.pointerStart.x, e.clientY - this.pointerStart.y) > 5) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), this.camera);
-    if(this.interiorState.status==='open' && this.dinerModel) {
-      const detail=this.raycaster.intersectObjects(this.dinerModel.hits.filter(h=>h.userData.floor===this.interiorState.floor),false)[0];
+    const revealUv=new THREE.Vector2((e.clientX-rect.left)/rect.width,1-(e.clientY-rect.top)/rect.height);
+    if(this.interiorState.status==='open' && this.activeModel && this.depthReveal.contains(revealUv)) {
+      const detail=this.raycaster.intersectObjects(this.activeModel.hits.filter(h=>h.userData.floor===this.interiorState.floor),false)[0];
       if(detail) {
         const {sceneId,itemId,targetId}=detail.object.userData;
         if(targetId)this.options.onSelect(targetId);
@@ -1157,7 +1279,7 @@ export class GrayhavenWorld {
     this.camera.left = -half * aspect; this.camera.right = half * aspect;
     this.camera.top = half; this.camera.bottom = -half;
     this.camera.updateProjectionMatrix(); this.renderer.setSize(width, height);
-    if(this.interiorState.status==='open')this.fitInterior(this.interiorState.room);
+    this.fitSelectedDetail();
   };
 
   private animate = (time: number) => {
@@ -1179,14 +1301,21 @@ export class GrayhavenWorld {
         this.camera.updateProjectionMatrix();
       }
       this.controls.update();
+      this.camera.updateMatrixWorld();
       this.updateInterior(time);
+      const reveal=this.revealTarget();
+      this.depthReveal.update(this.scene,this.camera,reveal?.center??this.controls.target,reveal,this.reducedMotion?1:dt);
       this.beach.update(this.camera.zoom, this.progress);
+      this.redwoodRing.update(this.camera.zoom);
       this.updateWater(this.progress);
       this.seaMist.update(this.progress);
       const occupied: { x: number; y: number; w: number; h: number }[] = [];
       // Resolve screen-space overlaps, prioritizing the selected location.
       const interiorOpen=this.interiorState.status==='open';
-      const isSelected=(label:typeof this.labels[number])=>label.id===this.selectedId || label.id==='SCN_bluebird_dining' && (interiorOpen || isBluebird(this.selectedId));
+      const activeEntrance=this.activeBuilding==='sheriff'?'SCN_sheriff_front':'SCN_bluebird_dining';
+      const isSelected=(label:typeof this.labels[number])=>label.id===this.selectedId
+        || label.id===activeEntrance && interiorOpen || label.id==='SCN_bluebird_dining' && isBluebird(this.selectedId)
+        || label.id==='SCN_sheriff_front' && buildingForRoom(this.selectedId)==='sheriff';
       const orderedLabels = [...this.labels].sort((a,b)=>Number(isSelected(b))-Number(isSelected(a)) || Number(!!b.building)-Number(!!a.building));
       for (const label of orderedLabels) {
         const anchor=label.point.clone();
@@ -1202,7 +1331,7 @@ export class GrayhavenWorld {
           p.y=Math.max(...corners.map(c=>c.clone().project(this.camera).y));
         }
         label.button.classList.toggle('is-selected',selected);
-        const show=this.labelVisible && (!interiorOpen || label.building) && (label.major || this.camera.zoom>1.75 || selected)
+        const show=this.labelVisible && (!interiorOpen || label.id===activeEntrance) && (label.major || this.camera.zoom>1.75 || selected)
           && Math.abs(p.x)<.94 && Math.abs(p.y)<.92 && p.z>=-1 && p.z<1;
         label.button.hidden = !show;
         if (show) {
@@ -1215,7 +1344,10 @@ export class GrayhavenWorld {
         }
       }
       this.options.onZoom(this.camera.zoom);
-      this.seaMist.render(this.renderer, this.scene, this.camera);
+      // Newly revealed room lamps need their own floor/furniture shadow maps even
+      // if an outdoor bounce bake already consumed the renderer-wide refresh flag.
+      if(this.activeModel?.root.visible && this.activeModel.needsShadowUpdate())this.renderer.shadowMap.needsUpdate=true;
+      this.seaMist.render(this.renderer, this.scene, this.camera, () => this.depthReveal.render(this.renderer,this.scene,this.camera));
       if (hadPreviousFrame && frameMs > 0) { this.metricFrames++; this.metricFrameTimes.push(frameMs); }
       if (time - this.metricsStart >= 1500) {
         const samples = this.metricFrameTimes.sort((a,b) => a-b);
@@ -1225,7 +1357,7 @@ export class GrayhavenWorld {
           calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
           textures: this.renderer.info.memory.textures, geometries: this.renderer.info.memory.geometries,
           textureMiBEstimate: +((this.art.estimatedTextureBytes + this.signTextureBytes + this.seaMist.estimatedBytes + 64*64*4*4/3 + this.lightAtlas.estimatedBytes + this.sky.estimatedBytes) / 1048576).toFixed(2),
-          shadowMapMiBEstimate: +([this.sun, this.beacon, this.porchLight].reduce((bytes, light) => {
+          shadowMapMiBEstimate: +([this.sun, this.beacon, this.porchLight,...this.roadLamps.lights,...(this.dinerModel?.lamps??[]),...(this.sheriffModel?.lamps??[])].reduce((bytes, light) => {
             const map = light.shadow.map;
             // RGBA8 colour + 32-bit depth; estimate excludes driver overhead.
             return bytes + (map ? map.width * map.height * 8 : 0);
@@ -1246,6 +1378,8 @@ export class GrayhavenWorld {
       if (renderable.geometry) geometries.add(renderable.geometry);
       if (renderable.material) for (const mat of Array.isArray(renderable.material) ? renderable.material : [renderable.material]) materials.add(mat);
     });
+    this.roadLamps.dispose();
+    for(const light of [...(this.dinerModel?.lamps??[]),...(this.sheriffModel?.lamps??[])])light.dispose();
     for (const material of this.materialCache.values()) materials.add(material);
     materials.add(this.windowMaterial); materials.add(this.litWindowMaterial);
     for (const geo of geometries) geo.dispose(); for (const mat of materials) mat.dispose(); for (const texture of this.textures) texture.dispose();

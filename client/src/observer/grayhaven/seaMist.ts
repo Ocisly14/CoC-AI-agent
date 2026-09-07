@@ -1,7 +1,18 @@
 import { INTERIOR_VOLUME_GLSL } from './buildingInteriors';
 import * as THREE from "three";
 import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
-import { coastalElevation, elevation, shoreline, waterline } from "./layout";
+import { coastalElevation, elevation, FOG_HOLLOW, shoreline, waterline } from "./layout";
+
+const HOLLOW_MIST_TOP = FOG_HOLLOW.floor + FOG_HOLLOW.mistDepth;
+
+/** Local cool-air bank: present at the default amount, clipped by the valley walls. */
+export function hollowMistEnvelope(x: number, y: number, z: number, amount: number) {
+  const radius = Math.hypot((x - FOG_HOLLOW.x) / (FOG_HOLLOW.radiusX * .84), (z - FOG_HOLLOW.z) / (FOG_HOLLOW.radiusZ * .84));
+  const footprint = 1 - THREE.MathUtils.smoothstep(radius, .2, 1);
+  const ceiling = 1 - THREE.MathUtils.smoothstep(y, HOLLOW_MIST_TOP - 12, HOLLOW_MIST_TOP);
+  const ground = THREE.MathUtils.smoothstep(y - mistGroundHeight(x, z), -.5, 4);
+  return .48 * THREE.MathUtils.smoothstep(amount, 0, .3) * footprint * ceiling * ground;
+}
 
 // Authored sea-to-valley volume; peaks rise above the bank even at full density.
 export const MIST_BOUNDS = { minX: -1150, maxX: 750, minZ: -1000, maxZ: 800 };
@@ -32,7 +43,7 @@ export function mistEnvelope(x: number, y: number, z: number, amount: number) {
     * (1 - THREE.MathUtils.smoothstep(x, 550, 750))
     * THREE.MathUtils.smoothstep(z, -1000, -720)
     * (1 - THREE.MathUtils.smoothstep(z, 520, 800));
-  return e.density * coast * height * ground * edge;
+  return Math.max(e.density * coast * height * ground * edge, hollowMistEnvelope(x, y, z, e.density));
 }
 
 // A repeatable, smoothly interpolated 3D field, generated once (128 KiB).
@@ -78,6 +89,8 @@ export const MIST_FRAGMENT = `
   uniform sampler3D uNoise;
   uniform mat4 uInverseProjection, uCameraWorld;
   uniform float uTime, uAmount, uTop, uInland, uExtinction;
+  uniform vec4 uHollow;
+  uniform float uHollowTop;
   uniform vec3 uColor, uSunColor, uSunDirection;
   vec3 worldAt(float depth) {
     vec4 p = uInverseProjection * vec4(vUv*2.0-1.0, depth*2.0-1.0, 1.0);
@@ -128,8 +141,15 @@ export const MIST_FRAGMENT = `
     float aboveGround = smoothstep(-.5,4.0,p.y-ground);
     float edge = smoothstep(-1150.0,-900.0,p.x)*(1.0-smoothstep(550.0,750.0,p.x))
       * smoothstep(-1000.0,-720.0,p.z)*(1.0-smoothstep(520.0,800.0,p.z));
-    // No baseline haze: gaps stay transparent, even with the amount slider at 100%.
-    return uAmount * seaToLand * height * aboveGround * edge * puffs * (.65+fine*.65);
+    float sea = uAmount * seaToLand * height * aboveGround * edge * puffs * (.65+fine*.65);
+    // A shallow, slowly deforming bank gathers only inside Fog Hollow. Its ceiling
+    // is independent of the sea bank so the default amount reaches this inland valley.
+    float hollowRadius = length((p.xz-uHollow.xy)/uHollow.zw);
+    float hollow = .48*smoothstep(0.0,.3,uAmount)
+      * (1.0-smoothstep(.2,1.0,hollowRadius))
+      * (1.0-smoothstep(uHollowTop-12.0,uHollowTop,p.y))*aboveGround;
+    float wisps = smoothstep(.26,.68,fine+warp.r*.2);
+    return max(sea,hollow*(.28+wisps*.95));
   }
   void main() {
     // Reconstruct near/surface points: works with the existing orthographic pan/zoom.
@@ -143,7 +163,7 @@ export const MIST_FRAGMENT = `
       abs(direction.y)<.00001 ? .00001 : direction.y,
       abs(direction.z)<.00001 ? .00001 : direction.z);
     vec3 a = (vec3(-1150,-1,-1000)-origin)/safeDirection;
-    vec3 b = (vec3(750,uTop+24.0,800)-origin)/safeDirection;
+    vec3 b = (vec3(750,max(uTop+24.0,uHollowTop+4.0),800)-origin)/safeDirection;
     vec3 lo = min(a,b), hi = max(a,b);
     float start = max(0.0,max(lo.x,max(lo.y,lo.z)));
     // Stop at the visible scene surface: no fog accumulated behind ridges/buildings.
@@ -227,12 +247,14 @@ export function createSeaMist() {
     type: THREE.HalfFloatType, depthBuffer: false,
     minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
   });
-  const indoorUniforms={uInteriorActive:{value:0},uInteriorInverse:{value:new THREE.Matrix4()}};
+  const indoorUniforms={uInteriorSheriff:{value:0},uInteriorActive:{value:0},uInteriorInverse:{value:new THREE.Matrix4()}};
   const uniforms = {
     ...indoorUniforms,
     uDepth: { value: sceneTarget.depthTexture }, uTerrain: { value: terrain }, uNoise: { value: noise },
     uInverseProjection: { value: new THREE.Matrix4() }, uCameraWorld: { value: new THREE.Matrix4() },
     uTime: { value: 0 }, uAmount: { value: 0 }, uTop: { value: 14 }, uInland: { value: 50 }, uExtinction: { value: .006 },
+    uHollow: { value: new THREE.Vector4(FOG_HOLLOW.x, FOG_HOLLOW.z, FOG_HOLLOW.radiusX * .84, FOG_HOLLOW.radiusZ * .84) },
+    uHollowTop: { value: HOLLOW_MIST_TOP },
     uColor: { value: new THREE.Color(0xcbd5d0) }, uSunColor: { value: new THREE.Color(0xffe0ad) },
     uSunDirection: { value: new THREE.Vector3(-.5,.7,.4).normalize() },
   };
@@ -255,7 +277,7 @@ export function createSeaMist() {
   return {
     // Excludes driver overhead: HDR/depth + 2x MSAA attachment storage + fog buffer.
     get estimatedBytes() { return noise.image.data.byteLength+terrainData.byteLength+width*height*36+fogTarget.width*fogTarget.height*8; },
-    setInterior(inverse:THREE.Matrix4,active:boolean){indoorUniforms.uInteriorInverse.value.copy(inverse);indoorUniforms.uInteriorActive.value=active?1:0;},
+    setInterior(inverse:THREE.Matrix4,active:boolean,sheriff=false){indoorUniforms.uInteriorSheriff.value=sheriff?1:0;indoorUniforms.uInteriorInverse.value.copy(inverse);indoorUniforms.uInteriorActive.value=active?1:0;},
     update(time: number) { uniforms.uTime.value = time; },
     setAtmosphere(amount: number, sky: THREE.ColorRepresentation, daylight=1) {
       const e = seaMistExtent(amount);
@@ -266,8 +288,8 @@ export function createSeaMist() {
     setSun(direction: THREE.Vector3, color: THREE.ColorRepresentation) {
       uniforms.uSunDirection.value.copy(direction); uniforms.uSunColor.value.set(color);
     },
-    render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.OrthographicCamera) {
-      if (uniforms.uAmount.value===0) { renderer.render(scene,camera); return; }
+    render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.OrthographicCamera, drawScene = () => renderer.render(scene,camera)) {
+      if (uniforms.uAmount.value===0) { drawScene(); return; }
       renderer.getDrawingBufferSize(size);
       if (width!==size.x || height!==size.y) {
         width=size.x; height=size.y;
@@ -279,7 +301,7 @@ export function createSeaMist() {
       const previous = renderer.getRenderTarget(), reset=renderer.info.autoReset;
       renderer.info.autoReset=false; renderer.info.reset();
       try {
-        renderer.setRenderTarget(sceneTarget); renderer.render(scene,camera);
+        renderer.setRenderTarget(sceneTarget); drawScene();
         uniforms.uInverseProjection.value.copy(camera.projectionMatrixInverse);
         uniforms.uCameraWorld.value.copy(camera.matrixWorld);
         composeUniforms.uCameraRange.value=camera.far-camera.near;

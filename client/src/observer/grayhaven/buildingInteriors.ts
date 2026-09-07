@@ -1,14 +1,50 @@
 import * as THREE from 'three';
 import notes from './buildingScenes.generated.json';
+import sheriffNotes from './sheriffScenes.generated.json';
+import type { RevealTarget } from './depthReveal';
 
 export const buildingScenes = notes;
-export type InteriorState = { status: 'closed' | 'loading' | 'open' | 'error'; floor: 0 | 1; room: string | null; item: string | null };
+export const sheriffScenes = sheriffNotes;
+export const allInteriorScenes = [...notes, ...sheriffNotes];
+export type BuildingId = 'bluebird' | 'sheriff';
+export const SHERIFF = { width: 15, depth: 12, ground: .4, top: 7.6 };
+export const buildingForRoom = (id: string | null): BuildingId | null =>
+  notes.some(s=>s.id===id)?'bluebird':sheriffNotes.some(s=>s.id===id)?'sheriff':null;
+export const interiorBuilding = (state: InteriorState): BuildingId => state.building ?? buildingForRoom(state.room) ?? 'bluebird';
+export function interiorFrame(state: InteriorState, room: string | null = state.room) {
+  if(interiorBuilding(state)==='sheriff') {
+    const center=room?roomCenter(room):new THREE.Vector3(0,3.5,0);
+    return {center,halfWidth:room && room!=='SCN_sheriff_front'?3.8:7.7,halfDepth:room?3.6:6.3,halfHeight:3.3};
+  }
+  return {center:room?roomCenter(room):new THREE.Vector3(0,state.floor?9.2:3.3,state.floor?4.4:0),
+    halfWidth:7.4,halfDepth:room?(room==='SCN_bluebird_kitchen'?4.8:7):state.floor?7:11.5,halfHeight:3.1};
+}
+export type InteriorState = { status: 'closed' | 'loading' | 'open' | 'error'; building?: BuildingId; floor: 0 | 1; room: string | null; item: string | null };
 export const CLOSED_INTERIOR: InteriorState = { status: 'closed', floor: 0, room: null, item: null };
 export const BLUEBIRD = { width: 14, depth: 22, ground: .4, upper: 6.182, top: 12.2, divider: -2.2 };
 export const isBluebird = (id: string | null) => buildingScenes.some(scene => scene.id === id);
 export const cleanSceneText = (text: string) => text.replace(/\s*\[[^\]]+\]/g, '');
 export const roomFloor = (id: string): 0 | 1 => id === 'SCN_bluebird_upstairs' ? 1 : 0;
-export const roomCenter = (id: string) => new THREE.Vector3(0, roomFloor(id) ? 9.2 : 3.3, id === 'SCN_bluebird_kitchen' ? -6.5 : 4.2);
+export const roomCenter = (id: string) => id==='SCN_sheriff_front'?new THREE.Vector3(0,3.5,3.1)
+  :id==='SCN_sheriff_office'?new THREE.Vector3(-3.75,3.5,-2.5)
+  :id==='SCN_sheriff_cell'?new THREE.Vector3(3.75,3.5,-2.5)
+  :new THREE.Vector3(0, roomFloor(id) ? 9.2 : 3.3, id === 'SCN_bluebird_kitchen' ? -6.5 : 4.2);
+
+/** Anchor to the actual room, independently of sidebar-aware camera framing. */
+export function interiorRevealTarget(camera: THREE.OrthographicCamera, transform: THREE.Matrix4, state: InteriorState): RevealTarget | null {
+  if(state.status!=='open')return null;
+  const {center:localCenter,halfWidth,halfDepth:depth,halfHeight}=interiorFrame(state);
+  const center=localCenter.clone().applyMatrix4(transform);
+  const viewCenter=center.clone().applyMatrix4(camera.matrixWorldInverse);
+  const radii=new THREE.Vector2();
+  for(const x of [-halfWidth,halfWidth])for(const y of [-halfHeight,halfHeight])for(const z of [-depth,depth]) {
+    const point=localCenter.clone().add(new THREE.Vector3(x,y,z)).applyMatrix4(transform).applyMatrix4(camera.matrixWorldInverse).sub(viewCenter);
+    radii.x=Math.max(radii.x,Math.abs(point.x));radii.y=Math.max(radii.y,Math.abs(point.y));
+  }
+  // The rectangle's corners fall in the feather, rather than clipping the whole room.
+  radii.multiplyScalar(1.5);
+  return {center,radii,strength:1};
+}
 
 /** Screen footprint, not absolute zoom: this remains usable on portrait screens. */
 export function projectedBuilding(camera: THREE.OrthographicCamera, transform: THREE.Matrix4, width = 14, depth = 22) {
@@ -32,8 +68,10 @@ export function insideBluebird(p: THREE.Vector3) {
 export const INTERIOR_VOLUME_GLSL = `
   uniform float uInteriorActive;
   uniform mat4 uInteriorInverse;
+  uniform float uInteriorSheriff;
   bool inInterior(vec3 world) {
     vec3 p=(uInteriorInverse*vec4(world,1.0)).xyz;
+    if(uInteriorSheriff>.5) return uInteriorActive>.5 && abs(p.x)<=7.7 && abs(p.z)<=6.2 && p.y>=.15 && p.y<=7.7;
     return uInteriorActive>.5 && abs(p.x)<=7.2 && p.y>=.15 && p.z>=-11.2 && p.z<=11.2
       && (p.y<=6.25 || (p.y<=12.3 && p.z>=-2.4));
   }

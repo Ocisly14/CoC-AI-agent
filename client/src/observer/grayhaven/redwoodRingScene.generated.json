@@ -1,0 +1,40 @@
+{
+  "sceneId": "SCN_redwood_ring",
+  "items": [
+    {
+      "id": "item.redwood_ring.mushroom_ring",
+      "name": "蘑菇圈",
+      "description": "沿着一棵老红杉根基长出的一圈小伞菌,雨后尤其密,踩碎了有股土腥味。"
+    },
+    {
+      "id": "item.redwood_ring.axe_scarred_trunk",
+      "name": "带斧痕的红杉",
+      "description": "树皮上留着几道早已愈合的旧斧痕,中间刻着一对模糊的姓名缩写。"
+    },
+    {
+      "id": "item.redwood_ring.giant_stump",
+      "name": "巨大的伐木树桩",
+      "description": "圈外唯一被放倒的那棵老红杉留下的树桩,直径两米多,顶面平得像张桌子,坐得下三四个人;侧面留着当年伐木工插跳板的两个方孔。"
+    },
+    {
+      "id": "item.redwood_ring.fire_scar",
+      "name": "烧空的树洞",
+      "description": "最粗那棵红杉根部被山火烧穿的一个黑洞,内壁全是炭,人弯腰钻得进去,里面干燥无风,挤得下两三个人。"
+    },
+    {
+      "id": "item.redwood_ring.nurse_log",
+      "name": "倒伏的朽木",
+      "description": "倒伏多年的红杉朽木,长满厚苔藓,顶上钻出一排细小的新苗。"
+    },
+    {
+      "id": "item.redwood_ring.fire_ring",
+      "name": "石头火塘",
+      "description": "空地中央用石头围成的一圈火塘,石头被熏黑,里面是早已冷透的灰,灰里压着几个压扁的汽水罐——不是伐木年代的东西。"
+    },
+    {
+      "id": "item.redwood_ring.tin_register",
+      "name": "塞在石缝里的铁皮罐",
+      "description": "火塘边石缝里塞着的一只生锈咖啡罐,盖子拧得很紧,里面是十几张卷起来的纸条,一张一个名字加一个年份,最新的一张写着三年前。"
+    }
+  ]
+}

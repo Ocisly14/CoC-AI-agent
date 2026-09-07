@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 import { BLUEBIRD as B } from './buildingInteriors';
+
+/** Exterior siding has no horizontal caps: the authored floor owns its surface.
+ * Box caps at B.upper would otherwise z-fight with the upstairs wooden floor. */
+export function exteriorWallGeometry(width:number,height:number,depth:number) {
+  const geometry=new THREE.BoxGeometry(width,height,depth);
+  const indices=Array.from(geometry.index!.array);
+  geometry.setIndex(geometry.groups.filter(group=>group.materialIndex!==2 && group.materialIndex!==3)
+    .flatMap(group=>indices.slice(group.start,group.start+group.count)));
+  geometry.clearGroups();
+  return geometry;
+}
 export type WallPiece = { size: [number,number,number]; at: [number,number,number]; normal: [number,number,number]; floor: 0|1 };
 /** Actual window/door gaps shared by the view shell and the physical shadow shell. */
 export function bluebirdWalls(): WallPiece[] {
@@ -20,8 +31,8 @@ export function bluebirdWalls(): WallPiece[] {
       }
       add([.32,height,11-start],[-7,y+height/2,(11+start)/2],[-1,0,0],floor);
     }
-    // Rear: real service door below, sash windows above.
-    const rearGaps=floor?[[-4.6,-2,1.5,3.8],[2,4.4,1.5,3.8],[4.7,6.5,0,3.2]]:[[-4.6,-1.5,1.6,3.5],[3,4.6,0,3.3]];
+    // Rear: two kitchen windows below (the module lists no back door), sash windows above.
+    const rearGaps=floor?[[-4.6,-2,1.5,3.8],[2,4.4,1.5,3.8],[4.7,6.5,0,3.2]]:[[-4.6,-1.5,1.6,3.5],[2.9,4.8,1.6,3.5]];
     const frontGaps=floor?[[-5.9,-3.1,1.5,3.8],[-1.4,1.4,1.5,3.8],[3.1,5.9,1.5,3.8]]:[[-5.05,-3.05,0,4.1],[-.5,5.55,1.05,4.4]];
     for (const [z,gaps,normal] of [[11,frontGaps,[0,0,1]],[back,rearGaps,[0,0,-1]]] as const) {
       let start=-7;

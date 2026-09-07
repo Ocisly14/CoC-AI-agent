@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { makeMistNoise, mistEnvelope, mistGroundHeight, seaMistExtent, createSeaMist } from "./seaMist";
+import { makeMistNoise, mistEnvelope, mistGroundHeight, seaMistExtent, createSeaMist, hollowMistEnvelope } from "./seaMist";
 import { elevation, landmarks, waterline } from "./layout";
 
 describe("animated sea-to-valley fog", () => {
+  it("holds mist inside Fog Hollow at the default amount, below its surrounding slopes", () => {
+    const floor = elevation(208, -65);
+    expect(mistEnvelope(208, floor + 8, -65, .24)).toBeGreaterThan(.3);
+    expect(hollowMistEnvelope(208, floor + 24, -65, .24)).toBe(0);
+    expect(hollowMistEnvelope(208, floor - 2, -65, .24)).toBe(0);
+    expect(hollowMistEnvelope(208, floor + 8, -65, 0)).toBe(0);
+    expect(hollowMistEnvelope(208, floor + 8, -65, .1)).toBeLessThan(hollowMistEnvelope(208, floor + 8, -65, .24));
+    for (const [x, z] of [[270, -65], [208, -160], [208, 30], [170, -147]]) {
+      expect(hollowMistEnvelope(x, elevation(x, z) + 6, z, 1)).toBe(0);
+    }
+  });
+
   it("starts over water, then allows drifting puffs throughout the valley at full strength", () => {
     expect(mistEnvelope(waterline(0)-80,6,0,.24)).toBeGreaterThan(.15);
     expect(mistEnvelope(170,elevation(170,-147)+10,-147,.24)).toBe(0);

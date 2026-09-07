@@ -2,14 +2,37 @@ import { describe,it,expect } from 'vitest';
 import * as THREE from 'three';
 import { readFileSync } from 'node:fs';
 import { buildingScenes, cutawayDecision, insideBluebird, roomFloor, projectedBuilding } from './buildingInteriors';
-import { bluebirdWalls,createBluebirdShadowShell } from './bluebirdShell';
+import { bluebirdWalls,createBluebirdShadowShell,exteriorWallGeometry } from './bluebirdShell';
 import { createBluebirdInterior } from './bluebirdInterior';
 import { createInteriorLighting } from './interiorLighting';
 import type { GrayhavenArt } from './painterlyArt';
 const art={surfaces:{bareWood:null}} as unknown as GrayhavenArt;
-const make=()=>createBluebirdInterior(createInteriorLighting(art,new THREE.Matrix4()),new THREE.Vector3(-.714,.487,-.503));
+const make=()=>createBluebirdInterior(createInteriorLighting(art,new THREE.Matrix4()));
 
 describe('Bluebird authored cutaway',()=>{
+  it('does not leave a solid exterior cap over the authored room floor',()=>{
+    const geometry=exteriorWallGeometry(14,6,22),material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+    const shell=new THREE.Mesh(geometry,material);shell.updateMatrixWorld();
+    const ray=new THREE.Raycaster(new THREE.Vector3(0,10,0),new THREE.Vector3(0,-1,0));
+    expect(ray.intersectObject(shell)).toHaveLength(0);
+    ray.set(new THREE.Vector3(12,0,0),new THREE.Vector3(-1,0,0));expect(ray.intersectObject(shell).length).toBeGreaterThan(0);
+    geometry.dispose();material.dispose();
+  });
+  it('keeps floors and props solid while upper walls remain revealable',()=>{
+    const model=make();
+    for(const floor of model.root.children) {
+      let protectedCount=0,wallCount=0;
+      for(const child of floor.children) {
+        if(child instanceof THREE.Mesh && (child.material as THREE.Material).visible) {
+          expect((child.material as THREE.Material).userData.revealProtected).toBe(true);protectedCount++;
+        } else if(child instanceof THREE.Group)child.traverse(object=>{
+          if(object instanceof THREE.Mesh){expect((object.material as THREE.Material).userData.revealProtected).toBe(false);wallCount++;}
+        });
+      }
+      expect(protectedCount).toBeGreaterThan(0);expect(wallCount).toBeGreaterThan(0);
+    }
+    model.dispose();
+  });
   it('exports the exact module rooms, references and connections without inventing upstairs SCNs',()=>{
     expect(buildingScenes).toHaveLength(3);
     for(const scene of buildingScenes)expect(scene).toEqual(JSON.parse(readFileSync(`testmods/grayhaven/Grayhaven_Scenarios/${scene.id}.json`,'utf8')));

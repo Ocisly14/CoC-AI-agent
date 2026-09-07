@@ -3,8 +3,9 @@ import { GrayhavenWorld } from "./GrayhavenWorld";
 import { formatTime, timeOfDay } from "./daylight";
 import { loadGrayhavenArt } from "./painterlyArt";
 import { locations, roadPaths, type Region } from "./layout";
-import { buildingScenes, cleanSceneText, CLOSED_INTERIOR, type InteriorState } from './buildingInteriors';
+import { allInteriorScenes, buildingForRoom, interiorBuilding, roomFloor, cleanSceneText, CLOSED_INTERIOR, type InteriorState } from './buildingInteriors';
 import beachNotes from "./beachScene.generated.json";
+import redwoodNotes from './redwoodRingScene.generated.json';
 import "./grayhaven.css";
 
 const regions: { id: Region; name: string }[] = [{ id: "town", name: "小镇" }, { id: "coast", name: "海岸" }, { id: "forest", name: "红杉林与山地" }];
@@ -81,12 +82,13 @@ export default function GrayhavenSandboxPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [reset]);
 
-  const room = buildingScenes.find(scene => scene.id === selected);
-  const place = room ? {id:room.id,name:room.name,english:'BLUEBIRD DINER / '+(room.id.endsWith('upstairs')?'UPSTAIRS':room.id.endsWith('kitchen')?'KITCHEN':'DINING ROOM'),description:cleanSceneText(room.description)} : locations.find(location => location.id === selected);
+  const building=interiorBuilding(interior);
+  const room = allInteriorScenes.find(scene => scene.id === selected);
+  const place = room ? {id:room.id,name:room.name,english:buildingForRoom(room.id)==='sheriff'?'SHERIFF / '+(room.id.endsWith('front')?'FRONT DESK':room.id.endsWith('office')?'OFFICE':'HOLDING CELL'):'BLUEBIRD DINER / '+(room.id.endsWith('upstairs')?'UPSTAIRS':room.id.endsWith('kitchen')?'KITCHEN':'DINING ROOM'),description:cleanSceneText(room.description)} : locations.find(location => location.id === selected);
   useEffect(() => {
-    if(interior.status!=='open')return;
+    if(interior.status!=='open' && selected!=='SCN_redwood_ring')return;
     const panel=host.current?.parentElement?.querySelector('.gh-place');
-    const refit=()=>world.current?.fitInterior();
+    const refit=()=>world.current?.fitSelectedDetail();
     const frame=requestAnimationFrame(refit);
     const observer=new ResizeObserver(refit);if(panel)observer.observe(panel);
     return()=>{cancelAnimationFrame(frame);observer.disconnect();};
@@ -94,7 +96,7 @@ export default function GrayhavenSandboxPage() {
   const leaveRoom = () => {setSelected(null);world.current?.select(null,false);};
   const connections = place ? roadPaths.filter(road => road.from === place.id || road.to === place.id) : [];
 
-  return <main className={`gh-sandbox${interior.status!=='closed'?' gh-has-interior':''}`}>
+  return <main className={`gh-sandbox${interior.status!=='closed'?' gh-has-interior':''}${selected==='SCN_redwood_ring'?' gh-has-outdoor-detail':''}`}>
     <div className="gh-canvas" ref={host} />
     <div className="gh-film" aria-hidden="true" />
     <div className="gh-labels" ref={labelHost} />
@@ -120,11 +122,11 @@ export default function GrayhavenSandboxPage() {
       </section>)}
     </aside>}
 
-    {interior.status !== 'closed' && <nav className="gh-interior-nav gh-paper" aria-label="蓝鸟餐馆楼层与空间">
-      <div className="gh-interior-title"><span>BLUEBIRD / 蓝鸟餐馆</span><small>{interior.status==='loading'?'正在展开室内…':interior.status==='error'?'室内暂未载入':'原地剖视 · 点击房间或物件阅读'}</small></div>
+    {interior.status !== 'closed' && <nav className="gh-interior-nav gh-paper" aria-label={building==='sheriff'?'警署房间与空间':'蓝鸟餐馆楼层与空间'}>
+      <div className="gh-interior-title"><span>{building==='sheriff'?'SHERIFF / 警长办公室':'BLUEBIRD / 蓝鸟餐馆'}</span><small>{interior.status==='loading'?'正在展开室内…':interior.status==='error'?'室内暂未载入':'原地剖视 · 点击房间或物件阅读'}</small></div>
       {interior.status==='open' && <>
-        <div className="gh-floor-buttons">{([0,1] as const).map(floor=><button key={floor} aria-pressed={interior.floor===floor} onClick={()=>{leaveRoom();world.current?.setInteriorFloor(floor);}}>{floor===0?'一层 · 餐馆':'二层 · 住处'}</button>)}</div>
-        <div className="gh-room-buttons">{buildingScenes.filter(scene=>(scene.id.endsWith('upstairs')?1:0)===interior.floor).map(scene=><button key={scene.id} aria-pressed={interior.room===scene.id} onClick={()=>select(scene.id)}>{scene.name.split('·')[1]}</button>)}</div>
+        <div className="gh-floor-buttons">{(building==='sheriff'?[0] as const:[0,1] as const).map(floor=><button key={floor} aria-pressed={interior.floor===floor} onClick={()=>{leaveRoom();world.current?.setInteriorFloor(floor);}}>{building==='sheriff'?'一层 · 警署':floor===0?'一层 · 餐馆':'二层 · 住处'}</button>)}</div>
+        <div className="gh-room-buttons">{allInteriorScenes.filter(scene=>buildingForRoom(scene.id)===building && roomFloor(scene.id)===interior.floor).map(scene=><button key={scene.id} aria-pressed={interior.room===scene.id} onClick={()=>select(scene.id)}>{scene.name.split('·')[1]??scene.name}</button>)}</div>
         <button onClick={()=>{leaveRoom();world.current?.returnToBuilding();}}>看整层</button>
       </>}
       {interior.status==='error' && <button onClick={()=>world.current?.retryInterior()}>重试室内</button>}
@@ -140,6 +142,13 @@ export default function GrayhavenSandboxPage() {
         <summary>海滩细节 · {beachNotes.items.length} 处</summary>
         <p>继续放大，可看清码头上的渔具与潮线漂积物。</p>
         {beachNotes.items.map(item => <details key={item.id}>
+          <summary>{item.name}</summary><p>{item.description}</p>
+        </details>)}
+      </details>}
+      {place.id === redwoodNotes.sceneId && <details className="gh-beach-notes">
+        <summary>林间细节 · {redwoodNotes.items.length} 处</summary>
+        <p>继续放大，可看清树根旁的蘑菇、火塘和石缝里的铁皮罐。</p>
+        {redwoodNotes.items.map(item => <details key={item.id}>
           <summary>{item.name}</summary><p>{item.description}</p>
         </details>)}
       </details>}

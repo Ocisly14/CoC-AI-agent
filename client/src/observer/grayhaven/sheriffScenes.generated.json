@@ -1,0 +1,269 @@
+[
+  {
+    "schemaVersion": 2,
+    "id": "SCN_sheriff_front",
+    "name": "警长办公室·前厅",
+    "description": "前厅一半是公务,一半是习惯:临街那面墙上钉着布告板[item.sheriff_front.bulletin_board],褪色的通缉照和渔汛节的旧海报叠在一起,谁也没心思揭;板子底下一条木长椅[item.sheriff_front.visitor_bench]是镇上来报案的人坐的位置,座面磨掉了两块漆。墙边挂钩上一件备用制服[item.sheriff_front.spare_uniform]熨出笔直的棱线——不用问也知道是谁的;旁边挂钟[item.sheriff_front.wall_clock]的秒针有点粘,交接班的时间还是从它上头看。Cole 的办公桌[item.sheriff_front.cole_desk]收拾得像检阅前的营房,笔按长短排列,桌角一台老打字机[item.sheriff_front.typewriter]压着一沓空白报案表,黑色转盘电话[item.sheriff_front.telephone]就搁在手边——全镇出了事打的是这个号码。咖啡壶[item.sheriff_front.coffee_pot]续着新一壶,他杯里三块糖正在化。桌后的调度电台[item.sheriff_front.dispatch_radio]大多数时候只应之以杂音,旁边摊开的值班记录簿[item.sheriff_front.duty_log]一栏一栏签到今天上午。靠墙立着一组档案柜[item.sheriff_front.incident_files],抽屉标签写着「事件报告」——Cole 按规程归档的每一起「怪事报案」都在里面,按日期码得整整齐齐,全镇没有第二个人翻过。另一面墙上挂着镇区巡逻地图[item.sheriff_front.town_map],主街两段被铅笔描过许多遍,林道口往北就是一片空白;地图底下是玻璃门的枪柜[item.sheriff_front.gun_cabinet],里头锁着一支署里的老霰弹枪[item.sheriff_front.shotgun],柜边钥匙板[item.sheriff_front.key_board]上每把钥匙底下都贴着标签。临街门通向主街[ROAD_main_street];里间的门后是警长办公室[SCN_sheriff_office];走廊尽头是拘留室[SCN_sheriff_cell]。",
+    "parentLocationId": "sheriff_office",
+    "indoor": true,
+    "references": {
+      "items": [
+        {
+          "id": "item.sheriff_front.bulletin_board",
+          "name": "布告板",
+          "description": "临街墙上的软木布告板,层层叠叠钉着县里发下来的通缉照、两张多年没人问过的失踪告示、渔汛节的旧海报和一张镇公所的休渔通告。最上面一层永远是最近钉的,底下那几层的图钉早锈进了木头。"
+        },
+        {
+          "id": "item.sheriff_front.visitor_bench",
+          "name": "来访长椅",
+          "description": "布告板底下靠墙的一条木长椅,给来报案、来交罚款、来等人的镇民坐。座面被磨掉两块漆,谁坐在这儿说话,前厅整间屋子都听得见。"
+        },
+        {
+          "id": "item.sheriff_front.spare_uniform",
+          "name": "备用制服",
+          "description": "挂钩上罩着塑料袋的一套备用制服,棱线熨得笔直,袖口的警徽章缝得一丝不苟。值夜或是淋了雨,换的就是这一套。"
+        },
+        {
+          "id": "item.sheriff_front.wall_clock",
+          "name": "挂钟",
+          "description": "圆盘挂钟,白面黑针,秒针走到十一那格会粘一下再跳过去。交接班、出勤时间、笔录上写的钟点,记的都是它。"
+        },
+        {
+          "id": "item.sheriff_front.cole_desk",
+          "name": "Cole 的办公桌",
+          "description": "靠窗的钢制办公桌,桌面擦得能照见人:铅笔按长短排成一列,回形针盒摆正,抽屉里是编好号的空白表格和一把削笔刀。桌上没有一样东西是随手放的。"
+        },
+        {
+          "id": "item.sheriff_front.typewriter",
+          "name": "打字机",
+          "description": "桌角一台黑漆的手动打字机,e 键的字锤敲下去偏左半格,所以所有笔录里的 e 都比别的字母低一点。压在机身下的是一沓空白报案表。"
+        },
+        {
+          "id": "item.sheriff_front.telephone",
+          "name": "转盘电话",
+          "description": "黑色转盘电话,全镇报警打的就是这个号码。机身侧面贴着手写的号码条:诊所、蓝鸟餐馆、县警局值班室、Holt 家——字迹一笔一划,是新贴上去不到一年的。"
+        },
+        {
+          "id": "item.sheriff_front.coffee_pot",
+          "name": "咖啡壶",
+          "description": "办公桌旁小架上的电热咖啡壶,壶身结着一圈常年的水垢;糖罐永远续得满满的,谁都知道那是续给谁的。"
+        },
+        {
+          "id": "item.sheriff_front.dispatch_radio",
+          "name": "调度电台",
+          "description": "警用调度电台,天线擦得锃亮。灰港的频道大多数时候只有杂音——最近的杂音似乎比往常多。"
+        },
+        {
+          "id": "item.sheriff_front.duty_log",
+          "name": "值班记录簿",
+          "description": "摊在电台边的硬壳记录簿,一栏日期一栏时间一栏事由:巡逻出勤、接到的电话、谁的猫又上了谁家屋顶。签名栏里近一年几乎全是同一个人的笔迹。"
+        },
+        {
+          "id": "item.sheriff_front.incident_files",
+          "name": "事件报告档案柜",
+          "description": "Cole 的档案柜:一年来全镇每一起「怪事报案」——闪灯、串台、死鱼、雾里的光——都按日期与报案人归档在案。他自己还没意识到这摞纸连起来是什么。"
+        },
+        {
+          "id": "item.sheriff_front.town_map",
+          "name": "镇区巡逻地图",
+          "description": "钉在墙上的镇区地图,主街两段被铅笔描过许多遍,几处路灯杆上画了小圈。林道口以北是印刷厂留下的一片空白绿色,上头一个铅笔记号也没有。"
+        },
+        {
+          "id": "item.sheriff_front.gun_cabinet",
+          "name": "枪柜",
+          "description": "玻璃门的钢制枪柜,锁着,柜底一格摆着纸盒装的霰弹和几副护耳。钥匙不在钥匙板上——那把归警长收着。"
+        },
+        {
+          "id": "item.sheriff_front.shotgun",
+          "name": "署里的霰弹枪",
+          "description": "锁在枪柜里的泵动霰弹枪,枪管上了油,木托被人擦了很多年。灰港上一回把它拿出来是为了一头闯进镇子的病鹿。"
+        },
+        {
+          "id": "item.sheriff_front.key_board",
+          "name": "钥匙板",
+          "description": "枪柜边墙上一块钉着挂钩的木板:拘留室、后门、档案柜、巡逻车,每把钥匙底下贴着打字机打出来的标签,空钩子说明钥匙在谁手上。"
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.sheriff_front.street_door",
+          "targetId": "ROAD_main_street",
+          "name": "临街门",
+          "description": "磨砂玻璃上漆着「警长办公室」的临街门,通向主街北段。"
+        },
+        {
+          "id": "connection.sheriff_front.office_door",
+          "targetId": "SCN_sheriff_office",
+          "name": "里间门",
+          "description": "通向警长里间办公室的门,常年半掩。"
+        },
+        {
+          "id": "connection.sheriff_front.cell_door",
+          "targetId": "SCN_sheriff_cell",
+          "name": "拘留室通道",
+          "description": "走廊尽头通向拘留室的铁框门。"
+        }
+      ],
+      "conditions": []
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "SCN_sheriff_office",
+    "name": "警长办公室·里间",
+    "description": "里间是 Ray 的地盘:办公桌[item.sheriff_office.ray_desk]的漆面被三十六年的手肘磨出两片浅亮,桌后那把办公椅[item.sheriff_office.desk_chair]向后仰出固定的弧度,一坐就知道该仰到哪儿。窗台上摆着一座钓鱼奖杯[item.sheriff_office.fishing_trophy],墙角靠着一根钓竿[item.sheriff_office.fishing_rod],线轮上的线是上个潮期才换的;百叶窗[item.sheriff_office.blinds]把雾天的光切成一条条,叶片压下去就能看见半条主街。桌上摊着填了一半的填字游戏[item.sheriff_office.crossword],边上咖啡杯[item.sheriff_office.coffee_mug]底下的杯垫上咖啡渍叠着咖啡渍,烟灰缸[item.sheriff_office.ashtray]里是杂货店那个牌子的烟头;桌角另码着一摞待签的巡逻记录[item.sheriff_office.patrol_logs],是前厅那位每天早上搬进来的。分机电话[item.sheriff_office.telephone]搁在手边,铃声比前厅那台闷。墙上一张褪色的合影[item.sheriff_office.wall_photo]挂了很多年,门边一只上锁的证物柜[item.sheriff_office.evidence_locker]里是这些年没人来认领的零碎。墙角立着一组旧档案柜[item.sheriff_office.old_case_cabinet],柜顶落着薄灰——灰港三十多年的旧案卷宗锁在里面,钥匙就在抽屉里,Ray 从不去开。门通回前厅[SCN_sheriff_front],门轴的吱呀声足够提前两秒通报来人。",
+    "parentLocationId": "sheriff_office",
+    "indoor": true,
+    "references": {
+      "items": [
+        {
+          "id": "item.sheriff_office.ray_desk",
+          "name": "Ray 的办公桌",
+          "description": "木面办公桌,两片手肘磨出来的浅亮,抽屉一拉就卡半寸。抽屉里是回形针、钓钩、一把没削的铅笔、旧案档案柜的钥匙,还有一小罐擦徽章的膏。"
+        },
+        {
+          "id": "item.sheriff_office.desk_chair",
+          "name": "办公椅",
+          "description": "皮面早裂了的转椅,弹簧被三十六年的体重压出固定的弧度,往后一仰会「咯」的一声。全镇没有第二个人坐得惯它。"
+        },
+        {
+          "id": "item.sheriff_office.fishing_trophy",
+          "name": "钓鱼奖杯",
+          "description": "窗台一角摆着座小奖杯,底座刻着某年渔汛节钓鱼赛的名次,杯身早氧化发暗。有人问起,Ray 只说一句「运气好」。"
+        },
+        {
+          "id": "item.sheriff_office.fishing_rod",
+          "name": "钓竿",
+          "description": "靠在墙角的一根玻璃钢钓竿,线轮上的线上个潮期刚换过,竿梢缠着一截防勾的胶布。潮水好的傍晚它不在这儿。"
+        },
+        {
+          "id": "item.sheriff_office.blinds",
+          "name": "百叶窗",
+          "description": "临街那扇窗上的金属百叶窗,叶片有几片压弯了。拉绳一收,雾天的光就切成一条条;用手指压下一片,能看见半条主街和谁站在警局门口。"
+        },
+        {
+          "id": "item.sheriff_office.crossword",
+          "name": "填字游戏",
+          "description": "报纸上撕下的填字游戏,填了一半,铅笔搁在格子上。Ray 的进度和他的退休一样,不紧不慢。"
+        },
+        {
+          "id": "item.sheriff_office.coffee_mug",
+          "name": "咖啡杯",
+          "description": "缺了个口的白瓷杯,杯底一圈永远洗不净的褐痕,杯垫上的咖啡渍叠着咖啡渍。杯子里的咖啡从来不放糖。"
+        },
+        {
+          "id": "item.sheriff_office.ashtray",
+          "name": "烟灰缸",
+          "description": "厚玻璃的方烟灰缸,底上压着一层洗不掉的黄。烟头都是杂货店那个牌子——这镇上他的烟只在一个地方买。"
+        },
+        {
+          "id": "item.sheriff_office.patrol_logs",
+          "name": "待签的巡逻记录",
+          "description": "码在桌角的一摞巡逻记录表,每张右下角空着警长的签名栏,日期从上个月排到本周。码得整整齐齐,一看就不是这屋子里的人放的。"
+        },
+        {
+          "id": "item.sheriff_office.telephone",
+          "name": "分机电话",
+          "description": "里间的分机电话,前厅接进来的线,铃声闷一点。听筒线绕成死结,谁在这台上打过长电话一看就知道。"
+        },
+        {
+          "id": "item.sheriff_office.wall_photo",
+          "name": "褪色的合影",
+          "description": "镜框里一张褪了色的黑白合影:某年渔汛节,镇上的警员和船主挤在码头栈桥上,背景是还没停摆的鱼罐头厂。照片里最边上那个瘦小伙子如今坐在这张桌子后面。"
+        },
+        {
+          "id": "item.sheriff_office.evidence_locker",
+          "name": "证物柜",
+          "description": "门边一只绿漆铁柜,上着挂锁,标签是打字机打的。里头东西不多:醉汉手里没收的折刀、海滩上拾到没人认领的钱包、一台泡坏的手电。灰港的证物少到警长记得每一件的来历。"
+        },
+        {
+          "id": "item.sheriff_office.old_case_cabinet",
+          "name": "旧案档案柜",
+          "description": "上锁的旧档案柜,柜顶落灰。灰港三十六年治安史的另一半锁在里面——包括那些 Ray 决定不再看的年份。"
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.sheriff_office.front_door",
+          "targetId": "SCN_sheriff_front",
+          "name": "里间门",
+          "description": "通回前厅的门,门轴吱呀作响。"
+        }
+      ],
+      "conditions": []
+    }
+  },
+  {
+    "schemaVersion": 2,
+    "id": "SCN_sheriff_cell",
+    "name": "警长办公室·拘留室",
+    "description": "拘留室里一张铁架铺位[item.sheriff_cell.bunk],上头卷着一条军绿的旧毛毯[item.sheriff_cell.wool_blanket],折角硬成了死褶;墙角一只水槽[item.sheriff_cell.sink]、一只搪瓷坐便[item.sheriff_cell.toilet],铁栅栏[item.sheriff_cell.cell_bars]的漆有些年头了,栅栏门上那把挂锁常年虚扣着。这间屋子闲置已久[cond.sheriff_cell.disused]——灰港上一回真正关过人,还是多年前一个醉酒闹事的外地渔工;栅栏里侧的墙皮上还留着那辈人刻的名字和正字[item.sheriff_cell.wall_scratches]。高处一扇带铁条的小窗[item.sheriff_cell.barred_window]漏进一块朝北的天光,顶上一盏铁丝罩的顶灯[item.sheriff_cell.caged_light]的拉绳就在门内侧。墙角堆着几只纸箱[item.sheriff_cell.storage_boxes],装着圣诞游行的彩灯和用不上的路障牌:牢房成了镇公所的储藏间。铁框门通回前厅走廊[SCN_sheriff_front],钥匙挂在前厅的钥匙板上,从来没人惦记。",
+    "parentLocationId": "sheriff_office",
+    "indoor": true,
+    "references": {
+      "items": [
+        {
+          "id": "item.sheriff_cell.bunk",
+          "name": "铁架铺位",
+          "description": "焊死在墙上的铁架床,网格床板的漆早剥落见锈,躺上去每翻一次身整面墙都跟着响。床头一块钉着的木板,是给人搁鞋和口袋里东西的。"
+        },
+        {
+          "id": "item.sheriff_cell.wool_blanket",
+          "name": "旧毛毯",
+          "description": "卷在铺位一头的军绿毛毯,边上织着署里的编号,常年没人碰过,折角都硬成了死褶。真要给谁盖上,得先在门口抖上一阵灰。"
+        },
+        {
+          "id": "item.sheriff_cell.sink",
+          "name": "水槽",
+          "description": "墙角一只搪瓷水槽,龙头拧不紧,滴水声是这屋子唯一没停过的动静;瓷面裂了几道锈黄的纹。"
+        },
+        {
+          "id": "item.sheriff_cell.toilet",
+          "name": "搪瓷坐便",
+          "description": "无盖的搪瓷坐便,水箱高高吊在墙上,拉链换过一截麻绳。冲一次水,整条走廊都听得见。"
+        },
+        {
+          "id": "item.sheriff_cell.cell_bars",
+          "name": "铁栅栏",
+          "description": "把屋子隔成两半的铁栅栏和栅栏门,漆下面是几层更旧的漆。门上一把黄铜挂锁常年虚扣着,没扣死——这些年也没有扣死的必要。"
+        },
+        {
+          "id": "item.sheriff_cell.wall_scratches",
+          "name": "墙上的刻痕",
+          "description": "栅栏里侧的墙皮被人用硬币和皮带扣刻过:几个名字、一串正字、一条船的船名,还有句骂人的话被后来的人划掉了。最新的一道刻痕也有好些年了。"
+        },
+        {
+          "id": "item.sheriff_cell.barred_window",
+          "name": "带铁条的小窗",
+          "description": "靠近天花板的一扇小窗,外头是三根竖铁条和后巷的墙。朝北,一天里只有中午那阵子能在地上落一块亮斑;玻璃上糊着经年的盐雾。"
+        },
+        {
+          "id": "item.sheriff_cell.caged_light",
+          "name": "铁丝罩顶灯",
+          "description": "顶上一只嵌在铁丝罩里的灯泡,拉绳开关在门内侧,亮起来是那种把人脸照得发青的白。开关拉起来「啪」的一声,整间屋子都跟着一震。",
+          "isLightSource": true,
+          "lightLevel": 2
+        },
+        {
+          "id": "item.sheriff_cell.storage_boxes",
+          "name": "杂物纸箱",
+          "description": "几只纸箱:圣诞游行的彩灯、备用路障牌、一箱过期的交通传单。小镇治安的全部富余都堆在这儿。"
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.sheriff_cell.front_door",
+          "targetId": "SCN_sheriff_front",
+          "name": "铁框门",
+          "description": "通回前厅走廊的铁框门,从不上锁。"
+        }
+      ],
+      "conditions": [
+        {
+          "id": "cond.sheriff_cell.disused",
+          "description": "拘留室闲置多年,积灰的铺位和堆放的杂物让它更像储藏间而非牢房。"
+        }
+      ]
+    }
+  }
+]

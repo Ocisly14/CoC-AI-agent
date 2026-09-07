@@ -1,7 +1,8 @@
 import { describe,it,expect,vi } from 'vitest';
 import * as THREE from 'three';
 import { GrayhavenWorld } from './GrayhavenWorld';
-import { CLOSED_INTERIOR } from './buildingInteriors';
+import { CLOSED_INTERIOR, interiorRevealTarget, roomCenter } from './buildingInteriors';
+import { projectedRevealEllipse } from './depthReveal';
 
 // Exercise the real controller methods without a browser or a WebGL renderer.
 function controller() {
@@ -17,6 +18,16 @@ function controller() {
 }
 const flush=()=>new Promise(resolve=>setTimeout(resolve,0));
 describe('cutaway navigation and lazy-load races',()=>{
+  it('does not expose a closed, loading, failed or exterior-only building',()=>{
+    const {world}=controller();
+    for(const status of ['closed','loading','error']) {
+      world.interiorState.status=status;world.selectedId='SCN_bluebird_dining';
+      expect(world.revealTarget()).toBeNull();
+      expect(interiorRevealTarget(world.camera,new THREE.Matrix4(),world.interiorState)).toBeNull();
+    }
+    world.interiorState.status='closed';world.selectedId='SCN_grocery';expect(world.revealTarget()).toBeNull();
+    world.selectedId='SCN_redwood_ring';expect(world.revealTarget()?.strength).toBeGreaterThan(0);
+  });
   it('does not reopen after returning to the street during loading',async()=>{
     const {world,resolve,model}=controller();world.openInterior('SCN_bluebird_dining');world.returnToStreet();resolve();await flush();
     expect(world.interiorState.status).toBe('closed');expect(model.root.visible).toBe(false);expect(world.dinerExterior.visible).toBe(true);
@@ -25,6 +36,7 @@ describe('cutaway navigation and lazy-load races',()=>{
   it('honours a newer room/floor selection during the same load and saves street view only once',async()=>{
     const {world,resolve,model}=controller();world.openInterior('SCN_bluebird_dining');world.openInterior('SCN_bluebird_upstairs');
     resolve();await flush();expect(world.loadInterior).toHaveBeenCalledTimes(1);expect(world.interiorState.floor).toBe(1);
+    expect(world.dinerExterior.visible).toBe(true);
     expect(model.setFloor).toHaveBeenLastCalledWith(1);expect(world.fitInterior).toHaveBeenLastCalledWith('SCN_bluebird_upstairs');
     world.controls.target.set(1,2,3);world.openInterior('SCN_bluebird_kitchen');expect(world.streetView.target.toArray()).toEqual([20,8,9]);
   });
@@ -51,6 +63,14 @@ describe('cutaway navigation and lazy-load races',()=>{
         host:{getBoundingClientRect:()=>({top:0,left:0,bottom:height}),parentElement:{querySelector:(s:string)=>({getBoundingClientRect:()=>s==='.gh-place'?panel:toolbar})}}});
       world.fitInterior('SCN_bluebird_dining');
       camera.position.add(world.focusTarget);camera.zoom=world.focusZoom;camera.updateProjectionMatrix();camera.updateMatrixWorld();
+      const reveal=interiorRevealTarget(camera,exterior.matrixWorld,world.interiorState)!;
+      const actualRoom=roomCenter('SCN_bluebird_dining').applyMatrix4(exterior.matrixWorld);
+      expect(reveal.center.distanceTo(actualRoom)).toBeLessThan(.0001);
+      const ellipse=projectedRevealEllipse(camera,reveal),projectedRoom=actualRoom.project(camera);
+      expect(ellipse.center.x).toBeCloseTo((projectedRoom.x+1)/2);
+      expect(ellipse.center.y).toBeCloseTo((projectedRoom.y+1)/2);
+      expect(reveal.strength).toBeGreaterThan(0);
+      expect(world.revealTarget().strength).toBe(1);
       expect(camera.quaternion.equals(before)).toBe(true);
       for(const x of [-7.4,7.4])for(const y of [.2,6.4])for(const z of [-2.8,11.2]) {
         const p=new THREE.Vector3(x,y,z).applyMatrix4(exterior.matrixWorld).project(camera);
