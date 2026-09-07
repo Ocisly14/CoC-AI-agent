@@ -59,10 +59,12 @@ export class CanopySunlight {
     context.fillStyle = "#000";
     context.fillRect(0, 0, 1024, 1024);
     for (const tree of this.trees) {
-      const shadow = projectCanopy(tree.x, tree.z, tree.height * 0.62, towardSun);
+      const shadow = projectCanopy(tree.x, tree.z, tree.height * (tree.sequoia ? .82 : .62), towardSun);
       const x = (shadow.x - this.bounds.x) / this.bounds.width * 1024;
       const y = (shadow.z - this.bounds.z) / this.bounds.depth * 1024;
-      const radius = tree.width * 0.52;
+      // Tall-trunk sprites contain wide transparent margins; use the painted
+      // crown's width, not the full billboard, for their dapple footprint.
+      const radius = (tree.crownWidth ?? tree.width) * 0.52;
       context.save();
       context.translate(x, y);
       context.scale(radius / this.bounds.width * 1024, radius / this.bounds.depth * 1024);

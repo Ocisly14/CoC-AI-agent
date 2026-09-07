@@ -31,7 +31,7 @@ export function createCoastalWater() {
   const waves = Array.from({ length: WAVE_COUNT }, () => new THREE.Vector4());
   const shapes = Array.from({ length: WAVE_COUNT }, () => new THREE.Vector4());
   const uniforms = {
-    uTime: { value: 0 }, uFog: { value: .24 },
+    uTime: { value: 0 }, uFog: { value: .24 }, uMist: { value: 0 },
     uColor: { value: new THREE.Color(0x577f80) }, uLight: { value: new THREE.Color(0xb4c4b9) },
     uSunDirection: { value: new THREE.Vector3(-.6, .7, .4).normalize() },
     uSunColor: { value: new THREE.Color(0xffe0ad) },
@@ -102,7 +102,7 @@ export function createCoastalWater() {
       }
     `,
     fragmentShader: common + `
-      uniform float uFog; uniform vec3 uColor; uniform vec3 uLight;
+      uniform float uFog; uniform float uMist; uniform vec3 uColor; uniform vec3 uLight;
       uniform vec3 uSunDirection; uniform vec3 uSunColor;
       varying vec2 vShore; varying vec3 vWorld; varying vec3 vNormal; varying float vHeight;
       void main() {
@@ -145,8 +145,10 @@ export function createCoastalWater() {
         color=mix(color,uLight*.94,smoothstep(.5,2.5,vHeight)*.1);
         color=mix(color,uColor*.76,wetness);
         color=mix(color,uLight*1.13,foam*.85);
-        float distant=smoothstep(550.,1800.-uFog*750.,distance(vWorld,cameraPosition));
+        float distant=smoothstep(1050.,3200.,distance(vWorld,cameraPosition));
         color=mix(color,uLight,distant*.4);
+        // Low-lying sea mist shares the land materials' height fog strength.
+        color=mix(color,uLight,uMist);
         float shoreAlpha=max(max(foam*.82,film),wetness);
         float alpha=mix(shoreAlpha,1.,smoothstep(-.5,.6,d));
         alpha*=smoothstep(mix(-1.4,-20.,sand),mix(-.5,-17.,sand),d);

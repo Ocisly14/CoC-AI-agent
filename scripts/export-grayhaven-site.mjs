@@ -18,10 +18,10 @@ await mkdir(path.join(destination, "src/grayhaven/assets"), { recursive: true })
 await mkdir(path.join(destination, ".openai"), { recursive: true });
 await writeFile(path.join(destination, ".openai/hosting.json"), config);
 const source = path.join(repo, "client/src/observer/grayhaven");
-for (const filename of ["GrayhavenSandboxPage.tsx", "GrayhavenWorld.ts", "painterlyArt.ts", "forestLayout.ts", "lighting.ts", "waterDynamics.ts", "layout.ts", "grayhaven.css", "grayhaven.generated.json"]) {
+for (const filename of ["GrayhavenSandboxPage.tsx", "GrayhavenWorld.ts", "painterlyArt.ts", "architectureMaterials.ts", "forestLayout.ts", "lighting.ts", "daylight.ts", "lightingPatch.ts", "globalIllumination.ts", "softShadows.ts", "proceduralSky.ts", "worldLightAtlas.ts", "waterDynamics.ts", "seaMist.ts", "mainStreet.ts", "buildingInteriors.ts", "buildingScenes.generated.json", "bluebirdShell.ts", "bluebirdInterior.ts", "interiorLighting.ts", "beachScene.ts", "beachScene.generated.json", "layout.ts", "grayhaven.css", "grayhaven.generated.json"]) {
   await cp(path.join(source, filename), path.join(destination, "src/grayhaven", filename));
 }
-for (const filename of ["coastal-materials-v1.png", "redwood-studies-v1.png", "README.md"]) {
+for (const filename of ["main-street-materials-v1.png", "coastal-materials-v1.png", "redwood-tapered-v1.png", "sequoia-giants-v1.png", "README.md"]) {
   await cp(path.join(source, "assets", filename), path.join(destination, "src/grayhaven/assets", filename));
 }
 await writeFile(path.join(destination, "src/main.tsx"), `import React from "react";

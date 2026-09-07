@@ -4,12 +4,26 @@ import { beachAmount, coastalElevation, coastWidth, distanceToRoad, elevation, l
 import type { Point } from "./layout";
 import type { GrayhavenArt, Surface } from "./painterlyArt";
 import { forestDensity, makeForestLayout } from "./forestLayout";
-import { CanopySunlight, lightPaintedFoliage, lightPresets, type LightMode } from "./lighting";
+import { lightPaintedFoliage } from "./lighting";
+import { patchMaterial } from "./lightingPatch";
+import { toneMappingFromSearch } from "./globalIllumination";
+import { createSoftShadowUniforms, softShadowPatch, updateSoftShadowUniforms } from "./softShadows";
+import { ProceduralSky } from "./proceduralSky";
+import { BAKE_LAYER, WorldLightAtlas } from "./worldLightAtlas";
 
+import { architecturalUVs, createOverviewGlazing, isArchitectureSurface } from "./architectureMaterials";
+import { mainStreetPlots } from "./mainStreet";
+import moduleData from "./grayhaven.generated.json";
 import { createCoastalWater } from "./waterDynamics";
+import { createSeaMist } from "./seaMist";
+import { BEACH_VIEW, createBeachScene } from "./beachScene";
+import { BLUEBIRD, CLOSED_INTERIOR, isBluebird, roomCenter, roomFloor, projectedBuilding, cutawayDecision, type InteriorState } from './buildingInteriors';
+import { createBluebirdShadowShell } from './bluebirdShell';
+import { createInteriorLighting } from './interiorLighting';
+import type { BluebirdInterior } from './bluebirdInterior';
 
-export type { LightMode } from "./lighting";
-export type WorldOptions = { onSelect: (id: string) => void; onZoom: (zoom: number) => void; onError: (message: string) => void };
+import { normalizeHour, sampleDaylight, lightingRefresh } from "./daylight";
+export type WorldOptions = { initialHour?: number; onSelect: (id: string) => void; onZoom: (zoom: number) => void; onError: (message: string) => void; onInterior?: (state: InteriorState) => void; onTime?: (hour: number) => void };
 
 /** A fixed, authored visual interpretation of Grayhaven; no simulation or model calls. */
 export class GrayhavenWorld {
@@ -23,9 +37,15 @@ export class GrayhavenWorld {
   private disposed = false;
   private lastTime = 0;
   private textures = new Set<THREE.Texture>();
+  private signTextureBytes = 0;
   private sun = new THREE.DirectionalLight(0xffe0ad, 3.0);
   private ambient = new THREE.HemisphereLight(0xc9dedc, 0x6f7460, 2.2);
-  private canopySunlight = new CanopySunlight();
+  private lightAtlas = new WorldLightAtlas();
+  private sky!: ProceduralSky;
+  private softShadowUniforms = createSoftShadowUniforms();
+  private softShadow = softShadowPatch(this.softShadowUniforms);
+  // PCSS only where the 3072 map is used; narrow screens keep three's PCF-soft lookup.
+  private softShadows = window.innerWidth >= 900;
   private beacon = new THREE.PointLight(0xffdf9d, 0, 100, 2);
   private porchLight = new THREE.PointLight(0xffcd8b, 0, 26, 2);
   private harborLight = new THREE.PointLight(0xffd9a3, 0, 32, 2);
@@ -34,10 +54,12 @@ export class GrayhavenWorld {
   private beaconHalo!: THREE.SpriteMaterial;
   private water!: THREE.ShaderMaterial;
   private updateWater!: (time: number) => void;
-  private labels: { id: string; button: HTMLButtonElement; point: THREE.Vector3; major: boolean }[] = [];
+  private labels: { id: string; button: HTMLElement; point: THREE.Vector3; major: boolean; building?: boolean; roofCorners?: THREE.Vector3[] }[] = [];
   private hits: THREE.Object3D[] = [];
   private roadOverlay = new THREE.Group();
-  private windowMaterial = new THREE.MeshStandardMaterial({ color: 0x607478, roughness: 0.48 });
+  private glazing = createOverviewGlazing();
+  private frostedGlazing = createOverviewGlazing(true);
+  private windowMaterial = this.glazing.material;
   private litWindowMaterial = new THREE.MeshStandardMaterial({ color: 0x9a9f8f, emissive: 0xffc985, emissiveIntensity: 0, roughness: 0.55 });
   private materialCache = new Map<string, THREE.MeshStandardMaterial>();
   private buildingFootprints: { x: number; z: number; radius: number }[] = [];
@@ -49,8 +71,28 @@ export class GrayhavenWorld {
   private focusZoom: number | null = null;
   private labelVisible = true;
   private selectedId: string | null = null;
+  private seaMist = createSeaMist();
+  private beach!: ReturnType<typeof createBeachScene>;
+  private dinerExterior!: THREE.Group;
+  private dinerInverse = new THREE.Matrix4();
+  private dinerLight!: ReturnType<typeof createInteriorLighting>;
+  private dinerModel: BluebirdInterior | null = null;
+  private dinerLoading: Promise<void> | null = null;
+  private interiorState: InteriorState = { ...CLOSED_INTERIOR };
+  private interiorRequest = 0;
+  private candidateSince: number | null = null;
+  private streetView: { target: THREE.Vector3; zoom: number } | null = null;
+  private suppressAutoInterior = false;
+  private interiorCloseZoom = 0;
   private fogAmount = 0.24;
-  private lightMode: LightMode | null = null;
+  private dayHour=15;
+  private timePlaying=false;
+  private lightingDirty=true;
+  private indirectDirty=true;
+  private lastLightingUpdate=-Infinity;
+  private lastIndirectUpdate=-Infinity;
+  private lastTimeInput=-Infinity;
+  private reportedMinute=-1;
   private progress = 0;
   private reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   private raycaster = new THREE.Raycaster();
@@ -59,7 +101,6 @@ export class GrayhavenWorld {
 
   constructor(private host: HTMLDivElement, private labelHost: HTMLDivElement, private options: WorldOptions, private art: GrayhavenArt) {
     for (const texture of art.textures) this.textures.add(texture);
-    this.textures.add(this.canopySunlight.texture);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     this.renderer.shadowMap.enabled = true;
@@ -67,13 +108,18 @@ export class GrayhavenWorld {
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.needsUpdate = true;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = toneMappingFromSearch(window.location.search);
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.domElement.setAttribute("aria-label", "灰港镇三维全局地图，可拖动和缩放");
     this.renderer.domElement.setAttribute("role", "img");
     host.appendChild(this.renderer.domElement);
+    this.sky = new ProceduralSky(this.renderer);
+    for (const glass of [this.glazing.material, this.frostedGlazing.material]) {
+      this.attachLighting(glass);
+    }
+    this.attachLighting(this.litWindowMaterial);
     this.scene.background = new THREE.Color(0xb9c8c4);
-    this.scene.fog = new THREE.Fog(0xb9c8c4, 430, 1400);
+    this.scene.fog = new THREE.Fog(0xb9c8c4, 1050, 3200);
     this.camera.position.set(-360, 360, 430);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.set(38, 9, -57);
@@ -81,7 +127,8 @@ export class GrayhavenWorld {
     this.controls.dampingFactor = 0.075;
     this.controls.screenSpacePanning = true;
     this.controls.minZoom = 0.72;
-    this.controls.maxZoom = 3.4;
+    this.controls.maxZoom = 32;
+    this.controls.zoomToCursor = true;
     this.controls.minPolarAngle = Math.PI / 5;
     this.controls.maxPolarAngle = Math.PI / 2.75;
     this.controls.enableRotate = false;
@@ -98,7 +145,9 @@ export class GrayhavenWorld {
     Object.assign(this.sun.shadow.camera, { left: -620, right: 620, top: 780, bottom: -700, near: 1, far: 1800 });
     this.sun.shadow.bias = -0.00012;
     this.sun.shadow.normalBias = 0.28;
-    this.sun.shadow.intensity = 0.88;
+    // Shadow colour comes from the sky environment and ground bounce, not from leaked sun.
+    this.sun.shadow.intensity = 1;
+    this.sun.layers.enable(BAKE_LAYER.bounce); this.ambient.layers.enable(BAKE_LAYER.bounce);
     this.scene.add(this.sun, this.sun.target, this.ambient);
     this.buildLandscape();
     this.buildRoads();
@@ -106,6 +155,8 @@ export class GrayhavenWorld {
     this.buildLandmarks();
     this.buildForest();
     this.buildLabels();
+    // Static occlusion bake needs every building, rock, pier and tree proxy in place.
+    this.lightAtlas.bakeStatic(this.renderer, this.scene);
     this.ring = new THREE.Mesh(new THREE.RingGeometry(10.5, 11.1, 64), new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.visible = false;
@@ -117,7 +168,10 @@ export class GrayhavenWorld {
     this.observer.observe(host);
     this.resize();
     this.controls.update();
-    this.setAtmosphere("afternoon", this.fogAmount);
+    for(const light of [this.sun,this.beacon,this.porchLight]) {
+      light.shadow.autoUpdate=false;light.shadow.needsUpdate=true;
+    }
+    this.setAtmosphere(this.options.initialHour??15, this.fogAmount);
     this.animate(0);
   }
 
@@ -127,19 +181,34 @@ export class GrayhavenWorld {
     if (cached) return cached;
     const material = new THREE.MeshStandardMaterial({
       color, map: surface ? this.art.surfaces[surface] : null,
-      roughness: surface === "roof" ? 0.88 : 0.95, metalness: 0,
+      roughness: surface === "metalRoof" ? .57 : surface === "clapboard" ? .78 : .93,
+      metalness: surface === "metalRoof" ? .42 : 0,
+      bumpMap: isArchitectureSurface(surface) ? this.art.surfaces[surface] : null,
+      bumpScale: surface === "metalRoof" ? .055 : .035,
       // Non-luminous surfaces receive their fill from the cool hemisphere.
       emissiveIntensity: 0,
     });
+    if (isArchitectureSurface(surface)) material.userData.architectureSurface = surface;
+    this.attachLighting(material);
     this.materialCache.set(key, material);
     return material;
   }
 
+  /** Every lit surface reads the world light atlas; shadow receivers get PCSS. */
+  private attachLighting(material: THREE.MeshStandardMaterial) {
+    patchMaterial(material, this.lightAtlas.patch);
+    if (this.softShadows) patchMaterial(material, this.softShadow);
+    return material;
+  }
+
   private mesh(geometry: THREE.BufferGeometry, material: THREE.Material, position: number[], parent: THREE.Object3D = this.scene) {
+    const surface = material.userData.architectureSurface;
+    if (isArchitectureSurface(surface)) architecturalUVs(geometry, surface, position);
     const object = new THREE.Mesh(geometry, material);
     object.position.set(position[0], position[1], position[2]);
     object.castShadow = true;
     object.receiveShadow = true;
+    object.layers.enable(BAKE_LAYER.occluder); object.layers.enable(BAKE_LAYER.bounce);
     parent.add(object);
     return object;
   }
@@ -179,9 +248,9 @@ export class GrayhavenWorld {
         #endif
       `);
     };
-    this.canopySunlight.attach(groundMaterial);
+    this.attachLighting(groundMaterial);
     const ground = this.mesh(geometry, groundMaterial, [0, 0, 0]);
-    ground.castShadow = true;
+    ground.castShadow = true; ground.layers.enable(BAKE_LAYER.ground);
 
     // Layered sloping rock and sand meet the water; no uniform vertical cutout.
     const cliffPositions: number[] = [], cliffColors: number[] = [], cliffUvs: number[] = [], cliffIndices: number[] = [], sandWeights: number[] = [];
@@ -230,12 +299,15 @@ export class GrayhavenWorld {
         #endif
       `);
     };
+    this.attachLighting(cliffMat);
     const cliff = this.mesh(cliffs, cliffMat, [0, 0, 0]);
-    cliff.castShadow = false;
+    // Cliffs throw long shadows across the beach at sunset and define terrain height for the bake.
+    cliff.castShadow = true; cliff.layers.enable(BAKE_LAYER.ground);
 
     const water = createCoastalWater();
     this.water = water.material;
     this.updateWater = water.update;
+    water.mesh.layers.enable(BAKE_LAYER.bounce);
     this.scene.add(water.mesh);
     const random = seededRandom(71);
     const rockGeometry = new THREE.DodecahedronGeometry(1, 1);
@@ -251,7 +323,7 @@ export class GrayhavenWorld {
       dummy.rotation.set(random(), random() * 6, random());
       dummy.updateMatrix(); rocks.setMatrixAt(i, dummy.matrix);
     }
-    rocks.castShadow = true; rocks.receiveShadow = true; this.scene.add(rocks);
+    rocks.castShadow = true; rocks.receiveShadow = true; rocks.layers.enable(BAKE_LAYER.occluder); rocks.layers.enable(BAKE_LAYER.bounce); this.scene.add(rocks);
     this.buildBeachDetails();
   }
 
@@ -266,7 +338,7 @@ export class GrayhavenWorld {
         dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1);
         place(i); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
       }
-      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.castShadow = true; mesh.receiveShadow = true; mesh.layers.enable(BAKE_LAYER.occluder); mesh.layers.enable(BAKE_LAYER.bounce);
       this.scene.add(mesh);
     };
     // Leave a clear passage around the single pier and its landward approach.
@@ -326,7 +398,7 @@ export class GrayhavenWorld {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3)); geo.setIndex(indices); geo.computeVertexNormals();
     const surface = this.material(color); surface.side = THREE.DoubleSide;
-    this.canopySunlight.attach(surface);
+    this.attachLighting(surface);
     const road = this.mesh(geo, surface, [0, 0, 0]); road.castShadow = false;
     return curve;
   }
@@ -347,6 +419,7 @@ export class GrayhavenWorld {
           const p = curve.getPoint((i + 0.5) / 16), t = curve.getTangent((i + 0.5) / 16);
           dummy.position.set(p.x, elevation(p.x, p.z) + 0.22, p.z); dummy.rotation.y = Math.atan2(t.x, t.z); dummy.updateMatrix(); stripes.setMatrixAt(i, dummy.matrix);
         }
+        stripes.layers.enable(BAKE_LAYER.bounce);
         this.scene.add(stripes);
       }
     }
@@ -354,7 +427,7 @@ export class GrayhavenWorld {
     this.roadSurface([[135, -135], [118, -108], [107, -83], [98, -66], [84, -42]], 2.7, 0x718e85);
   }
 
-  private building(x: number, z: number, width: number, depth: number, height: number, color: number, roofColor: number, angle = 0, gable = true) {
+  private building(x: number, z: number, width: number, depth: number, height: number, color: number, roofColor: number, angle = 0, gable = true, genericDetails = true) {
     const group = new THREE.Group();
     const samples = [-1,1].flatMap(sx => [-1,1].map(sz => {
       const dx=sx*width/2, dz=sz*depth/2;
@@ -364,31 +437,32 @@ export class GrayhavenWorld {
     group.position.set(x, base, z); group.rotation.y = angle; this.scene.add(group);
     this.buildingFootprints.push({ x,z,radius:Math.hypot(width,depth)/2 });
     const footing = base - Math.min(...samples) + 0.9;
-    this.mesh(new THREE.BoxGeometry(width + 0.7, footing, depth + 0.7), this.material(0xb9b7b2, "rock"), [0, 0.4-footing/2, 0], group);
+    this.mesh(new THREE.BoxGeometry(width + 0.7, footing, depth + 0.7), this.material(0xbcb9ad), [0, 0.4-footing/2, 0], group);
     const paint = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.14);
-    this.mesh(new THREE.BoxGeometry(width, height, depth), this.material(paint.getHex(), "wood"), [0, height / 2 + 0.4, 0], group);
-    const roofPaint = new THREE.Color(roofColor).lerp(new THREE.Color(0xffffff), 0.32);
-    const roofMat = this.material(roofPaint.getHex(), "roof");
+    this.mesh(new THREE.BoxGeometry(width, height, depth), this.material(paint.getHex(), "clapboard"), [0, height / 2 + 0.4, 0], group);
+    const roofPaint = new THREE.Color(roofColor).lerp(new THREE.Color(0xffffff), 0.78);
+    const roofMat = this.material(roofPaint.getHex(), gable ? "shingles" : "tarRoof");
     if (gable) {
       const rise = width * 0.29, half = width / 2 + 0.7;
       const slope = Math.atan2(rise, half), length = Math.hypot(rise,half);
       for (const side of [-1,1]) {
-        const panel=this.mesh(new THREE.BoxGeometry(length,0.32,depth+1.5),roofMat,[side*half/2,height+0.6+rise/2,0],group);
+        const panelGeometry = new THREE.BoxGeometry(length,0.32,depth+1.5);
+        panelGeometry.userData.roofSlopeAxis = "x";
+        const panel=this.mesh(panelGeometry,roofMat,[side*half/2,height+0.6+rise/2,0],group);
         panel.rotation.z=-side*slope;
       }
       const shape=new THREE.Shape(); shape.moveTo(-width/2,0); shape.lineTo(width/2,0); shape.lineTo(0,rise); shape.closePath();
       const face=new THREE.ShapeGeometry(shape);
-      const uv=face.attributes.uv;
-      for(let i=0;i<uv.count;i++) uv.setXY(i,(uv.getX(i)+width/2)/width,uv.getY(i)/rise);
       for(const side of [-1,1]) {
-        const cap=this.mesh(face,this.material(paint.getHex(),"wood"),[0,height+.4,side*depth/2],group);
+        const cap=this.mesh(face,this.material(paint.getHex(),"clapboard"),[0,height+.4,side*depth/2],group);
         if(side<0) cap.rotation.y=Math.PI;
       }
     } else {
       this.mesh(new THREE.BoxGeometry(width+1.3,.65,depth+1.3),roofMat,[0,height+.75,0],group);
       // False storefront parapet breaks the repeated gable-house silhouette.
-      this.mesh(new THREE.BoxGeometry(width,.95,.7),this.material(paint.getHex(),"wood"),[0,height+1.25,depth/2-.3],group);
+      this.mesh(new THREE.BoxGeometry(width,.95,.7),this.material(paint.getHex(),"clapboard"),[0,height+1.25,depth/2-.3],group);
     }
+    if (!genericDetails) return group;
     const trim=this.material(0xd1cbbc);
     const lighted=Math.abs(Math.round(x*3+z))%4===0;
     for(const side of [-1,1]) {
@@ -400,9 +474,229 @@ export class GrayhavenWorld {
       this.mesh(new THREE.BoxGeometry(width+.5,.25,.5),trim,[0,height+.15,side*(depth/2+.05)],group);
     }
     if(width<19 && depth<18 && Math.abs(Math.round(x+z))%3===0) {
-      this.mesh(new THREE.BoxGeometry(1.3,2.3,1.6),this.material(0xb6a693,"rock"),[width*.25,height+width*.2+1,0],group);
+      this.mesh(new THREE.BoxGeometry(1.3,2.3,1.6),this.material(0x967b69),[width*.25,height+width*.2+1,0],group);
     }
     return group;
+  }
+
+  private buildMainStreet() {
+    const plots = mainStreetPlots();
+    // Typography only: one shared atlas for six physical storefront signboards.
+    const canvas = document.createElement("canvas"); canvas.width = 1024; canvas.height = 512;
+    const ctx = canvas.getContext("2d")!;
+    for (const plot of plots.filter(p => p.sign)) {
+      const col = plot.signIndex! % 2, row = Math.floor(plot.signIndex! / 2);
+      ctx.fillStyle = "#" + plot.accent.toString(16).padStart(6, "0");
+      ctx.fillRect(col * 512, row * 128, 512, 128);
+      ctx.fillStyle = plot.kind === "arcade" ? "#d0bcc0" : "#e0d8be";
+      ctx.font = plot.kind === "arcade" ? "600 51px sans-serif" : "bold 46px Georgia";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(plot.sign!, col * 512 + 256, row * 128 + 64, 470);
+    }
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4; this.textures.add(texture);
+    this.signTextureBytes = 1024 * 512 * 4 * 4 / 3;
+    const signMat = new THREE.MeshStandardMaterial({ map: texture, roughness: .95 });
+    const neonMat = new THREE.MeshStandardMaterial({ map: texture, emissiveMap: texture, emissive: 0xb2bbd4, emissiveIntensity: .65, roughness: .8 });
+    const trim = this.material(0xe4e0d2); trim.roughness = .64;
+    const boards = this.material(0xc5c1b7, "bareWood");
+    for (const plot of plots) {
+      const { width: w, depth: d, height: h } = plot;
+      const group = new THREE.Group();
+      const corners = [-1,1].flatMap(sx => [-1,1].map(sz => elevation(
+        plot.center.x + sx*w/2*Math.cos(plot.angle) + sz*d/2*Math.sin(plot.angle),
+        plot.center.z - sx*w/2*Math.sin(plot.angle) + sz*d/2*Math.cos(plot.angle))));
+      const base = Math.max(...corners);
+      group.position.set(plot.center.x, base, plot.center.z); group.rotation.y = plot.angle;
+      this.scene.add(group);
+      this.buildingFootprints.push({x:plot.center.x,z:plot.center.z,radius:Math.hypot(w,d)/2});
+      group.userData.moduleSceneId = plot.kind === "vacant" ? undefined : plot.id;
+      const front = d / 2;
+      const box = (width: number, height: number, depth: number, mat: THREE.Material, x: number, y: number, z: number) =>
+        this.mesh(new THREE.BoxGeometry(width, height, depth), mat, [x,y,z], group);
+      const accent = this.material(plot.accent); accent.roughness = .66;
+      const wall = this.material(plot.paint, "clapboard");
+      const roofSurface = plot.kind === "grocery" || plot.kind === "repair" ? "metalRoof"
+        : plot.kind === "diner" || plot.kind === "clinic" ? "shingles" : "tarRoof";
+      const roof = this.material(new THREE.Color(plot.roof).lerp(new THREE.Color(0xffffff), .82).getHex(), roofSurface);
+      const footing = base - Math.min(...corners) + .7;
+      box(w+.5,footing,d+.5,this.material(0xbcb9ad),0,.4-footing/2,0);
+      const roofForm = (width: number, depth: number, y: number, rise: number, centerZ = 0, hip = false) => {
+        const ridge = hip ? Math.max(0,depth/2-width*.4) : depth/2;
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position",new THREE.Float32BufferAttribute([
+          -width/2,y,-depth/2, width/2,y,-depth/2, -width/2,y,depth/2, width/2,y,depth/2,
+          0,y+rise,-ridge, 0,y+rise,ridge,
+        ],3));
+        const slopes = [0,5,4,0,2,5,1,5,3,1,4,5], ends = [0,4,1,2,3,5];
+        geo.setIndex(hip ? [...slopes, ...ends] : slopes);
+        const flat=geo.toNonIndexed(); flat.computeVertexNormals();
+        this.mesh(flat,roof,[0,0,centerZ],group);
+        if (!hip) {
+          // Vertical gable ends are siding, never roofing shingles.
+          geo.setIndex(ends);
+          const caps=geo.toNonIndexed(); caps.computeVertexNormals();
+          this.mesh(caps,wall,[0,0,centerZ],group);
+        }
+        geo.dispose();
+      };
+      if (plot.kind === "diner") {
+        // Wide two-storey street block with a low rear kitchen wing.
+        box(w,h*.49,d,wall,0,h*.245+.4,0);
+        box(w-.4,h*.49-.25,.06,this.material(plot.paint,"boardBatten"),0,h*.245+.4,-front-.04);
+        box(w,h*.51,d*.6,wall,0,h*.745+.4,d*.2);
+        box(w+.7,.5,d*.4+.4,this.material(0xd5d5ce,"metalRoof"),0,h*.49+.7,-d*.3);
+        roofForm(w+.8,d*.6+1,h+.45,1.8,d*.2);
+      } else {
+        box(w,h,d,wall,0,h/2+.4,0);
+        if (plot.kind === "clinic") roofForm(w+1.3,d+1.3,h+.4,3.8,0,true);
+        else if (plot.kind === "repair") roofForm(w+.8,d+1,h+.4,2.7);
+        else if (plot.kind === "grocery") {
+          const shed=box(w+.7,.45,d+1,roof,0,h+1.25,0); shed.rotation.x=.08;
+          const wedge=new THREE.Shape(); wedge.moveTo(-d/2,0); wedge.lineTo(d/2,0); wedge.lineTo(-d/2,1.8); wedge.closePath();
+          const infill=this.mesh(new THREE.ExtrudeGeometry(wedge,{depth:w,bevelEnabled:false,steps:1}),wall,[w/2,h+.4,0],group);
+          infill.rotation.y=-Math.PI/2;
+        } else box(w+.7,.5,d+.7,roof,0,h+.65,0);
+      }
+      const parapet = plot.kind === "clinic" ? .35 : plot.kind === "arcade" ? 1.15 : 1.7;
+      if (plot.kind !== "clinic") {
+        box(w,parapet,.65,wall,0,h+.4+parapet/2,front-.15);
+        box(w+.5,.25,.85,trim,0,h+.4+parapet,front-.15);
+        if (plot.kind === "diner" || plot.kind === "sheriff") {
+          const centralWidth=plot.kind === "sheriff" ? w*.36 : w*.64;
+          box(centralWidth,1,.65,wall,0,h+parapet+.9,front-.15);
+          box(centralWidth+.4,.22,.85,trim,0,h+parapet+1.45,front-.15);
+        }
+      }
+      // Applied corner boards, sill and fascia: smooth painted joinery, not wall texture.
+      for (const side of [-1,1]) for (const face of [-1,1])
+        box(.3,h,.3,trim,side*(w/2-.1),h/2+.4,face*(front-.02));
+      for (const side of [-1,1]) {
+        box(.2,.3,d,trim,side*(w/2+.07),.65,0);
+        box(.35,.3,d+.35,trim,side*(w/2+.06),h+.35,0);
+      }
+      box(w+.35,.32,.65,trim,0,5.18,front+.2);
+      box(w+.15,.18,.36,accent,0,4.92,front+.17);
+      if (plot.kind !== "clinic") {
+        box(w+.15,.28,.72,accent,0,h+parapet+.23,front-.05);
+        box(w+.65,.14,.95,trim,0,h+parapet+.6,front-.12);
+      }
+      // Dark reveal + inset glazing + distinct casing. Opaque glass keeps LOD exterior-only.
+      const framedWindow = (x: number, y: number, width: number, height: number, z: number, face = 1, sash = false) => {
+        box(width+.32,height+.32,.18,trim,x,y,z);
+        box(width,height,.1,this.windowMaterial,x,y,z+face*.12);
+        box(width+.48,.18,.42,trim,x,y-height/2-.15,z+face*.1);
+        if (sash) box(width,.12,.16,trim,x,y,z+face*.2);
+      };
+      const doorX = plot.kind === "diner" ? -w*.29 : plot.kind === "sheriff" ? 0 : w*.3;
+      box(1.95,3.9,.13,this.material(0x414844),doorX,2.48,front+.075);
+      box(1.5,3.5,.16,accent,doorX,2.4,front+.16);
+      box(1.13,2.35,.07,plot.kind === "clinic" ? this.frostedGlazing.material : this.windowMaterial,doorX,2.83,front+.265);
+      for (const side of [-1,1]) box(.15,3.95,.4,trim,doorX+side*.99,2.48,front+.22);
+      box(2.14,.2,.45,trim,doorX,4.5,front+.23);
+      box(.09,.38,.12,this.material(0xaea48b),doorX+.52,2.3,front+.34);
+      box(2.1,.2,.9,this.material(0xc4c1b6),doorX,.5,front+.42);
+      if (plot.kind === "sheriff") {
+        for (const side of [-1,1]) framedWindow(side*w*.3,3.05,w*.21,2.4,front+.15,1,true);
+        const star = new THREE.Shape();
+        for (let i=0;i<10;i++) { const a=Math.PI/2+i*Math.PI/5,r=i%2?.24:.52;
+          if (!i) star.moveTo(Math.cos(a)*r,Math.sin(a)*r); else star.lineTo(Math.cos(a)*r,Math.sin(a)*r); }
+        star.closePath(); this.mesh(new THREE.ShapeGeometry(star),this.material(0xc1a96f),[doorX,3.15,front+.32],group);
+        box(1.6,1.45,.2,accent,w*.38,2.7,front+.4);
+        box(1.3,1.15,.05,this.material(0xc7c0aa),w*.38,2.7,front+.52);
+      } else {
+        const windowX=doorX<0?w*.18:-w*.19, displayWidth=w*.43;
+        framedWindow(windowX,2.85,displayWidth,2.55,front+.14);
+        box(.14,2.65,.24,accent,windowX,2.85,front+.3);
+        // Panelled bulkhead supports the display glass; transom admits light above it.
+        box(displayWidth+.28,.92,.26,accent,windowX,.98,front+.19);
+        const panelPaint = this.material(new THREE.Color(plot.accent).lerp(new THREE.Color(0xffffff), .16).getHex());
+        for (const side of [-1,1]) box(displayWidth*.42,.62,.08,panelPaint,windowX+side*displayWidth*.25,.98,front+.36);
+        framedWindow(windowX,4.54,displayWidth,.48,front+.14);
+      }
+      if (plot.floors === 2) {
+        const columns=plot.kind === "diner" ? [-.32,0,.32] : plot.kind === "repair" ? [0] : [-.26,.26];
+        const opening=plot.kind === "repair" ? w*.4 : w*.2, upperY=Math.max(8.1,h*.75);
+        for (const column of columns) framedWindow(column*w,upperY,opening,2.2,front+.14,1,true);
+        const rear=plot.kind === "diner" ? -d*.1 : -front;
+        for(const x of [-w*.24,w*.24]) framedWindow(x,h*.76,w*.18,2.2,rear-.14,-1,true);
+      }
+      // Rear service elevations matter from the original coastal overview camera.
+      framedWindow(-w*.22,3,w*.22,1.85,-front-.14,-1,true);
+      box(1.45,3.1,.16,accent,w*.27,2,-front-.14);
+      box(w+.25,.22,.4,trim,0,h+.15,-front-.08);
+      if (plot.signIndex !== undefined) {
+        const geo = new THREE.PlaneGeometry(w*.86, 1.45), uv = geo.attributes.uv;
+        const col = plot.signIndex % 2, row = Math.floor(plot.signIndex / 2);
+        for (let i=0;i<uv.count;i++) uv.setXY(i,(col+uv.getX(i))/2,1-(row+1)/4+uv.getY(i)/4);
+        const sign = this.mesh(geo,plot.kind === "arcade" ? neonMat : signMat,[0,plot.floors===2?5.95:h+.95,front+(plot.kind === "arcade"?1.41:.51)],group);
+        sign.castShadow=false;
+      }
+      if (plot.kind === "vacant") {
+        for (let i=0;i<4;i++) box(w*.58,.49,.3,boards,-w*.14,1.9+i*.63,front+.42);
+        const brace=box(.3,3.3,.23,trim,-w*.14,2.85,front+.62); brace.rotation.z=-.45;
+        box(1.55,3,.25,boards,doorX,2.6,front+.43);
+      }
+      if (plot.kind === "diner") {
+        box(w*.56,.3,1.1,boards,-w*.15,.95,front+1.35);
+        box(w*.56,.95,.2,boards,-w*.15,1.6,front+1.7);
+        for (const x of [-w*.36,w*.07]) box(.25,.85,.9,accent,x,.5,front+1.35);
+      }
+      if (plot.kind === "grocery") {
+        box(1.1,1.7,.9,this.material(0x64869b),-w*.38,1.2,front+1.35);
+        box(.8,.1,.95,this.material(0x405e73),-w*.38,1.6,front+1.35);
+      }
+      if (plot.kind === "repair") {
+        // Opaque CRT-shaped colour blocks on the window surface, with no room geometry.
+        for (let i=0;i<3;i++) { const x=-w*.32+i*w*.15;
+          box(1,.8,.15,this.material(0x7e786b),x,2.3+(i%2)*.7,front+.36);
+          box(.72,.52,.04,this.material(0x708584),x,2.3+(i%2)*.7,front+.46); }
+      }
+      if (plot.kind === "arcade") {
+        box(w+.5,.8,1.6,accent,0,h+.7,front+.55);
+        box(w*.88,.17,.2,this.material(0xa9bfc1),0,h+1.16,front+1.4);
+      }
+      if (plot.kind === 'diner') {
+        this.dinerExterior=group; group.updateMatrixWorld(true);
+        this.dinerInverse.copy(group.matrixWorld).invert();
+        this.dinerLight=createInteriorLighting(this.art,this.dinerInverse,this.softShadows?this.softShadow:undefined);
+        const physical=createBluebirdShadowShell(); physical.position.copy(group.position); physical.quaternion.copy(group.quaternion); physical.traverse(o=>o.layers.enable(BAKE_LAYER.bounce)); this.scene.add(physical);
+        // This hollow shell is the single shadow caster in both exterior and cutaway views.
+        group.traverse(o=>{if(o instanceof THREE.Mesh)o.castShadow=false;});
+        const hit=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({visible:false}));
+        hit.position.set(0,h/2,0); group.add(hit); hit.userData.locationId=plot.id; this.hits.push(hit);
+      }
+      if (plot.kind !== 'vacant') {
+        // Anchor names to the built roof, not the module's street entrance coordinate.
+        const roofBounds=new THREE.Box3().setFromObject(group);
+        const point=new THREE.Vector3(group.position.x,roofBounds.max.y+.6,group.position.z);
+        const label=document.createElement(plot.kind==='diner'?'button':'span');
+        label.className='gh-map-label gh-building-label';
+        label.textContent=moduleData.locations.find(location=>location.id===plot.id)!.name.split('·')[0];
+        if(label instanceof HTMLButtonElement) {
+          label.type='button';label.setAttribute('aria-label','查看'+label.textContent);
+          label.addEventListener('click',()=>this.options.onSelect(plot.id),{signal:this.abort.signal});
+        }
+        label.hidden=true;this.labelHost.appendChild(label);
+        const roofCorners=[-1,1].flatMap(x=>[-1,1].map(z=>group.localToWorld(new THREE.Vector3(x*(w/2+.7),roofBounds.max.y-group.position.y+.6,z*(d/2+.7)))));
+        this.labels.push({id:plot.id,button:label,point,major:false,building:true,roofCorners});
+      }
+      // A continuous, ground-following pavement links the separate shop entrances.
+      const sidewalkPoints: Point[] = [-w/2,w/2].map(x => {
+        const p=group.localToWorld(new THREE.Vector3(x,0,front+2.5)); return [p.x,p.z];
+      });
+      this.roadSurface(sidewalkPoints, 4.6, 0xb4b1a1);
+      if (plot.kind === "clinic") {
+        const p=group.localToWorld(new THREE.Vector3(-w*.42,0,front+2.6));
+        const y=elevation(p.x,p.z);
+        const trunk=this.mesh(new THREE.CylinderGeometry(.35,.65,6.4,6),this.material(0x817c68,"wood"),[p.x,y+3,p.z]);
+        trunk.rotation.z=-.23;
+        for (let i=0;i<3;i++) {
+          const crown=this.mesh(new THREE.DodecahedronGeometry(2.6,1),this.material([0x899776,0x94a180,0xa5ad89][i],"ground"),[p.x+1+(i-1)*1.6,y+7+(i%2)*.8,p.z+(i-1)*.65]);
+          crown.scale.set(1, .75, .9);
+        }
+      }
+    }
   }
 
   private buildTown() {
@@ -410,15 +704,20 @@ export class GrayhavenWorld {
     const palette = [0xc5bda5, 0xa9b2a4, 0x819496, 0xcac4b4, 0xb49a8b, 0x91a5ac];
     const roofs = [0x9a9188, 0xa66f58, 0x839395, 0x85888e];
     const main = this.curve(roadPaths.find(r => r.id === "ROAD_main_street")!.points);
-    for (let i = 0; i < 7; i++) for (const side of [-1, 1]) {
-      const p = main.getPoint((i + 0.4) / 7);
-      this.building(p.x + side * 15, p.z, 13, 9 + random() * 4, 6 + random() * 5, palette[(i + (side + 1)) % palette.length], roofs[i % roofs.length], 0.12, i % 3 !== 0);
-      const sidewalk = this.mesh(new THREE.BoxGeometry(4, 0.2, 13), this.material(0xb1b0a0), [p.x + side * 6.6, elevation(p.x + side * 6.6, p.z) + 0.18, p.z]); sidewalk.castShadow = false;
-    }
-    for (let i = 0; i < 16; i++) {
-      const x = 40 + (i % 4) * 18, z = 15 + Math.floor(i / 4) * 24;
-      this.building(x, z, 8 + random() * 3, 9 + random() * 3, 5 + random() * 3, palette[i % palette.length], roofs[i % roofs.length], -0.05, true);
-    }
+    this.buildMainStreet();
+    // Keep the coastal houses' seed sequence while replacing the sixteen-house
+    // grid with six staggered homes. The backstreet and Reyes forecourt stay open.
+    for (let i = 0; i < 28 + 16 * 3; i++) random();
+    const neighborhood = [
+      { x: 43, z: 16, width: 9, depth: 11, height: 5.6, angle: -.16 },
+      { x: 73, z: 27, width: 11, depth: 10, height: 6.6, angle: .12 },
+      { x: 100, z: 10, width: 8.5, depth: 12, height: 5.1, angle: -.07 },
+      { x: 48, z: 54, width: 10, depth: 9, height: 6, angle: .21 },
+      { x: 85, z: 62, width: 9, depth: 13, height: 5.3, angle: -.19 },
+      { x: 108, z: 91, width: 11, depth: 10, height: 6.3, angle: .06 },
+    ];
+    neighborhood.forEach((p, i) => this.building(p.x, p.z, p.width, p.depth, p.height,
+      palette[i % palette.length], roofs[i % roofs.length], p.angle));
     for (let i = 0; i < 10; i++) {
       const x = -46 - random() * 15, z = 10 + i * 9;
       if (x > shoreline(z) + 20) this.building(x, z, 8, 7, 5 + random() * 2, palette[i % palette.length], roofs[i % roofs.length], 0.16);
@@ -461,14 +760,9 @@ export class GrayhavenWorld {
       seams.push(new THREE.Vector3(x, deck + .56, z - halfWidth), new THREE.Vector3(x, deck + .56, z + halfWidth));
     }
     this.scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(seams), new THREE.LineBasicMaterial({color: 0x827e70, transparent: true, opacity: .4})));
-    for (const side of [-1, 1]) {
-      const boatX = start - length + 12 + (side + 1) * 5;
-      const boat = this.mesh(new THREE.SphereGeometry(1, 8, 5), this.material(side > 0 ? 0xb4a08c : 0xd2c8aa), [boatX, .3, z + side * 8]);
-      boat.scale.set(5.8, 1.4, 1.8);
-      this.mesh(new THREE.BoxGeometry(2.8, 2, 2), this.material(0xc1bca6), [boatX + 1, 1.4, z + side * 8]);
-    }
-    const [dx, dz] = landmarks.find(l => l.id === "SCN_dock")!.position;
-    this.building(dx + 10, dz + 3, 10, 22, 6, 0x959e92, 0x667b78, Math.PI / 2);
+    this.beach = createBeachScene((color, surface) => this.material(color, surface));
+    this.scene.add(this.beach.root);
+    this.beach.update(this.camera.zoom, this.progress);
     const [lx, lz] = landmarks.find(l => l.id === "SCN_lighthouse_cliff")!.position;
     const ly = elevation(lx, lz);
     this.mesh(new THREE.CylinderGeometry(7, 9, 1.2, 16), this.material(0xa39b83), [lx, ly + 0.4, lz]);
@@ -511,6 +805,7 @@ export class GrayhavenWorld {
     this.porchLight.shadow.normalBias = 0.08;
     const [dx, dz] = landmarks.find(l => l.id === "SCN_dock")!.position;
     this.harborLight.position.set(dx + 6, elevation(dx + 6, dz + 11) + 5.5, dz + 11);
+    for (const light of [this.beacon, this.porchLight, this.harborLight]) light.layers.enable(BAKE_LAYER.bounce);
     this.scene.add(this.beacon, this.porchLight, this.harborLight);
     for (const light of [this.porchLight, this.harborLight]) {
       const bulb = this.mesh(new THREE.SphereGeometry(0.45, 8, 6), this.lampGlass, light.position.toArray());
@@ -533,32 +828,77 @@ export class GrayhavenWorld {
 
   private buildForest() {
     const trees = makeForestLayout();
-    this.canopySunlight.setTrees(trees);
+    this.lightAtlas.setTrees(trees);
     const dummy = new THREE.Object3D(), color = new THREE.Color();
     // The fixed overview camera permits upright painted cards without turn-to-
     // camera animation. Instancing preserves depth and keeps forest draw calls low.
     const facing = Math.atan2(-398, 487);
     const geometry = new THREE.PlaneGeometry(1, 1);
     geometry.translate(0, 0.5, 0);
-    for (let variant = 0; variant < 4; variant++) {
-      const points = trees.filter(p => p.variant === variant);
+    for (let variant = 0; variant < this.art.trees.length; variant++) {
+      const points = trees.filter(tree => !tree.sequoia && tree.variant === variant);
+      if (!points.length) continue;
       const map = this.art.trees[variant];
       const material = new THREE.MeshStandardMaterial({
-        map, alphaTest: 0.38, side: THREE.DoubleSide, roughness: 1,
+        map, alphaTest: .12, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 1,
         emissiveIntensity: 0,
       });
       lightPaintedFoliage(material);
+      this.attachLighting(material);
       const cards = new THREE.InstancedMesh(geometry, material, points.length);
       points.forEach((p, i) => {
-        dummy.position.set(p.x, elevation(p.x, p.z) - 0.5, p.z);
+        dummy.position.set(p.x, elevation(p.x, p.z) - p.height * map.userData.baseV, p.z);
         dummy.rotation.set(0, facing + (p.tint - 0.5) * 0.2, 0);
         dummy.scale.set(p.width, p.height, 1);
         dummy.updateMatrix(); cards.setMatrixAt(i, dummy.matrix);
         color.set(0xe0e4d5).lerp(new THREE.Color(0xa2beb7), p.grove * 0.32 + p.tint * 0.2);
         cards.setColorAt(i, color);
       });
-      cards.castShadow = true; cards.receiveShadow = true;
+      cards.castShadow = true; cards.receiveShadow = true; cards.layers.enable(BAKE_LAYER.bounce);
       this.scene.add(cards);
+    }
+    // The reference giants use an actual straight trunk and a high crown. Their
+    // dedicated bark/crown atlas is shared; no bitmap is stretched into a squat tree.
+    for (let variant = 0; variant < this.art.sequoias.length; variant++) {
+      const points = trees.filter(tree => tree.sequoia && tree.variant === variant);
+      if (!points.length) continue;
+      const map = this.art.sequoias[variant];
+      const trunkGeometry = new THREE.LatheGeometry([
+        new THREE.Vector2(.072,-.20), new THREE.Vector2(.065,0),
+        new THREE.Vector2(.055,.09), new THREE.Vector2(.048,.35),
+        new THREE.Vector2(.039,.64), new THREE.Vector2(.03,.81),
+      ], 12);
+      // Sample a narrow vertical bark strip from the authored straight trunk.
+      const barkUV = trunkGeometry.attributes.uv, barkCenter = variant === 0 ? .525 : .5;
+      for (let i=0;i<barkUV.count;i++) barkUV.setXY(i,barkCenter+(barkUV.getX(i)-.5)*.065,.12+barkUV.getY(i)*.38);
+      const bark = new THREE.MeshStandardMaterial({ map, bumpMap: map, bumpScale: .035, color: 0xb9aaa0, roughness: .94 });
+      const trunks = new THREE.InstancedMesh(trunkGeometry,bark,points.length);
+      const crownGeometry = new THREE.PlaneGeometry(.38,.37);
+      crownGeometry.translate(0,.815,0);
+      const crownUV = crownGeometry.attributes.uv;
+      for(let i=0;i<crownUV.count;i++) crownUV.setY(i,.38+crownUV.getY(i)*.62);
+      const foliage = new THREE.MeshStandardMaterial({ map, alphaTest: .12, alphaToCoverage: true,
+        side: THREE.DoubleSide, color: 0xe8e1d2, roughness: 1 });
+      lightPaintedFoliage(foliage);
+      const lightCrown = foliage.onBeforeCompile;
+      foliage.onBeforeCompile = (shader, renderer) => {
+        lightCrown(shader, renderer);
+        shader.fragmentShader = shader.fragmentShader.replace("#include <alphatest_fragment>", `
+          diffuseColor.a *= smoothstep(.38, .46, vMapUv.y);
+          #include <alphatest_fragment>
+        `);
+      };
+      foliage.customProgramCacheKey = () => "grayhaven-high-sequoia-crown-v1";
+      this.attachLighting(foliage); this.attachLighting(bark);
+      const crowns = new THREE.InstancedMesh(crownGeometry,foliage,points.length);
+      points.forEach((p,i)=>{
+        dummy.position.set(p.x,elevation(p.x,p.z),p.z);
+        dummy.rotation.set(0,facing,0); dummy.scale.setScalar(p.height); dummy.updateMatrix();
+        trunks.setMatrixAt(i,dummy.matrix); crowns.setMatrixAt(i,dummy.matrix);
+      });
+      trunks.castShadow = trunks.receiveShadow = true; trunks.layers.enable(BAKE_LAYER.occluder); trunks.layers.enable(BAKE_LAYER.bounce);
+      crowns.castShadow = crowns.receiveShadow = true; crowns.layers.enable(BAKE_LAYER.bounce);
+      this.scene.add(trunks,crowns);
     }
     // Town edge trees share the same brush language, with footprints left clear.
     const random = seededRandom(1885), townPoints: { x: number; z: number; h: number }[] = [];
@@ -567,14 +907,16 @@ export class GrayhavenWorld {
       if (distanceToRoad([x,z]) < 6 || this.buildingFootprints.some(b => Math.hypot(x-b.x,z-b.z) < b.radius+3)) continue;
       townPoints.push({x,z,h:12+random()*9});
     }
-    const mat = new THREE.MeshStandardMaterial({ map: this.art.trees[3], alphaTest: 0.38, side: THREE.DoubleSide, roughness: 1 });
+    const mat = new THREE.MeshStandardMaterial({ map: this.art.trees[2], alphaTest: .12, alphaToCoverage: true, side: THREE.DoubleSide, roughness: 1 });
     lightPaintedFoliage(mat);
+    this.attachLighting(mat);
     const edgeTrees = new THREE.InstancedMesh(geometry, mat, townPoints.length);
     townPoints.forEach((p,i) => {
-      dummy.position.set(p.x,elevation(p.x,p.z),p.z); dummy.rotation.set(0,facing,0); dummy.scale.set(p.h*.8,p.h,1); dummy.updateMatrix(); edgeTrees.setMatrixAt(i,dummy.matrix);
+      dummy.position.set(p.x,elevation(p.x,p.z)-p.h*this.art.trees[2].userData.baseV,p.z); dummy.rotation.set(0,facing,0); dummy.scale.set(p.h*.8,p.h,1); dummy.updateMatrix(); edgeTrees.setMatrixAt(i,dummy.matrix);
     });
-    edgeTrees.castShadow = true; this.scene.add(edgeTrees);
+    edgeTrees.castShadow = true; edgeTrees.receiveShadow = true; edgeTrees.layers.enable(BAKE_LAYER.bounce); this.scene.add(edgeTrees);
     this.host.dataset.treeCount = String(trees.length + townPoints.length);
+    this.host.dataset.sequoiaCount = String(trees.filter(tree => tree.sequoia).length);
   }
 
   private buildLabels() {
@@ -595,46 +937,197 @@ export class GrayhavenWorld {
     }
   }
 
-  setAtmosphere(mode: LightMode, fog: number) {
-    this.fogAmount = fog;
-    const p = lightPresets[mode];
-    this.scene.background = new THREE.Color(p.sky);
-    this.scene.fog = new THREE.Fog(p.sky, 880 - fog * 470, 2900 - fog * 1750);
-    this.sun.color.set(p.sun); this.sun.intensity = p.direct;
-    this.sun.position.fromArray(p.position);
-    this.ambient.intensity = p.ambient; this.ambient.color.set(p.fill); this.ambient.groundColor.set(p.bounce);
-    this.windowMaterial.color.set(mode === "bluehour" ? 0x354756 : 0x607478);
-    this.litWindowMaterial.emissiveIntensity = mode === "bluehour" ? 1.5 : mode === "sunset" ? 0.24 : 0;
-    this.beacon.intensity = p.beacon; this.porchLight.intensity = p.porch; this.harborLight.intensity = p.harbor;
-    this.beaconGlass.emissiveIntensity = p.glow;
-    this.lampGlass.emissiveIntensity = mode === "afternoon" ? 0 : p.glow;
-    this.beaconHalo.opacity = mode === "afternoon" ? 0.08 : mode === "sunset" ? 0.3 : 0.55;
-    const towardSun = new THREE.Vector3().subVectors(this.sun.position, this.sun.target.position).normalize();
-    this.canopySunlight.update(towardSun, p.dapple * (1 - fog * 0.55));
-    this.water.uniforms.uSunDirection.value.copy(towardSun); this.water.uniforms.uSunColor.value.set(p.sun);
-    this.water.uniforms.uColor.value.set(p.water); this.water.uniforms.uLight.value.set(p.sky); this.water.uniforms.uFog.value = fog;
-    this.renderer.toneMappingExposure = p.exposure;
-    // Geometry and lighting remain static between explicit preview changes.
-    if (this.lightMode !== mode) this.renderer.shadowMap.needsUpdate = true;
-    this.lightMode = mode;
+  setAtmosphere(hour:number,fog:number) {
+    this.dayHour=normalizeHour(hour);this.fogAmount=THREE.MathUtils.clamp(fog,0,1);
+    this.lightingDirty=true;this.indirectDirty=true;this.lastTimeInput=performance.now();
+  }
+  setTime(hour:number) {this.setAtmosphere(hour,this.fogAmount);}
+  setTimePlaying(playing:boolean) {this.timePlaying=playing;}
+  getTime() {return this.dayHour;}
+
+  private updateLighting(time:number,dt:number) {
+    if(this.timePlaying) {this.dayHour=normalizeHour(this.dayHour+dt*.1);this.lightingDirty=true;this.indirectDirty=true;}
+    const refresh=lightingRefresh(time,this.lastLightingUpdate,this.lastIndirectUpdate,this.lastTimeInput,this.timePlaying,this.lightingDirty,this.indirectDirty);
+    if(refresh.direct || refresh.indirect) {
+      const p=sampleDaylight(this.dayHour),gi=p.gi;
+      this.dinerLight?.setDaylight(p.daylight);
+      (this.scene.background as THREE.Color).copy(p.sky);
+      (this.scene.fog as THREE.Fog).color.copy(p.sky);
+      this.seaMist.setAtmosphere(this.fogAmount,p.sky,p.daylight);
+      this.sun.color.copy(p.sun);this.sun.intensity=p.direct;
+      // Keep the light transform and its shadow map on the same sampled time.
+      this.sun.position.copy(this.sun.target.position).addScaledVector(p.direction,540);
+      this.ambient.intensity=gi.ambient;this.ambient.color.copy(p.fill);this.ambient.groundColor.copy(p.bounce);
+      this.windowMaterial.color.set(0x25323e).lerp(new THREE.Color(0x34474c),p.daylight);
+      this.glazing.setLight(p.fill,p.bounce);this.frostedGlazing.setLight(p.fill,p.bounce);
+      this.litWindowMaterial.emissiveIntensity=p.lamps*1.5;
+      this.beacon.intensity=p.beacon;this.porchLight.intensity=p.porch;this.harborLight.intensity=p.harbor;
+      this.beaconGlass.emissiveIntensity=p.glow;this.lampGlass.emissiveIntensity=p.lamps*p.glow;
+      this.beaconHalo.opacity=.08+p.lamps*.47;
+      this.seaMist.setSun(p.direction,p.sun.clone().multiplyScalar(.04+p.daylight*.96));
+      this.water.uniforms.uMist.value=0;
+      this.water.uniforms.uSunDirection.value.copy(p.direction);
+      this.water.uniforms.uSunColor.value.copy(p.sun).multiplyScalar(p.direct/4.8);
+      this.water.uniforms.uColor.value.copy(p.water);this.water.uniforms.uLight.value.copy(p.sky);this.water.uniforms.uFog.value=this.fogAmount;
+      this.renderer.toneMappingExposure=p.exposure;this.scene.environmentIntensity=gi.envIntensity;
+      this.lightAtlas.applyPreset({aoStrength:gi.aoStrength,contactHeight:gi.contactHeight,bounceStrength:gi.bounceStrength,mist:0,mistFloor:gi.mistFloor,mistTop:gi.mistTop});
+      updateSoftShadowUniforms(this.softShadowUniforms,this.sun.shadow,gi.penumbra);
+      this.sun.shadow.needsUpdate=true;this.renderer.shadowMap.needsUpdate=true;
+      this.lightingDirty=false;this.lastLightingUpdate=time;
+      if(refresh.indirect) {
+        // Expensive sky, canopy and bounce updates are capped at twice per second,
+        // with one final exact update after the user stops dragging the timeline.
+        this.scene.environment=this.sky.update({zenith:gi.zenith,horizon:p.sky,ground:gi.ground,sunColor:p.sun,sunDirection:p.direction,sunGlow:gi.sunGlow});
+        this.lightAtlas.updateCanopy(p.direction,p.dapple*(1-this.fogAmount*.55));
+        const exteriorVisible=this.dinerExterior.visible;this.dinerExterior.visible=true;
+        try {this.lightAtlas.bakeBounce(this.renderer,this.scene);}
+        finally {this.dinerExterior.visible=exteriorVisible;}
+        this.indirectDirty=false;this.lastIndirectUpdate=time;
+      }
+    }
+    const minute=Math.floor(this.dayHour*60+1e-7)%1440;
+    if(minute!==this.reportedMinute) {this.reportedMinute=minute;this.options.onTime?.(this.dayHour);}
   }
 
   setLabels(visible: boolean) { this.labelVisible = visible; }
   setRoads(visible: boolean) { this.roadOverlay.visible = visible; }
   zoomBy(factor: number) { this.focusZoom = THREE.MathUtils.clamp(this.camera.zoom * factor, this.controls.minZoom, this.controls.maxZoom); }
   reset() {
+    this.closeInterior(); this.streetView=null; this.suppressAutoInterior=true;
     this.focusTarget = new THREE.Vector3(38, 9, -57); this.focusZoom = 1;
     this.select(null);
   }
   select(id: string | null, navigate = true) {
+    const same=this.selectedId===id;
     this.selectedId = id;
+    if (isBluebird(id)) {
+      this.ring.visible=false;
+      if(navigate && (!same || this.interiorState.status==='closed'))this.openInterior(id!);
+      return;
+    }
+    if(id && navigate) {this.closeInterior();this.streetView=null;this.suppressAutoInterior=true;}
     const landmark = landmarks.find(l => l.id === id);
     this.ring.visible = !!landmark;
     for (const label of this.labels) label.button.classList.toggle("is-selected", label.id === id);
     if (!landmark) return;
     const [x, z] = landmark.position, y = elevation(x, z);
     this.ring.position.set(x, y + 0.7, z);
-    if (navigate) { this.focusTarget = new THREE.Vector3(x, y, z); this.focusZoom = 2.35; }
+    if (navigate) {
+      this.focusTarget = id === "SCN_dock" ? new THREE.Vector3(BEACH_VIEW.x, BEACH_VIEW.y, BEACH_VIEW.z) : new THREE.Vector3(x, y, z);
+      this.focusZoom = id === "SCN_dock" ? BEACH_VIEW.zoom : 2.35;
+    }
+  }
+
+  private setInteriorState(state: InteriorState) {
+    this.interiorState=state; this.options.onInterior?.({...state});
+    this.host.dataset.interior=JSON.stringify(state);
+  }
+
+  private loadInterior() {
+    if(this.dinerModel)return Promise.resolve();
+    if(this.dinerLoading)return this.dinerLoading;
+    this.dinerLoading=import('./bluebirdInterior').then(({createBluebirdInterior})=>{
+      if(this.disposed)return;
+      const view=new THREE.Vector3().subVectors(this.camera.position,this.controls.target).transformDirection(this.dinerInverse);
+      const model=createBluebirdInterior(this.dinerLight,view);
+      model.root.position.copy(this.dinerExterior.position);model.root.quaternion.copy(this.dinerExterior.quaternion);
+      model.root.visible=false;this.scene.add(model.root);this.dinerModel=model;
+    }).finally(()=>{this.dinerLoading=null;});
+    return this.dinerLoading;
+  }
+
+  private openInterior(room: string | null, automatic=false) {
+    if(this.interiorState.status==='open') {
+      const floor=room?roomFloor(room):this.interiorState.floor;
+      this.dinerModel!.setFloor(floor);
+      this.setInteriorState({...this.interiorState,floor,room,item:this.interiorState.room===room?this.interiorState.item:null});
+      if(!automatic)this.fitInterior(room);
+      return;
+    }
+    if(this.interiorState.status==='loading') {
+      if(room)this.setInteriorState({...this.interiorState,room,floor:roomFloor(room),item:null});
+      return;
+    }
+    if(!this.streetView)this.streetView={target:this.controls.target.clone(),zoom:this.camera.zoom};
+    this.suppressAutoInterior=false;this.interiorCloseZoom=0;
+    const request=++this.interiorRequest;
+    this.setInteriorState({status:'loading',floor:room?roomFloor(room):0,room,item:null});
+    this.loadInterior().then(()=>{
+      if(this.disposed || request!==this.interiorRequest || !this.dinerModel)return;
+      this.dinerExterior.visible=false;this.dinerModel.root.visible=true;
+      this.dinerModel.setFloor(this.interiorState.floor);
+      this.seaMist.setInterior(this.dinerInverse,true);
+      this.setInteriorState({...this.interiorState,status:'open'});
+      if(!automatic)this.fitInterior(this.interiorState.room);
+    }).catch(cause=>{
+      if(this.disposed || request!==this.interiorRequest)return;
+      console.error('Bluebird interior could not load',cause);
+      this.setInteriorState({...this.interiorState,status:'error'});
+    });
+  }
+
+  private closeInterior() {
+    this.interiorRequest++;this.candidateSince=null;
+    this.dinerExterior.visible=true;if(this.dinerModel)this.dinerModel.root.visible=false;
+    this.seaMist.setInterior(this.dinerInverse,false);
+    if(this.interiorState.status!=='closed')this.setInteriorState({...CLOSED_INTERIOR});
+  }
+  retryInterior() {this.openInterior(this.interiorState.room);}
+  setInteriorFloor(floor:0|1) {
+    if(this.interiorState.status!=='open')return;
+    this.dinerModel!.setFloor(floor);
+    this.setInteriorState({...this.interiorState,floor,room:null,item:null});this.fitInterior(null);
+  }
+  returnToBuilding() {
+    if(this.interiorState.status!=='open')return;
+    this.setInteriorState({...this.interiorState,room:null,item:null});this.fitInterior(null);
+  }
+  returnToStreet() {
+    const saved=this.streetView;this.closeInterior();this.suppressAutoInterior=true;this.streetView=null;
+    this.focusTarget=saved?.target??this.dinerExterior.position.clone();this.focusZoom=saved?.zoom??3.5;
+  }
+  /** Refit after the notes panel mounts/resizes, without changing the fixed viewing angle. */
+  fitInterior(room: string | null = this.interiorState.room) {
+    if(this.interiorState.status!=='open')return;
+    const {width,height}=this.canvasSize;
+    const panel=this.host.parentElement?.querySelector('.gh-place')?.getBoundingClientRect();
+    const host=this.host.getBoundingClientRect();
+    const toolbar=this.host.parentElement?.querySelector('.gh-interior-nav')?.getBoundingClientRect();
+    let left=30,right=80,top=Math.max(130,toolbar?toolbar.bottom-host.top+15:130),bottom=120;
+    if(panel) {if(width>650)left=panel.right-host.left+25;else bottom=host.bottom-panel.top+20;}
+    const availW=Math.max(140,width-left-right),availH=Math.max(120,height-top-bottom);
+    const floor=this.interiorState.floor;
+    const center=room?roomCenter(room):new THREE.Vector3(0,floor?9.2:3.3,floor?4.4:0);
+    const halfWidth=7.4,halfDepth=room?(room==='SCN_bluebird_kitchen'?4.8:7):floor?7:11.5;
+    // Project a complete room-height box at zoom=1; fit both dimensions into unobstructed pixels.
+    const probe=this.camera.clone();probe.zoom=1;probe.updateProjectionMatrix();
+    const pts=[-1,1].flatMap(x=>[-1,1].flatMap(z=>[-1,1].map(y=>center.clone().add(new THREE.Vector3(x*halfWidth,y*3.1,z*halfDepth)).applyMatrix4(this.dinerExterior.matrixWorld).project(probe))));
+    const spanX=(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x)))*width/2;
+    const spanY=(Math.max(...pts.map(p=>p.y))-Math.min(...pts.map(p=>p.y)))*height/2;
+    const zoom=THREE.MathUtils.clamp(Math.min(availW*.78/spanX,availH*.83/spanY),this.controls.minZoom,32);
+    const target=center.applyMatrix4(this.dinerExterior.matrixWorld);
+    const screenX=(left+availW/2-width/2)/width*2,screenY=(height/2-top-availH/2)/height*2;
+    const rightVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,0),upVec=new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld,1);
+    target.addScaledVector(rightVec,-screenX*(this.camera.right-this.camera.left)/zoom/2);
+    target.addScaledVector(upVec,-screenY*(this.camera.top-this.camera.bottom)/zoom/2);
+    this.interiorCloseZoom=zoom*.68;
+    this.focusTarget=target;this.focusZoom=zoom;
+  }
+  private updateInterior(time:number) {
+    const {size,inView}=projectedBuilding(this.camera,this.dinerExterior.matrixWorld);
+    const action=cutawayDecision(size,inView,this.interiorState.status==='open');
+    if(this.suppressAutoInterior) {if(size<.16 || !inView)this.suppressAutoInterior=false;else return;}
+    if(action==='close') {
+      // Programmatic room travel may temporarily move the building outside the viewport.
+      if(!this.focusTarget && this.focusZoom===null && (!inView || !this.interiorCloseZoom || this.camera.zoom<this.interiorCloseZoom)){this.closeInterior();this.streetView=null;}
+      return;
+    }
+    if(this.interiorState.status==='error')return;
+    if(action==='prefetch' && !this.dinerModel && !this.dinerLoading)this.loadInterior().catch(()=>{});
+    if(action==='open' && this.interiorState.status==='closed') {
+      this.candidateSince??=time;
+      if(time-this.candidateSince>=200)this.openInterior(null,true);
+    }else this.candidateSince=null;
   }
 
   private cancelFocus = () => { this.focusTarget = null; this.focusZoom = null; };
@@ -643,7 +1136,16 @@ export class GrayhavenWorld {
     if (e.button !== 0 || Math.hypot(e.clientX - this.pointerStart.x, e.clientY - this.pointerStart.y) > 5) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), this.camera);
-    const hit = this.raycaster.intersectObjects(this.hits, false)[0];
+    if(this.interiorState.status==='open' && this.dinerModel) {
+      const detail=this.raycaster.intersectObjects(this.dinerModel.hits.filter(h=>h.userData.floor===this.interiorState.floor),false)[0];
+      if(detail) {
+        const {sceneId,itemId,targetId}=detail.object.userData;
+        if(targetId)this.options.onSelect(targetId);
+        else {this.setInteriorState({...this.interiorState,room:sceneId,item:itemId??null});this.options.onSelect(sceneId);}
+        return;
+      }
+    }
+    const hit = this.raycaster.intersectObjects(this.hits.filter(h=>h.parent?.visible!==false), false)[0];
     if (hit) this.options.onSelect(hit.object.userData.locationId as string);
   };
   private contextLost = (e: Event) => { e.preventDefault(); this.options.onError("图形显示已中断，请重新载入地图。地点文字仍可查看。"); };
@@ -655,6 +1157,7 @@ export class GrayhavenWorld {
     this.camera.left = -half * aspect; this.camera.right = half * aspect;
     this.camera.top = half; this.camera.bottom = -half;
     this.camera.updateProjectionMatrix(); this.renderer.setSize(width, height);
+    if(this.interiorState.status==='open')this.fitInterior(this.interiorState.room);
   };
 
   private animate = (time: number) => {
@@ -664,6 +1167,7 @@ export class GrayhavenWorld {
     const dt = Math.min(frameMs / 1000, 0.05); this.lastTime = time;
     if (!document.hidden) {
       if (!this.reducedMotion) this.progress += dt;
+      this.updateLighting(time,dt);
       if (this.focusTarget) {
         const step = new THREE.Vector3().subVectors(this.focusTarget, this.controls.target).multiplyScalar(this.reducedMotion ? 1 : 1 - Math.exp(-dt * 4));
         this.controls.target.add(step); this.camera.position.add(step);
@@ -675,17 +1179,34 @@ export class GrayhavenWorld {
         this.camera.updateProjectionMatrix();
       }
       this.controls.update();
+      this.updateInterior(time);
+      this.beach.update(this.camera.zoom, this.progress);
       this.updateWater(this.progress);
+      this.seaMist.update(this.progress);
       const occupied: { x: number; y: number; w: number; h: number }[] = [];
       // Resolve screen-space overlaps, prioritizing the selected location.
-      const orderedLabels = [...this.labels].sort((a, b) => Number(b.id === this.selectedId) - Number(a.id === this.selectedId));
+      const interiorOpen=this.interiorState.status==='open';
+      const isSelected=(label:typeof this.labels[number])=>label.id===this.selectedId || label.id==='SCN_bluebird_dining' && (interiorOpen || isBluebird(this.selectedId));
+      const orderedLabels = [...this.labels].sort((a,b)=>Number(isSelected(b))-Number(isSelected(a)) || Number(!!b.building)-Number(!!a.building));
       for (const label of orderedLabels) {
-        const p = label.point.clone().project(this.camera);
-        const selected = label.id === this.selectedId;
-        const show = this.labelVisible && (label.major || this.camera.zoom > 1.75 || selected) && Math.abs(p.x) < 0.94 && Math.abs(p.y) < 0.84 && p.z < 1;
+        const anchor=label.point.clone();
+        if(interiorOpen && label.id==='SCN_bluebird_dining') {
+          anchor.copy(this.dinerExterior.position);
+          anchor.y+=(this.interiorState.floor===0?BLUEBIRD.upper:BLUEBIRD.top)+.6;
+        }
+        const p=anchor.project(this.camera), selected=isSelected(label);
+        if(label.roofCorners) {
+          const corners=interiorOpen && label.id==='SCN_bluebird_dining'
+            ? [-1,1].flatMap(x=>(this.interiorState.floor===0?[-11,11]:[BLUEBIRD.divider,11]).map(z=>this.dinerExterior.localToWorld(new THREE.Vector3(x*7.2,(this.interiorState.floor===0?BLUEBIRD.upper:BLUEBIRD.top)+.6,z))))
+            : label.roofCorners;
+          p.y=Math.max(...corners.map(c=>c.clone().project(this.camera).y));
+        }
+        label.button.classList.toggle('is-selected',selected);
+        const show=this.labelVisible && (!interiorOpen || label.building) && (label.major || this.camera.zoom>1.75 || selected)
+          && Math.abs(p.x)<.94 && Math.abs(p.y)<.92 && p.z>=-1 && p.z<1;
         label.button.hidden = !show;
         if (show) {
-          const x = (p.x + 1) * 0.5 * this.canvasSize.width, y = (1 - p.y) * 0.5 * this.canvasSize.height;
+          const x = (p.x + 1) * 0.5 * this.canvasSize.width, y = (1 - p.y) * 0.5 * this.canvasSize.height - (label.building ? 10 : 0);
           const w = label.button.offsetWidth, h = label.button.offsetHeight;
           const box = { x: x - w / 2, y: y - h, w, h };
           const overlap = occupied.some(other => box.x < other.x + other.w + 8 && box.x + w + 8 > other.x && box.y < other.y + other.h + 8 && box.y + h + 8 > other.y);
@@ -694,7 +1215,7 @@ export class GrayhavenWorld {
         }
       }
       this.options.onZoom(this.camera.zoom);
-      this.renderer.render(this.scene, this.camera);
+      this.seaMist.render(this.renderer, this.scene, this.camera);
       if (hadPreviousFrame && frameMs > 0) { this.metricFrames++; this.metricFrameTimes.push(frameMs); }
       if (time - this.metricsStart >= 1500) {
         const samples = this.metricFrameTimes.sort((a,b) => a-b);
@@ -703,7 +1224,7 @@ export class GrayhavenWorld {
           p95Ms: samples[Math.floor(samples.length*.95)] ?? 0,
           calls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles,
           textures: this.renderer.info.memory.textures, geometries: this.renderer.info.memory.geometries,
-          textureMiBEstimate: +((this.art.estimatedTextureBytes + (1024*1024 + 64*64)*4*4/3) / 1048576).toFixed(2),
+          textureMiBEstimate: +((this.art.estimatedTextureBytes + this.signTextureBytes + this.seaMist.estimatedBytes + 64*64*4*4/3 + this.lightAtlas.estimatedBytes + this.sky.estimatedBytes) / 1048576).toFixed(2),
           shadowMapMiBEstimate: +([this.sun, this.beacon, this.porchLight].reduce((bytes, light) => {
             const map = light.shadow.map;
             // RGBA8 colour + 32-bit depth; estimate excludes driver overhead.
@@ -717,7 +1238,7 @@ export class GrayhavenWorld {
   };
 
   dispose() {
-    this.disposed = true; cancelAnimationFrame(this.frame); this.abort.abort(); this.observer.disconnect();
+    this.disposed = true; this.interiorRequest++; cancelAnimationFrame(this.frame); this.abort.abort(); this.observer.disconnect();
     this.controls.removeEventListener("start", this.cancelFocus); this.controls.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>();
     this.scene.traverse(object => {
@@ -728,7 +1249,9 @@ export class GrayhavenWorld {
     for (const material of this.materialCache.values()) materials.add(material);
     materials.add(this.windowMaterial); materials.add(this.litWindowMaterial);
     for (const geo of geometries) geo.dispose(); for (const mat of materials) mat.dispose(); for (const texture of this.textures) texture.dispose();
+    this.lightAtlas.dispose(); this.sky.dispose();
     this.sun.dispose(); this.beacon.dispose(); this.porchLight.dispose(); this.harborLight.dispose();
+    this.seaMist.dispose();
     this.renderer.dispose(); this.renderer.domElement.remove();
     for (const label of this.labels) label.button.remove();
   }

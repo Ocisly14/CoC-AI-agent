@@ -27,3 +27,17 @@ for (const r of roads) if (!nodeIds.has(r.from) || !nodeIds.has(r.to)) throw Err
 const target = path.join(root, 'client/src/observer/grayhaven/grayhaven.generated.json');
 fs.writeFileSync(target, JSON.stringify(out, null, 2) + '\n');
 console.log(`Grayhaven: ${nodeIds.size} exterior nodes, ${roads.length} roads, ${accessIds.size} roadside places exported.`);
+
+// Keep the detailed exterior's reading notes tied to the source scene's item references.
+const dock = places.find(place => place.id === 'SCN_dock');
+fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/beachScene.generated.json'), JSON.stringify({
+  sceneId: dock.id, items: dock.references.items.map(({ id, name, description }) => ({ id, name, description })),
+}, null, 2) + '\n');
+
+// Exact authored room/item/connection records; upstairs visual zones remain one SCN.
+fs.writeFileSync(path.join(root, 'client/src/observer/grayhaven/buildingScenes.generated.json'), JSON.stringify(
+  ['SCN_bluebird_dining', 'SCN_bluebird_kitchen', 'SCN_bluebird_upstairs'].map(id => {
+    const scene = places.find(p => p.id === id);
+    if (!scene || scene.parentLocationId !== 'bluebird_diner' || !scene.indoor) throw Error(`Invalid interior: ${id}`);
+    return scene;
+  }), null, 2) + '\n');
