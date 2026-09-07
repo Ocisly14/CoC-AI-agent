@@ -1,0 +1,203 @@
+{
+  "version": "1.0",
+  "status": "production specification; no GLB delivered",
+  "coordinateConvention": "author meters; +Y up, +Z front, +X right",
+  "sceneScale": "authorMetersToSceneUnits must be calibrated to host model before import; no global 1:1 assumption",
+  "dimensionSource": "All sizeMeters are artistic suggestions, not module measurements.",
+  "items": [
+    {
+      "assetId": "enamel_mug",
+      "label": "搪瓷杯",
+      "sceneId": "SCN_lighthouse_interior",
+      "entityId": "item.lighthouse_interior.enamel_mug",
+      "category": "interactive",
+      "sizeMeters": [
+        0.12,
+        0.09,
+        0.1
+      ],
+      "pivot": "base-center",
+      "orientation": "front +Z, handle +X",
+      "materialFamilies": [
+        "metal"
+      ],
+      "triangleBudgets": {
+        "lod0": 1200,
+        "lod1": 240,
+        "lod2": 0
+      },
+      "facts": "杯沿磕口、内部干净",
+      "artInterpretation": "骨白漆色、建议尺寸",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_lighthouse_interior.json",
+      "textureMaxPx": 1024,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    },
+    {
+      "assetId": "stew_pot",
+      "label": "铸铁汤锅",
+      "sceneId": "SCN_bluebird_kitchen",
+      "entityId": "item.bluebird_kitchen.stew_pot",
+      "category": "interactive",
+      "sizeMeters": [
+        0.44,
+        0.36,
+        0.28
+      ],
+      "pivot": "base-center",
+      "orientation": "front +Z, handles +/-X",
+      "materialFamilies": [
+        "metal"
+      ],
+      "triangleBudgets": {
+        "lod0": 1800,
+        "lod1": 400,
+        "lod2": 80
+      },
+      "facts": "锅沿琥珀色汤垢、用于炖鱼汤",
+      "artInterpretation": "锅底积炭、耳形、建议尺寸",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_bluebird_kitchen.json",
+      "textureMaxPx": 1024,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    },
+    {
+      "assetId": "rotary_phone",
+      "label": "转盘电话",
+      "sceneId": "SCN_motel_lobby",
+      "entityId": "item.motel_lobby.desk_phone",
+      "category": "interactive",
+      "sizeMeters": [
+        0.25,
+        0.22,
+        0.15
+      ],
+      "pivot": "base-contact-center",
+      "orientation": "dial +Z",
+      "materialFamilies": [
+        "metal"
+      ],
+      "triangleBudgets": {
+        "lod0": 3000,
+        "lod1": 700,
+        "lod2": 80
+      },
+      "facts": "黑色柜台转盘电话",
+      "artInterpretation": "握持磨亮、外壳按涂层非金属处理、建议尺寸",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_motel_lobby.json",
+      "textureMaxPx": 1024,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    },
+    {
+      "assetId": "brass_key",
+      "label": "黄铜钥匙",
+      "sceneId": "SCN_motel_lobby",
+      "entityId": "item.motel_lobby.key_board",
+      "category": "narrative-component",
+      "sizeMeters": [
+        0.025,
+        0.005,
+        0.07
+      ],
+      "pivot": "hanging-ring",
+      "orientation": "front +Z, teeth -Y",
+      "materialFamilies": [
+        "metal"
+      ],
+      "triangleBudgets": {
+        "lod0": 900,
+        "lod1": 120,
+        "lod2": 0
+      },
+      "facts": "黄铜房门钥匙属于钉板，4号挂钩空缺",
+      "artInterpretation": "空白挂牌与齿形仅为造型，不可解谜",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_motel_lobby.json",
+      "textureMaxPx": 1024,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    },
+    {
+      "assetId": "gear_locker",
+      "label": "木渔具柜",
+      "sceneId": "SCN_dock",
+      "entityId": "item.dock.gear_locker",
+      "category": "interactive",
+      "sizeMeters": [
+        1.2,
+        0.55,
+        1.45
+      ],
+      "pivot": "base-contact-center",
+      "orientation": "doors +Z",
+      "materialFamilies": [
+        "raw_wood",
+        "metal"
+      ],
+      "triangleBudgets": {
+        "lod0": 2400,
+        "lod1": 600,
+        "lod2": 100
+      },
+      "facts": "公用木柜，用后归位",
+      "artInterpretation": "双门造型、盐蚀与脚高、建议尺寸",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_dock.json",
+      "textureMaxPx": 1024,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    },
+    {
+      "assetId": "mooring_post",
+      "label": "系缆桩",
+      "sceneId": "SCN_dock",
+      "entityId": "item.dock.bollards",
+      "category": "environment-instance",
+      "sizeMeters": [
+        0.3,
+        0.3,
+        0.85
+      ],
+      "pivot": "ground-contact-center",
+      "orientation": "groove faces berth",
+      "materialFamilies": [
+        "raw_wood",
+        "cloth"
+      ],
+      "triangleBudgets": {
+        "lod0": 1400,
+        "lod1": 350,
+        "lod2": 70
+      },
+      "facts": "缆绳磨槽、船名刻痕，条目包含多个桩",
+      "artInterpretation": "露出高度与绳结样式，无新增可读船名",
+      "source": "../../testmods/grayhaven/Grayhaven_Scenarios/SCN_dock.json",
+      "textureMaxPx": 512,
+      "interaction": "reuse entityId only; components/instances do not create new engine entities",
+      "files": {
+        "model": null,
+        "referenceBoard": "boards/04-objects.png"
+      },
+      "status": "concept/reference only"
+    }
+  ]
+}

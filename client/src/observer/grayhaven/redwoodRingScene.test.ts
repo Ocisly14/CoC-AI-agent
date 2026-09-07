@@ -7,26 +7,44 @@ import { createRedwoodRingScene } from './redwoodRingScene';
 import { distanceToRoad, elevation } from './layout';
 import { makeForestLayout } from './forestLayout';
 import { BAKE_LAYER } from './worldLightAtlas';
-import { patchMaterial } from './lightingPatch';
 
 describe('Redwood Ring zoom scene', () => {
-  it('preserves underlying props without protecting the trees or losing live lighting uniforms',()=>{
-    const day={value:.4};
-    const source=new THREE.MeshStandardMaterial();patchMaterial(source,{key:'live-day',apply(shader){shader.uniforms.uDay=day;}});
+  it('splits each giant into an untagged stump and a hideable upper trunk and crown, using shared materials',()=>{
+    const source=new THREE.MeshStandardMaterial();
     const ring=createRedwoodRingScene(()=>source,source,source);
-    const trunk=ring.root.getObjectByName('redwood-trunk-0') as THREE.Mesh;
-    expect((trunk.material as THREE.Material).userData.revealProtected).not.toBe(true);
-    const props=ring.root.getObjectByName('redwood-detail-1')!;
-    props.traverse(object=>{if(object instanceof THREE.Mesh){
-      const mat=object.material as THREE.Material;
-      expect(mat.userData.revealProtected).toBe(true);expect(mat).not.toBe(source);
-      const shader={uniforms:{},vertexShader:'',fragmentShader:''};mat.onBeforeCompile(shader as never,{} as never);
-      expect((shader.uniforms as any).uDay).toBe(day);
-    }});
-    expect(source.userData.revealProtected).toBeUndefined();
-    const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>();
-    ring.root.traverse(o=>{if(o instanceof THREE.Mesh){geometries.add(o.geometry);materials.add(o.material as THREE.Material);}});
-    geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());
+    const tagged=(name:string,tree:typeof REDWOOD_TREES[number])=>{
+      const object=ring.root.getObjectByName(name) as THREE.Mesh;
+      expect(object,name).toBeInstanceOf(THREE.Mesh);expect(object.material).toBe(source);
+      const span=object.userData.cutawayTree;
+      expect(span.height).toBe(tree.height);
+      expect(span.base.x).toBe(tree.x);expect(span.base.z).toBe(tree.z);expect(span.base.y).toBe(elevation(tree.x,tree.z));
+    };
+    for(const tree of REDWOOD_TREES){tagged(`redwood-trunk-${tree.seed}`,tree);tagged(`redwood-crown-${tree.seed}`,tree);}
+    const stumps=ring.root.getObjectByName('redwood-trunk-stumps') as THREE.Mesh;
+    expect(stumps).toBeInstanceOf(THREE.Mesh);expect((stumps as THREE.InstancedMesh).isInstancedMesh).toBeFalsy();
+    expect(stumps.userData.cutawayTree).toBeUndefined();expect(stumps.material).toBe(source);
+    // The stump top is the second lathe point: 3 up, or 7.4 above the hollow giant's raised bottom.
+    stumps.geometry.computeBoundingBox();
+    const top=Math.max(...REDWOOD_TREES.map(tree=>elevation(tree.x,tree.z)+(tree.seed===8?7.4:3)));
+    expect(stumps.geometry.boundingBox!.max.y).toBeCloseTo(top,3);
+    const untagged=(object:THREE.Object3D)=>{if(object instanceof THREE.Mesh){
+      expect(object.userData.cutawayTree).toBeUndefined();expect(object.userData.cutawayInstances).toBeUndefined();expect(object.material).toBe(source);
+    }};
+    untagged(ring.root.getObjectByName('redwood-clearing-ground')!);
+    ring.root.getObjectByName('redwood-detail-1')!.traverse(untagged);
+    const instanced:THREE.InstancedMesh[]=[];
+    ring.root.getObjectByName('redwood-detail-0')!.traverse(o=>{if((o as THREE.InstancedMesh).isInstancedMesh)instanced.push(o as THREE.InstancedMesh);});
+    const batches=instanced.filter(m=>m.userData.cutawayInstances);
+    expect(batches).toHaveLength(1);
+    const stubs=batches[0];
+    expect(stubs.userData.cutawayInstances).toHaveLength(REDWOOD_TREES.length*3);expect(stubs.count).toBe(REDWOOD_TREES.length*3);
+    for(const span of stubs.userData.cutawayInstances)expect(REDWOOD_TREES.some(tree=>tree.height===span.height&&span.base.x===tree.x)).toBe(true);
+    // Buttress roots share the tier and the material but stay, so they batch separately and carry no spans.
+    const buttress=instanced.reduce((a,b)=>b.count>a.count?b:a);
+    expect(buttress).not.toBe(stubs);expect(buttress.count).toBeGreaterThan(stubs.count);expect(buttress.userData.cutawayInstances).toBeUndefined();
+    const geometries=new Set<THREE.BufferGeometry>();
+    ring.root.traverse(o=>{if(o instanceof THREE.Mesh)geometries.add(o.geometry);});
+    geometries.forEach(g=>g.dispose());source.dispose();
   });
   it('preserves the seven authored objects and leaves the three approach trails open', () => {
     expect(notes.items).toEqual(scene.references.items);

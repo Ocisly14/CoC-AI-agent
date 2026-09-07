@@ -37,12 +37,30 @@ describe('Sheriff authored rooms',()=>{
       expect(b.min.z).toBeGreaterThanOrEqual(-6.2);expect(b.max.z).toBeLessThanOrEqual(6.2);
       expect(b.max.y).toBeLessThanOrEqual(7.6+.001);
     });
-    expect(calls).toBeLessThanOrEqual(18);expect(triangles).toBeLessThan(25000);
+    // The single high-wall mesh became up to five: four tagged sides plus the partition group.
+    expect(calls).toBeLessThanOrEqual(24);expect(triangles).toBeLessThan(25000);
     for(const scene of sheriffScenes){
       const frame=interiorFrame({status:'open',building:'sheriff',room:scene.id,item:null,floor:0});
       expect(frame.center.z).toBe(scene.id.endsWith('front')?3.1:-2.5);
     }
     expect(model.lamps).toHaveLength(3);model.dispose();
+  });
+  it('tags four outward wall sides and one always-hidden partition group',()=>{
+    const model=make();const sides:THREE.Group[]=[],partitions:THREE.Group[]=[];
+    model.root.traverse(o=>{if(!(o instanceof THREE.Group))return;if(o.userData.cutawayNormal)sides.push(o);if(o.userData.cutawayPartition===true)partitions.push(o);});
+    expect(sides.map(s=>(s.userData.cutawayNormal as number[]).join(',')).sort()).toEqual(['-1,0,0','0,0,-1','0,0,1','1,0,0']);
+    const bounds=(g:THREE.Group)=>{const meshes=g.children.filter((c):c is THREE.Mesh=>c instanceof THREE.Mesh);expect(meshes.length).toBeGreaterThan(0);return meshes.map(m=>{m.geometry.computeBoundingBox();return m.geometry.boundingBox!;});};
+    for(const side of sides)for(const b of bounds(side))expect(b.min.y).toBeGreaterThanOrEqual(1.65-1e-6);
+    expect(partitions).toHaveLength(1);
+    for(const b of bounds(partitions[0])){expect(b.min.y).toBeGreaterThanOrEqual(1.65-1e-6);expect(b.max.y).toBeGreaterThan(6);}
+    // Wainscot, trim, floors and furniture sit under an untagged parent; anything below the split lives there.
+    const tagged=new Set<THREE.Object3D>([...sides,...partitions]);let untagged=0,low=0;
+    model.root.traverse(o=>{
+      if(!(o instanceof THREE.Mesh) || !(o.material as THREE.Material).visible || tagged.has(o.parent!))return;
+      expect(o.parent!.userData.cutawayNormal).toBeUndefined();expect(o.parent!.userData.cutawayPartition).toBeUndefined();untagged++;
+      o.geometry.computeBoundingBox();if(o.geometry.boundingBox!.min.y<1.65)low++;
+    });
+    expect(untagged).toBeGreaterThan(0);expect(low).toBeGreaterThan(0);model.dispose();
   });
   it('leaves actual street, office-window and cell-window holes for physical daylight',()=>{
     const shell=createSheriffShadowShell();shell.updateMatrixWorld(true);

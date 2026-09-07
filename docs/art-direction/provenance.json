@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "generatedOn": "2026-09-07",
+  "notes": [
+    "PNG images are flattened concept references, not layered production textures or runtime screenshots.",
+    "Editable UI SVGs are authored in code with live text and native vector controls; embedded scene is a concept reference.",
+    "Generated originals are preserved. No original game assets are included."
+  ],
+  "items": [
+    {
+      "key": "01-style",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-33a41627-ea38-4f10-9003-781282d46c80.png",
+      "target": "boards/01-style.png",
+      "mode": "built-in image_gen",
+      "promptKey": "01-style",
+      "sha256": "8d3322b37671f8dead25f0f8037b8521072a2731e359f23442a66e9879cf9b20"
+    },
+    {
+      "key": "03-scene",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-22475f1c-f185-4898-84ef-78751e926a44.png",
+      "target": "boards/03-scene.png",
+      "mode": "built-in image_gen",
+      "promptKey": "03-scene",
+      "sha256": "4e91bcd87a479dd0ee156f9b71fd29590617be075ee23a9c004ab105fe1b8e06"
+    },
+    {
+      "key": "04-objects",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-05689ae9-1e8e-476b-a837-63579177ac2d.png",
+      "target": "boards/04-objects.png",
+      "mode": "built-in image_gen",
+      "promptKey": "04-objects",
+      "sha256": "615574a30f223372708c03c40a67e1b651e2d79d404522a79c2f4ea7173b2edd"
+    },
+    {
+      "key": "05-map",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-f21ab7a2-2ebb-42d9-b287-75994c216920.png",
+      "target": "boards/05-map.png",
+      "mode": "built-in image_gen",
+      "promptKey": "05-map",
+      "sha256": "b09274bd30b34d5dec2c45c8fb06e82ad9669719c5bc4f1fa27ad9832463a1d8"
+    },
+    {
+      "key": "06-light",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-f9e60ce6-7b96-4c6e-8611-d3bdf95307b1.png",
+      "target": "boards/06-light.png",
+      "mode": "built-in image_gen",
+      "promptKey": "06-light",
+      "originalSource": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-773d5785-3e0f-476f-b85e-548638e85b34.png",
+      "revisionPrompts": "revision-prompts.json",
+      "sha256": "a5681b998de665267622ab7be352078547e61ad4208c6d45a667803fd1ebd2fc"
+    },
+    {
+      "key": "07-weather",
+      "source": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-4eacaffb-f1c2-441e-ba9f-9bdffce5e984.png",
+      "target": "boards/07-weather.png",
+      "mode": "built-in image_gen",
+      "promptKey": "07-weather",
+      "originalSource": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-64302cb8-d1a7-449c-95b8-49bce32c2d76.png",
+      "revisionPrompts": "revision-prompts.json",
+      "sha256": "40fbfb7252c9d8e528b32729a1c2b60d7ccc9ae39a3b9a23feaa8cb71847db06"
+    },
+    {
+      "key": "02-ui",
+      "target": "boards/02-ui.png",
+      "mode": "authored SVG rendered by sharp",
+      "source": "ui/02-ui-board.svg",
+      "generator": "build-ui.py",
+      "renderer": "render-ui.mjs",
+      "embeddedReference": "boards/05-map.png",
+      "notes": "Native text and vector controls; no image-generation call for UI.",
+      "sha256": "f3b775e42a1e3172d028bfaa14c1016da05d6de15ec8978af1581885209185ae"
+    }
+  ]
+}

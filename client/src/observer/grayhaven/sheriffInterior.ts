@@ -7,10 +7,14 @@ import type { createInteriorLighting } from './interiorLighting';
 /** Authored 1985 small-town station; furniture positions are visual staging. */
 export function createSheriffInterior(light:ReturnType<typeof createInteriorLighting>){
   const root=new THREE.Group();root.name='sheriff-authored-interior';
-  const floor=new THREE.Group(),walls=new THREE.Group();root.add(floor);floor.add(walls);
+  const floor=new THREE.Group();root.add(floor);
+  // High outer walls go into one group per outward normal (userData.cutawayNormal: hidden when facing the camera); full-height partitions share one group tagged cutawayPartition (hidden whenever the cutaway is on).
+  const sides=new Map<string,THREE.Group>();
+  const side=(normal:number[])=>{const key=normal.join(',');if(!sides.has(key)){const g=new THREE.Group();g.name=`sheriff-wall-${key}`;g.userData.cutawayNormal=[...normal];floor.add(g);sides.set(key,g);}return sides.get(key)!;};
+  const partitions=new THREE.Group();partitions.name='sheriff-partitions';partitions.userData.cutawayPartition=true;floor.add(partitions);
   const hits:THREE.Mesh[]=[],lamps:THREE.PointLight[]=[];
   const pickMaterial=new THREE.MeshBasicMaterial({visible:false});
-  const m={plaster:light.material(0xc6c3ad),wall:light.material(0xc6c3ad,undefined,false,true),
+  const m={plaster:light.material(0xc6c3ad),
     green:light.material(0x788779),wood:light.material(0xa58865,'bareWood'),trim:light.material(0x60503f,'bareWood'),
     metal:light.material(0x677775,undefined,true),dark:light.material(0x303c3b),paper:light.material(0xe5d9b9),
     brass:light.material(0xb6a065,undefined,true),cloth:light.material(0x727d5c),tile:light.material(0xa9ac9c),
@@ -28,7 +32,7 @@ export function createSheriffInterior(light:ReturnType<typeof createInteriorLigh
     hit.userData={sceneId:scene,itemId:item?`item.${scene.slice(4)}.${item}`:null,floor:0,targetId};floor.add(hit);hits.push(hit);
   }
   const F='SCN_sheriff_front',O='SCN_sheriff_office',C='SCN_sheriff_cell';
-  // Floors, paint skirting and true window holes, with only the high walls peeled.
+  // Floors, paint skirting and true window holes; only the tagged high walls and partitions are ever cut away.
   box(14.8,.22,11.8,m.tile,0,.29,0);
   for(let x=-6.6;x<7;x+=1.1)for(let z=-4.95;z<5;z+=1.1){
     if(z<.9 && x<0)continue;
@@ -39,13 +43,13 @@ export function createSheriffInterior(light:ReturnType<typeof createInteriorLigh
   for(const p of sheriffWalls()){
     const lo=p.at[1]-p.size[1]/2,hi=p.at[1]+p.size[1]/2,split=1.65;
     if(lo<split)box(p.size[0],Math.min(hi,split)-lo,p.size[2],m.green,p.at[0],(lo+Math.min(hi,split))/2,p.at[2]);
-    if(hi>split)box(p.size[0],hi-Math.max(lo,split),p.size[2],m.wall,p.at[0],(hi+Math.max(lo,split))/2,p.at[2],0,walls);
+    if(hi>split)box(p.size[0],hi-Math.max(lo,split),p.size[2],m.plaster,p.at[0],(hi+Math.max(lo,split))/2,p.at[2],0,side(p.normal));
   }
   for(const x of [-7.3,7.3])box(.12,.17,11.7,m.trim,x,.52,0);
   // Rear office to the left, corridor and cell to the right. Doorways stay clear.
-  function partition(x:number,w:number){box(w,1.2,.22,m.green,x,1,.9);box(w,.08,.27,m.trim,x,1.64,.9);box(w,4.7,.22,m.wall,x,4,.9,0,walls);}
+  function partition(x:number,w:number){box(w,1.2,.22,m.green,x,1,.9);box(w,.08,.27,m.trim,x,1.64,.9);box(w,4.7,.22,m.plaster,x,4,.9,0,partitions);}
   partition(-6,2.7);partition(-1.6,2.95);partition(6.25,2.2);
-  box(.24,1.2,6.8,m.green,0,1,-2.55);box(.24,4.7,6.8,m.wall,0,4,-2.55,0,walls);
+  box(.24,1.2,6.8,m.green,0,1,-2.55);box(.24,4.7,6.8,m.plaster,0,4,-2.55,0,partitions);
   // Open office door, swung inward; lintel does not block the walk-through.
   box(1.6,3.25,.14,m.trim,-4.1,2.025,.25,.8);box(1.15,1.3,.04,m.green,-4.06,2.35,.31,.8);
   pick(F,null,-3.75,1.8,.9,1.65,2.7,.4,O);pick(O,null,-3.75,1.8,1.16,1.65,2.7,.25,F);

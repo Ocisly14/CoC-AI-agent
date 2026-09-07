@@ -1,0 +1,143 @@
+{
+  "status": "pass",
+  "contrastPairs": [
+    {
+      "foreground": "text",
+      "background": "paper",
+      "ratio": 11.019,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "inverseText",
+      "background": "panel",
+      "ratio": 11.019,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "secondaryText",
+      "background": "paper",
+      "ratio": 5.448,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "danger",
+      "background": "paper",
+      "ratio": 4.912,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "disabledText",
+      "background": "paper",
+      "ratio": 4.663,
+      "minimum": 4.5
+    },
+    {
+      "foreground": "focusOnLight",
+      "background": "paper",
+      "ratio": 4.597,
+      "minimum": 3
+    },
+    {
+      "foreground": "focusOnDark",
+      "background": "panel",
+      "ratio": 7.244,
+      "minimum": 3
+    }
+  ],
+  "resolvedObjectCards": 6,
+  "materialFamilies": 8,
+  "boards": [
+    {
+      "path": "boards/01-style.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "8d3322b37671f8dead25f0f8037b8521072a2731e359f23442a66e9879cf9b20"
+    },
+    {
+      "path": "boards/02-ui.png",
+      "width": 1920,
+      "height": 1280,
+      "sha256": "f3b775e42a1e3172d028bfaa14c1016da05d6de15ec8978af1581885209185ae"
+    },
+    {
+      "path": "boards/03-scene.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "4e91bcd87a479dd0ee156f9b71fd29590617be075ee23a9c004ab105fe1b8e06"
+    },
+    {
+      "path": "boards/04-objects.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "615574a30f223372708c03c40a67e1b651e2d79d404522a79c2f4ea7173b2edd"
+    },
+    {
+      "path": "boards/05-map.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "b09274bd30b34d5dec2c45c8fb06e82ad9669719c5bc4f1fa27ad9832463a1d8"
+    },
+    {
+      "path": "boards/06-light.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "a5681b998de665267622ab7be352078547e61ad4208c6d45a667803fd1ebd2fc"
+    },
+    {
+      "path": "boards/07-weather.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "40fbfb7252c9d8e528b32729a1c2b60d7ccc9ae39a3b9a23feaa8cb71847db06"
+    }
+  ],
+  "svg": [
+    {
+      "file": "02-ui-board.svg",
+      "width": "1920",
+      "height": "1280",
+      "editableTextNodes": 52,
+      "controlTargets": 24
+    },
+    {
+      "file": "components.svg",
+      "width": "1440",
+      "height": "680",
+      "editableTextNodes": 25,
+      "controlTargets": 6
+    },
+    {
+      "file": "desktop-1440x900.svg",
+      "width": "1440",
+      "height": "900",
+      "editableTextNodes": 29,
+      "controlTargets": 13
+    },
+    {
+      "file": "item-1280x720.svg",
+      "width": "1280",
+      "height": "720",
+      "editableTextNodes": 20,
+      "controlTargets": 7
+    },
+    {
+      "file": "mobile-390x844.svg",
+      "width": "390",
+      "height": "844",
+      "editableTextNodes": 11,
+      "controlTargets": 7
+    },
+    {
+      "file": "mobile-expanded-390x844.svg",
+      "width": "390",
+      "height": "844",
+      "editableTextNodes": 11,
+      "controlTargets": 4
+    }
+  ],
+  "localLinksChecked": 42,
+  "errors": [],
+  "limits": [
+    "Automated checks do not prove artistic quality or runtime performance.",
+    "SVG target checks use native viewBox units; browser report separately checks actual samples at 1:1."
+  ]
+}

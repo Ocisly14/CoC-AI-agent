@@ -17,11 +17,11 @@ import moduleData from "./grayhaven.generated.json";
 import { createCoastalWater } from "./waterDynamics";
 import { createSeaMist } from "./seaMist";
 import { createRoadLighting } from "./roadLighting";
-import { createDepthReveal, type RevealTarget } from './depthReveal';
+import { boxFootprint, createCutaway, discFootprint, outdoorCutawayActive, type CutawayTarget } from './cutaway';
 import { BEACH_VIEW, createBeachScene } from "./beachScene";
 import { createRedwoodRingScene } from './redwoodRingScene';
 import { REDWOOD_VIEW, REDWOOD_TREES } from './redwoodRingLayout';
-import { BLUEBIRD, SHERIFF, CLOSED_INTERIOR, isBluebird, buildingForRoom, interiorBuilding, interiorFrame, type BuildingId, roomFloor, projectedBuilding, cutawayDecision, interiorRevealTarget, type InteriorState } from './buildingInteriors';
+import { BLUEBIRD, SHERIFF, CLOSED_INTERIOR, isBluebird, buildingForRoom, interiorBuilding, interiorFrame, type BuildingId, roomFloor, projectedBuilding, cutawayDecision, type InteriorState } from './buildingInteriors';
 import { createBluebirdShadowShell, exteriorWallGeometry } from './bluebirdShell';
 import { createInteriorLighting } from './interiorLighting';
 import type { BluebirdInterior } from './bluebirdInterior';
@@ -77,7 +77,8 @@ export class GrayhavenWorld {
   private labelVisible = true;
   private selectedId: string | null = null;
   private seaMist = createSeaMist();
-  private depthReveal = createDepthReveal();
+  private cutaway = createCutaway();
+  private outdoorCutaway = false;
   private roadLamps!: ReturnType<typeof createRoadLighting>;
   private beach!: ReturnType<typeof createBeachScene>;
   private redwoodRing!: ReturnType<typeof createRedwoodRingScene>;
@@ -175,7 +176,7 @@ export class GrayhavenWorld {
     this.buildForest();
     this.buildLabels();
     // Static occlusion bake needs every building, rock, pier and tree proxy in place.
-    this.depthReveal.withoutReveal(() => this.lightAtlas.bakeStatic(this.renderer, this.scene));
+    this.cutaway.suspend(() => this.lightAtlas.bakeStatic(this.renderer, this.scene));
     this.ring = new THREE.Mesh(new THREE.RingGeometry(10.5, 11.1, 64), new THREE.MeshBasicMaterial({ color: 0xffe0a0, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.visible = false;
@@ -825,6 +826,7 @@ export class GrayhavenWorld {
     this.attachLighting(redwoodBark); this.attachLighting(redwoodCrown);
     this.redwoodRing = createRedwoodRingScene((color, surface) => this.material(color, surface), redwoodBark, redwoodCrown);
     this.scene.add(this.redwoodRing.root); this.redwoodRing.update(this.camera.zoom);
+    this.cutaway.registerTrees(this.redwoodRing.root);
     const [lx, lz] = landmarks.find(l => l.id === "SCN_lighthouse_cliff")!.position;
     const ly = elevation(lx, lz);
     this.mesh(new THREE.CylinderGeometry(7, 9, 1.2, 16), this.material(0xa39b83), [lx, ly + 0.4, lz]);
@@ -918,6 +920,7 @@ export class GrayhavenWorld {
       });
       cards.castShadow = true; cards.receiveShadow = true; cards.layers.enable(BAKE_LAYER.bounce);
       this.scene.add(cards);
+      this.cutaway.registerInstanced(cards, points.map(p => ({ base: new THREE.Vector3(p.x, elevation(p.x, p.z), p.z), height: p.height, radius: p.width / 2 })));
     }
     // The reference giants use an actual straight trunk and a high crown. Their
     // dedicated bark/crown atlas is shared; no bitmap is stretched into a squat tree.
@@ -961,6 +964,8 @@ export class GrayhavenWorld {
       trunks.castShadow = trunks.receiveShadow = true; trunks.layers.enable(BAKE_LAYER.occluder); trunks.layers.enable(BAKE_LAYER.bounce);
       crowns.castShadow = crowns.receiveShadow = true; crowns.layers.enable(BAKE_LAYER.bounce);
       this.scene.add(trunks,crowns);
+      const spans = points.map(p => ({ base: new THREE.Vector3(p.x, elevation(p.x, p.z), p.z), height: p.height, radius: (p.crownWidth ?? p.width) / 2 }));
+      this.cutaway.registerInstanced(trunks, spans); this.cutaway.registerInstanced(crowns, spans);
     }
     // Town edge trees share the same brush language, with footprints left clear.
     const random = seededRandom(1885), townPoints: { x: number; z: number; h: number }[] = [];
@@ -977,6 +982,7 @@ export class GrayhavenWorld {
       dummy.position.set(p.x,elevation(p.x,p.z)-p.h*this.art.trees[2].userData.baseV,p.z); dummy.rotation.set(0,facing,0); dummy.scale.set(p.h*.8,p.h,1); dummy.updateMatrix(); edgeTrees.setMatrixAt(i,dummy.matrix);
     });
     edgeTrees.castShadow = true; edgeTrees.receiveShadow = true; edgeTrees.layers.enable(BAKE_LAYER.bounce); this.scene.add(edgeTrees);
+    this.cutaway.registerInstanced(edgeTrees, townPoints.map(p => ({ base: new THREE.Vector3(p.x, elevation(p.x, p.z), p.z), height: p.h, radius: p.h * .4 })));
     this.host.dataset.treeCount = String(trees.length + townPoints.length);
     this.host.dataset.sequoiaCount = String(trees.filter(tree => tree.sequoia).length);
   }
@@ -1044,9 +1050,7 @@ export class GrayhavenWorld {
         // with one final exact update after the user stops dragging the timeline.
         this.scene.environment=this.sky.update({zenith:gi.zenith,horizon:p.sky,ground:gi.ground,sunColor:p.sun,sunDirection:p.direction,sunGlow:gi.sunGlow});
         this.lightAtlas.updateCanopy(p.direction,p.dapple*(1-this.fogAmount*.55));
-        const exteriorVisible=this.dinerExterior.visible;this.dinerExterior.visible=true;
-        try {this.depthReveal.withoutReveal(() => this.lightAtlas.bakeBounce(this.renderer,this.scene));}
-        finally {this.dinerExterior.visible=exteriorVisible;}
+        this.cutaway.suspend(() => this.lightAtlas.bakeBounce(this.renderer,this.scene));
         this.indirectDirty=false;this.lastIndirectUpdate=time;
       }
     }
@@ -1097,7 +1101,7 @@ export class GrayhavenWorld {
         if(this.disposed)return;
         const model=createSheriffInterior(this.sheriffLight);
         model.root.position.copy(this.sheriffExterior.position);model.root.quaternion.copy(this.sheriffExterior.quaternion);
-        model.root.visible=false;this.scene.add(model.root);this.sheriffModel=model;
+        model.root.visible=false;this.scene.add(model.root);this.sheriffModel=model;this.cutaway.registerInterior(model.root);
       }).finally(()=>{this.sheriffLoading=null;});
       return this.sheriffLoading;
     }
@@ -1107,7 +1111,7 @@ export class GrayhavenWorld {
       if(this.disposed)return;
       const model=createBluebirdInterior(this.dinerLight);
       model.root.position.copy(this.dinerExterior.position);model.root.quaternion.copy(this.dinerExterior.quaternion);
-      model.root.visible=false;this.scene.add(model.root);this.dinerModel=model;
+      model.root.visible=false;this.scene.add(model.root);this.dinerModel=model;this.cutaway.registerInterior(model.root);
     }).finally(()=>{this.dinerLoading=null;});
     return this.dinerLoading;
   }
@@ -1229,16 +1233,15 @@ export class GrayhavenWorld {
   }
 
   private cancelFocus = () => { this.focusTarget = null; this.focusZoom = null; };
-  private revealTarget(): RevealTarget | null {
-    if(this.interiorState.status==='open') {
-      const target=interiorRevealTarget(this.camera,this.activeExterior.matrixWorld,this.interiorState)!;
-      // A mobile notes panel can fit a room below the automatic opening footprint.
-      // Manual framing uses its own closing zoom so a fitted room still opens fully.
-      target.strength=this.interiorCloseZoom
-        ? THREE.MathUtils.smoothstep(this.camera.zoom,this.interiorCloseZoom,this.interiorCloseZoom*1.35)
-        : THREE.MathUtils.smoothstep(projectedBuilding(this.camera,this.activeExterior.matrixWorld,...(this.activeBuilding==='sheriff'?[15,12] as const:[14,22] as const)).size,.16,.27);
-      return target;
+  private cutawayTarget(): CutawayTarget | null {
+    if(this.interiorState.status==='open' && this.activeModel) {
+      // The whole shell volume: a tree in front of any part of the building hides the room behind it.
+      const bounds=this.activeBuilding==='sheriff'?SHERIFF:BLUEBIRD;
+      const footprint=boxFootprint(this.activeExterior.matrixWorld,new THREE.Vector3(bounds.width/2,(bounds.top-bounds.ground)/2,bounds.depth/2),new THREE.Vector3(0,(bounds.top+bounds.ground)/2,0));
+      return {kind:'interior',root:this.activeModel.root,exterior:this.activeExterior,footprint};
     }
+    this.outdoorCutaway=outdoorCutawayActive(this.camera.zoom,this.outdoorCutaway);
+    if(!this.outdoorCutaway)return null;
     // Only authored underlying scenes are eligible. Ordinary buildings and failed
     // or pending room loads must never open a window onto bare terrain.
     for(const [id,view,radii] of [
@@ -1247,7 +1250,7 @@ export class GrayhavenWorld {
     ] as const) {
       const distance=Math.hypot(this.controls.target.x-view.x,this.controls.target.z-view.z);
       if(this.selectedId===id || !this.selectedId && distance<35) {
-        return {center:new THREE.Vector3(view.x,view.y,view.z),radii,strength:THREE.MathUtils.smoothstep(this.camera.zoom,2.9,4.6)};
+        return {kind:'outdoor',id,footprint:discFootprint(new THREE.Vector3(view.x,view.y,view.z),radii,this.camera)};
       }
     }
     return null;
@@ -1257,8 +1260,7 @@ export class GrayhavenWorld {
     if (e.button !== 0 || Math.hypot(e.clientX - this.pointerStart.x, e.clientY - this.pointerStart.y) > 5) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.raycaster.setFromCamera(new THREE.Vector2((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1), this.camera);
-    const revealUv=new THREE.Vector2((e.clientX-rect.left)/rect.width,1-(e.clientY-rect.top)/rect.height);
-    if(this.interiorState.status==='open' && this.activeModel && this.depthReveal.contains(revealUv)) {
+    if(this.interiorState.status==='open' && this.activeModel) {
       const detail=this.raycaster.intersectObjects(this.activeModel.hits.filter(h=>h.userData.floor===this.interiorState.floor),false)[0];
       if(detail) {
         const {sceneId,itemId,targetId}=detail.object.userData;
@@ -1303,8 +1305,7 @@ export class GrayhavenWorld {
       this.controls.update();
       this.camera.updateMatrixWorld();
       this.updateInterior(time);
-      const reveal=this.revealTarget();
-      this.depthReveal.update(this.scene,this.camera,reveal?.center??this.controls.target,reveal,this.reducedMotion?1:dt);
+      this.cutaway.setTarget(this.cutawayTarget(),this.camera);
       this.beach.update(this.camera.zoom, this.progress);
       this.redwoodRing.update(this.camera.zoom);
       this.updateWater(this.progress);
@@ -1347,7 +1348,7 @@ export class GrayhavenWorld {
       // Newly revealed room lamps need their own floor/furniture shadow maps even
       // if an outdoor bounce bake already consumed the renderer-wide refresh flag.
       if(this.activeModel?.root.visible && this.activeModel.needsShadowUpdate())this.renderer.shadowMap.needsUpdate=true;
-      this.seaMist.render(this.renderer, this.scene, this.camera, () => this.depthReveal.render(this.renderer,this.scene,this.camera));
+      this.seaMist.render(this.renderer, this.scene, this.camera);
       if (hadPreviousFrame && frameMs > 0) { this.metricFrames++; this.metricFrameTimes.push(frameMs); }
       if (time - this.metricsStart >= 1500) {
         const samples = this.metricFrameTimes.sort((a,b) => a-b);
@@ -1385,7 +1386,7 @@ export class GrayhavenWorld {
     for (const geo of geometries) geo.dispose(); for (const mat of materials) mat.dispose(); for (const texture of this.textures) texture.dispose();
     this.lightAtlas.dispose(); this.sky.dispose();
     this.sun.dispose(); this.beacon.dispose(); this.porchLight.dispose(); this.harborLight.dispose();
-    this.seaMist.dispose();
+    this.cutaway.dispose(); this.seaMist.dispose();
     this.renderer.dispose(); this.renderer.domElement.remove();
     for (const label of this.labels) label.button.remove();
   }

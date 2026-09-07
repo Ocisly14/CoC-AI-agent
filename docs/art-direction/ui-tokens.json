@@ -1,0 +1,154 @@
+{
+  "version": "1.0",
+  "status": "design-only; not imported by runtime",
+  "colorSpace": "sRGB",
+  "palette": {
+    "bone": "#E7DDC8",
+    "ink": "#24282B",
+    "umber": "#8A7968",
+    "ochre": "#B58A50",
+    "rust": "#984F43",
+    "mist": "#A8B3AE",
+    "teal": "#496669",
+    "olive": "#666D50",
+    "violet": "#696373",
+    "amber": "#D9AE70"
+  },
+  "semantic": {
+    "paper": "bone",
+    "text": "ink",
+    "panel": "ink",
+    "inverseText": "bone",
+    "accent": "ochre",
+    "danger": "#91473C",
+    "focusOnDark": "amber",
+    "focusOnLight": "teal",
+    "secondaryText": "#58564F",
+    "disabledText": "#62605A",
+    "paperRule": "#AFA591"
+  },
+  "typography": {
+    "heading": {
+      "latin": [
+        "Noto Serif",
+        "Georgia",
+        "serif"
+      ],
+      "cjk": [
+        "Noto Serif CJK SC",
+        "Source Han Serif SC",
+        "Songti SC",
+        "serif"
+      ]
+    },
+    "body": {
+      "latin": [
+        "Noto Sans",
+        "Arial",
+        "sans-serif"
+      ],
+      "cjk": [
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "PingFang SC",
+        "sans-serif"
+      ]
+    },
+    "bodyPx": [
+      16,
+      18
+    ],
+    "bodyLineHeight": 1.65,
+    "functionalMinPx": 14,
+    "captionPx": 13,
+    "titlePx": [
+      24,
+      36
+    ],
+    "numerals": "tabular-nums"
+  },
+  "spacePx": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32,
+    48
+  ],
+  "radiusPx": 3,
+  "control": {
+    "minTargetPx": 44,
+    "focusRingPx": 2,
+    "focusOffsetPx": 2,
+    "iconViewBox": 24,
+    "iconStroke": 1.75
+  },
+  "motion": {
+    "fastMs": 120,
+    "defaultMs": 180,
+    "slowMs": 220,
+    "maxTranslatePx": 8,
+    "reduced": "disable decorative movement and pulse; preserve state changes"
+  },
+  "layouts": [
+    {
+      "width": 1440,
+      "height": 900,
+      "readingPanelWidth": 400
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "readingPanelWidth": 360
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "readingPanelHeight": 300,
+      "expandedMaxViewportRatio": 0.8
+    }
+  ],
+  "contrastPairs": [
+    [
+      "text",
+      "paper",
+      4.5
+    ],
+    [
+      "inverseText",
+      "panel",
+      4.5
+    ],
+    [
+      "secondaryText",
+      "paper",
+      4.5
+    ],
+    [
+      "danger",
+      "paper",
+      4.5
+    ],
+    [
+      "disabledText",
+      "paper",
+      4.5
+    ],
+    [
+      "focusOnLight",
+      "paper",
+      3
+    ],
+    [
+      "focusOnDark",
+      "panel",
+      3
+    ]
+  ],
+  "notes": [
+    "Ochre is decoration on paper, not small body text.",
+    "Font files are not bundled; live text falls back to local system fonts.",
+    "Static SVGs specify design, not working game interactions."
+  ]
+}

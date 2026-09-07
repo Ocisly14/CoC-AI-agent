@@ -1,7 +1,7 @@
 import { describe,it,expect } from 'vitest';
 import * as THREE from 'three';
 import { readFileSync } from 'node:fs';
-import { buildingScenes, cutawayDecision, insideBluebird, roomFloor, projectedBuilding } from './buildingInteriors';
+import { BLUEBIRD as B, buildingScenes, cutawayDecision, insideBluebird, roomFloor, projectedBuilding } from './buildingInteriors';
 import { bluebirdWalls,createBluebirdShadowShell,exteriorWallGeometry } from './bluebirdShell';
 import { createBluebirdInterior } from './bluebirdInterior';
 import { createInteriorLighting } from './interiorLighting';
@@ -18,19 +18,22 @@ describe('Bluebird authored cutaway',()=>{
     ray.set(new THREE.Vector3(12,0,0),new THREE.Vector3(-1,0,0));expect(ray.intersectObject(shell).length).toBeGreaterThan(0);
     geometry.dispose();material.dispose();
   });
-  it('keeps floors and props solid while upper walls remain revealable',()=>{
+  it('splits upper walls into four tagged sides and leaves floors and props untagged',()=>{
     const model=make();
-    for(const floor of model.root.children) {
-      let protectedCount=0,wallCount=0;
-      for(const child of floor.children) {
-        if(child instanceof THREE.Mesh && (child.material as THREE.Material).visible) {
-          expect((child.material as THREE.Material).userData.revealProtected).toBe(true);protectedCount++;
-        } else if(child instanceof THREE.Group)child.traverse(object=>{
-          if(object instanceof THREE.Mesh){expect((object.material as THREE.Material).userData.revealProtected).toBe(false);wallCount++;}
-        });
+    model.root.children.forEach((storey,i)=>{
+      const sill=(i?B.upper:B.ground)+.95;
+      const sides=storey.children.filter((c):c is THREE.Group=>c instanceof THREE.Group && !!c.userData.cutawayNormal);
+      expect(sides.map(s=>(s.userData.cutawayNormal as number[]).join(',')).sort()).toEqual(['-1,0,0','0,0,-1','0,0,1','1,0,0']);
+      for(const side of sides) {
+        const meshes=side.children.filter((c):c is THREE.Mesh=>c instanceof THREE.Mesh);
+        expect(meshes.length).toBeGreaterThan(0);
+        for(const mesh of meshes){mesh.geometry.computeBoundingBox();expect(mesh.geometry.boundingBox!.min.y).toBeGreaterThanOrEqual(sill-1e-6);}
       }
-      expect(protectedCount).toBeGreaterThan(0);expect(wallCount).toBeGreaterThan(0);
-    }
+      let untagged=0;
+      for(const child of storey.children)if(child instanceof THREE.Mesh){expect('cutawayNormal' in child.userData).toBe(false);expect('cutawayPartition' in child.userData).toBe(false);untagged++;}
+      expect(untagged).toBeGreaterThan(0);
+    });
+    model.root.traverse(o=>{if(o instanceof THREE.Group)expect(o.userData.cutawayPartition).toBeUndefined();});
     model.dispose();
   });
   it('exports the exact module rooms, references and connections without inventing upstairs SCNs',()=>{
@@ -63,7 +66,8 @@ describe('Bluebird authored cutaway',()=>{
     const model=make();const ids=new Set(model.hits.map(h=>h.userData.itemId).filter(Boolean));
     expect([...ids].sort()).toEqual(buildingScenes.flatMap(s=>s.references.items.map(i=>i.id)).sort());
     let triangles=0,calls=0;model.root.traverse(o=>{if(o instanceof THREE.Mesh && (o.material as THREE.Material).visible){calls++;triangles+=o.geometry.attributes.position.count/3;}});
-    expect(calls).toBeLessThanOrEqual(30);expect(triangles).toBeLessThan(50000);
+    // One upper-wall mesh per storey became up to four side groups, each its own draw call.
+    expect(calls).toBeLessThanOrEqual(40);expect(triangles).toBeLessThan(50000);
     model.setFloor(1);for(const h of model.hits)expect(h.parent!.visible).toBe(h.userData.floor===1);
     model.dispose();
   });

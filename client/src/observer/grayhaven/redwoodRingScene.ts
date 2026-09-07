@@ -1,29 +1,19 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { elevation, seededRandom } from './layout';
 import { REDWOOD_RING, REDWOOD_TREES, redwoodDetailLevel } from './redwoodRingLayout';
 import { BAKE_LAYER } from './worldLightAtlas';
 import type { Surface } from './painterlyArt';
 import notes from './redwoodRingScene.generated.json';
-import { patchMaterial, type ShaderPatch } from './lightingPatch';
 
 type MaterialFactory = (color: THREE.ColorRepresentation, surface?: Surface) => THREE.MeshStandardMaterial;
 type Shape = 'box' | 'pole' | 'stone' | 'ring' | 'cap';
+/** What the cutaway controller reads off `userData.cutawayTree` / `cutawayInstances`: world base, full height, crown half-width. */
+export type TreeSpan = { base: THREE.Vector3; height: number; radius?: number };
 
 /** Persistent grove silhouettes and shadows, with two instanced close-detail tiers. */
 export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.MeshStandardMaterial, crown: THREE.MeshStandardMaterial) {
   const root = new THREE.Group(); root.name = 'SCN_redwood_ring — old-growth clearing';
-  const protectedMaterials=new Map<THREE.Material,THREE.Material>();
-  const protect=(source:THREE.Material)=>{
-    if(!protectedMaterials.has(source)) {
-      const copy=source.clone();
-      // Retain shared lighting uniforms; Material.clone serializes userData and
-      // cannot copy the functions in our composed shader patches.
-      delete copy.userData.shaderPatches;
-      for(const patch of (source.userData.shaderPatches??[]) as ShaderPatch[])patchMaterial(copy,patch);
-      copy.userData.revealProtected=true;protectedMaterials.set(source,copy);
-    }
-    return protectedMaterials.get(source)!;
-  };
   root.userData.moduleItems = notes.items.map(item => item.id);
   const tiers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
   tiers.forEach((tier, i) => { tier.name = `redwood-detail-${i}`; root.add(tier); });
@@ -36,7 +26,8 @@ export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.Me
     stone: new THREE.DodecahedronGeometry(1, 1), ring: new THREE.TorusGeometry(1, .045, 5, 28),
     cap: new THREE.SphereGeometry(1, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2),
   };
-  const batches = new Map<string, { tier: number; shape: Shape; mat: THREE.Material; matrices: THREE.Matrix4[]; tree?: boolean }>();
+  // `spans` marks a tree batch: one span per instance, so the cutaway can collapse hidden instances by index.
+  const batches = new Map<string, { tier: number; shape: Shape; mat: THREE.Material; matrices: THREE.Matrix4[]; spans?: TreeSpan[] }>();
   const dummy = new THREE.Object3D();
   function add(tier: number, shape: Shape, mat: THREE.Material, p: THREE.Vector3, scale: number[], rotation = [0, 0, 0]) {
     dummy.position.copy(p); dummy.scale.fromArray(scale); dummy.rotation.set(...rotation as [number, number, number]); dummy.updateMatrix();
@@ -45,15 +36,16 @@ export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.Me
     batches.get(key)!.matrices.push(dummy.matrix.clone());
   }
   const ground = (x: number, z: number, lift = 0) => new THREE.Vector3(x, elevation(x, z) + lift, z);
-  function beam(tier: number, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, width: number, depth = width, tree = false) {
-    const key = `${tier}/pole/${mat.uuid}/${tree}`;
-    if (!batches.has(key)) batches.set(key, { tier, shape: 'pole', mat, matrices: [], tree });
+  // A beam with a tree span is a hideable high branch; roots, logs and seedlings batch apart and always stay.
+  function beam(tier: number, mat: THREE.Material, a: THREE.Vector3, b: THREE.Vector3, width: number, depth = width, tree?: TreeSpan) {
+    const key = `${tier}/pole/${mat.uuid}/${!!tree}`;
+    if (!batches.has(key)) batches.set(key, { tier, shape: 'pole', mat, matrices: [], spans: tree ? [] : undefined });
     dummy.position.copy(a).add(b).multiplyScalar(.5); dummy.scale.set(width, a.distanceTo(b), depth);
     dummy.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); dummy.updateMatrix();
-    batches.get(key)!.matrices.push(dummy.matrix.clone());
+    const batch = batches.get(key)!; batch.matrices.push(dummy.matrix.clone()); if (tree) batch.spans!.push(tree);
   }
-  function mesh(tier: number, geometry: THREE.BufferGeometry, mat: THREE.Material, p: THREE.Vector3, occluder=false) {
-    const object = new THREE.Mesh(geometry, occluder?mat:protect(mat)); object.position.copy(p); object.receiveShadow = true;
+  function mesh(tier: number, geometry: THREE.BufferGeometry, mat: THREE.Material, p: THREE.Vector3) {
+    const object = new THREE.Mesh(geometry, mat); object.position.copy(p); object.receiveShadow = true;
     object.castShadow = tier === 0;
     if (tier === 0) { object.layers.enable(BAKE_LAYER.occluder); object.layers.enable(BAKE_LAYER.bounce); }
     tiers[tier].add(object); return object;
@@ -85,15 +77,23 @@ export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.Me
   }
 
   // UVs select the existing redwood atlas's narrow bark strip and high crown.
+  // The trunk is two lathes split at the second profile point (3 units up, or one
+  // above a raised bottom): the stump stays through a cutaway like a wall's sill
+  // while the upper part hides, so each needs its own mesh.
   function trunkGeometry(radius: number, height: number, bottom = -.6) {
-    const geometry = new THREE.LatheGeometry([
+    const profile = [
       new THREE.Vector2(radius * 1.3, bottom), new THREE.Vector2(radius, Math.max(bottom + 1, 3)),
       new THREE.Vector2(radius * .77, height * .28), new THREE.Vector2(radius * .56, height * .61),
       new THREE.Vector2(radius * .35, height * .86),
-    ], 16);
-    const uv = geometry.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, .525 + (uv.getX(i) - .5) * .065, .12 + uv.getY(i) * .38);
-    return geometry;
+    ];
+    // Lathe v runs by profile index, so each piece keeps its share of the
+    // one-lathe strip and the seam matches what the unsplit trunk showed.
+    const lathe = (points: THREE.Vector2[], v0: number, v1: number) => {
+      const geometry = new THREE.LatheGeometry(points, 16), uv = geometry.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, .525 + (uv.getX(i) - .5) * .065, .12 + (v0 + uv.getY(i) * (v1 - v0)) * .38);
+      return geometry;
+    };
+    return { stump: lathe(profile.slice(0, 2), 0, .25), upper: lathe(profile.slice(1), .25, 1) };
   }
   const crownGeo = new THREE.PlaneGeometry(.38, .37); crownGeo.translate(0, .815, 0);
   const crownUv = crownGeo.attributes.uv;
@@ -101,28 +101,40 @@ export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.Me
   const facing = Math.atan2(-398, 487), random = seededRandom(1945);
   const hollowTree = REDWOOD_TREES.find(tree => tree.seed === 8)!;
   const scarTree = REDWOOD_TREES.find(tree => tree.seed === 9)!;
+  const stumps: THREE.BufferGeometry[] = [];
   for (const tree of REDWOOD_TREES) {
     const p = ground(tree.x, tree.z);
-    const trunk = mesh(0, trunkGeometry(tree.radius, tree.height, tree === hollowTree ? 6.4 : -.6), bark, p,true);
-    trunk.name = `redwood-trunk-${tree.seed}`;
-    const canopy = mesh(0, crownGeo, crown, p,true); canopy.scale.setScalar(tree.height);
+    const { stump, upper } = trunkGeometry(tree.radius, tree.height, tree === hollowTree ? 6.4 : -.6);
+    stump.translate(p.x, p.y, p.z); stumps.push(stump);
+    // The ring root sits at the origin, so ground points are already world coordinates.
+    const trunk = mesh(0, upper, bark, p); trunk.name = `redwood-trunk-${tree.seed}`;
+    trunk.userData.cutawayTree = { base: p.clone(), height: tree.height, radius: tree.radius } satisfies TreeSpan;
+    const canopy = mesh(0, crownGeo, crown, p); canopy.scale.setScalar(tree.height);
     canopy.rotation.y = facing; canopy.name = `redwood-crown-${tree.seed}`;
     canopy.layers.disable(BAKE_LAYER.occluder);
+    // The crown card is .38 wide at unit scale; its half-width widens the screen-space test.
+    canopy.userData.cutawayTree = { base: p.clone(), height: tree.height, radius: tree.height * .19 } satisfies TreeSpan;
     for (let j = 0; j < 6; j++) {
       const angle = j / 6 * Math.PI * 2 + tree.seed * .7;
       // Keep the burned doorway open toward the fixed coastal viewing direction.
       if (tree === hollowTree && Math.cos(angle - (Math.PI / 2 - facing)) > .4) continue;
       const foot = ground(tree.x + Math.cos(angle) * (tree.radius + 2.6), tree.z + Math.sin(angle) * (tree.radius + 2.6), .08);
-      beam(0, darkWood, p.clone().add(new THREE.Vector3(Math.cos(angle) * tree.radius * .6, 2.3, Math.sin(angle) * tree.radius * .6)), foot, 1.1, .8, true);
+      beam(0, darkWood, p.clone().add(new THREE.Vector3(Math.cos(angle) * tree.radius * .6, 2.3, Math.sin(angle) * tree.radius * .6)), foot, 1.1, .8);
       add(1, 'stone', moss, foot.clone().add(new THREE.Vector3(0, .2, 0)), [.75, .18, .5], [0, angle, 0]);
     }
     // Broken radial branch stubs under the high canopy, kept away from the floor.
+    // They hide with their tree; the span's radius covers the 4.5 stub reach.
+    const stubSpan: TreeSpan = { base: p.clone(), height: tree.height, radius: tree.radius + 4.5 };
     for (let j = 0; j < 3; j++) {
       const a = j * 2.3 + tree.seed;
       const base = p.clone().add(new THREE.Vector3(0, tree.height * (.48 + j * .09), 0));
-      beam(0, darkWood, base, base.clone().add(new THREE.Vector3(Math.cos(a) * 4.5, 1.5, Math.sin(a) * 4.5)), .7, .55, true);
+      beam(0, darkWood, base, base.clone().add(new THREE.Vector3(Math.cos(a) * 4.5, 1.5, Math.sin(a) * 4.5)), .7, .55, stubSpan);
     }
   }
+  // One untagged mesh for every stump: the cutaway never hides them, so per-tree objects would only cost draw calls.
+  const stumpGeo = mergeGeometries(stumps); stumps.forEach(geo => geo.dispose());
+  if (!stumpGeo) throw Error('Redwood stump merge failed');
+  mesh(0, stumpGeo, bark, new THREE.Vector3()).name = 'redwood-trunk-stumps';
 
   // An actual open arch with charred side walls, not a dark decal on a solid trunk.
   const hollowBase = ground(hollowTree.x, hollowTree.z), r = hollowTree.radius * 1.2;
@@ -205,8 +217,9 @@ export function createRedwoodRingScene(material: MaterialFactory, bark: THREE.Me
   item('tin_register', can);
 
   for (const batch of batches.values()) {
-    const object = new THREE.InstancedMesh(shapes[batch.shape], batch.tree?batch.mat:protect(batch.mat), batch.matrices.length);
+    const object = new THREE.InstancedMesh(shapes[batch.shape], batch.mat, batch.matrices.length);
     batch.matrices.forEach((matrix, index) => object.setMatrixAt(index, matrix));
+    if (batch.spans) object.userData.cutawayInstances = batch.spans;
     object.instanceMatrix.needsUpdate = true; object.receiveShadow = true; object.castShadow = batch.tier === 0;
     if (batch.tier === 0) { object.layers.enable(BAKE_LAYER.occluder); object.layers.enable(BAKE_LAYER.bounce); }
     tiers[batch.tier].add(object);

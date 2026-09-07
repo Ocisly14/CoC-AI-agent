@@ -1,0 +1,13 @@
+{
+  "mode": "built-in image_gen; edit",
+  "edits": [
+    {
+      "key": "06-light",
+      "prompt": "Edit the supplied lighting concept board. Preserve panel grid, headings, camera and building geometry exactly. Correct time-of-day calibration only: panel 1 '03:00 PREDAWN' must have a genuinely dark deep blue-grey night sky and very subdued ambient, with localized amber street/window lights keeping doorway readable, no daytime grey sky. Panels '07:00 MORNING' and '15:00 AFTERNOON': street lantern and electric interior/window emissions OFF, window light can only be reflected daylight; retain directional pale ochre morning and warm neutral afternoon. 18:30 sunset remains amber-violet. Keep panels 5 and 6 and interior layout, with interior day illumination primarily window-driven. Do not change painting style, add/remove objects, or change text. The goal is same-scene light study, not a new building. Retain footer."
+    },
+    {
+      "key": "07-weather",
+      "prompt": "Edit the supplied weather board preserving all six exact compositions, architecture, headings, perspective, oil brush style and text. In panels 1 CLEAR, 2 SEA FOG, 3 RAIN, 5 BASELINE and 6 SUBJECTIVE / OPTIONAL, the metal brazier must be unlit: no flame, no orange glow, no fire reflection. In panel 4 FIRELIGHT STUDY alone retain the contained small fire and localized amber illumination, without increasing flames. BASELINE and SUBJECTIVE should otherwise retain identical lighting and objects; subjective may only have peripheral violet/rust pigment shifts, not a change in world state. Preserve doorway readability and no added narrative symbols."
+    }
+  ]
+}

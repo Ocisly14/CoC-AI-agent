@@ -1,0 +1,111 @@
+{
+  "version": "1.0",
+  "status": "authoring recommendations; no runtime shader change",
+  "units": {
+    "roughness": "0..1 perceptual starting range",
+    "normalStrength": "relative starting multiplier; tune per asset"
+  },
+  "families": [
+    {
+      "id": "painted_wood",
+      "label": "木漆",
+      "roughness": [
+        0.65,
+        0.88
+      ],
+      "normalStrength": 0.18,
+      "brush": "横向搭接板顺纹擦色，补漆块方向不变",
+      "metalness": "漆层0，露出五金1"
+    },
+    {
+      "id": "raw_wood",
+      "label": "裸木",
+      "roughness": [
+        0.78,
+        0.96
+      ],
+      "normalStrength": 0.3,
+      "brush": "宽大木纹与端面，潮湿区降低粗糙度",
+      "metalness": "0"
+    },
+    {
+      "id": "plaster",
+      "label": "灰泥",
+      "roughness": [
+        0.84,
+        0.98
+      ],
+      "normalStrength": 0.12,
+      "brush": "大色面、墙角薄擦色，少量裂纹",
+      "metalness": "0"
+    },
+    {
+      "id": "stone",
+      "label": "石材",
+      "roughness": [
+        0.75,
+        0.95
+      ],
+      "normalStrength": 0.35,
+      "brush": "沿岩层分块，避免密集噪声",
+      "metalness": "0"
+    },
+    {
+      "id": "cloth",
+      "label": "织物",
+      "roughness": [
+        0.88,
+        1
+      ],
+      "normalStrength": 0.15,
+      "brush": "褶面与缝边清楚，织纹近景可见",
+      "metalness": "0"
+    },
+    {
+      "id": "metal",
+      "label": "金属",
+      "roughness": [
+        0.3,
+        0.72
+      ],
+      "normalStrength": 0.2,
+      "brush": "宽阔断续反射，漆/锈/裸露分区",
+      "metalness": "裸金属1，锈与漆0"
+    },
+    {
+      "id": "glass",
+      "label": "玻璃",
+      "roughness": [
+        0.12,
+        0.3
+      ],
+      "normalStrength": 0.05,
+      "brush": "少量大块反射；磨砂版本粗糙度0.55–0.75",
+      "metalness": "0"
+    },
+    {
+      "id": "water",
+      "label": "水",
+      "roughness": [
+        0.25,
+        0.5
+      ],
+      "normalStrength": 0.15,
+      "brush": "横向宽色带、低频法线；泡沫粗糙度0.9",
+      "metalness": "0"
+    }
+  ],
+  "textures": {
+    "basecolor": "sRGB",
+    "emissive": "sRGB",
+    "normal": "linear; tangent +Y",
+    "roughness": "linear",
+    "metallic": "linear",
+    "ao": "linear; local only"
+  },
+  "rules": [
+    "Do not paint sun shadows or colored directional highlights into basecolor.",
+    "Named palette tokens are sRGB references, not measured reflectance.",
+    "Opaque overview glazing may use the current simplified reflection; do not enable transparency globally."
+  ]
+}

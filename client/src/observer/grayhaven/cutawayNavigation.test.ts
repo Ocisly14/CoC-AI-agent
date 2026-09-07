@@ -1,8 +1,7 @@
 import { describe,it,expect,vi } from 'vitest';
 import * as THREE from 'three';
 import { GrayhavenWorld } from './GrayhavenWorld';
-import { CLOSED_INTERIOR, interiorRevealTarget, roomCenter } from './buildingInteriors';
-import { projectedRevealEllipse } from './depthReveal';
+import { BLUEBIRD, CLOSED_INTERIOR } from './buildingInteriors';
 
 // Exercise the real controller methods without a browser or a WebGL renderer.
 function controller() {
@@ -18,15 +17,19 @@ function controller() {
 }
 const flush=()=>new Promise(resolve=>setTimeout(resolve,0));
 describe('cutaway navigation and lazy-load races',()=>{
-  it('does not expose a closed, loading, failed or exterior-only building',()=>{
+  it('targets neither a closed, loading, failed or exterior-only building nor an outdoor scene below the zoom switch',()=>{
     const {world}=controller();
     for(const status of ['closed','loading','error']) {
       world.interiorState.status=status;world.selectedId='SCN_bluebird_dining';
-      expect(world.revealTarget()).toBeNull();
-      expect(interiorRevealTarget(world.camera,new THREE.Matrix4(),world.interiorState)).toBeNull();
+      expect(world.cutawayTarget()).toBeNull();
     }
-    world.interiorState.status='closed';world.selectedId='SCN_grocery';expect(world.revealTarget()).toBeNull();
-    world.selectedId='SCN_redwood_ring';expect(world.revealTarget()?.strength).toBeGreaterThan(0);
+    world.interiorState.status='closed';world.camera=new THREE.OrthographicCamera();world.camera.updateMatrixWorld();
+    world.camera.zoom=4;world.selectedId='SCN_grocery';expect(world.cutawayTarget()).toBeNull();
+    world.selectedId='SCN_redwood_ring';expect(world.cutawayTarget()).toMatchObject({kind:'outdoor',id:'SCN_redwood_ring'});
+    // Hysteresis: a zoom inside the band keeps the last state; below it the scene closes up again.
+    world.camera.zoom=3.5;expect(world.cutawayTarget()).toMatchObject({kind:'outdoor'});
+    world.camera.zoom=3;expect(world.cutawayTarget()).toBeNull();
+    world.camera.zoom=3.5;expect(world.cutawayTarget()).toBeNull();
   });
   it('does not reopen after returning to the street during loading',async()=>{
     const {world,resolve,model}=controller();world.openInterior('SCN_bluebird_dining');world.returnToStreet();resolve();await flush();
@@ -59,18 +62,16 @@ describe('cutaway navigation and lazy-load races',()=>{
       camera.position.set(-398,351,487);camera.lookAt(0,0,0);camera.updateMatrixWorld();
       const before=camera.quaternion.clone(), exterior=new THREE.Group();exterior.rotation.y=1.4988;exterior.updateMatrixWorld();
       const panel={top:panelTop,right:panelRight},toolbar={bottom:toolbarBottom};
-      Object.assign(world,{camera,controls:{minZoom:.72},canvasSize:{width,height},interiorState:{status:'open',floor:0,room:'SCN_bluebird_dining'},dinerExterior:exterior,
+      Object.assign(world,{camera,controls:{minZoom:.72},canvasSize:{width,height},interiorState:{status:'open',floor:0,room:'SCN_bluebird_dining'},dinerExterior:exterior,dinerModel:{root:new THREE.Group()},
         host:{getBoundingClientRect:()=>({top:0,left:0,bottom:height}),parentElement:{querySelector:(s:string)=>({getBoundingClientRect:()=>s==='.gh-place'?panel:toolbar})}}});
       world.fitInterior('SCN_bluebird_dining');
       camera.position.add(world.focusTarget);camera.zoom=world.focusZoom;camera.updateProjectionMatrix();camera.updateMatrixWorld();
-      const reveal=interiorRevealTarget(camera,exterior.matrixWorld,world.interiorState)!;
-      const actualRoom=roomCenter('SCN_bluebird_dining').applyMatrix4(exterior.matrixWorld);
-      expect(reveal.center.distanceTo(actualRoom)).toBeLessThan(.0001);
-      const ellipse=projectedRevealEllipse(camera,reveal),projectedRoom=actualRoom.project(camera);
-      expect(ellipse.center.x).toBeCloseTo((projectedRoom.x+1)/2);
-      expect(ellipse.center.y).toBeCloseTo((projectedRoom.y+1)/2);
-      expect(reveal.strength).toBeGreaterThan(0);
-      expect(world.revealTarget().strength).toBe(1);
+      // The cutaway anchors to the actual shell, independently of the sidebar-aware framing.
+      const target=world.cutawayTarget();
+      expect(target.kind).toBe('interior');expect(target.exterior).toBe(exterior);expect(target.root).toBe(world.dinerModel.root);
+      const shellCenter=new THREE.Vector3(0,(BLUEBIRD.top+BLUEBIRD.ground)/2,0).applyMatrix4(exterior.matrixWorld);
+      expect(target.footprint.center.distanceTo(shellCenter)).toBeLessThan(.0001);
+      expect(target.footprint.corners).toHaveLength(8);
       expect(camera.quaternion.equals(before)).toBe(true);
       for(const x of [-7.4,7.4])for(const y of [.2,6.4])for(const z of [-2.8,11.2]) {
         const p=new THREE.Vector3(x,y,z).applyMatrix4(exterior.matrixWorld).project(camera);

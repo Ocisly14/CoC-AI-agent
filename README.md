@@ -470,6 +470,7 @@ pnpm test -- -t "name pattern"
 
 ## Further reading
 
+- [Art direction: narrative oil-painting realism](docs/art-direction/README.md) — project-wide visual language, seven reference boards, editable UI samples, and scene/object production specifications (Chinese; design deliverables, not runtime changes).
 - `CLAUDE.md` — architecture notes and constraints kept current with the code.
 - `docs/engine-operations.md` — the four operation layers of the engine (Chinese).
 - `testmods/DYNAMIC_WORLD_SCENE_SCHEMA.md` — the module authoring contract.

@@ -288,8 +288,8 @@ export function createSeaMist() {
     setSun(direction: THREE.Vector3, color: THREE.ColorRepresentation) {
       uniforms.uSunDirection.value.copy(direction); uniforms.uSunColor.value.set(color);
     },
-    render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.OrthographicCamera, drawScene = () => renderer.render(scene,camera)) {
-      if (uniforms.uAmount.value===0) { drawScene(); return; }
+    render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.OrthographicCamera) {
+      if (uniforms.uAmount.value===0) { renderer.render(scene,camera); return; }
       renderer.getDrawingBufferSize(size);
       if (width!==size.x || height!==size.y) {
         width=size.x; height=size.y;
@@ -301,7 +301,7 @@ export function createSeaMist() {
       const previous = renderer.getRenderTarget(), reset=renderer.info.autoReset;
       renderer.info.autoReset=false; renderer.info.reset();
       try {
-        renderer.setRenderTarget(sceneTarget); drawScene();
+        renderer.setRenderTarget(sceneTarget); renderer.render(scene,camera);
         uniforms.uInverseProjection.value.copy(camera.projectionMatrixInverse);
         uniforms.uCameraWorld.value.copy(camera.matrixWorld);
         composeUniforms.uCameraRange.value=camera.far-camera.near;

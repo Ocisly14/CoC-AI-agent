@@ -1,0 +1,103 @@
+{
+  "version": "1.0",
+  "status": "painted keyframe targets, not physical measurements",
+  "units": {
+    "time": "local game HH:mm",
+    "weights": "normalized art-directed contributions; NOT Three.js intensity or lux",
+    "fog": "relative outdoor visual density, not engine weather state"
+  },
+  "interpolation": "Use existing sun trajectory; cyclic time interpolation of art weights with no discontinuity. Do not alter simulation time.",
+  "keyframes": [
+    {
+      "time": "03:00",
+      "name": "凌晨",
+      "key": "#71828C",
+      "shadow": "#434D60",
+      "air": "#737F86",
+      "direct": 0.02,
+      "sky": 0.16,
+      "bounce": 0.1,
+      "lamps": 0.75,
+      "fog": 0.5
+    },
+    {
+      "time": "07:00",
+      "name": "晨光",
+      "key": "#D3BC8E",
+      "shadow": "#677C85",
+      "air": "#ADB6AE",
+      "direct": 0.55,
+      "sky": 0.45,
+      "bounce": 0.3,
+      "lamps": 0.1,
+      "fog": 0.45
+    },
+    {
+      "time": "15:00",
+      "name": "午后",
+      "key": "#E4D5B5",
+      "shadow": "#696373",
+      "air": "#A8B3AE",
+      "direct": 1,
+      "sky": 0.5,
+      "bounce": 0.45,
+      "lamps": 0,
+      "fog": 0.2
+    },
+    {
+      "time": "18:30",
+      "name": "夕照",
+      "key": "#D9AE70",
+      "shadow": "#696373",
+      "air": "#A7A69E",
+      "direct": 0.65,
+      "sky": 0.3,
+      "bounce": 0.4,
+      "lamps": 0.35,
+      "fog": 0.3
+    },
+    {
+      "time": "20:00",
+      "name": "蓝调",
+      "key": "#8D9DAA",
+      "shadow": "#4A596A",
+      "air": "#8F9DA3",
+      "direct": 0.08,
+      "sky": 0.27,
+      "bounce": 0.15,
+      "lamps": 0.8,
+      "fog": 0.4
+    },
+    {
+      "time": "23:00",
+      "name": "深夜",
+      "key": "#71818E",
+      "shadow": "#3D4859",
+      "air": "#677780",
+      "direct": 0.01,
+      "sky": 0.14,
+      "bounce": 0.08,
+      "lamps": 1,
+      "fog": 0.4
+    }
+  ],
+  "interior": {
+    "day": "window-driven directional light plus modest bounce",
+    "night": "actual milk-glass ceiling lamps / bedside lamps",
+    "cutaway": "retain architectural light blocking and visible floors/contents",
+    "fog": "use current interior exclusion; preserve object readability",
+    "lampReference": "#D9AE70"
+  },
+  "psychological": {
+    "defaultStrength": 0,
+    "lightStrength": 0.35,
+    "strongStrength": 0.7,
+    "durationSeconds": [
+      0.6,
+      1.2
+    ],
+    "region": "peripheral scene only; no UI distortion",
+    "requires": "explicit valid narrative event",
+    "reducedMotion": "static mild tint or off; user strength 0 disables"
+  }
+}

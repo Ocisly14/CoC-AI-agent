@@ -33,13 +33,11 @@ export function createInteriorLighting(art: GrayhavenArt, inverse: THREE.Matrix4
     registerLamp(light:THREE.PointLight,intensity:number){lamps.push({light,intensity});light.intensity=intensity*lampGain();},
     lampMaterial(){
       if(!cache.has('lamp'))cache.set('lamp',new THREE.MeshStandardMaterial({color:0xffedc6,emissive:0xffc879,emissiveIntensity:.3+2*(1-daylight),roughness:.7,side:THREE.DoubleSide}));
-      cache.get('lamp')!.userData.revealProtected=true;
       return cache.get('lamp')!;
     },
-    material(color:number,surface?:Surface,metal=false,revealOccluder=false){
-    const key=`${color}:${surface}:${metal}:${revealOccluder}`; if(cache.has(key))return cache.get(key)!;
+    material(color:number,surface?:Surface,metal=false){
+    const key=`${color}:${surface}:${metal}`; if(cache.has(key))return cache.get(key)!;
     const mat=new THREE.MeshStandardMaterial({color,map:surface?art.surfaces[surface]:null,roughness:metal?.52:.9,metalness:metal?.3:0});
-    mat.userData.revealProtected=!revealOccluder;
     patchMaterial(mat,patch); if(softShadow)patchMaterial(mat,softShadow); cache.set(key,mat); return mat;
   }, setDaylight(amount:number){daylight=THREE.MathUtils.clamp(amount,0,1);uniforms.uRoomDay.value=.04+daylight*.96;
     for(const lamp of lamps)lamp.light.intensity=lamp.intensity*lampGain();

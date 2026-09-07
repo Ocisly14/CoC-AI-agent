@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import notes from './buildingScenes.generated.json';
 import sheriffNotes from './sheriffScenes.generated.json';
-import type { RevealTarget } from './depthReveal';
 
 export const buildingScenes = notes;
 export const sheriffScenes = sheriffNotes;
@@ -29,22 +28,6 @@ export const roomCenter = (id: string) => id==='SCN_sheriff_front'?new THREE.Vec
   :id==='SCN_sheriff_office'?new THREE.Vector3(-3.75,3.5,-2.5)
   :id==='SCN_sheriff_cell'?new THREE.Vector3(3.75,3.5,-2.5)
   :new THREE.Vector3(0, roomFloor(id) ? 9.2 : 3.3, id === 'SCN_bluebird_kitchen' ? -6.5 : 4.2);
-
-/** Anchor to the actual room, independently of sidebar-aware camera framing. */
-export function interiorRevealTarget(camera: THREE.OrthographicCamera, transform: THREE.Matrix4, state: InteriorState): RevealTarget | null {
-  if(state.status!=='open')return null;
-  const {center:localCenter,halfWidth,halfDepth:depth,halfHeight}=interiorFrame(state);
-  const center=localCenter.clone().applyMatrix4(transform);
-  const viewCenter=center.clone().applyMatrix4(camera.matrixWorldInverse);
-  const radii=new THREE.Vector2();
-  for(const x of [-halfWidth,halfWidth])for(const y of [-halfHeight,halfHeight])for(const z of [-depth,depth]) {
-    const point=localCenter.clone().add(new THREE.Vector3(x,y,z)).applyMatrix4(transform).applyMatrix4(camera.matrixWorldInverse).sub(viewCenter);
-    radii.x=Math.max(radii.x,Math.abs(point.x));radii.y=Math.max(radii.y,Math.abs(point.y));
-  }
-  // The rectangle's corners fall in the feather, rather than clipping the whole room.
-  radii.multiplyScalar(1.5);
-  return {center,radii,strength:1};
-}
 
 /** Screen footprint, not absolute zoom: this remains usable on portrait screens. */
 export function projectedBuilding(camera: THREE.OrthographicCamera, transform: THREE.Matrix4, width = 14, depth = 22) {

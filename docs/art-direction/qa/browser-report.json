@@ -1,0 +1,62 @@
+[
+  {
+    "name": "desktop-1440x900",
+    "width": 1440,
+    "height": 900,
+    "outside": [],
+    "overlaps": [],
+    "small": [],
+    "textNodes": 29,
+    "controls": 13,
+    "fonts": "loaded",
+    "errors": []
+  },
+  {
+    "name": "item-1280x720",
+    "width": 1280,
+    "height": 720,
+    "outside": [],
+    "overlaps": [],
+    "small": [],
+    "textNodes": 20,
+    "controls": 7,
+    "fonts": "loaded",
+    "errors": []
+  },
+  {
+    "name": "mobile-390x844",
+    "width": 390,
+    "height": 844,
+    "outside": [],
+    "overlaps": [],
+    "small": [],
+    "textNodes": 11,
+    "controls": 7,
+    "fonts": "loaded",
+    "errors": []
+  },
+  {
+    "name": "mobile-expanded-390x844",
+    "width": 390,
+    "height": 844,
+    "outside": [],
+    "overlaps": [],
+    "small": [],
+    "textNodes": 11,
+    "controls": 4,
+    "fonts": "loaded",
+    "errors": []
+  },
+  {
+    "name": "components",
+    "width": 1440,
+    "height": 680,
+    "outside": [],
+    "overlaps": [],
+    "small": [],
+    "textNodes": 25,
+    "controls": 6,
+    "fonts": "loaded",
+    "errors": []
+  }
+]

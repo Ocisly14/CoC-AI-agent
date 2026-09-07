@@ -7,15 +7,14 @@ import type { createInteriorLighting } from './interiorLighting';
 export function createBluebirdInterior(light:ReturnType<typeof createInteriorLighting>) {
   const root=new THREE.Group(); root.name='bluebird-authored-interior';
   const floors=[new THREE.Group(),new THREE.Group()]; root.add(...floors);
-  const walls = [new THREE.Group(), new THREE.Group()];
-  walls.forEach((group, i) => floors[i].add(group));
+  // Upper walls go into one group per outward normal, tagged userData.cutawayNormal so the cutaway controller can hide the sides facing the camera; sills, floors and props stay untagged.
+  const sides=[0,1].map(()=>new Map<string,THREE.Group>());
+  const side=(floor:0|1,normal:number[])=>{const key=normal.join(','),m=sides[floor];if(!m.has(key)){const g=new THREE.Group();g.name=`bluebird-wall-${floor}-${key}`;g.userData.cutawayNormal=[...normal];floors[floor].add(g);m.set(key,g);}return m.get(key)!;};
   const hits:THREE.Mesh[]=[];
   const lamps:THREE.PointLight[]=[];
   const pickMaterial=new THREE.MeshBasicMaterial({visible:false});
   const mat={plaster:light.material(0xd0c6ad),trim:light.material(0x685345,'bareWood'),wood:light.material(0xc9aa7c,'bareWood'),green:light.material(0x426354),red:light.material(0x985b4e),cream:light.material(0xe5decb),steel:light.material(0x899b9a,undefined,true),dark:light.material(0x343d37),tile:light.material(0xb0aea0),paper:light.material(0xdad0b4),brass:light.material(0xbaa16e,undefined,true)};
   const batches=new Map<THREE.Group,Map<THREE.Material,THREE.BufferGeometry[]>>();
-  // Upper walls may peel away; the same coloured floor/sill/furniture stays solid.
-  const wallMaterial=light.material(0xd0c6ad,undefined,false,true);
   const add=(group:THREE.Group,geo:THREE.BufferGeometry,m:THREE.Material,x:number,y:number,z:number,rx=0,ry=0,rz=0)=>{
     geo.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(1,1,1)));
     if(!batches.has(group))batches.set(group,new Map()); const b=batches.get(group)!; if(!b.has(m))b.set(m,[]); b.get(m)!.push(geo.index?geo.toNonIndexed():geo); if(geo.index)geo.dispose();
@@ -34,9 +33,9 @@ export function createBluebirdInterior(light:ReturnType<typeof createInteriorLig
       if(p.floor<floor) {box(g,...p.size,mat.plaster,...p.at);continue;}
       const lo=p.at[1]-p.size[1]/2, hi=p.at[1]+p.size[1]/2, sill=y+.95;
       if(Math.min(hi,sill)>lo)box(g,p.size[0],Math.min(hi,sill)-lo,p.size[2],mat.plaster,p.at[0],(Math.min(hi,sill)+lo)/2,p.at[2]);
-      if(hi>Math.max(lo,sill))box(walls[floor],p.size[0],hi-Math.max(lo,sill),p.size[2],wallMaterial,p.at[0],(hi+Math.max(lo,sill))/2,p.at[2]);
+      if(hi>Math.max(lo,sill))box(side(floor,p.normal),p.size[0],hi-Math.max(lo,sill),p.size[2],mat.plaster,p.at[0],(hi+Math.max(lo,sill))/2,p.at[2]);
     }
-    // Only upper walls participate in the foreground reveal; contents keep their depth.
+    // Nothing below is tagged, so the cutaway never touches floors or contents.
     if(floor===0) {
       box(g,13.7,.25,21.7,mat.tile,0,y-.125,0);
       // Old checkerboard linoleum only in the dining room, with a clear kitchen threshold.
