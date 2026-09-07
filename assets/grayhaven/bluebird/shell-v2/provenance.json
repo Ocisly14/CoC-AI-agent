@@ -1,0 +1,135 @@
+{
+  "tool": "built-in image_gen; no CLI/API fallback",
+  "references": [
+    "../design-v3/primary-reference.png",
+    "../shell-v1/previews/01-textured-exterior.png",
+    "atlases/ground-unlit-guide.png",
+    "atlases/upper-unlit-guide.png",
+    "atlases/roof-unlit-guide.png"
+  ],
+  "paintover": {
+    "path": "previews/00-paintover-target.png",
+    "role": "AI-generated target, not a model render",
+    "prompt": "source/01-paintover-prompt.txt"
+  },
+  "layers": [
+    {
+      "id": "ground-brush",
+      "path": "layers/ground-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-brush-prompt.txt",
+      "sha256": "f1de2cbd2d19745caf770b92651ea2d3ed220c3f64af571cb051d94b52e27d6b"
+    },
+    {
+      "id": "ground-repaint",
+      "path": "layers/ground-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-repaint-prompt.txt",
+      "sha256": "0955a70b5f3246f2ffb716282670cee824f3333a260b9e631907bd4e744c95e7"
+    },
+    {
+      "id": "ground-weather",
+      "path": "layers/ground-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-weather-prompt.txt",
+      "sha256": "c12b10858b3deed7c26fe259bc78ae0e0d441e1be1c51d068ff5bc520cf3ac8e"
+    },
+    {
+      "id": "roof-brush",
+      "path": "layers/roof-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-brush-prompt.txt",
+      "sha256": "2808558ea2f5e6ebf9dc37e5d8e73ac8f03034e97ac31e8a808113b99c18ff6d"
+    },
+    {
+      "id": "roof-repaint",
+      "path": "layers/roof-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-repaint-prompt.txt",
+      "sha256": "94ae1c8fc9c0bed82f01c197371068a3fb6d00b56deac9a9a391a2672ad49e21"
+    },
+    {
+      "id": "roof-weather",
+      "path": "layers/roof-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-weather-prompt.txt",
+      "sha256": "084732fd5b5392c70db151db99ff5aeeceb1a459fc1b24676d9e4ef5c963708f"
+    },
+    {
+      "id": "upper-brush",
+      "path": "layers/upper-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-brush-prompt.txt",
+      "sha256": "8559109619d71e89fbfb59600f97ebedeb6b5a1b1162edeb07e537990e4207ef"
+    },
+    {
+      "id": "upper-repaint",
+      "path": "layers/upper-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-repaint-prompt.txt",
+      "sha256": "97315f321929ba9b616d34552e4a0e68425eacd9a163a9d487947781250a5790"
+    },
+    {
+      "id": "upper-weather",
+      "path": "layers/upper-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-weather-prompt.txt",
+      "sha256": "31fb5fd4141eacfa4c60a32b31b418d58d3b7e5c73c419884bc708a0205ce3a6"
+    }
+  ],
+  "baking": "Cycles DIFFUSE color pass only; direct and indirect lighting disabled; 16 px margin. Original source resolution preserved; 4K/2K are assembled bake resolutions, not native AI image detail."
+}

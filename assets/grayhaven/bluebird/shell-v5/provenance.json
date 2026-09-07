@@ -1,0 +1,22 @@
+{
+  "reference": "source/user-brush-reference.jpg",
+  "newPaint": {
+    "method": "built-in imagegen; second image replaces the accidental checkerboard with a pure black mask background",
+    "source": "layers/broad-pigment-black.png",
+    "generatedFile": "exec-06a922f0-0e8a-4209-b837-5b8d7e8e2dcb.png"
+  },
+  "reusedMasks": [
+    {
+      "source": "../shell-v2/layers/ground-brush.png",
+      "file": "layers/white-edge-brush.png",
+      "sha256": "f1de2cbd2d19745caf770b92651ea2d3ed220c3f64af571cb051d94b52e27d6b"
+    },
+    {
+      "source": "../shell-v2/layers/ground-weather.png",
+      "file": "layers/white-foot-weather.png",
+      "sha256": "c12b10858b3deed7c26fe259bc78ae0e0d441e1be1c51d068ff5bc520cf3ac8e"
+    }
+  ],
+  "render": "Blender Cycles actual geometry, v4 lights and exposure",
+  "runtime": "Only ground and upper basecolor maps change"
+}

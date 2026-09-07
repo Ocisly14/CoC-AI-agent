@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "building": "Bluebird design-v3",
+  "status": "hand-painted basecolor masters; local material samples, not integrated diner",
+  "method": "built-in image_gen; no CLI, no photographic texture filter",
+  "sources": [
+    "../../../../docs/superpowers/specs/2026-09-06-grayhaven-art-direction.md",
+    "../../../../docs/art-direction/README.md",
+    "../design-v3/primary-reference.png"
+  ],
+  "encoding": "sRGB",
+  "uvMode": "dedicated 0..1 panels; not seamless; do not repeat automatically",
+  "mapsProvided": [
+    "basecolor"
+  ],
+  "normalMap": null,
+  "displacementMap": null,
+  "roughnessMap": null,
+  "entries": [
+    {
+      "id": "01-ivory-clapboard",
+      "name": "骨白横向挂板",
+      "size": [
+        2.4,
+        1.6
+      ],
+      "roughness": 0.84,
+      "path": "basecolor/01-ivory-clapboard.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-e9a7648d-1f14-438c-b7bc-b070f0f772fe.png",
+      "prompt": "source/01-ivory-revision.txt"
+    },
+    {
+      "id": "02-teal-wainscot",
+      "name": "蓝绿竖板墙裙",
+      "size": [
+        1.4,
+        1.2
+      ],
+      "roughness": 0.82,
+      "path": "basecolor/02-teal-wainscot.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-70375ee0-5eba-4b20-a894-1e56728ec723.png",
+      "prompt": "source/02-teal-wainscot.txt"
+    },
+    {
+      "id": "03-ivory-trim",
+      "name": "骨白门窗套",
+      "size": [
+        0.24,
+        2.4
+      ],
+      "roughness": 0.65,
+      "path": "basecolor/03-ivory-trim.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-01b776f3-f25a-46ad-989e-96b6fed6d271.png",
+      "prompt": "source/03-ivory-trim.txt"
+    },
+    {
+      "id": "04-rusted-awning",
+      "name": "锈红雨棚铁皮",
+      "size": [
+        2.4,
+        1.4
+      ],
+      "roughness": 0.83,
+      "path": "basecolor/04-rusted-awning.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-e9cd1908-0cb0-495c-a65e-a2da9cf4242a.png",
+      "prompt": "source/04-rusted-awning.txt"
+    },
+    {
+      "id": "05-charcoal-roof",
+      "name": "炭灰卷材屋顶",
+      "size": [
+        3,
+        3
+      ],
+      "roughness": 0.93,
+      "path": "basecolor/05-charcoal-roof.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-6b29ff6c-4533-4f3f-aecd-324734a54b42.png",
+      "prompt": "source/05-charcoal-roof.txt"
+    },
+    {
+      "id": "06-maple-counter",
+      "name": "旧枫木吧台",
+      "size": [
+        2.4,
+        0.8
+      ],
+      "roughness": 0.46,
+      "path": "basecolor/06-maple-counter.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-89e617a9-771e-47fb-90fa-4c1276c6a2f7.png",
+      "prompt": "source/06-maple-counter.txt"
+    },
+    {
+      "id": "07-dining-floor",
+      "name": "堂座旧木地板",
+      "size": [
+        2.4,
+        2.4
+      ],
+      "roughness": 0.78,
+      "path": "basecolor/07-dining-floor.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-bb5176cf-9dd6-4d79-bc8d-bcfe4f3dd3c7.png",
+      "prompt": "source/07-dining-floor.txt"
+    },
+    {
+      "id": "08-warm-plaster",
+      "name": "室内暖灰泥",
+      "size": [
+        2,
+        2
+      ],
+      "roughness": 0.91,
+      "path": "basecolor/08-warm-plaster.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-7be92aed-b221-469b-8de9-85c1dffa67ed.png",
+      "prompt": "source/08-warm-plaster.txt"
+    },
+    {
+      "id": "09-green-booth",
+      "name": "绿皮卡座面料",
+      "size": [
+        1.2,
+        0.65
+      ],
+      "roughness": 0.57,
+      "path": "basecolor/09-green-booth.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-e711f7de-cb00-4295-b74b-25856e1c913b.png",
+      "prompt": "source/09-green-booth.txt"
+    },
+    {
+      "id": "10-red-stool",
+      "name": "锈红转凳座面",
+      "size": [
+        0.42,
+        0.42
+      ],
+      "roughness": 0.51,
+      "path": "basecolor/10-red-stool.png",
+      "sizeUnits": "metres; proposed UV coverage",
+      "metalness": 0,
+      "roughnessStatus": "authored starting value; not measured",
+      "generatedPath": "/Users/sunyining/.codex/generated_images/01a07a60-ed62-7622-80c1-6b5ab5e96235/exec-de7ab5f8-16a2-42f7-b31e-1c1012b0b1dd.png",
+      "prompt": "source/10-red-stool.txt"
+    }
+  ],
+  "localReference": "source/primary-reference.png",
+  "brushScaleReference": "basecolor/01-ivory-clapboard.png",
+  "referenceUse": "Primary image supplies art direction; revised ivory image supplies brush scale for entries 02..10"
+}

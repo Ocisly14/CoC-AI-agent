@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": {
+    "83_objects_geometry_preserved": true,
+    "existing_uv_preserved": true,
+    "non_roof_material_assignments_preserved": true,
+    "original_packed_textures_preserved": true,
+    "12_new_tonal_groups_in_library": true,
+    "roof_retains_used_tonal_groups": true,
+    "roof_and_flashing_share_projection": true,
+    "new_packed_maps": true,
+    "self_contained_glb": true,
+    "56034_triangles": true,
+    "uv_bindings_valid": true
+  },
+  "glbBytes": 65448232,
+  "scope": "roof and low flashing only; v6 facade retained; rendering performance not measured"
+}

@@ -1,0 +1,138 @@
+{
+  "rectangles_uv_bottom_left": {
+    "ground": {
+      "front": [
+        0.02,
+        0.64,
+        0.48,
+        0.98
+      ],
+      "right": [
+        0.52,
+        0.64,
+        0.98,
+        0.98
+      ],
+      "rear": [
+        0.02,
+        0.24,
+        0.48,
+        0.58
+      ],
+      "left": [
+        0.52,
+        0.24,
+        0.98,
+        0.58
+      ],
+      "corner": [
+        0.02,
+        0.02,
+        0.2,
+        0.18
+      ]
+    },
+    "upper": {
+      "front": [
+        0.02,
+        0.52,
+        0.48,
+        0.98
+      ],
+      "right": [
+        0.52,
+        0.52,
+        0.98,
+        0.98
+      ],
+      "rear": [
+        0.02,
+        0.02,
+        0.48,
+        0.48
+      ],
+      "left": [
+        0.52,
+        0.02,
+        0.98,
+        0.48
+      ]
+    },
+    "roof": {
+      "low": [
+        0.02,
+        0.02,
+        0.58,
+        0.98
+      ],
+      "upper": [
+        0.62,
+        0.52,
+        0.98,
+        0.98
+      ],
+      "awning": [
+        0.62,
+        0.02,
+        0.98,
+        0.48
+      ]
+    }
+  },
+  "geometry_sha256": {
+    "L0_CORNER_BOARDS": "a6fb19f95114bb2453745500f8a0fbd30ac65393682e652b6ce15454b79e9e11",
+    "L0_CORNER_frames": "65bc04e190721a2eb1c5ed99f8202a2901f863a2dbfcc18531eb3d8f312123c1",
+    "L0_CORNER_high": "a0383bd9ac34986266c3bf6a8e63f7f4049a154569423a7ca215ca9f6ea24834",
+    "L0_CORNER_low": "e51de774c062f368ef3cdb890d780754d08e7ae9c6e8c4b37cb89f12ec674ab1",
+    "L0_FASCIA": "d276cd51c7ff06724e26782362917e5d963bef9b6e31f9c50a6a781abac02fce",
+    "L0_FIXED_CANOPY": "a129ce087195c96765277d7f05bada12bcea3f557514dcfb40f16ddad6e2cc77",
+    "L0_FLOOR": "c4e01945b0b71eafc4c9663535b8071f851874ec7297d4a5e49fc08ce3972b25",
+    "L0_FRONT_frames": "84a0309317d857f83c97a176578ff0aff5142deab588f70a90344d7c008f8b3e",
+    "L0_FRONT_glass": "a0eef8fee3c54ef7ddcbbc3723b8c39f6267e4867f77d80841d8394d24f5a4b1",
+    "L0_FRONT_high": "46f9ba11d63e627970e14b07465605457b5ebafd95a0c185b5d2e75d01229b82",
+    "L0_FRONT_low": "28d2cfb6b61ccd6ad9994f77d71b9788514c89aaf02482721cc1ede34f58298a",
+    "L0_KITCHEN_PARTITION_frames": "09a0df38314353f59bdf2488885d73ec6c894afd3a4c3a3fbc47718786e58151",
+    "L0_KITCHEN_PARTITION_high": "8137a3b8a9bc02a7ca305090c63c1f48be112fad5d293fcff24869fe9d254719",
+    "L0_KITCHEN_PARTITION_low": "307121a931252c8bffe3ba0709b566ded7ab870782f9760be41a73468f22370d",
+    "L0_LEFT_high": "d606bc85a305d45d1cb591309cab33b9ba0be7b817572e984f1e52eefafee3eb",
+    "L0_LEFT_low": "a7d732fb17ebb01f24ce420cabb09c5f2607bf703e3bc545018191e18e8363fe",
+    "L0_LOW_ROOF": "b52d9107c27277b524e71799c87a9823f9a9bec88e9c0f81f32f6496555c7675",
+    "L0_REAR_frames": "5bda87c2a0c77b7a1b6ab1ba4c505b2566d554ffb6b52dbea093a43c38d22c10",
+    "L0_REAR_glass": "4bfda23b0321c5a84280f2f119b21a981297091663664ca7757d3717de310ec8",
+    "L0_REAR_high": "bb9c1a74c9412a204c025ec317027bcadba200509e9da87aaef7d54d21f9156d",
+    "L0_REAR_low": "832d63c7a23b9277559d3c45b6466ff01d13f45a813cb73220d0c626d3506a63",
+    "L0_RIGHT_frames": "42799855b5684ff87ab8b11ee269ddfc5fb317bd2ab5dfe4397d739a501343c5",
+    "L0_RIGHT_glass": "5a19d6ca7e5ce2cb3a4af41b9f600bfbb27e75991ee6ef3ebaba7d23cfe2c342",
+    "L0_RIGHT_high": "728de8741ed72fba7f64e68643c8e3b374e6674361bfd9706c2e4b912893bcf8",
+    "L0_RIGHT_low": "2e7040a3d05a7b45f78dcbb9a84b85b3f5b1c1f00f4452d2091152a43ca59a38",
+    "L0_STAIR": "270869158009992fa3400dc6cf7bf3f57d5770509a0963ba1b20cafdd07e454c",
+    "L0_STAIR_GUARD": "037d55fe5a8770304333267cddd8780cf25a0bee8478f98d7c55272b9736030f",
+    "L0_TRANSFER_STRUCTURE": "1a6bfc38cf7933151a0df1663fa37fc067d5671e7c111b514218a214ea139d3a",
+    "L1_BEDROOM_FRONT_high": "e488133c07195695eb951d5fd3226ad9d39d8f1590f946af731f6988a15fe45d",
+    "L1_BEDROOM_RIGHT_frames": "e9c4311cdadde952f2c2bf558c674b06449f36e3b30f90375efdb49be7669dc3",
+    "L1_BEDROOM_RIGHT_high": "8850ce2e381efbed20a9b258111a91ed104232af432c4fb5c7db99c602d5b0ea",
+    "L1_CORNER_BOARDS": "98b6fe6435c2ffa946988916806d20ea16a3c16b75477cf955a7ff42db4c271a",
+    "L1_FASCIA": "f11993752b4d955d61d22974b8ee3ba6cdfe5d1401b05d53a4109a07c22c37ee",
+    "L1_FLOOR": "9694d456a0d24bbc896014f2f59687015016c7e4f8db4a5af00b3d4cdab9fc62",
+    "L1_FRONT_frames": "0acd926e466021a6242a0106f7be430edc199ddf68b57b8f84e8f65d52a247be",
+    "L1_FRONT_glass": "1ad4b3d44631ad7df5f7e9fec4c5d5dff51a97b48f78cb9049f308e492b539d2",
+    "L1_FRONT_high": "03e6ffd87f7f1f86921c13ce9096847f4e090b152a33e6caa0afa65ddc5c209e",
+    "L1_LEFT_frames": "ddfca03f89338a18c15b8009f73c978d1102f0c8a9aec8bd331ae3c2dfaf32f3",
+    "L1_LEFT_glass": "1c89750ee449085617eb5efbe2752126c7791c11854caaad7db01e1d14e0eb58",
+    "L1_LEFT_high": "6d116e74165925baee7e4ef233fc7ae3f363c4d702f2a045ad2a41ff9a57c404",
+    "L1_OPENING_GUARD": "3d41e3895db42742ec4682218ecbcf66fb9043d7ee4c331cc8db46bce7aa8895",
+    "L1_REAR_frames": "4ab977baa47244ddc5af890a0e5bebfed08eed228888293d9fc411d038a25862",
+    "L1_REAR_glass": "c3655193fe95b9d271b8172d6830a54fa3012c599a911885b4aa2faa8f696838",
+    "L1_REAR_high": "c8474e7e1ee4b479d9dc88c0d70885e90f05d89f9c0ea9fee9c7413c366bd6e0",
+    "L1_RIGHT_frames": "b381f1503bcba0924cb87070b60c7bfa8cee512e0023073980bffb24cd187a5a",
+    "L1_RIGHT_glass": "6e306cdece3696a2cb900419639e958be45223ea56573850d14dc0384030ac56",
+    "L1_RIGHT_high": "683fde82c642a831824f593d26e448b7bb85de2cf05c9147524853ad2b6c33f9",
+    "L1_ROOF": "46815cd664ce36d3b9a3bfa51c78cec53031196e274c9348785e2b18d2d620a9"
+  },
+  "layer_order": [
+    "repaint",
+    "weather",
+    "brush"
+  ],
+  "note": "UVMap original; PaintUV continuous facade color; BakeUV same charts for exported color. Thin board ledges deliberately sample adjoining paint row."
+}

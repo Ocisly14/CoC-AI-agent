@@ -1,0 +1,4 @@
+interface:
+  display_name: "油画场景制作"
+  short_description: "从视觉参考和结构图到建筑白模、构造细节与保留底纹的局部油画叠加"
+  default_prompt: "使用 $painterly-environment，按视觉参考、外部三视图、内部结构图、白模、构造细节、基础贴图和局部大色块油画叠加的顺序，完成本次建筑场景制作。"

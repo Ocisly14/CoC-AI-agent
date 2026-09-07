@@ -1,0 +1,10 @@
+{
+  "result": "pass",
+  "canonicalItems": 40,
+  "triangles": 162556,
+  "meshes": 229,
+  "embeddedImages": 24,
+  "glbBytes": 8157148,
+  "previewCount": 6,
+  "scope": "GLB binary structure, embedded textures, finite accessor bounds, exact canonical identity coverage, semantic cutaway roles and output completeness. Not runtime/performance or aesthetic certification."
+}

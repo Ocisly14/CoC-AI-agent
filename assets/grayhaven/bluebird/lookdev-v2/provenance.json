@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "texture": "exterior_painted_atlas.png",
+  "prompt": "texture-prompt.txt",
+  "render": "Blender Cycles; actual geometry with atlas UVs; no generated paintover",
+  "scope": "Exterior material, lighting and edge calibration; not complete interior restyling or runtime integration",
+  "atlasStatus": "Flat AI-generated texture source; repeat seams and mip filtering need production validation",
+  "source": "../bluebird_diner.blend",
+  "revision": "bluebird_exterior_v2.blend",
+  "texturedMeshes": 381
+}

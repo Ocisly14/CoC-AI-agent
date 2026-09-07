@@ -1,0 +1,224 @@
+{
+  "assetId": "bluebird_diner",
+  "version": "1.0",
+  "source": "bluebird_diner.blend",
+  "runtimeCandidate": "bluebird_diner.glb",
+  "status": "structural prototype; art direction NOT satisfied; exterior correction in lookdev-v2",
+  "nativeAxes": {
+    "up": "+Z",
+    "front": "-Y"
+  },
+  "glbAxes": {
+    "up": "+Y",
+    "front": "+Z"
+  },
+  "authorUnits": "metres",
+  "footprintMeters": [
+    7,
+    11
+  ],
+  "floorElevationsMeters": [
+    0,
+    2.891
+  ],
+  "authorMetersToSceneUnits": 2,
+  "sceneGroundY": 0.4,
+  "hostFootprintSceneUnits": [
+    14,
+    22
+  ],
+  "hostMapping": "Three local = (GLB.x*2, GLB.y*2+0.4, GLB.z*2); apply existing host world transform afterwards.",
+  "meshCount": 229,
+  "triangles": 162556,
+  "materialCount": 25,
+  "glbBytes": 8157148,
+  "items": [
+    {
+      "id": "item.bluebird_dining.booths",
+      "name": "绿皮卡座"
+    },
+    {
+      "id": "item.bluebird_dining.cash_register",
+      "name": "老收银机"
+    },
+    {
+      "id": "item.bluebird_dining.ceiling_lights",
+      "name": "堂座吊灯"
+    },
+    {
+      "id": "item.bluebird_dining.counter_radio",
+      "name": "柜台收音机"
+    },
+    {
+      "id": "item.bluebird_dining.door_sign",
+      "name": "营业木牌"
+    },
+    {
+      "id": "item.bluebird_dining.espresso_machine",
+      "name": "镀铬咖啡机"
+    },
+    {
+      "id": "item.bluebird_dining.lunch_counter",
+      "name": "长条柜台"
+    },
+    {
+      "id": "item.bluebird_dining.menu_board",
+      "name": "黑板菜单"
+    },
+    {
+      "id": "item.bluebird_dining.newspaper_rack",
+      "name": "报纸架"
+    },
+    {
+      "id": "item.bluebird_dining.pastry_case",
+      "name": "玻璃点心柜"
+    },
+    {
+      "id": "item.bluebird_dining.sugar_shakers",
+      "name": "糖罐调料架"
+    },
+    {
+      "id": "item.bluebird_dining.tip_jar",
+      "name": "小费罐"
+    },
+    {
+      "id": "item.bluebird_dining.wall_clock",
+      "name": "圆盘挂钟"
+    },
+    {
+      "id": "item.bluebird_dining.wall_phone",
+      "name": "壁挂电话"
+    },
+    {
+      "id": "item.bluebird_kitchen.cooler",
+      "name": "立式冷柜"
+    },
+    {
+      "id": "item.bluebird_kitchen.dish_sink",
+      "name": "三格水槽"
+    },
+    {
+      "id": "item.bluebird_kitchen.dolores_apron",
+      "name": "Dolores 的围裙"
+    },
+    {
+      "id": "item.bluebird_kitchen.extinguisher",
+      "name": "灭火器"
+    },
+    {
+      "id": "item.bluebird_kitchen.kitchen_radio",
+      "name": "后厨收音机"
+    },
+    {
+      "id": "item.bluebird_kitchen.knife_block",
+      "name": "厨刀与刀座"
+    },
+    {
+      "id": "item.bluebird_kitchen.old_oven",
+      "name": "老烤箱"
+    },
+    {
+      "id": "item.bluebird_kitchen.order_wheel",
+      "name": "挂单转盘"
+    },
+    {
+      "id": "item.bluebird_kitchen.pantry_shelf",
+      "name": "干货架"
+    },
+    {
+      "id": "item.bluebird_kitchen.prep_table",
+      "name": "钢面备菜台"
+    },
+    {
+      "id": "item.bluebird_kitchen.range",
+      "name": "六头煤气灶"
+    },
+    {
+      "id": "item.bluebird_kitchen.spice_rack",
+      "name": "香料架"
+    },
+    {
+      "id": "item.bluebird_kitchen.stew_pot",
+      "name": "铸铁汤锅"
+    },
+    {
+      "id": "item.bluebird_kitchen.tart_tray",
+      "name": "蛋挞烤模"
+    },
+    {
+      "id": "item.bluebird_upstairs.bed",
+      "name": "铁架床"
+    },
+    {
+      "id": "item.bluebird_upstairs.bedside_lamp",
+      "name": "床头台灯"
+    },
+    {
+      "id": "item.bluebird_upstairs.calendar",
+      "name": "挂历"
+    },
+    {
+      "id": "item.bluebird_upstairs.dresser",
+      "name": "五斗柜"
+    },
+    {
+      "id": "item.bluebird_upstairs.letters",
+      "name": "儿女的来信"
+    },
+    {
+      "id": "item.bluebird_upstairs.photo_wall",
+      "name": "相片墙"
+    },
+    {
+      "id": "item.bluebird_upstairs.recipe_book",
+      "name": "手抄食谱"
+    },
+    {
+      "id": "item.bluebird_upstairs.rocking_chair",
+      "name": "窗边摇椅"
+    },
+    {
+      "id": "item.bluebird_upstairs.saint_statue",
+      "name": "圣母像"
+    },
+    {
+      "id": "item.bluebird_upstairs.sewing_basket",
+      "name": "针线笸箩"
+    },
+    {
+      "id": "item.bluebird_upstairs.tablecloth",
+      "name": "浆洗桌布"
+    },
+    {
+      "id": "item.bluebird_upstairs.wardrobe",
+      "name": "木衣柜"
+    }
+  ],
+  "roles": [
+    "shell",
+    "roof",
+    "wall_upper",
+    "wall_low",
+    "floor",
+    "stairs",
+    "contents",
+    "fixtures",
+    "shadow_proxy"
+  ],
+  "lods": [
+    "LOD0 only; LOD1/LOD2 not authored in this pass"
+  ],
+  "pending": [
+    "Canonical archive photo images",
+    "Unspecified menu prices and dish copy",
+    "Runtime integration, shadows, picking and performance validation"
+  ],
+  "artInterpretations": [
+    "Furniture dimensions use human working heights, not a uniform scaling of schematic props",
+    "Cabinet hardware and wear are decorative and carry no new clues",
+    "Small devotional object is a household prop, not a character model"
+  ],
+  "previewLighting": "Cutaways are neutral studio inspection renders. They do not validate runtime shadow retention.",
+  "textureSource": "Original deterministic layered pigment textures in source/make_textures.py; no external stock assets.",
+  "exportNote": "GLB keeps texture-based PBR, item IDs and visibility groups. Shadow proxy remains in .blend; importer must derive or import separately."
+}

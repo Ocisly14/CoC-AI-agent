@@ -1,0 +1,23 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>蓝鸟餐厅 · 模型检查</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#24282b;color:#e7ddc8;font:15px/1.65 system-ui}canvas{display:block}header{position:absolute;z-index:2;top:20px;left:24px;max-width:430px;padding:16px 20px;background:#24282bf0;border-left:3px solid #b58a50}h1{font:25px Georgia,serif;margin:0 0 8px}p{margin:8px 0}select{font:inherit;background:#e7ddc8;color:#24282b;padding:10px;min-height:44px;border:0;width:100%}small{opacity:.75}#info{font-variant-numeric:tabular-nums}@media(max-width:600px){header{top:12px;left:12px;right:12px;padding:12px}h1{font-size:20px}small{display:none}}</style>
+<script type="importmap">{"imports":{"three":"./viewer-vendor/build/three.module.js","three/addons/":"./viewer-vendor/examples/jsm/"}}</script></head><body>
+<header><h1>BLUEBIRD / 蓝鸟餐厅</h1><p>结构原型 · 美术风格未达标</p><select id="view" aria-label="检查视图"><option value="exterior">完整建筑</option><option value="ground">堂座与后厨剖视</option><option value="upper">楼上住处剖视</option></select><p id="info">正在读取 GLB…</p><small>拖动旋转 · 滚轮缩放 · 右键平移<br>独立资产检查器；剖视采用中性检查光照。</small></header>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.AgXToneMapping;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#5d6663');
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.35;
+const camera=new THREE.OrthographicCamera(-10,10,10,-10,.05,150);camera.position.set(-13,12,18);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,2.0,0);controls.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xcbd9de,0x6c604c,1.4));
+const light=new THREE.DirectionalLight(0xffe4bc,3.2);light.position.set(-6,12,8);light.castShadow=true;light.shadow.mapSize.set(2048,2048);Object.assign(light.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:1,far:40});light.shadow.normalBias=.018;scene.add(light);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:'#6e746d',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.29;ground.receiveShadow=true;scene.add(ground);
+let asset,triangles=0,meshCount=0;const ids=new Set();
+function resize(){const a=innerWidth/innerHeight,h=innerWidth<600?11.2:8.5;camera.left=-h*a;camera.right=h*a;camera.top=h;camera.bottom=-h;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}addEventListener('resize',resize);resize();
+new GLTFLoader().load('./bluebird_diner.glb',g=>{asset=g.scene;scene.add(asset);asset.traverse(o=>{if(o.userData.itemId)ids.add(o.userData.itemId);if(o.isMesh){o.castShadow=true;o.receiveShadow=true;meshCount++;triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3}});document.getElementById('info').textContent=`${ids.size} 个物品身份 · ${Math.round(triangles).toLocaleString()} 三角形`;window.bluebirdQA={loaded:true,ids:[...ids],meshCount,triangles};},undefined,e=>{document.getElementById('info').textContent='模型读取失败，请通过仓库根目录的 HTTP 服务打开此页。';window.bluebirdQA={loaded:false,error:String(e)}});
+document.getElementById('view').addEventListener('change',e=>{if(!asset)return;const v=e.target.value;asset.traverse(o=>{const d=o.userData;if(d.role){let hide=false;if(v==='ground')hide=d.floor===1||d.role==='roof'||(d.role==='wall_upper'&&['front','left','partition'].includes(d.side));if(v==='upper')hide=d.floor===0||d.role==='roof'||(d.role==='wall_upper'&&['front','left','partition'].includes(d.side));if(v==='ground'&&['item.bluebird_dining.wall_clock','item.bluebird_dining.door_sign'].includes(d.semanticId??d.itemId))hide=true;o.visible=!hide}});controls.target.set(0,v==='upper'?3.2:v==='ground'?.5:2, v==='upper'?2.2:0);camera.position.set(-13,v==='exterior'?12:18,18);controls.update()});
+renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});
+</script></body></html>

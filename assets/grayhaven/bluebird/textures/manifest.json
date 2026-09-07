@@ -1,0 +1,230 @@
+{
+  "siding": {
+    "baseColor": "siding_basecolor.png",
+    "roughness": "siding_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1985
+  },
+  "blue": {
+    "baseColor": "blue_basecolor.png",
+    "roughness": "blue_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1986
+  },
+  "trim": {
+    "baseColor": "trim_basecolor.png",
+    "roughness": "trim_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1987
+  },
+  "wood": {
+    "baseColor": "wood_basecolor.png",
+    "roughness": "wood_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1988
+  },
+  "darkwood": {
+    "baseColor": "darkwood_basecolor.png",
+    "roughness": "darkwood_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1989
+  },
+  "plaster": {
+    "baseColor": "plaster_basecolor.png",
+    "roughness": "plaster_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1990
+  },
+  "roof": {
+    "baseColor": "roof_basecolor.png",
+    "roughness": "roof_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.6,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1991
+  },
+  "green": {
+    "baseColor": "green_basecolor.png",
+    "roughness": "green_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1992
+  },
+  "red": {
+    "baseColor": "red_basecolor.png",
+    "roughness": "red_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1993
+  },
+  "cloth": {
+    "baseColor": "cloth_basecolor.png",
+    "roughness": "cloth_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1994
+  },
+  "stone": {
+    "baseColor": "stone_basecolor.png",
+    "roughness": "stone_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1995
+  },
+  "iron": {
+    "baseColor": "iron_basecolor.png",
+    "roughness": "iron_roughness.png",
+    "size": [
+      512,
+      512
+    ],
+    "colorSpaces": {
+      "baseColor": "sRGB",
+      "roughness": "Non-Color"
+    },
+    "repeatMeters": 1.1,
+    "sourceLayers": [
+      "ground",
+      "brush",
+      "pigment"
+    ],
+    "seed": 1996
+  }
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "01-eccentric-bursts",
+    "source": "exec-6061808a-474b-4c67-886e-8f6e810c0ee3.png",
+    "file": "atlases/01-eccentric-bursts.png",
+    "width": 1254,
+    "height": 1254,
+    "pngColorType": 2,
+    "mask": "black background; shader coverage, NOT a transparent PNG"
+  },
+  {
+    "id": "02-broken-radials",
+    "source": "exec-431a40bd-56e6-431f-9c6c-8b093c56059d.png",
+    "file": "atlases/02-broken-radials.png",
+    "width": 1254,
+    "height": 1254,
+    "pngColorType": 2,
+    "mask": "black background; shader coverage, NOT a transparent PNG"
+  },
+  {
+    "id": "03-torn-scrapes",
+    "source": "exec-d8a8d43e-dc67-410b-874f-72b6c41cac4a.png",
+    "file": "atlases/03-torn-scrapes.png",
+    "width": 1254,
+    "height": 1254,
+    "pngColorType": 2,
+    "mask": "black background; shader coverage, NOT a transparent PNG"
+  },
+  {
+    "id": "04-ivory-fractures",
+    "source": "exec-adb6f8e1-f5b1-4347-a4bb-4518bbffaea7.png",
+    "file": "atlases/04-ivory-fractures.png",
+    "width": 1254,
+    "height": 1254,
+    "pngColorType": 2,
+    "mask": "black background; shader coverage, NOT a transparent PNG"
+  }
+]

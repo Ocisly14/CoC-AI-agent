@@ -1,0 +1,140 @@
+{
+  "blender": "5.2.1 LTS",
+  "checks": [
+    {
+      "id": "01-ivory-clapboard",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "918bc0b41f365ee2b8884aec1321d1c4db23d3880a87bb868aa40fbfa23da90b",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.84,
+      "normalConnected": false
+    },
+    {
+      "id": "02-teal-wainscot",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "dca2f6b42a2490cecbf022963d213092d95ff0f3862050c13c062748b8c02c95",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.82,
+      "normalConnected": false
+    },
+    {
+      "id": "03-ivory-trim",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "e607ce6ffc6a2a5b81a2716ae541909f5f47bfea09afb1541fe926437a1e75a0",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.65,
+      "normalConnected": false
+    },
+    {
+      "id": "04-rusted-awning",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "7b51287382e644f29c4621d3ec35f76c33d51c3f66ad64a98aa70efe45d4cffb",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.83,
+      "normalConnected": false
+    },
+    {
+      "id": "05-charcoal-roof",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "3cd81238b20365cfed906e61e407da9ccaaa79ef0fde861344058f4c2d6480be",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.93,
+      "normalConnected": false
+    },
+    {
+      "id": "06-maple-counter",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "b9ddc86fb5b0176ab9b7d0cb02040cf2056fb20103c4ff400e1dd76cf98172c4",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.46,
+      "normalConnected": false
+    },
+    {
+      "id": "07-dining-floor",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "00751f4543e5e6e91a239add7886c560907cce8214fbf184b9233ae9e454bf30",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.78,
+      "normalConnected": false
+    },
+    {
+      "id": "08-warm-plaster",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "7d633eef0e97f2e495800e03bbf2a4e86d398e2fc43496453720f0ba999eb5fd",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.91,
+      "normalConnected": false
+    },
+    {
+      "id": "09-green-booth",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "9be9bfbac949d6838a451a8fb078df9f6a9d88636bba4aab663f77a17e1b34fe",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.57,
+      "normalConnected": false
+    },
+    {
+      "id": "10-red-stool",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "sha256": "e154ef1d1bd637a095c1473b7164477e26535b04d3a11db639d3749228b423fd",
+      "colorSpace": "sRGB",
+      "packed": true,
+      "roughness": 0.51,
+      "normalConnected": false
+    }
+  ],
+  "previews": [
+    "01-basecolor-proof.png",
+    "02-neutral-materials.png"
+  ],
+  "limitations": [
+    "UV square comparisons are not uniform texel density; metric samples are separate",
+    "No full diner, moving-camera or game-runtime validation in this package",
+    "No seamless tiling, normal, displacement, or spatial roughness maps"
+  ],
+  "visualReview": {
+    "originals": "10 original images reviewed individually",
+    "proofs": "Both Blender renders inspected; broad pigment fields remain visible in comparison patches",
+    "seams": "Dedicated panels, seamless tiling not requested or claimed",
+    "fullBuilding": "not yet evaluated"
+  }
+}

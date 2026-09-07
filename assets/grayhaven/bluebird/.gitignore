@@ -1,0 +1,22 @@
+# 3D 源文件与导出件 —— 体积太大，不进 git，走外部存储
+*.blend
+*.blend1
+*.glb
+*.gltf
+*.fbx
+*.zip
+*.exr
+__pycache__/
+viewer-vendor/
+
+# 烘焙输出
+atlases/
+layers/
+basecolor/
+source/*.png
+source/*.jpg
+
+# 各版本迭代渲染图（只保留顶层 previews/ 作为成品存档）
+shell-*/previews/
+textures-*/previews/
+paint-effects-*/previews/

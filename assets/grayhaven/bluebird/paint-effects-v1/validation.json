@@ -1,0 +1,15 @@
+{
+  "checks": {
+    "sixteen_callable_groups": true,
+    "four_packed_source_atlases": true,
+    "original_resolution_preserved": true,
+    "preview_exists": true,
+    "base_color_and_mask_outputs": true,
+    "only_material_demo_meshes": true
+  },
+  "visualReview": "All 16 stamps readable in actual Cycles render; base visible in margins and internal gaps; no black atlas rectangles visible. Source images also inspected.",
+  "notTested": [
+    "application on restaurant",
+    "Three.js runtime"
+  ]
+}

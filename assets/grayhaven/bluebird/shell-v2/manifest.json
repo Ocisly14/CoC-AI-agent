@@ -1,0 +1,465 @@
+{
+  "scope": "architecture exterior base-color overlays only; no new geometry or props",
+  "layout": {
+    "units": "metres",
+    "status": "concept-derived authoring assumptions, not surveyed data",
+    "ground": {
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          10.7,
+          0
+        ],
+        [
+          12,
+          1.3
+        ],
+        [
+          12,
+          10
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      "level": 0,
+      "roof": 3.4
+    },
+    "upper": {
+      "bounds": [
+        0,
+        4,
+        6,
+        10
+      ],
+      "level": 3.2,
+      "roof": 6.0
+    },
+    "stair": {
+      "bounds": [
+        4.8,
+        6,
+        5.9,
+        9.2
+      ],
+      "rise": 0.2,
+      "count": 16,
+      "upDirection": "-y",
+      "opening": [
+        4.8,
+        6,
+        5.9,
+        9.3
+      ],
+      "landing": [
+        4.8,
+        5,
+        5.9,
+        6
+      ]
+    },
+    "kitchen": {
+      "bounds": [
+        0,
+        6,
+        12,
+        10
+      ],
+      "door": [
+        7,
+        6,
+        8.4,
+        6
+      ]
+    },
+    "frontStreet": "y=0",
+    "rightStreet": "x=12",
+    "cornerEntry": "segment (10.7,0) to (12,1.3)",
+    "canonicalRooms": [
+      "SCN_bluebird_dining",
+      "SCN_bluebird_kitchen",
+      "SCN_bluebird_upstairs"
+    ],
+    "runtimeScale": "not yet calibrated"
+  },
+  "openings": [
+    {
+      "wall": "L0_FRONT",
+      "s": [
+        0.9,
+        6.1
+      ],
+      "z": [
+        1.15,
+        2.75
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_FRONT",
+      "s": [
+        6.6,
+        9.7
+      ],
+      "z": [
+        1.15,
+        2.75
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_CORNER",
+      "s": [
+        0.25,
+        1.588
+      ],
+      "z": [
+        0,
+        2.45
+      ],
+      "kind": "entry"
+    },
+    {
+      "wall": "L0_RIGHT",
+      "s": [
+        0.4,
+        3.2
+      ],
+      "z": [
+        1.15,
+        2.75
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_RIGHT",
+      "s": [
+        3.9,
+        5.6
+      ],
+      "z": [
+        1.3,
+        2.6
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_REAR",
+      "s": [
+        1.8,
+        3.9
+      ],
+      "z": [
+        1.6,
+        2.6
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_REAR",
+      "s": [
+        5.8,
+        8.5
+      ],
+      "z": [
+        1.6,
+        2.6
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_REAR",
+      "s": [
+        9.5,
+        11
+      ],
+      "z": [
+        1.6,
+        2.6
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L0_KITCHEN_PARTITION",
+      "s": [
+        7,
+        8.4
+      ],
+      "z": [
+        0,
+        2.35
+      ],
+      "kind": "door"
+    },
+    {
+      "wall": "L0_KITCHEN_PARTITION",
+      "s": [
+        6,
+        6.8
+      ],
+      "z": [
+        1.2,
+        2.15
+      ],
+      "kind": "hatch"
+    },
+    {
+      "wall": "L1_FRONT",
+      "s": [
+        0.65,
+        2.05
+      ],
+      "z": [
+        4.02,
+        5.42
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L1_FRONT",
+      "s": [
+        3.7,
+        5.1
+      ],
+      "z": [
+        4.02,
+        5.42
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L1_RIGHT",
+      "s": [
+        3.75,
+        4.75
+      ],
+      "z": [
+        4.3,
+        5.4
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L1_REAR",
+      "s": [
+        1.05,
+        2.35
+      ],
+      "z": [
+        4.12,
+        5.42
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L1_LEFT",
+      "s": [
+        1.05,
+        2.35
+      ],
+      "z": [
+        4.12,
+        5.42
+      ],
+      "kind": "window"
+    },
+    {
+      "wall": "L1_BEDROOM_RIGHT",
+      "s": [
+        0.05,
+        0.9
+      ],
+      "z": [
+        3.2,
+        5.3
+      ],
+      "kind": "door"
+    }
+  ],
+  "meshObjects": 48,
+  "triangles": 40838,
+  "texturesUsed": [
+    "01-ivory-clapboard",
+    "02-teal-wainscot",
+    "03-ivory-trim",
+    "04-rusted-awning",
+    "05-charcoal-roof",
+    "07-dining-floor",
+    "08-warm-plaster"
+  ],
+  "propModels": 0,
+  "stairRisers": 16,
+  "stairTop": 3.2,
+  "slabOpening": [
+    4.8,
+    6,
+    5.9,
+    9.3
+  ],
+  "notes": [
+    "Upper right wall 0.10 m thick to meet stair edge at x=5.9",
+    "No furniture or sign lettering",
+    "Full model runtime scale not integrated",
+    "Setback beam and one post resolve schematic section support without blocking dining plan"
+  ],
+  "version": "shell-v2",
+  "parent": "../shell-v1",
+  "artDirection": "../../../../docs/art-direction/README.md",
+  "editableSource": "bluebird_shell_layered.blend",
+  "bakedSource": "bluebird_shell_textured.blend",
+  "delivery": "bluebird_shell_textured.glb",
+  "layers": [
+    {
+      "id": "ground-brush",
+      "path": "layers/ground-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-brush-prompt.txt",
+      "sha256": "f1de2cbd2d19745caf770b92651ea2d3ed220c3f64af571cb051d94b52e27d6b"
+    },
+    {
+      "id": "ground-repaint",
+      "path": "layers/ground-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-repaint-prompt.txt",
+      "sha256": "0955a70b5f3246f2ffb716282670cee824f3333a260b9e631907bd4e744c95e7"
+    },
+    {
+      "id": "ground-weather",
+      "path": "layers/ground-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/ground-weather-prompt.txt",
+      "sha256": "c12b10858b3deed7c26fe259bc78ae0e0d441e1be1c51d068ff5bc520cf3ac8e"
+    },
+    {
+      "id": "roof-brush",
+      "path": "layers/roof-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-brush-prompt.txt",
+      "sha256": "2808558ea2f5e6ebf9dc37e5d8e73ac8f03034e97ac31e8a808113b99c18ff6d"
+    },
+    {
+      "id": "roof-repaint",
+      "path": "layers/roof-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-repaint-prompt.txt",
+      "sha256": "94ae1c8fc9c0bed82f01c197371068a3fb6d00b56deac9a9a391a2672ad49e21"
+    },
+    {
+      "id": "roof-weather",
+      "path": "layers/roof-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/roof-weather-prompt.txt",
+      "sha256": "084732fd5b5392c70db151db99ff5aeeceb1a459fc1b24676d9e4ef5c963708f"
+    },
+    {
+      "id": "upper-brush",
+      "path": "layers/upper-brush.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-brush-prompt.txt",
+      "sha256": "8559109619d71e89fbfb59600f97ebedeb6b5a1b1162edeb07e537990e4207ef"
+    },
+    {
+      "id": "upper-repaint",
+      "path": "layers/upper-repaint.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "sRGB",
+      "kind": "color",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-repaint-prompt.txt",
+      "sha256": "97315f321929ba9b616d34552e4a0e68425eacd9a163a9d487947781250a5790"
+    },
+    {
+      "id": "upper-weather",
+      "path": "layers/upper-weather.png",
+      "sourceDimensions": [
+        1254,
+        1254
+      ],
+      "colorSpace": "Non-Color",
+      "kind": "coverage mask",
+      "generationTool": "built-in image_gen",
+      "prompt": "source/upper-weather-prompt.txt",
+      "sha256": "31fb5fd4141eacfa4c60a32b31b418d58d3b7e5c73c419884bc708a0205ce3a6"
+    }
+  ],
+  "strengths": {
+    "Repaint": 0.88,
+    "Weather": 0.32,
+    "Brush": 0.38
+  },
+  "bakedAtlases": [
+    {
+      "category": "ground",
+      "path": "atlases/ground-basecolor.png",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "category": "upper",
+      "path": "atlases/upper-basecolor.png",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "category": "roof",
+      "path": "atlases/roof-basecolor.png",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  ]
+}

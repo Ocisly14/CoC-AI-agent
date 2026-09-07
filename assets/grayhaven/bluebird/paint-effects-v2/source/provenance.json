@@ -1,0 +1,29 @@
+[
+  {
+    "id": "01-slate-scumbles",
+    "source": "exec-a5a9d968-a546-4384-8b32-3e59f61dbe0f.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "pngColorType": 2
+  },
+  {
+    "id": "02-olive-graphite",
+    "source": "exec-98b34beb-55b0-451b-811e-ba38f52a533e.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "pngColorType": 2
+  },
+  {
+    "id": "03-warm-earth-scumbles",
+    "source": "exec-bf1427d0-96e6-4d5c-a21a-3fb9fe576366.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "pngColorType": 2
+  }
+]

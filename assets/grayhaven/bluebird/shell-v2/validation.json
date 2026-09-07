@@ -1,0 +1,387 @@
+{
+  "checks": [
+    {
+      "check": "ground_floor_envelope",
+      "passed": true,
+      "detail": {
+        "min": [
+          0.0,
+          0.0,
+          -0.20000000298023224
+        ],
+        "max": [
+          12.0,
+          10.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "check": "chamfer_cut_is_empty",
+      "passed": true,
+      "detail": "Outside clipped corner: (11.8,0.2)"
+    },
+    {
+      "check": "entry_has_floor",
+      "passed": true,
+      "detail": "Inside corner entry: (11.25,0.9)"
+    },
+    {
+      "check": "upper_stair_opening",
+      "passed": true,
+      "detail": [
+        [
+          5.35,
+          6.05,
+          4
+        ],
+        [
+          5.35,
+          7.5,
+          4
+        ],
+        [
+          5.35,
+          9.25,
+          4
+        ]
+      ]
+    },
+    {
+      "check": "slab_surrounds_opening",
+      "passed": true,
+      "detail": [
+        [
+          5.35,
+          5.5,
+          4
+        ],
+        [
+          4.7,
+          7.5,
+          4
+        ],
+        [
+          5.95,
+          7.5,
+          4
+        ]
+      ]
+    },
+    {
+      "check": "sixteen_tread_heights",
+      "passed": true,
+      "detail": [
+        {
+          "tread": 1,
+          "y": 9.1,
+          "z": 0.19999980926513672,
+          "expected": 0.2
+        },
+        {
+          "tread": 2,
+          "y": 8.899999999999999,
+          "z": 0.40000009536743164,
+          "expected": 0.4
+        },
+        {
+          "tread": 3,
+          "y": 8.7,
+          "z": 0.5999999046325684,
+          "expected": 0.6000000000000001
+        },
+        {
+          "tread": 4,
+          "y": 8.5,
+          "z": 0.7999992370605469,
+          "expected": 0.8
+        },
+        {
+          "tread": 5,
+          "y": 8.299999999999999,
+          "z": 1.0,
+          "expected": 1.0
+        },
+        {
+          "tread": 6,
+          "y": 8.1,
+          "z": 1.1999998092651367,
+          "expected": 1.2000000000000002
+        },
+        {
+          "tread": 7,
+          "y": 7.8999999999999995,
+          "z": 1.4000000953674316,
+          "expected": 1.4000000000000001
+        },
+        {
+          "tread": 8,
+          "y": 7.699999999999999,
+          "z": 1.5999999046325684,
+          "expected": 1.6
+        },
+        {
+          "tread": 9,
+          "y": 7.499999999999999,
+          "z": 1.8000001907348633,
+          "expected": 1.8
+        },
+        {
+          "tread": 10,
+          "y": 7.299999999999999,
+          "z": 2.0,
+          "expected": 2.0
+        },
+        {
+          "tread": 11,
+          "y": 7.1,
+          "z": 2.200000286102295,
+          "expected": 2.2
+        },
+        {
+          "tread": 12,
+          "y": 6.899999999999999,
+          "z": 2.4000000953674316,
+          "expected": 2.4000000000000004
+        },
+        {
+          "tread": 13,
+          "y": 6.699999999999999,
+          "z": 2.6000001430511475,
+          "expected": 2.6
+        },
+        {
+          "tread": 14,
+          "y": 6.499999999999999,
+          "z": 2.799999952316284,
+          "expected": 2.8000000000000003
+        },
+        {
+          "tread": 15,
+          "y": 6.299999999999999,
+          "z": 3.0,
+          "expected": 3.0
+        },
+        {
+          "tread": 16,
+          "y": 6.1,
+          "z": 3.200000047683716,
+          "expected": 3.2
+        }
+      ]
+    },
+    {
+      "check": "front_window_open",
+      "passed": true,
+      "detail": "Window ray at x=3.5, z=1.8"
+    },
+    {
+      "check": "front_pier_present",
+      "passed": true,
+      "detail": "Solid wall ray at x=0.4, z=1.8"
+    },
+    {
+      "check": "corner_door_open",
+      "passed": true,
+      "detail": "Chamfer center, no door leaf"
+    },
+    {
+      "check": "kitchen_door_open",
+      "passed": true,
+      "detail": "Kitchen doorway x=7.0..8.4"
+    },
+    {
+      "check": "bedroom_door_open",
+      "passed": true,
+      "detail": "Bedroom doorway through east partition"
+    },
+    {
+      "check": "no_prop_identities",
+      "passed": true,
+      "detail": 48
+    },
+    {
+      "check": "uvs_present",
+      "passed": true,
+      "detail": 48
+    },
+    {
+      "check": "baked_retains_trim_and_interior",
+      "passed": true,
+      "detail": [
+        "03-ivory-trim.png",
+        "07-dining-floor.png",
+        "08-warm-plaster.png"
+      ]
+    },
+    {
+      "check": "all_geometry_unchanged",
+      "passed": true,
+      "detail": {
+        "objects": 48
+      }
+    },
+    {
+      "check": "painting_uv_channels",
+      "passed": true,
+      "detail": "Stable model UVs, no screen projection"
+    },
+    {
+      "check": "ground_atlas",
+      "passed": true,
+      "detail": {
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    },
+    {
+      "check": "upper_atlas",
+      "passed": true,
+      "detail": {
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    },
+    {
+      "check": "roof_atlas",
+      "passed": true,
+      "detail": {
+        "size": [
+          2048,
+          2048
+        ]
+      }
+    },
+    {
+      "check": "standard_baked_materials",
+      "passed": true,
+      "detail": "Only base color replaces original; roughness/specular preserved"
+    },
+    {
+      "check": "glb_self_contained",
+      "passed": true,
+      "detail": {
+        "images": 6,
+        "bytes": 33446792
+      }
+    },
+    {
+      "check": "no_new_glb_geometry",
+      "passed": true,
+      "detail": "40,838 triangles, matching v1"
+    },
+    {
+      "check": "no_glb_overlay_blending",
+      "passed": true,
+      "detail": "No decal objects or alpha overlay materials"
+    },
+    {
+      "check": "seven_packed_srgb_textures_in_editable_source",
+      "passed": true,
+      "detail": [
+        "01-ivory-clapboard.png",
+        "02-teal-wainscot.png",
+        "03-ivory-trim.png",
+        "04-rusted-awning.png",
+        "05-charcoal-roof.png",
+        "07-dining-floor.png",
+        "08-warm-plaster.png"
+      ]
+    },
+    {
+      "check": "nine_packed_artist_layers",
+      "passed": true,
+      "detail": [
+        {
+          "name": "ground_brush",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "ground_repaint",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "ground_weather",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "roof_brush",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "roof_repaint",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "roof_weather",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "upper_brush",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "upper_repaint",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "upper_weather",
+          "size": [
+            1254,
+            1254
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    {
+      "check": "three_editable_layer_strengths",
+      "passed": true,
+      "detail": {
+        "Repaint": 0.8799999952316284,
+        "Weather": 0.3199999928474426,
+        "Brush": 0.3799999952316284
+      }
+    }
+  ],
+  "passed": true,
+  "blender": "5.2.1 LTS",
+  "scope": "architecture and UV acceptance; game runtime and final lighting not evaluated",
+  "sha256": "c5d3d0e296f9ed6f288d08d90d0e762b8dc0c820481e5bcf254309d325dff524"
+}
