@@ -1,0 +1,158 @@
+{
+  "roof_thickness_cm": [
+    11,
+    12
+  ],
+  "gutter_rolled_rim_z": [
+    3.30866025,
+    5.93866025
+  ],
+  "variants": [
+    {
+      "source": "bluebird_base",
+      "changed_objects": [
+        "L0_LOW_ROOF",
+        "L1_ROOF",
+        "D0_MAIN_SIGN_CASE",
+        "D0_KITCHEN_EXHAUST",
+        "D0_ROOF_AIR_VENT",
+        "D1_STOVE_FLUE"
+      ],
+      "topology_uvs_materials_preserved": true,
+      "roof_levels": {
+        "L0_LOW_ROOF": [
+          3.2,
+          3.4,
+          3.31
+        ],
+        "L1_ROOF": [
+          5.82,
+          6.0,
+          5.94
+        ]
+      },
+      "roof_mount_bottoms": {
+        "D0_KITCHEN_EXHAUST": 3.31,
+        "D0_ROOF_AIR_VENT": 3.31,
+        "D1_STOVE_FLUE": 5.94
+      },
+      "wall_contacts": {
+        "tested_wall_and_corner_top_points": 636,
+        "unsupported": [],
+        "max_vertical_gap_m": 0
+      }
+    },
+    {
+      "source": "bluebird_painterly_layered",
+      "changed_objects": [
+        "L0_LOW_ROOF",
+        "L1_ROOF",
+        "D0_MAIN_SIGN_CASE",
+        "D0_KITCHEN_EXHAUST",
+        "D0_ROOF_AIR_VENT",
+        "D1_STOVE_FLUE"
+      ],
+      "topology_uvs_materials_preserved": true,
+      "roof_levels": {
+        "L0_LOW_ROOF": [
+          3.2,
+          3.4,
+          3.31
+        ],
+        "L1_ROOF": [
+          5.82,
+          6.0,
+          5.94
+        ]
+      },
+      "roof_mount_bottoms": {
+        "D0_KITCHEN_EXHAUST": 3.31,
+        "D0_ROOF_AIR_VENT": 3.31,
+        "D1_STOVE_FLUE": 5.94
+      },
+      "wall_contacts": {
+        "tested_wall_and_corner_top_points": 636,
+        "unsupported": [],
+        "max_vertical_gap_m": 0
+      }
+    },
+    {
+      "source": "bluebird_base_baked",
+      "changed_objects": [
+        "L0_LOW_ROOF",
+        "L1_ROOF",
+        "D0_MAIN_SIGN_CASE",
+        "D0_KITCHEN_EXHAUST",
+        "D0_ROOF_AIR_VENT",
+        "D1_STOVE_FLUE"
+      ],
+      "topology_uvs_materials_preserved": true,
+      "roof_levels": {
+        "L0_LOW_ROOF": [
+          3.2,
+          3.4,
+          3.31
+        ],
+        "L1_ROOF": [
+          5.82,
+          6.0,
+          5.94
+        ]
+      },
+      "roof_mount_bottoms": {
+        "D0_KITCHEN_EXHAUST": 3.31,
+        "D0_ROOF_AIR_VENT": 3.31,
+        "D1_STOVE_FLUE": 5.94
+      },
+      "wall_contacts": {
+        "tested_wall_and_corner_top_points": 636,
+        "unsupported": [],
+        "max_vertical_gap_m": 0
+      },
+      "export": {
+        "meshes": 75,
+        "surfaces": 167,
+        "images": 10
+      }
+    },
+    {
+      "source": "bluebird_painterly",
+      "changed_objects": [
+        "L0_LOW_ROOF",
+        "L1_ROOF",
+        "D0_MAIN_SIGN_CASE",
+        "D0_KITCHEN_EXHAUST",
+        "D0_ROOF_AIR_VENT",
+        "D1_STOVE_FLUE"
+      ],
+      "topology_uvs_materials_preserved": true,
+      "roof_levels": {
+        "L0_LOW_ROOF": [
+          3.2,
+          3.4,
+          3.31
+        ],
+        "L1_ROOF": [
+          5.82,
+          6.0,
+          5.94
+        ]
+      },
+      "roof_mount_bottoms": {
+        "D0_KITCHEN_EXHAUST": 3.31,
+        "D0_ROOF_AIR_VENT": 3.31,
+        "D1_STOVE_FLUE": 5.94
+      },
+      "wall_contacts": {
+        "tested_wall_and_corner_top_points": 636,
+        "unsupported": [],
+        "max_vertical_gap_m": 0
+      },
+      "export": {
+        "meshes": 75,
+        "surfaces": 167,
+        "images": 10
+      }
+    }
+  ]
+}

@@ -1,11 +1,18 @@
 ; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="CoC Sim Viewer"
-run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.4", "GL Compatibility")
+run/main_scene="res://demos/bluebird/street_corner.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
@@ -15,7 +22,10 @@ SimClient="*res://scripts/sim_client.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
 
 [rendering]
 
-renderer/rendering_method="gl_compatibility"
+anti_aliasing/quality/msaa_3d=1

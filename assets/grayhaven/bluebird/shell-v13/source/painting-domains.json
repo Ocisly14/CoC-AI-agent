@@ -1,0 +1,187 @@
+{
+  "front": {
+    "axes": [
+      0,
+      2
+    ],
+    "origin": [
+      -0.25,
+      -0.25
+    ],
+    "extent": [
+      12.5,
+      6.5
+    ],
+    "side": "front",
+    "objects": [
+      "L0_FRONT_low",
+      "L0_FRONT_high",
+      "L0_FRONT_frames",
+      "L1_FRONT_high",
+      "L1_FRONT_frames",
+      "D0_FRONT_WINDOW_JOINERY",
+      "D1_FRONT_WINDOW_JOINERY"
+    ]
+  },
+  "right": {
+    "axes": [
+      1,
+      2
+    ],
+    "origin": [
+      -0.25,
+      -0.25
+    ],
+    "extent": [
+      10.5,
+      6.5
+    ],
+    "side": "right",
+    "objects": [
+      "L0_RIGHT_low",
+      "L0_RIGHT_high",
+      "L0_RIGHT_frames",
+      "L1_RIGHT_high",
+      "L1_RIGHT_frames",
+      "D0_RIGHT_WINDOW_JOINERY",
+      "D1_RIGHT_WINDOW_JOINERY"
+    ]
+  },
+  "rear": {
+    "axes": [
+      0,
+      2
+    ],
+    "origin": [
+      -0.25,
+      -0.25
+    ],
+    "extent": [
+      12.5,
+      6.5
+    ],
+    "side": "rear",
+    "objects": [
+      "L0_REAR_low",
+      "L0_REAR_high",
+      "L0_REAR_frames",
+      "L1_REAR_high",
+      "L1_REAR_frames",
+      "D0_REAR_WINDOW_JOINERY"
+    ]
+  },
+  "left": {
+    "axes": [
+      1,
+      2
+    ],
+    "origin": [
+      -0.25,
+      -0.25
+    ],
+    "extent": [
+      10.5,
+      6.5
+    ],
+    "side": "left",
+    "objects": [
+      "L0_LEFT_low",
+      "L0_LEFT_high",
+      "L1_LEFT_high",
+      "L1_LEFT_frames"
+    ]
+  },
+  "corner": {
+    "axes": [
+      0,
+      2
+    ],
+    "origin": [
+      -0.25,
+      -0.2
+    ],
+    "extent": [
+      2.35,
+      3.6
+    ],
+    "side": "corner",
+    "objects": [
+      "L0_CORNER_low",
+      "L0_CORNER_high",
+      "L0_CORNER_frames",
+      "D0_ENTRY_SURROUND"
+    ]
+  },
+  "roof-lower": {
+    "axes": [
+      0,
+      1
+    ],
+    "origin": [
+      -0.2,
+      -0.2
+    ],
+    "extent": [
+      12.4,
+      10.4
+    ],
+    "object": "L0_LOW_ROOF",
+    "objects": [
+      "L0_LOW_ROOF"
+    ]
+  },
+  "roof-upper": {
+    "axes": [
+      0,
+      1
+    ],
+    "origin": [
+      -0.2,
+      3.8
+    ],
+    "extent": [
+      6.4,
+      6.4
+    ],
+    "object": "L1_ROOF",
+    "objects": [
+      "L1_ROOF"
+    ]
+  },
+  "floor-lower": {
+    "axes": [
+      0,
+      1
+    ],
+    "origin": [
+      -0.2,
+      -0.2
+    ],
+    "extent": [
+      12.4,
+      10.4
+    ],
+    "object": "L0_FLOOR",
+    "objects": [
+      "L0_FLOOR"
+    ]
+  },
+  "floor-upper": {
+    "axes": [
+      0,
+      1
+    ],
+    "origin": [
+      -0.2,
+      3.8
+    ],
+    "extent": [
+      6.4,
+      6.4
+    ],
+    "object": "L1_FLOOR",
+    "objects": [
+      "L1_FLOOR"
+    ]
+  }
+}

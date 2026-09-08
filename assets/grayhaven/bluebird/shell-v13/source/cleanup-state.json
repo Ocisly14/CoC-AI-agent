@@ -1,0 +1,40 @@
+{
+  "retired_versions": [
+    "shell-v1",
+    "shell-v2",
+    "shell-v3",
+    "shell-v4",
+    "shell-v5",
+    "shell-v6",
+    "shell-v7",
+    "shell-v8",
+    "shell-v9",
+    "shell-v10",
+    "shell-v11",
+    "shell-v12"
+  ],
+  "retired_bytes": 4189937156,
+  "size_by_version": {
+    "shell-v1": 75083357,
+    "shell-v2": 224269313,
+    "shell-v3": 181249377,
+    "shell-v4": 167772494,
+    "shell-v5": 296313443,
+    "shell-v6": 370523065,
+    "shell-v7": 272545590,
+    "shell-v8": 559818920,
+    "shell-v9": 326301925,
+    "shell-v10": 342842956,
+    "shell-v11": 808204969,
+    "shell-v12": 565011747
+  },
+  "status": "deleted_after_standalone_validation",
+  "removed_staging_directory": "/var/folders/50/0zg_ws492rb95my2bjpnx6540000gn/T/bluebird-retired-sr1llbvl",
+  "current_package_bytes": 756851388,
+  "validation": {
+    "editable_documents": 5,
+    "rebaked_deliveries": 2,
+    "godot_gpu_checks": 102,
+    "frozen_glb_images_unchanged": true
+  }
+}

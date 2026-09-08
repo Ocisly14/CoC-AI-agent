@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "documents": {
+    "bluebird_painterly_layered": {
+      "architecture_objects": 75,
+      "packed_relative_images": 25,
+      "missing_external_dependencies": []
+    },
+    "bluebird_base": {
+      "architecture_objects": 75,
+      "packed_relative_images": 25,
+      "missing_external_dependencies": []
+    },
+    "bluebird_painterly": {
+      "architecture_objects": 75,
+      "packed_relative_images": 31,
+      "missing_external_dependencies": []
+    },
+    "bluebird_base_baked": {
+      "architecture_objects": 75,
+      "packed_relative_images": 31,
+      "missing_external_dependencies": []
+    },
+    "bluebird_white": {
+      "architecture_objects": 75,
+      "packed_relative_images": 0,
+      "missing_external_dependencies": []
+    }
+  }
+}

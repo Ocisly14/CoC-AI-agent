@@ -11,6 +11,9 @@
 ## 阅读与交付
 
 - [巡回画派油画风格 · 通用艺术指导](skills/painterly-environment/references/peredvizhniki-art-direction.md)：跨项目共用的底材、笔触、真实尺度、光色与验收原则，也是场景制作技能的必读入口。
+- [通用油画场景渲染：视觉原则与 Godot 实现](painterly-rendering-godot.md)：固定正交镜头、受限调色板与局部对比、有色暗部、材质分层、渲染器差异和调试验收；包含用户参考图与一手资料，仅为技术文档。
+- [选择性日照调色与笔刷阴影](selective-color-brush-shadows.md)：最新调色与投影设计；分离直射／GI、先扰动遮罩再增强、连续中性色权重、表面流向与作者重要度图、笔刷边缘和输出色域映射；独立原型已运行，蓝鸟尚未接入。
+- [Godot 油画渲染模块 v0.2](../../godot-client/rendering/painterly/README.md)：可运行实验室、接入接口、宽笔刷阴影、笔触积色与毛刷、通道调试与 GPU 验证记录。
 - [视觉板与样板索引](boards.md)：七张 PNG、三种尺寸的可编辑 SVG UI、组件与交互状态板。
 - [场景与物品制作规范](production.md)：建模、尺寸、LOD、UV、磨损、剖视和资产交接。
 - [《极乐迪斯科》建筑美学与材质分层](disco-elysium-material-aesthetics.md)：用户截图、参考网页解读、真实尺度与绘画层的职责。

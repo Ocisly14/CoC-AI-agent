@@ -1,0 +1,887 @@
+[gd_scene load_steps=84 format=3]
+
+[ext_resource type="Script" path="res://demos/bluebird/street_corner.gd" id="1"]
+[ext_resource type="PackedScene" path="res://demos/bluebird/assets/bluebird.glb" id="2"]
+[ext_resource type="Shader" path="res://demos/bluebird/ground.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="asphalt"]
+shader = ExtResource("3")
+shader_parameter/base_color = Color(0.31373, 0.34902, 0.33333, 1)
+shader_parameter/secondary_color = Color(0.38431, 0.38824, 0.35294, 1)
+shader_parameter/paving = false
+
+[sub_resource type="ShaderMaterial" id="paving"]
+shader = ExtResource("3")
+shader_parameter/base_color = Color(0.63529, 0.60784, 0.52941, 1)
+shader_parameter/secondary_color = Color(0.69804, 0.65882, 0.56078, 1)
+shader_parameter/paving = true
+
+[sub_resource type="ShaderMaterial" id="lot"]
+shader = ExtResource("3")
+shader_parameter/base_color = Color(0.52157, 0.54902, 0.47451, 1)
+shader_parameter/secondary_color = Color(0.58039, 0.59216, 0.49804, 1)
+shader_parameter/paving = false
+
+[sub_resource type="StandardMaterial3D" id="curb"]
+albedo_color = Color(0.71373, 0.68627, 0.61176, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="edge"]
+albedo_color = Color(0.45490, 0.43529, 0.38824, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="road_paint"]
+albedo_color = Color(0.70980, 0.63137, 0.41569, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="drain"]
+albedo_color = Color(0.26667, 0.28627, 0.26667, 1)
+roughness = 0.76
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.64314, 0.71765, 0.76078, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.68627, 0.76471, 0.86667, 1)
+ambient_light_energy = 0.55
+reflected_light_source = 2
+tonemap_mode = 0
+tonemap_exposure = 1.0
+adjustment_enabled = false
+adjustment_saturation = 1.0
+adjustment_contrast = 1.0
+
+[sub_resource type="SystemFont" id="font"]
+font_names = PackedStringArray("PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "sans-serif")
+
+[sub_resource type="SystemFont" id="serif"]
+font_names = PackedStringArray("Songti SC", "Noto Serif CJK SC", "serif")
+
+[sub_resource type="StyleBoxFlat" id="dark_panel"]
+bg_color = Color(0.16078, 0.20000, 0.18431, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.37255, 0.41569, 0.36471, 1)
+
+[sub_resource type="StyleBoxFlat" id="paper_panel"]
+bg_color = Color(0.90588, 0.86667, 0.78431, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.76863, 0.71765, 0.61961, 1)
+
+[sub_resource type="StyleBoxFlat" id="button_normal"]
+bg_color = Color(0.20392, 0.25490, 0.22745, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.37255, 0.41569, 0.36471, 1)
+
+[sub_resource type="StyleBoxFlat" id="button_hover"]
+bg_color = Color(0.27451, 0.33725, 0.29020, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.61569, 0.67059, 0.56863, 1)
+
+[sub_resource type="StyleBoxFlat" id="button_pressed"]
+bg_color = Color(0.42353, 0.38431, 0.27843, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.80392, 0.72549, 0.54510, 1)
+
+[sub_resource type="StyleBoxFlat" id="focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.88, 0.76, 0.49, 1)
+
+[sub_resource type="Theme" id="theme"]
+default_font = SubResource("font")
+default_font_size = 16
+Button/colors/font_color = Color(0.90588, 0.86667, 0.78431, 1)
+Button/colors/font_pressed_color = Color(1.00000, 0.95294, 0.85882, 1)
+Button/styles/normal = SubResource("button_normal")
+Button/styles/hover = SubResource("button_hover")
+Button/styles/pressed = SubResource("button_pressed")
+Button/styles/hover_pressed = SubResource("button_pressed")
+Button/styles/focus = SubResource("focus")
+
+[sub_resource type="BoxShape3D" id="building_pick_lower"]
+size = Vector3(11.8, 3.3, 9.8)
+
+[sub_resource type="BoxShape3D" id="building_pick_upper"]
+size = Vector3(6, 2.9, 6)
+
+[sub_resource type="BoxMesh" id="mesh_Surroundings"]
+material = SubResource("lot")
+size = Vector3(300, 0.4, 300)
+
+[sub_resource type="BoxMesh" id="mesh_MainStreet"]
+material = SubResource("asphalt")
+size = Vector3(52, 0.18, 8)
+
+[sub_resource type="BoxMesh" id="mesh_SideStreet"]
+material = SubResource("asphalt")
+size = Vector3(8, 0.18, 38)
+
+[sub_resource type="BoxMesh" id="mesh_DinerPavement"]
+material = SubResource("paving")
+size = Vector3(16, 0.24, 15)
+
+[sub_resource type="BoxMesh" id="mesh_FrontCurb"]
+material = SubResource("curb")
+size = Vector3(16.2, 0.29, 0.2)
+
+[sub_resource type="BoxMesh" id="mesh_SideCurb"]
+material = SubResource("curb")
+size = Vector3(0.2, 0.29, 15)
+
+[sub_resource type="BoxMesh" id="mesh_OppositeFront"]
+material = SubResource("paving")
+size = Vector3(52, 0.27, 2.3)
+
+[sub_resource type="BoxMesh" id="mesh_OppositeFrontCurb"]
+material = SubResource("curb")
+size = Vector3(52, 0.29, 0.16)
+
+[sub_resource type="BoxMesh" id="mesh_OppositeSide"]
+material = SubResource("paving")
+size = Vector3(2.3, 0.27, 38)
+
+[sub_resource type="BoxMesh" id="mesh_OppositeSideCurb"]
+material = SubResource("curb")
+size = Vector3(0.16, 0.29, 38)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_0_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_0_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_1_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_1_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_2_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_2_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_3_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_3_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_4_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_4_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_5_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_5_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_6_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_6_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_7_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_7_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_8_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_8_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_9_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_9_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_10_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_10_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_14_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_14_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_15_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_15_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_16_0"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_MainLine_16_1"]
+material = SubResource("road_paint")
+size = Vector3(2.85, 0.006, 0.065)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_0"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_1"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_2"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_3"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_4"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_5"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_6"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_7"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideLine_8"]
+material = SubResource("road_paint")
+size = Vector3(0.07, 0.006, 1.6)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain"]
+material = SubResource("edge")
+size = Vector3(0.28, 0.014, 0.75)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain0"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain1"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain2"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain3"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain4"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_SideDrain5"]
+material = SubResource("drain")
+size = Vector3(0.23, 0.005, 0.045)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain"]
+material = SubResource("edge")
+size = Vector3(0.75, 0.014, 0.28)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain0"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain1"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain2"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain3"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain4"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[sub_resource type="BoxMesh" id="mesh_FrontDrain5"]
+material = SubResource("drain")
+size = Vector3(0.045, 0.005, 0.23)
+
+[node name="BluebirdStreetCorner" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
+
+[node name="Lighting" type="Node3D" parent="."]
+
+
+[node name="Sun" type="DirectionalLight3D" parent="Lighting"]
+rotation_degrees = Vector3(-48, -32, 0)
+light_color = Color(1, 0.94118, 0.83922, 1)
+light_energy = 1.10
+shadow_enabled = true
+shadow_opacity = 0.85
+light_angular_distance = 0.65
+shadow_bias = 0.03
+shadow_blur = 2.0
+directional_shadow_max_distance = 85.0
+directional_shadow_blend_splits = true
+
+[node name="Bluebird" type="Node3D" parent="."]
+position = Vector3(-6, 0.18, 5)
+metadata/place_id = "bluebird_diner"
+
+[node name="Architecture" parent="Bluebird" instance=ExtResource("2")]
+
+
+[node name="PickBody" type="StaticBody3D" parent="Bluebird"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="GroundFloor" type="CollisionShape3D" parent="Bluebird/PickBody"]
+position = Vector3(6, 1.65, -5)
+shape = SubResource("building_pick_lower")
+
+[node name="UpperFloor" type="CollisionShape3D" parent="Bluebird/PickBody"]
+position = Vector3(3, 4.8, -7)
+shape = SubResource("building_pick_upper")
+
+[node name="Streets" type="Node3D" parent="."]
+
+
+[node name="Surroundings" type="MeshInstance3D" parent="Streets"]
+position = Vector3(0, -0.36, 0)
+mesh = SubResource("mesh_Surroundings")
+
+[node name="MainStreet" type="MeshInstance3D" parent="Streets"]
+position = Vector3(0, -0.09, 11)
+mesh = SubResource("mesh_MainStreet")
+
+[node name="SideStreet" type="MeshInstance3D" parent="Streets"]
+position = Vector3(12, -0.09, -12)
+mesh = SubResource("mesh_SideStreet")
+
+[node name="Sidewalk" type="Node3D" parent="."]
+
+
+[node name="DinerPavement" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(0, 0.06, -0.5)
+mesh = SubResource("mesh_DinerPavement")
+
+[node name="FrontCurb" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(0, 0.035, 7)
+mesh = SubResource("mesh_FrontCurb")
+
+[node name="SideCurb" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(8, 0.035, -0.5)
+mesh = SubResource("mesh_SideCurb")
+
+[node name="OppositeFront" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(0, 0.045, 16.15)
+mesh = SubResource("mesh_OppositeFront")
+
+[node name="OppositeFrontCurb" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(0, 0.035, 15.08)
+mesh = SubResource("mesh_OppositeFrontCurb")
+
+[node name="OppositeSide" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(17.15, 0.045, -12)
+mesh = SubResource("mesh_OppositeSide")
+
+[node name="OppositeSideCurb" type="MeshInstance3D" parent="Sidewalk"]
+position = Vector3(16.08, 0.035, -12)
+mesh = SubResource("mesh_OppositeSideCurb")
+
+[node name="RoadDetails" type="Node3D" parent="."]
+
+
+[node name="MainLine_0_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-24, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_0_0")
+
+[node name="MainLine_0_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-24, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_0_1")
+
+[node name="MainLine_1_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-21, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_1_0")
+
+[node name="MainLine_1_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-21, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_1_1")
+
+[node name="MainLine_2_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-18, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_2_0")
+
+[node name="MainLine_2_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-18, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_2_1")
+
+[node name="MainLine_3_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-15, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_3_0")
+
+[node name="MainLine_3_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-15, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_3_1")
+
+[node name="MainLine_4_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-12, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_4_0")
+
+[node name="MainLine_4_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-12, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_4_1")
+
+[node name="MainLine_5_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-9, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_5_0")
+
+[node name="MainLine_5_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-9, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_5_1")
+
+[node name="MainLine_6_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-6, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_6_0")
+
+[node name="MainLine_6_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-6, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_6_1")
+
+[node name="MainLine_7_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-3, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_7_0")
+
+[node name="MainLine_7_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(-3, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_7_1")
+
+[node name="MainLine_8_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(0, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_8_0")
+
+[node name="MainLine_8_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(0, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_8_1")
+
+[node name="MainLine_9_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(3, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_9_0")
+
+[node name="MainLine_9_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(3, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_9_1")
+
+[node name="MainLine_10_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(6, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_10_0")
+
+[node name="MainLine_10_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(6, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_10_1")
+
+[node name="MainLine_14_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(18, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_14_0")
+
+[node name="MainLine_14_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(18, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_14_1")
+
+[node name="MainLine_15_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(21, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_15_0")
+
+[node name="MainLine_15_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(21, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_15_1")
+
+[node name="MainLine_16_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(24, 0.004, 10.9)
+mesh = SubResource("mesh_MainLine_16_0")
+
+[node name="MainLine_16_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(24, 0.004, 11.1)
+mesh = SubResource("mesh_MainLine_16_1")
+
+[node name="SideLine_0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, 2.0)
+mesh = SubResource("mesh_SideLine_0")
+
+[node name="SideLine_1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -1.5)
+mesh = SubResource("mesh_SideLine_1")
+
+[node name="SideLine_2" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -5.0)
+mesh = SubResource("mesh_SideLine_2")
+
+[node name="SideLine_3" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -8.5)
+mesh = SubResource("mesh_SideLine_3")
+
+[node name="SideLine_4" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -12.0)
+mesh = SubResource("mesh_SideLine_4")
+
+[node name="SideLine_5" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -15.5)
+mesh = SubResource("mesh_SideLine_5")
+
+[node name="SideLine_6" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -19.0)
+mesh = SubResource("mesh_SideLine_6")
+
+[node name="SideLine_7" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -22.5)
+mesh = SubResource("mesh_SideLine_7")
+
+[node name="SideLine_8" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(12, 0.004, -26.0)
+mesh = SubResource("mesh_SideLine_8")
+
+[node name="SideDrain" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.185, 4.6)
+mesh = SubResource("mesh_SideDrain")
+
+[node name="SideDrain0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.3)
+mesh = SubResource("mesh_SideDrain0")
+
+[node name="SideDrain1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.42)
+mesh = SubResource("mesh_SideDrain1")
+
+[node name="SideDrain2" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.54)
+mesh = SubResource("mesh_SideDrain2")
+
+[node name="SideDrain3" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.66)
+mesh = SubResource("mesh_SideDrain3")
+
+[node name="SideDrain4" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.78)
+mesh = SubResource("mesh_SideDrain4")
+
+[node name="SideDrain5" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(7.68, 0.194, 4.9)
+mesh = SubResource("mesh_SideDrain5")
+
+[node name="FrontDrain" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.8, 0.185, 6.68)
+mesh = SubResource("mesh_FrontDrain")
+
+[node name="FrontDrain0" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.5, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain0")
+
+[node name="FrontDrain1" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.62, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain1")
+
+[node name="FrontDrain2" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.74, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain2")
+
+[node name="FrontDrain3" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.86, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain3")
+
+[node name="FrontDrain4" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(4.98, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain4")
+
+[node name="FrontDrain5" type="MeshInstance3D" parent="RoadDetails"]
+position = Vector3(5.1, 0.194, 6.68)
+mesh = SubResource("mesh_FrontDrain5")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(25.810059, 24.876713, 28.664975)
+rotation_degrees = Vector3(-31, 42, 0)
+projection = 1
+size = 23.0
+near = 0.1
+far = 180.0
+current = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+
+[node name="TopBar" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 592.0
+offset_bottom = 98.0
+theme = SubResource("theme")
+theme_override_styles/panel = SubResource("dark_panel")
+
+[node name="Margin" type="MarginContainer" parent="HUD/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Row" type="HBoxContainer" parent="HUD/TopBar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Brand" type="Label" parent="HUD/TopBar/Margin/Row"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.90588, 0.86667, 0.78431, 1)
+theme_override_font_sizes/font_size = 18
+text = "GRAYHAVEN  /  灰港"
+
+
+[node name="Time" type="Label" parent="HUD/TopBar/Margin/Row"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.72941, 0.76471, 0.69412, 1)
+theme_override_font_sizes/font_size = 14
+text = "晴天 · 日照预览"
+size_flags_horizontal = 10
+horizontal_alignment = 2
+
+[node name="Caption" type="VBoxContainer" parent="HUD"]
+offset_left = 28.0
+offset_top = 117.0
+offset_right = 470.0
+offset_bottom = 188.0
+mouse_filter = 2
+theme = SubResource("theme")
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="HUD/Caption"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.15686, 0.20000, 0.17255, 1)
+theme_override_font_sizes/font_size = 30
+text = "蓝鸟餐厅 · 街角"
+theme_override_fonts/font = SubResource("serif")
+
+[node name="Subtitle" type="Label" parent="HUD/Caption"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.23922, 0.28627, 0.24706, 1)
+theme_override_font_sizes/font_size = 14
+text = "北加州海岸，1985  /  场景样板"
+
+
+[node name="Info" type="PanelContainer" parent="HUD"]
+visible = false
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -308.0
+offset_top = 118.0
+offset_right = -24.0
+offset_bottom = 420.0
+grow_horizontal = 0
+theme = SubResource("theme")
+theme_override_styles/panel = SubResource("paper_panel")
+
+[node name="Margin" type="MarginContainer" parent="HUD/Info"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="Column" type="VBoxContainer" parent="HUD/Info/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Index" type="Label" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.45882, 0.39216, 0.27843, 1)
+theme_override_font_sizes/font_size = 14
+text = "地点手记   /   01"
+
+
+[node name="Title" type="Label" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.16078, 0.20000, 0.18431, 1)
+theme_override_font_sizes/font_size = 26
+text = "蓝鸟餐厅"
+theme_override_fonts/font = SubResource("serif")
+
+[node name="English" type="Label" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.45882, 0.39216, 0.27843, 1)
+theme_override_font_sizes/font_size = 14
+text = "BLUEBIRD DINER"
+
+
+[node name="Body" type="Label" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.20392, 0.23529, 0.20392, 1)
+theme_override_font_sizes/font_size = 17
+text = "临街的玻璃门通向主街。\n\n堂座里，临窗绿皮卡座与长条柜台留着小镇繁荣年代的底子。咖啡和烤面包的香气，从清早一直暖到打烊。"
+custom_minimum_size = Vector2(240, 0)
+autowrap_mode = 3
+theme_override_constants/line_spacing = 7
+
+[node name="Note" type="Label" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.45882, 0.39216, 0.27843, 1)
+theme_override_font_sizes/font_size = 14
+text = "此样板展示建筑外观。"
+
+
+[node name="Close" type="Button" parent="HUD/Info/Margin/Column"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 44)
+text = "收起手记"
+toggle_mode = false
+
+[node name="Controls" type="PanelContainer" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -104.0
+offset_right = 592.0
+offset_bottom = -36.0
+grow_vertical = 0
+theme = SubResource("theme")
+theme_override_styles/panel = SubResource("dark_panel")
+
+[node name="Margin" type="MarginContainer" parent="HUD/Controls"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="HUD/Controls/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Day" type="Button" parent="HUD/Controls/Margin/Row"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 44)
+text = "1  晴天"
+toggle_mode = true
+
+[node name="Evening" type="Button" parent="HUD/Controls/Margin/Row"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 44)
+text = "2  暮色"
+toggle_mode = true
+
+[node name="Reset" type="Button" parent="HUD/Controls/Margin/Row"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 44)
+text = "R  复位"
+toggle_mode = false
+
+[node name="Info" type="Button" parent="HUD/Controls/Margin/Row"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 44)
+text = "I  地点手记"
+toggle_mode = true
+
+[node name="Help" type="Label" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = -29.0
+offset_right = 960.0
+offset_bottom = -7.0
+grow_vertical = 0
+mouse_filter = 2
+theme = SubResource("theme")
+theme_override_colors/font_color = Color(0.16863, 0.21961, 0.18431, 1)
+theme_override_font_sizes/font_size = 14
+text = "固定正交视角     滚轮 / 双指捏合 缩放     中键拖动 / 双指滑动 平移     点击建筑 查看"

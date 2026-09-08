@@ -1,0 +1,408 @@
+{
+  "version": 10,
+  "mapping_space": "Architecture local glTF coordinates, metres; no baked direct sunlight",
+  "profiles": [
+    {
+      "name": "front_0",
+      "side": "front",
+      "level": 0,
+      "origin": [
+        -0.5,
+        -0.3
+      ],
+      "extent": [
+        13,
+        8
+      ],
+      "plane": 1,
+      "files": {
+        "importance": "front_0-importance.png",
+        "flow": "front_0-flow.png",
+        "indirect": "front_0-indirect.png"
+      }
+    },
+    {
+      "name": "right_0",
+      "side": "right",
+      "level": 0,
+      "origin": [
+        -10.5,
+        -0.3
+      ],
+      "extent": [
+        11,
+        8
+      ],
+      "plane": 2,
+      "files": {
+        "importance": "right_0-importance.png",
+        "flow": "right_0-flow.png",
+        "indirect": "right_0-indirect.png"
+      }
+    },
+    {
+      "name": "rear_0",
+      "side": "rear",
+      "level": 0,
+      "origin": [
+        -0.5,
+        -0.3
+      ],
+      "extent": [
+        13,
+        8
+      ],
+      "plane": 1,
+      "files": {
+        "importance": "rear_0-importance.png",
+        "flow": "rear_0-flow.png",
+        "indirect": "rear_0-indirect.png"
+      }
+    },
+    {
+      "name": "left_0",
+      "side": "left",
+      "level": 0,
+      "origin": [
+        -10.5,
+        -0.3
+      ],
+      "extent": [
+        11,
+        8
+      ],
+      "plane": 2,
+      "files": {
+        "importance": "left_0-importance.png",
+        "flow": "left_0-flow.png",
+        "indirect": "left_0-indirect.png"
+      }
+    },
+    {
+      "name": "front_1",
+      "side": "front",
+      "level": 1,
+      "origin": [
+        -0.5,
+        -0.3
+      ],
+      "extent": [
+        13,
+        8
+      ],
+      "plane": 1,
+      "files": {
+        "importance": "front_1-importance.png",
+        "flow": "front_1-flow.png",
+        "indirect": "front_1-indirect.png"
+      }
+    },
+    {
+      "name": "right_1",
+      "side": "right",
+      "level": 1,
+      "origin": [
+        -10.5,
+        -0.3
+      ],
+      "extent": [
+        11,
+        8
+      ],
+      "plane": 2,
+      "files": {
+        "importance": "right_1-importance.png",
+        "flow": "right_1-flow.png",
+        "indirect": "right_1-indirect.png"
+      }
+    },
+    {
+      "name": "rear_1",
+      "side": "rear",
+      "level": 1,
+      "origin": [
+        -0.5,
+        -0.3
+      ],
+      "extent": [
+        13,
+        8
+      ],
+      "plane": 1,
+      "files": {
+        "importance": "rear_1-importance.png",
+        "flow": "rear_1-flow.png",
+        "indirect": "rear_1-indirect.png"
+      }
+    },
+    {
+      "name": "left_1",
+      "side": "left",
+      "level": 1,
+      "origin": [
+        -10.5,
+        -0.3
+      ],
+      "extent": [
+        11,
+        8
+      ],
+      "plane": 2,
+      "files": {
+        "importance": "left_1-importance.png",
+        "flow": "left_1-flow.png",
+        "indirect": "left_1-indirect.png"
+      }
+    },
+    {
+      "name": "roof_0",
+      "side": "roof",
+      "level": 0,
+      "origin": [
+        -0.5,
+        -10.5
+      ],
+      "extent": [
+        13,
+        11
+      ],
+      "plane": 0,
+      "files": {
+        "importance": "roof_0-importance.png",
+        "flow": "roof_0-flow.png",
+        "indirect": "roof_0-indirect.png"
+      }
+    },
+    {
+      "name": "roof_1",
+      "side": "roof",
+      "level": 1,
+      "origin": [
+        -0.5,
+        -10.5
+      ],
+      "extent": [
+        13,
+        11
+      ],
+      "plane": 0,
+      "files": {
+        "importance": "roof_1-importance.png",
+        "flow": "roof_1-flow.png",
+        "indirect": "roof_1-indirect.png"
+      }
+    },
+    {
+      "name": "ground",
+      "side": "ground",
+      "level": 0,
+      "origin": [
+        -10,
+        -22
+      ],
+      "extent": [
+        34,
+        34
+      ],
+      "plane": 0,
+      "files": {
+        "importance": "ground-importance.png",
+        "flow": "ground-flow.png",
+        "indirect": "ground-indirect.png"
+      }
+    }
+  ],
+  "brush_casters": [
+    {
+      "name": "lower_main",
+      "min": [
+        0,
+        0,
+        -10
+      ],
+      "max": [
+        12,
+        3.31,
+        -1.3
+      ]
+    },
+    {
+      "name": "lower_front",
+      "min": [
+        0,
+        0,
+        -1.3
+      ],
+      "max": [
+        10.7,
+        3.31,
+        0
+      ]
+    },
+    {
+      "name": "entry_chamfer_0",
+      "min": [
+        10.7,
+        0,
+        -0.325
+      ],
+      "max": [
+        11.024999999999999,
+        3.31,
+        -0.0
+      ]
+    },
+    {
+      "name": "entry_chamfer_1",
+      "min": [
+        10.7,
+        0,
+        -0.65
+      ],
+      "max": [
+        11.35,
+        3.31,
+        -0.325
+      ]
+    },
+    {
+      "name": "entry_chamfer_2",
+      "min": [
+        10.7,
+        0,
+        -0.9750000000000001
+      ],
+      "max": [
+        11.674999999999999,
+        3.31,
+        -0.65
+      ]
+    },
+    {
+      "name": "entry_chamfer_3",
+      "min": [
+        10.7,
+        0,
+        -1.3
+      ],
+      "max": [
+        12.0,
+        3.31,
+        -0.9750000000000001
+      ]
+    },
+    {
+      "name": "upper_mass",
+      "min": [
+        0,
+        3.31,
+        -10
+      ],
+      "max": [
+        6,
+        5.94,
+        -4
+      ]
+    },
+    {
+      "name": "D0_KITCHEN_EXHAUST",
+      "min": [
+        8.60200023651123,
+        3.309999942779541,
+        -8.267999649047852
+      ],
+      "max": [
+        9.637999534606934,
+        4.119999885559082,
+        -7.23199987411499
+      ]
+    },
+    {
+      "name": "D0_ROOF_AIR_VENT",
+      "min": [
+        6.892499923706055,
+        3.309999942779541,
+        -6.1875
+      ],
+      "max": [
+        7.447500228881836,
+        3.8600001335144043,
+        -5.632499694824219
+      ]
+    },
+    {
+      "name": "D1_STOVE_FLUE",
+      "min": [
+        0.815750002861023,
+        5.940000057220459,
+        -8.994250297546387
+      ],
+      "max": [
+        1.2042499780654907,
+        7.050000190734863,
+        -8.60575008392334
+      ]
+    },
+    {
+      "name": "D0_MAIN_SIGN_CASE",
+      "min": [
+        6.179999351501465,
+        2.8350000381469727,
+        -1.090000033378601
+      ],
+      "max": [
+        10.699999809265137,
+        4.567500114440918,
+        0.36000001430511475
+      ]
+    },
+    {
+      "name": "D0_BLADE_SIGN",
+      "min": [
+        11.979999542236328,
+        2.3550000190734863,
+        -1.5299999713897705
+      ],
+      "max": [
+        12.819999694824219,
+        4.485000133514404,
+        -1.3299999237060547
+      ]
+    },
+    {
+      "name": "D0_CANOPY_JOINERY",
+      "min": [
+        0.75,
+        2.205000162124634,
+        0.016999999061226845
+      ],
+      "max": [
+        6.25,
+        3.002500057220459,
+        0.7967603206634521
+      ]
+    },
+    {
+      "name": "D0_SIDE_CANOPY",
+      "min": [
+        12.036523818969727,
+        2.3435559272766113,
+        -6.960000038146973
+      ],
+      "max": [
+        12.614999771118164,
+        2.8912529945373535,
+        -5.130000114440918
+      ]
+    }
+  ],
+  "indirect_channels": "RGB = authored weak warm irradiance; A = geometry-derived hemisphere accessibility (16 rays, 5m, floor 0.48)",
+  "importance": "Authored focal weights for sign, entrance, windows; grayscale linear",
+  "flow": "RG doubled-angle unoriented axis; used for surface brush direction, not cast-shadow sun direction",
+  "lettering": [
+    "BLUEBIRD",
+    "DINER",
+    "EATS"
+  ],
+  "geometry_revision": "Current v13 GLB geometry; independent idempotent height/bounds update, existing authored mass shapes retained"
+}

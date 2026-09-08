@@ -1,0 +1,433 @@
+{
+  "textures": {
+    "26e4798ef1b8668be754bfb94bc7dca46028fdb30fe0694d93b38ce9e31fbcd3": {
+      "file": "textures/library/26e4798ef1b8668be754.png",
+      "bytes": 1613993,
+      "names": [
+        "01-eccentric-bursts.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v1/atlases/01-eccentric-bursts.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/26e4798ef1b8668be754.png"
+      ]
+    },
+    "682b31f931a1bf3444561854424f8ec1ff1d4793a39ec5823dff10e301067733": {
+      "file": "textures/library/682b31f931a1bf344456.png",
+      "bytes": 1533581,
+      "names": [
+        "01-slate-scumbles.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v2/atlases/01-slate-scumbles.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/682b31f931a1bf344456.png"
+      ]
+    },
+    "ca3ab64d35b827b4067ce477a73cf5f04077786bf14769ce1b8dc53795b22ca8": {
+      "file": "textures/library/ca3ab64d35b827b4067c.png",
+      "bytes": 1541604,
+      "names": [
+        "02-broken-radials.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v1/atlases/02-broken-radials.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/ca3ab64d35b827b4067c.png"
+      ]
+    },
+    "44e3ebff2283b18c9e30ea35767cfb33e69c38e1f50af6a74cb827ac41aca9e1": {
+      "file": "textures/library/44e3ebff2283b18c9e30.png",
+      "bytes": 1539646,
+      "names": [
+        "02-olive-graphite.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v2/atlases/02-olive-graphite.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/44e3ebff2283b18c9e30.png"
+      ]
+    },
+    "2aa60d99f183fd34df966eca929222ad611b9b19afff6a6c1245b47c72c7c9ea": {
+      "file": "textures/library/2aa60d99f183fd34df96.png",
+      "bytes": 1849186,
+      "names": [
+        "03-torn-scrapes.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v1/atlases/03-torn-scrapes.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/2aa60d99f183fd34df96.png"
+      ]
+    },
+    "93e73aee6e05723dc04ac70bb9a190ac8a089bad7f468b09c0f0c8b05dd10691": {
+      "file": "textures/library/93e73aee6e05723dc04a.png",
+      "bytes": 1515516,
+      "names": [
+        "04-ivory-fractures.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v8/../paint-effects-v1/atlases/04-ivory-fractures.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/93e73aee6e05723dc04a.png"
+      ]
+    },
+    "af29f62e6b47d2d0f625af202e854b9d7505e5304f5104d94cb833c97e842731": {
+      "file": "textures/library/af29f62e6b47d2d0f625.png",
+      "bytes": 1025489,
+      "names": [
+        "bluebird-oil-lettering.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v10/textures/bluebird-oil-lettering.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/af29f62e6b47d2d0f625.png"
+      ]
+    },
+    "c272629646960dbf5c99d05a9039b8251b67f6dcaf7bd302d1c8349271efaefd": {
+      "file": "textures/library/c272629646960dbf5c99.png",
+      "bytes": 1522800,
+      "names": [
+        "corner.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/corner.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/c272629646960dbf5c99.png"
+      ]
+    },
+    "2cd5bfc207b9469aa2f4fb4989c8bf00c0b3aa640289b2a7ea8c8c920073d13f": {
+      "file": "textures/library/2cd5bfc207b9469aa2f4.png",
+      "bytes": 1222966,
+      "names": [
+        "diner-oil-lettering.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v10/textures/diner-oil-lettering.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/2cd5bfc207b9469aa2f4.png"
+      ]
+    },
+    "0d890ed106774ba5e3f46d5785459626b815f512c4206c6df72b60324b918616": {
+      "file": "textures/library/0d890ed106774ba5e3f4.png",
+      "bytes": 990376,
+      "names": [
+        "eats-oil-lettering.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v10/textures/eats-oil-lettering.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/0d890ed106774ba5e3f4.png"
+      ]
+    },
+    "f903ecf04bb326085c3986176af8201da987542e4f5d7645a2914cec7743f39c": {
+      "file": "textures/library/f903ecf04bb326085c39.png",
+      "bytes": 2310350,
+      "names": [
+        "floor-lower.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/floor-lower.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/f903ecf04bb326085c39.png"
+      ]
+    },
+    "96d5234e5003718448653b5e3ec133218d5929fb59c9555c355ee99e8bc11edb": {
+      "file": "textures/library/96d5234e500371844865.png",
+      "bytes": 2066279,
+      "names": [
+        "floor-upper.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/floor-upper.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/96d5234e500371844865.png"
+      ]
+    },
+    "81cfce981535e33afd06e76523021717bc530b939166593a1642c9ef64dab552": {
+      "file": "textures/library/81cfce981535e33afd06.png",
+      "bytes": 1697983,
+      "names": [
+        "front.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/front.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/81cfce981535e33afd06.png"
+      ]
+    },
+    "9fef809035ba711cef475eb354f2ce5aaa97c8843aaa19c58e122189bd298c71": {
+      "file": "textures/library/9fef809035ba711cef47.png",
+      "bytes": 1883406,
+      "names": [
+        "left.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/left.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/9fef809035ba711cef47.png"
+      ]
+    },
+    "f9a0bb6df7f7c021721017ef7908e04b20c058fd72919f5d7e583cd6ce58398c": {
+      "file": "textures/library/f9a0bb6df7f7c0217210.png",
+      "bytes": 1878292,
+      "names": [
+        "rear.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/rear.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/f9a0bb6df7f7c0217210.png"
+      ]
+    },
+    "9f0a032252b5de11424cc2936859b2498cd2cab0ed474462b6d05da2384e848c": {
+      "file": "textures/library/9f0a032252b5de11424c.png",
+      "bytes": 1931285,
+      "names": [
+        "right.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/right.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/9f0a032252b5de11424c.png"
+      ]
+    },
+    "66f28955c807b2b39223c13ff94fbf3e4c160d088a160dd998cda5845f647c5d": {
+      "file": "textures/library/66f28955c807b2b39223.png",
+      "bytes": 2242594,
+      "names": [
+        "roof-lower.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/roof-lower.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/66f28955c807b2b39223.png"
+      ]
+    },
+    "09356f0a8f71d4e37824209adaf029d23338c1a0361475b66006d59208470548": {
+      "file": "textures/library/09356f0a8f71d4e37824.png",
+      "bytes": 2888298,
+      "names": [
+        "roof-upper.png"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/textures/roof-upper.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/09356f0a8f71d4e37824.png"
+      ]
+    },
+    "d54bad10c4c28dbe26f8a08dc3d5e9d8dd963933f104882015a17ec04aa41183": {
+      "file": "textures/library/d54bad10c4c28dbe26f8.png",
+      "bytes": 7853723,
+      "names": [
+        "V11_BAKED_details"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/details-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/d54bad10c4c28dbe26f8.png"
+      ]
+    },
+    "c317f613e47f78e6d0b1bbe99e51b2672b8d60c86e56d0e28ba0584b2e30e4c5": {
+      "file": "textures/library/c317f613e47f78e6d0b1.png",
+      "bytes": 11370940,
+      "names": [
+        "V11_BAKED_frames"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/frames-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/c317f613e47f78e6d0b1.png"
+      ]
+    },
+    "94827ce7f636f9478256ab1df9978ad4c34e88d16b8cdcbfd92104ae0121ef39": {
+      "file": "textures/library/94827ce7f636f9478256.png",
+      "bytes": 11567429,
+      "names": [
+        "V11_BAKED_ground"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/ground-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/94827ce7f636f9478256.png"
+      ]
+    },
+    "749bb44941560f203fe6b2e8c9978c83ff49302d62e7dc8c4c2ef7d439f1a91c": {
+      "file": "textures/library/749bb44941560f203fe6.png",
+      "bytes": 21416491,
+      "names": [
+        "V11_BAKED_interior"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/interior-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/interior-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/749bb44941560f203fe6.png"
+      ]
+    },
+    "a23c8218efe98e1bddf0185e39fb4dc4e4f6e3cfa03ab4a4d6cbefc0c9bcf312": {
+      "file": "textures/library/a23c8218efe98e1bddf0.png",
+      "bytes": 13609131,
+      "names": [
+        "V11_BAKED_roof"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/roof-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/a23c8218efe98e1bddf0.png"
+      ]
+    },
+    "1b13fa6e530e48bee11a750a0ef4b737c346a3bf2f3eb5846835adbcf4e2d42f": {
+      "file": "textures/library/1b13fa6e530e48bee11a.png",
+      "bytes": 15090629,
+      "names": [
+        "V11_BAKED_upper"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases-layered/upper-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/1b13fa6e530e48bee11a.png"
+      ]
+    },
+    "8b6a3d154422b992927e704fb65c4359711b586b0170f3d38464e2d271a9e0f1": {
+      "file": "textures/library/8b6a3d154422b992927e.png",
+      "bytes": 3518960,
+      "names": [
+        "V8_SOURCE_charcoal-roof"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/05-charcoal-roof.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/8b6a3d154422b992927e.png"
+      ]
+    },
+    "c43d6921955da119e8d114d481887e4f78928e2d8c8261efdf7c001857f13ef4": {
+      "file": "textures/library/c43d6921955da119e8d1.png",
+      "bytes": 2561825,
+      "names": [
+        "V8_SOURCE_dining-floor"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/07-dining-floor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/c43d6921955da119e8d1.png"
+      ]
+    },
+    "c6fb8aa03b46158cf9e27a783afb10636f03f65a3462224b145f3869ae3890d1": {
+      "file": "textures/library/c6fb8aa03b46158cf9e2.png",
+      "bytes": 2584711,
+      "names": [
+        "V8_SOURCE_ivory-clapboard"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/01-ivory-clapboard.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/c6fb8aa03b46158cf9e2.png"
+      ]
+    },
+    "43da34a6ff65b4a0c03f9b7ec1790704cbda79ed08a6ed7c41c842115b828c90": {
+      "file": "textures/library/43da34a6ff65b4a0c03f.png",
+      "bytes": 2447682,
+      "names": [
+        "V8_SOURCE_ivory-trim"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/03-ivory-trim.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/43da34a6ff65b4a0c03f.png"
+      ]
+    },
+    "46ea5075768f8b0deea94df0d741fc4611af80eef23cfcd68035ae91243bb614": {
+      "file": "textures/library/46ea5075768f8b0deea9.png",
+      "bytes": 2405486,
+      "names": [
+        "V8_SOURCE_teal-wainscot"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/02-teal-wainscot.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/46ea5075768f8b0deea9.png"
+      ]
+    },
+    "8ae1f457eba3ac96c3b6224499005de070848ce04a147e6ff0be46006c6fb127": {
+      "file": "textures/library/8ae1f457eba3ac96c3b6.png",
+      "bytes": 2730988,
+      "names": [
+        "V8_SOURCE_warm-plaster"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/08-warm-plaster.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/8ae1f457eba3ac96c3b6.png"
+      ]
+    },
+    "9933f6d9e82ef805bab7224ffc2e34085b649cbcf0cfa52c7a1f7e9347e98c17": {
+      "file": "textures/library/9933f6d9e82ef805bab7.png",
+      "bytes": 2368961,
+      "names": [
+        "V8_SOURCE_weathered-metal"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-weathered-v3/basecolor/04-weathered-metal.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/9933f6d9e82ef805bab7.png"
+      ]
+    },
+    "f675eae8d450e8e00e4837f03ad73f5fad5b0263b3154c83717a08a5ef3ef26c": {
+      "file": "textures/library/f675eae8d450e8e00e48.png",
+      "bytes": 7865592,
+      "names": [
+        "V11_BAKED_details"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/details-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/f675eae8d450e8e00e48.png"
+      ]
+    },
+    "17f3d0001858f35e3a037e30267e727a3213a63e534ec21e572883397f8935f6": {
+      "file": "textures/library/17f3d0001858f35e3a03.png",
+      "bytes": 11074433,
+      "names": [
+        "V11_BAKED_frames"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/frames-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/17f3d0001858f35e3a03.png"
+      ]
+    },
+    "424dd1eff9a647940588ade53f366c5f73749615fafaef7470bf4ea8d66079df": {
+      "file": "textures/library/424dd1eff9a647940588.png",
+      "bytes": 10990359,
+      "names": [
+        "V11_BAKED_ground"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/ground-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/424dd1eff9a647940588.png"
+      ]
+    },
+    "136b9c7fc05ab45df30e6fa7f6c8cdfe53b2159839dc003d368b6a336ef7eecc": {
+      "file": "textures/library/136b9c7fc05ab45df30e.png",
+      "bytes": 14633922,
+      "names": [
+        "V11_BAKED_roof"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/roof-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/136b9c7fc05ab45df30e.png"
+      ]
+    },
+    "cdfbf6b23a9a94c2e16bf4b4f70d6521d85f781cb571780eb47b0f94a7856d73": {
+      "file": "textures/library/cdfbf6b23a9a94c2e16b.png",
+      "bytes": 14085851,
+      "names": [
+        "V11_BAKED_upper"
+      ],
+      "original_paths": [
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v11/atlases/upper-basecolor.png",
+        "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v13/textures/library/cdfbf6b23a9a94c2e16b.png"
+      ]
+    }
+  },
+  "documents": {
+    "bluebird_painterly": {
+      "images": 31,
+      "all_packed": true,
+      "all_relative_local_paths": true,
+      "bake_uv_added_to": []
+    },
+    "bluebird_base_baked": {
+      "images": 31,
+      "all_packed": true,
+      "all_relative_local_paths": true,
+      "bake_uv_added_to": []
+    },
+    "bluebird_painterly_layered": {
+      "images": 25,
+      "all_packed": true,
+      "all_relative_local_paths": true,
+      "bake_uv_added_to": []
+    },
+    "bluebird_base": {
+      "images": 25,
+      "all_packed": true,
+      "all_relative_local_paths": true,
+      "bake_uv_added_to": []
+    },
+    "bluebird_white": {
+      "images": 0,
+      "all_packed": true,
+      "all_relative_local_paths": true,
+      "bake_uv_added_to": []
+    }
+  }
+}

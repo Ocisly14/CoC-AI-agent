@@ -1,0 +1,20 @@
+[
+  {
+    "variant": "bluebird_base_baked",
+    "mode": "export existing painting",
+    "result": {
+      "meshes": 75,
+      "surfaces": 167,
+      "images": 10
+    }
+  },
+  {
+    "variant": "bluebird_painterly",
+    "mode": "export existing painting",
+    "result": {
+      "meshes": 75,
+      "surfaces": 167,
+      "images": 10
+    }
+  }
+]

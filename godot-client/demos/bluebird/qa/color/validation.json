@@ -1,0 +1,73 @@
+{
+	"checks": 102,
+	"converted_architecture_surfaces": 157,
+	"display": "macOS",
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"metrics": {
+		"capture_color_storage_upper_bound_mib": 64.0,
+		"capture_count": 3,
+		"committed_revision": 222,
+		"component_domains": [
+			"corner",
+			"front",
+			"rear",
+			"right",
+			"floor-lower",
+			"left",
+			"roof-lower",
+			"floor-upper",
+			"roof-upper"
+		],
+		"controlled_surfaces": 202,
+		"evening_difference": {
+			"changed_pixels": 46997,
+			"max": 0.113725483417511,
+			"mean": 0.00936369931419904
+		},
+		"indirect_difference": {
+			"changed_pixels": 108413,
+			"max": 0.141176462173462,
+			"mean": 0.0115401910281583
+		},
+		"last_capture_gpu_ms": null,
+		"last_capture_latency_ms": 17.349,
+		"noon_difference": {
+			"changed_pixels": 31001,
+			"max": 0.39215686917305,
+			"mean": 0.0123452023862046
+		},
+		"painted_sign_surfaces": 4,
+		"registered_surfaces": 218,
+		"resolution": 2048,
+		"seam_paint": {
+			"build_count": 3,
+			"build_ms": 2114.755,
+			"coverage_upper_bound": 0.0691280896380011,
+			"covered_length_m": 42.8831850643121,
+			"drips": 2,
+			"eligible_surfaces": 96,
+			"errors": [],
+			"receivers": 17,
+			"seam_length_m": 620.343847036362,
+			"seams": 278,
+			"stamps": 217
+		}
+	},
+	"native_surfaces": [
+		"D0_ENTRY_GLASS_Surface0 | glass",
+		"D0_ENTRY_HARDWARE_Surface1 | DETAIL_Door_hardware_brass",
+		"D0_ENTRY_PORCH_LIGHT_Surface2 | DETAIL_Porch_bulb",
+		"L0_FRONT_glass_Surface0 | glass",
+		"L0_REAR_glass_Surface0 | glass",
+		"L0_RIGHT_glass_Surface0 | glass",
+		"L1_FRONT_glass_Surface0 | glass",
+		"L1_LEFT_glass_Surface0 | glass",
+		"L1_REAR_glass_Surface0 | glass",
+		"L1_RIGHT_glass_Surface0 | glass"
+	],
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "v11 nine complete component paintings, preserved alpha lettering, authored importance/flow/ambient maps and architecture mass brush proxies. Preserved geometry/UV/colour, control domains, noon/evening GPU grading and closeups. Native GI, full PBR and performance budget excluded; indirect RGB is artist-authored bounce.",
+	"shared_atlases": 10
+}

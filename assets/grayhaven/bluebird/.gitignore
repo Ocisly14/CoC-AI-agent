@@ -20,3 +20,6 @@ source/*.jpg
 shell-*/previews/
 textures-*/previews/
 paint-effects-*/previews/
+
+# 绘画源贴图库（.blend 引用的哈希去重原图）—— 与 .blend 一起走外部存储
+shell-*/textures/library/

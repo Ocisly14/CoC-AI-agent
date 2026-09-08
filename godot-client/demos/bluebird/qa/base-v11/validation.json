@@ -1,0 +1,73 @@
+{
+	"checks": 102,
+	"converted_architecture_surfaces": 157,
+	"display": "macOS",
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"metrics": {
+		"capture_color_storage_upper_bound_mib": 64.0,
+		"capture_count": 3,
+		"committed_revision": 222,
+		"component_domains": [
+			"corner",
+			"front",
+			"rear",
+			"right",
+			"floor-lower",
+			"left",
+			"roof-lower",
+			"floor-upper",
+			"roof-upper"
+		],
+		"controlled_surfaces": 202,
+		"evening_difference": {
+			"changed_pixels": 50679,
+			"max": 0.117647051811218,
+			"mean": 0.00950726321236289
+		},
+		"indirect_difference": {
+			"changed_pixels": 108057,
+			"max": 0.141176462173462,
+			"mean": 0.0114042978094895
+		},
+		"last_capture_gpu_ms": null,
+		"last_capture_latency_ms": 7.997,
+		"noon_difference": {
+			"changed_pixels": 30983,
+			"max": 0.400000005960464,
+			"mean": 0.0117353621514674
+		},
+		"painted_sign_surfaces": 4,
+		"registered_surfaces": 218,
+		"resolution": 2048,
+		"seam_paint": {
+			"build_count": 3,
+			"build_ms": 2731.16,
+			"coverage_upper_bound": 0.0689308026771424,
+			"covered_length_m": 32.6012721743334,
+			"drips": 2,
+			"eligible_surfaces": 96,
+			"errors": [],
+			"receivers": 18,
+			"seam_length_m": 472.95651447773,
+			"seams": 945,
+			"stamps": 195
+		}
+	},
+	"native_surfaces": [
+		"D0_ENTRY_GLASS_Surface0 | glass",
+		"D0_ENTRY_HARDWARE_Surface1 | DETAIL_Door_hardware_brass",
+		"D0_ENTRY_PORCH_LIGHT_Surface2 | DETAIL_Porch_bulb",
+		"L0_FRONT_glass_Surface0 | glass",
+		"L0_REAR_glass_Surface0 | glass",
+		"L0_RIGHT_glass_Surface0 | glass",
+		"L1_FRONT_glass_Surface0 | glass",
+		"L1_LEFT_glass_Surface0 | glass",
+		"L1_REAR_glass_Surface0 | glass",
+		"L1_RIGHT_glass_Surface0 | glass"
+	],
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "v10 painted alpha lettering, authored importance/flow/ambient maps and architecture mass brush proxies. Preserved geometry/UV/colour, control domains, noon/evening GPU grading and closeups. Native GI, full PBR and performance budget excluded; indirect RGB is artist-authored bounce.",
+	"shared_atlases": 10
+}

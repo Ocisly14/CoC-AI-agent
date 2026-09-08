@@ -1,0 +1,44 @@
+{
+	"baseline_timing": {
+		"draw_calls": 699.0,
+		"median_frame_interval_ms": 8.295,
+		"median_gpu_ms": null
+	},
+	"changed_pixels": 230,
+	"checks": 25,
+	"compiler": {
+		"build_count": 2,
+		"build_ms": 1861.347,
+		"coverage_upper_bound": 0.0689308026771424,
+		"covered_length_m": 32.6012721743334,
+		"drips": 2,
+		"eligible_surfaces": 96,
+		"errors": [],
+		"receivers": 18,
+		"seam_length_m": 472.95651447773,
+		"seams": 945,
+		"stamps": 195
+	},
+	"drips": [
+		{
+			"id": "L0_LOW_ROOF/0>L0_RIGHT_high/3:120042,32000,-13000|120042,32000,-100000:1",
+			"length_m": 0.065,
+			"type": "short"
+		},
+		{
+			"id": "L1_ROOF/0>L1_REAR_high/0:60000,58000,-100042|0,58000,-100042:0",
+			"length_m": 0.22,
+			"type": "long"
+		}
+	],
+	"enabled_timing": {
+		"draw_calls": 699.0,
+		"median_frame_interval_ms": 8.404,
+		"median_gpu_ms": null
+	},
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "Global renderer tested on imported Bluebird. No authored seam coordinates. Sparse one-way pre-light colour, protected surfaces, debug outputs, B toggle and sun/camera stability. Static rigid surfaces; no fluid simulation."
+}

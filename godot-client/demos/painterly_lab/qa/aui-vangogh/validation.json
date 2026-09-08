@@ -1,0 +1,11 @@
+{
+  "checks": 18,
+  "failures": [],
+  "metrics": {
+    "bias_error": 0.0,
+    "bias_samples": 883,
+    "minimum_root_coverage": 1.0,
+    "root_samples": 1116
+  },
+  "scope": "Original grain adaptation; bundled Procreate Shape and proprietary wet mixing unavailable. Real GPU captures and root isolation checks."
+}

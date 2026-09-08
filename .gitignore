@@ -82,3 +82,11 @@ _bmad-output
 
 # brainstorming visual-companion sessions
 .superpowers/
+
+# 大体积美术素材 —— 不进 git，走外部存储
+# 说明见 assets/grayhaven/bluebird/README.md
+*.brushset
+
+# Godot QA 渲染截图 —— 一次性验证产物，仅保留各目录的 validation.json
+godot-client/demos/**/qa/**/*.png
+godot-client/demos/**/qa/**/*.png.import

@@ -1,0 +1,30 @@
+{
+  "generator": "Built-in image_gen.imagegen (six separate requests)",
+  "date": "2026-09-08",
+  "assets": [
+    {
+      "file": "oil-shadow-variant-1.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 1: broad loaded flat brush with a three-prong tail and one long open channel. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    },
+    {
+      "file": "oil-shadow-variant-2.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 2: dry hog-bristle brush, several broken longitudinal gaps and an asymmetric tail. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    },
+    {
+      "file": "oil-shadow-variant-3.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 3: palette-loaded oil brush with a broad split fishtail and two narrow open streaks. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    },
+    {
+      "file": "oil-shadow-variant-4.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 4: rough worn flat brush with staggered bristle ends and a torn upper edge. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    },
+    {
+      "file": "oil-shadow-variant-5.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 5: soft curved flat brush, slight bowed silhouette and distinct separated bristle fingers at right. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    },
+    {
+      "file": "oil-shadow-variant-6.png",
+      "prompt": "Create ONE isolated horizontal grayscale oil paint brush stroke as a game shader texture. Variant 6: splayed coarse brush with five uneven tapering fingers and clear elongated internal holes. Actual transparent RGBA background, including holes within paint; no white or checkerboard backdrop. Stroke travels LEFT to RIGHT: loaded blunt root at left, dry irregular tip at right. Aspect ratio image 3:1 landscape. Stroke fills 90% of width and 65% of height, with transparent padding all around. Dark charcoal paint, visible mid-gray ridges, strong mostly opaque core, long transparent bristle cuts primarily in last third. Organic oil paint realism. No text, border, shadow, lighting background, extra strokes or objects."
+    }
+  ]
+}

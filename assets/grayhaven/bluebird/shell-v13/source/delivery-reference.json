@@ -1,0 +1,34 @@
+{
+  "bluebird_base_baked": {
+    "images": {
+      "eats-oil-lettering": "0d890ed106774ba5e3f46d5785459626b815f512c4206c6df72b60324b918616",
+      "details-basecolor": "f675eae8d450e8e00e4837f03ad73f5fad5b0263b3154c83717a08a5ef3ef26c",
+      "frames-basecolor": "17f3d0001858f35e3a037e30267e727a3213a63e534ec21e572883397f8935f6",
+      "interior-basecolor": "749bb44941560f203fe6b2e8c9978c83ff49302d62e7dc8c4c2ef7d439f1a91c",
+      "bluebird-oil-lettering": "af29f62e6b47d2d0f625af202e854b9d7505e5304f5104d94cb833c97e842731",
+      "diner-oil-lettering": "2cd5bfc207b9469aa2f4fb4989c8bf00c0b3aa640289b2a7ea8c8c920073d13f",
+      "ground-basecolor": "424dd1eff9a647940588ade53f366c5f73749615fafaef7470bf4ea8d66079df",
+      "roof-basecolor": "136b9c7fc05ab45df30e6fa7f6c8cdfe53b2159839dc003d368b6a336ef7eecc",
+      "floor-lower": "f903ecf04bb326085c3986176af8201da987542e4f5d7645a2914cec7743f39c",
+      "upper-basecolor": "cdfbf6b23a9a94c2e16bf4b4f70d6521d85f781cb571780eb47b0f94a7856d73"
+    },
+    "meshes": 75,
+    "surfaces": 167
+  },
+  "bluebird_painterly": {
+    "images": {
+      "eats-oil-lettering": "0d890ed106774ba5e3f46d5785459626b815f512c4206c6df72b60324b918616",
+      "details-basecolor": "d54bad10c4c28dbe26f8a08dc3d5e9d8dd963933f104882015a17ec04aa41183",
+      "frames-basecolor": "c317f613e47f78e6d0b1bbe99e51b2672b8d60c86e56d0e28ba0584b2e30e4c5",
+      "interior-basecolor": "749bb44941560f203fe6b2e8c9978c83ff49302d62e7dc8c4c2ef7d439f1a91c",
+      "bluebird-oil-lettering": "af29f62e6b47d2d0f625af202e854b9d7505e5304f5104d94cb833c97e842731",
+      "diner-oil-lettering": "2cd5bfc207b9469aa2f4fb4989c8bf00c0b3aa640289b2a7ea8c8c920073d13f",
+      "ground-basecolor": "94827ce7f636f9478256ab1df9978ad4c34e88d16b8cdcbfd92104ae0121ef39",
+      "roof-basecolor": "a23c8218efe98e1bddf0185e39fb4dc4e4f6e3cfa03ab4a4d6cbefc0c9bcf312",
+      "floor-lower": "f903ecf04bb326085c3986176af8201da987542e4f5d7645a2914cec7743f39c",
+      "upper-basecolor": "1b13fa6e530e48bee11a750a0ef4b737c346a3bf2f3eb5846835adbcf4e2d42f"
+    },
+    "meshes": 75,
+    "surfaces": 167
+  }
+}

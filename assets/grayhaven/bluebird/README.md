@@ -1,6 +1,6 @@
 # 蓝鸟餐厅 · Blender 场景资产
 
-**当前制作入口：[shell-v8 带损伤的写实油画底材与分层模型](shell-v8/README.md)**。七种底材按真实尺度重做并贴回建筑，底图自带剥漆、磨损与风化，去除装饰性小笔刷色块；保留原 v6 外墙与 v7 屋面的大色块。提供[完整 GLB](shell-v8/bluebird_painterly.glb)、[完整分层 Blender](shell-v8/bluebird_painterly_layered.blend)和[仅底材版本](shell-v8/bluebird_base.blend)，外墙与屋顶笔触可在同一分层源文件中编辑。
+**当前制作入口：[shell-v13 独立完整交付](shell-v13/README.md)**。旧 v1–v12 目录已清理，当前编辑/重建输入均已收拢。屋顶顶面压低至雨槽口，消除高出的厚边；保留墙顶接合、完整底图与独立油画层。提供[独立白模](shell-v13/bluebird_white.blend)、[完整 GLB](shell-v13/bluebird_painterly.glb)与[油画分层 Blender](shell-v13/bluebird_painterly_layered.blend)。
 
 素材库：[不规则笔触16种](paint-effects-v1/README.md)／[相近色涂块12种](paint-effects-v2/README.md)。完整流程保存在仓库内的[油画场景制作skill](../../../docs/art-direction/skills/painterly-environment/SKILL.md)。下文仅记录更早的结构原型，不适用于新版尺寸或物品范围；新版模型仍以建筑空间为范围。
 

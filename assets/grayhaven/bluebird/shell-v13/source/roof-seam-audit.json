@@ -1,0 +1,22 @@
+{
+	"compiler": {
+		"build_count": 2,
+		"build_ms": 2715.48,
+		"coverage_upper_bound": 0.0691280896380011,
+		"covered_length_m": 42.8831850643121,
+		"drips": 2,
+		"eligible_surfaces": 96,
+		"errors": [],
+		"receivers": 17,
+		"seam_length_m": 620.343847036362,
+		"seams": 278,
+		"stamps": 217
+	},
+	"contact_tolerance_m": 0.01,
+	"passed": true,
+	"roof_to_wall_stamps": {
+		"L0_LOW_ROOF": 16,
+		"L1_ROOF": 8
+	},
+	"scope": "Actual imported v13 model retains one-way roof colour at wall contacts after the roof fitting edit."
+}

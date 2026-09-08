@@ -1,0 +1,11 @@
+{
+	"architecture_meshes": 75,
+	"display": "macOS",
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"material_surfaces": 167,
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "Asset import, material presence, picking, camera controls, UI signals, lighting and actual viewport captures. No live simulation or performance benchmark.",
+	"textures_with_mipmaps": 9
+}

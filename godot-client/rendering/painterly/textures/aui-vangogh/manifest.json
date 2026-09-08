@@ -1,0 +1,451 @@
+{
+  "source": "assets/grayhaven/Aui_Vangogh_.brushset",
+  "source_sha256": "dcba955e60ea77bde4e5f7c4a2eed3adfcb9c70814cf8237c5c9559c877c6725",
+  "adaptation": "Original grain data with Godot continuous deposition. Missing bundled tips are not reconstructed. No preview artwork used as a stamp.",
+  "recipes": [
+    {
+      "archive_path": "83FDDA0B-1335-4BCC-B382-A7F8F5B15CC7/Brush.archive",
+      "name": "Aui - Vangogh 03",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Artery-Charcoal-Block.jpg",
+      "bundledGrainPath": "Brush-Preset-Canvas.jpg",
+      "plotSpacing": 0.0042420849204063416,
+      "plotJitter": 0.0404571071267128,
+      "textureScale": 0.79805988073349,
+      "textureRotation": 0.05847790837287903,
+      "textureBrightness": -0.3717804253101349,
+      "textureContrast": 0.12184995412826538,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.9903073906898499,
+      "textureApplication": 1,
+      "textureZoom": 1.0,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.0,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.0,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.0,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.0,
+      "pencilTaperSize": 0.0,
+      "pencilTaperOpacity": 0.0,
+      "dynamicsLoad": 0.5,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "83FDDA0B-1335-4BCC-B382-A7F8F5B15CC7/Sub01/Brush.archive",
+      "name": "Aui - Vangogh 01 2",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Artery-Charcoal-Block.jpg",
+      "bundledGrainPath": "$null",
+      "plotSpacing": 0.0042420849204063416,
+      "plotJitter": 0.0404571071267128,
+      "textureScale": 1.2123749256134033,
+      "textureRotation": 0.05847790837287903,
+      "textureBrightness": -0.19108255207538605,
+      "textureContrast": 0.11354203522205353,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.2564387619495392,
+      "textureApplication": 0,
+      "textureZoom": 1.0,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.0,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.0,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.0,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.0,
+      "pencilTaperSize": 0.0,
+      "pencilTaperOpacity": 0.0,
+      "dynamicsLoad": 0.5,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "grain_file": "grain-a78cb2173aed.png",
+      "grain_sha256": "a78cb2173aed0555418ec7e957b7cc5225d79b9fab21a313c7e027a341a32154",
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "D000F5CD-C7F1-4F29-B93C-B045B6367B1B/Brush.archive",
+      "name": "Aui - Vangogh 04",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Artery-Charcoal-Block.jpg",
+      "bundledGrainPath": "Brush-Preset-Canvas.jpg",
+      "plotSpacing": 0.0042420849204063416,
+      "plotJitter": 0.0404571071267128,
+      "textureScale": 0.8740761280059814,
+      "textureRotation": 0.05847790837287903,
+      "textureBrightness": -0.19108255207538605,
+      "textureContrast": 0.11354203522205353,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.8989200592041016,
+      "textureApplication": 1,
+      "textureZoom": 1.0,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.0,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.0,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.0,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.0,
+      "pencilTaperSize": 0.0,
+      "pencilTaperOpacity": 0.0,
+      "dynamicsLoad": 0.5,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "F7521E8D-B09D-4317-BD61-457DA829AB5C/Brush.archive",
+      "name": "Aui - Vangogh 01",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Preset-Ink-Dry.png",
+      "bundledGrainPath": "$null",
+      "plotSpacing": 0.0042420849204063416,
+      "plotJitter": 0.0404571071267128,
+      "textureScale": 1.2123749256134033,
+      "textureRotation": 0.05847790837287903,
+      "textureBrightness": -0.19108255207538605,
+      "textureContrast": 0.11354203522205353,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 0.4662471115589142,
+      "textureMovement": 0.2564387619495392,
+      "textureApplication": 0,
+      "textureZoom": 1.0,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.0,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.0,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.0,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.0,
+      "pencilTaperSize": 0.0,
+      "pencilTaperOpacity": 0.0,
+      "dynamicsLoad": 0.5,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "grain_file": "grain-a78cb2173aed.png",
+      "grain_sha256": "a78cb2173aed0555418ec7e957b7cc5225d79b9fab21a313c7e027a341a32154",
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "18848277-69F2-4DCC-AA29-4695C945FE6B/Brush.archive",
+      "name": "Aui - Vangogh 06",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Artery-Charcoal-Block.jpg",
+      "bundledGrainPath": "$null",
+      "plotSpacing": 0.0067469049245119095,
+      "plotJitter": 0.33628183603286743,
+      "textureScale": 0.816042959690094,
+      "textureRotation": 0.0,
+      "textureBrightness": 0.0,
+      "textureContrast": 0.33508729934692383,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.2739131450653076,
+      "textureApplication": 1,
+      "textureZoom": 0.3130432367324829,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.17543859779834747,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.3434923589229584,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.7835497856140137,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.5603529214859009,
+      "pencilTaperSize": 1.0,
+      "pencilTaperOpacity": 1.0,
+      "dynamicsLoad": 0.10413047671318054,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "grain_file": "grain-50d142c56770.png",
+      "grain_sha256": "50d142c56770d62a1af53f24db618783a2ad7bea75206c0369e45ed67acb246e",
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "8E208DE5-46D4-4204-840A-EF62EA66336A/Brush.archive",
+      "name": "Aui - Vangogh 02",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Brush-Artery-Charcoal-Block.jpg",
+      "bundledGrainPath": "$null",
+      "plotSpacing": 0.006476723123341799,
+      "plotJitter": 1.8382816051598638e-05,
+      "textureScale": 0.5746746063232422,
+      "textureRotation": 0.0,
+      "textureBrightness": 0.0,
+      "textureContrast": 0.0,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.2832563519477844,
+      "textureApplication": 0,
+      "textureZoom": 0.3130432367324829,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.17543859779834747,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.3434923589229584,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.7835497856140137,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.5603529214859009,
+      "pencilTaperSize": 1.0,
+      "pencilTaperOpacity": 1.0,
+      "dynamicsLoad": 0.10413047671318054,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "grain_file": "grain-59f1f067d539.png",
+      "grain_sha256": "59f1f067d53923409ef6177c7a8a76485a8fe8cb34d4a944f83ac3a55707f311",
+      "shape_embedded": false
+    },
+    {
+      "archive_path": "F6DAE4D7-F94B-4260-82C5-6E00F13C2EA0/Brush.archive",
+      "name": "Aui - Vangogh 05",
+      "authorName": "Auimeesri ",
+      "bundledShapePath": "Oil-Dab.png",
+      "bundledGrainPath": "$null",
+      "plotSpacing": 0.0042420849204063416,
+      "plotJitter": 0.0404571071267128,
+      "textureScale": 1.2123749256134033,
+      "textureRotation": 0.05847790837287903,
+      "textureBrightness": -0.19108255207538605,
+      "textureContrast": 0.11354203522205353,
+      "grainDepth": 1.0,
+      "dynamicsGlazedFlow": 1.0,
+      "textureMovement": 0.2564387619495392,
+      "textureApplication": 0,
+      "textureZoom": 1.0,
+      "textureOrientation": 1,
+      "dynamicsPressureSize": 0.0,
+      "dynamicsPressureOpacity": 0.0,
+      "dynamicsPressureMix": 0.0,
+      "dynamicsPressureShapeRoundness": 1.0,
+      "dynamicsPressureShapeRoundnessMinimum": 1.0,
+      "dynamicsTiltSize": 0.0,
+      "dynamicsTiltShapeRoundness": 1.0,
+      "dynamicsTiltShapeRoundnessMinimum": 1.0,
+      "pencilTaperEndLength": 0.0,
+      "pencilTaperSize": 0.0,
+      "pencilTaperOpacity": 0.0,
+      "dynamicsLoad": 0.5,
+      "dynamicsPressureSizeCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureOpacityCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "dynamicsPressureShapeRoundnessCurve": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "grain_file": "grain-a78cb2173aed.png",
+      "grain_sha256": "a78cb2173aed0555418ec7e957b7cc5225d79b9fab21a313c7e027a341a32154",
+      "shape_embedded": false
+    }
+  ]
+}

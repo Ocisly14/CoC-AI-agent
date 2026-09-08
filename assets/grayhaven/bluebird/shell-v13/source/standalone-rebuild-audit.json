@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "old_versions_available": false,
+  "rebaked_deliveries": [
+    {
+      "variant": "bluebird_base_baked",
+      "mode": "rebake editable layers",
+      "result": {
+        "meshes": 75,
+        "surfaces": 167,
+        "images": 10
+      }
+    },
+    {
+      "variant": "bluebird_painterly",
+      "mode": "rebake editable layers",
+      "result": {
+        "meshes": 75,
+        "surfaces": 167,
+        "images": 10
+      }
+    }
+  ],
+  "current_delivery_pixels_preserved": true,
+  "notes": "Full rebake executed in temporary output; approved frozen deliverables remain unchanged."
+}

@@ -1,0 +1,21 @@
+{
+	"checks": 39,
+	"compiler": {
+		"build_count": 2,
+		"build_ms": 3.411,
+		"coverage_upper_bound": 0.0699963092803955,
+		"covered_length_m": 0.279985237121582,
+		"drips": 0,
+		"eligible_surfaces": 3,
+		"errors": [],
+		"receivers": 1,
+		"seam_length_m": 4.0,
+		"seams": 1,
+		"stamps": 1
+	},
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "Independent geometry fixture; GPU one-way paint, protection, contact, seed stability, movement, sunlight, rank inversion, override rejection and sparse coverage."
+}
