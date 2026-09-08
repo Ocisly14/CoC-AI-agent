@@ -125,7 +125,53 @@ func run(demo: Node3D) -> void:
             empty=await frame(viewport)
             verify(peak(empty)<0.005,label+": backlit face has no independent brush contribution")
             mat.set_shader_parameter("sun_direction",basis_*Vector3(0,0.5,1).normalized())
+    await root_boundary_checks(viewport,wall,camera,mat)
     viewport.queue_free()
     var report={"checks":checks,"failures":failures,"engine":Engine.get_version_info().string,"renderer":RenderingServer.get_current_rendering_method()}
     FileAccess.open(output_dir.path_join("validation.json"),FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
     print("WALL_SHADOW_QA "+JSON.stringify(report));get_tree().quit(0 if failures.is_empty() else 1)
+
+func root_boundary_checks(viewport: SubViewport,wall: MeshInstance3D,camera: Camera3D,mat: ShaderMaterial) -> void:
+    wall.transform=Transform3D.IDENTITY
+    camera.position=Vector3(0,0,10);camera.look_at(Vector3.ZERO,Vector3.UP)
+    mat.set_shader_parameter("sun_direction",Vector3(0,0.5,1).normalized())
+    var lows=PackedVector4Array([Vector4(-1,-2,-0.2,40)]);lows.resize(32)
+    var highs=PackedVector4Array([Vector4(1,2,0.2,0)]);highs.resize(32)
+    mat.set_shader_parameter("brush_caster_min",lows);mat.set_shader_parameter("brush_caster_max",highs)
+    # Known depth silhouette cuts through a crossing proxy's root. The actual
+    # production shadow_at() reads it; no duplicate CPU projection algorithm.
+    var depth=Image.create(64,64,false,Image.FORMAT_RGF)
+    depth.fill(Color(0.9,0,0,1))
+    for y in range(45,64):
+        for x in range(0,32):depth.set_pixel(x,y,Color(0.1,0,0,1))
+    mat.set_shader_parameter("shadow_depth",ImageTexture.create_from_image(depth))
+    mat.set_shader_parameter("light_view",Transform3D(Basis.IDENTITY,Vector3(0,0,-10)))
+    mat.set_shader_parameter("light_span",8.0);mat.set_shader_parameter("light_near",0.0)
+    mat.set_shader_parameter("light_far",20.0)
+    for mode in [false,true]:
+        var label="root-boundary-"+("rectangle" if mode else "pressure")
+        mat.set_shader_parameter("rectangle_shadows_enabled",mode)
+        mat.set_shader_parameter("capture_valid",false)
+        mat.set_shader_parameter("debug_view",5)
+        var phantom=await frame(viewport)
+        phantom.save_png(output_dir.path_join(label+"-unoccluded.png"))
+        verify(peak(phantom)<0.005,label+": crossing proxy cannot paint a root on an unoccluded wall")
+        mat.set_shader_parameter("capture_valid",true)
+        mat.set_shader_parameter("debug_view",4)
+        var physical=await frame(viewport)
+        physical.save_png(output_dir.path_join(label+"-boundary.png"))
+        mat.set_shader_parameter("debug_view",5)
+        var clipped=await frame(viewport)
+        clipped.save_png(output_dir.path_join(label+"-clipped.png"))
+        var spill=0;var retained=0
+        for y in 512:
+            for x in 512:
+                if clipped.get_pixel(x,y).r>0.01:
+                    if physical.get_pixel(x,y).r<0.001:spill+=1
+                    else:retained+=1
+        verify(spill==0,label+": no root pixels cross the captured building boundary")
+        verify(retained>50,label+": valid brush coverage survives inside the boundary")
+        mat.set_shader_parameter("pressure_scale",0.0)
+        var empty=await frame(viewport)
+        verify(peak(empty)<0.005,label+": boundary clips paint without filling the physical silhouette")
+        mat.set_shader_parameter("pressure_scale",1.0)

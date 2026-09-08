@@ -18,8 +18,9 @@ uniform vec4 oil_brush_region_px=vec4(48,452,1172,476);
 #include "res://rendering/painterly/shaders/rectangle_brush.gdshaderinc"
 
 // R=pigment load, G=oil/dry texture, B=complete painted shadow coverage.
-// No M0 input: the texture builds the entire shadow, not only its boundary.
-vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surface_layout) {
+// Brushes build coverage. Existing geometry occlusion only clips root-bearing
+// proxies crossing a wall plane; it never supplies an independent shadow fill.
+vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surface_layout,float receiver_occlusion) {
     float horizontal=length(to_sun.xz);
     if(to_sun.y<=0.001 || brush_caster_count==0) {return vec3(0);}
     vec2 trail=horizontal>0.0001 ? -to_sun.xz/horizontal : vec2(1,0);
@@ -40,6 +41,11 @@ vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surfa
         }
         float identity=brush_caster_min[caster].w;
         if(identity==receiver_stroke_id || hi.y<=world_p.y+0.02) {continue;}
+        // A proxy crossing a wall plane may include the receiver building itself.
+        // Clip that root-bearing projection to the already captured real geometry
+        // boundary. Detached casters (lamps) keep their free rounded brush tips.
+        float root_clip=surface_layout && lo.y<=world_p.y+0.02 ? clamp(receiver_occlusion,0.0,1.0) : 1.0;
+        if(root_clip<=0.0)continue;
         vec2 center=(lo.xz+hi.xz)*0.5;
         vec2 half_extent=(hi.xz-lo.xz)*0.5;
         float half_along=dot(abs(trail),half_extent);
@@ -54,7 +60,7 @@ vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surfa
         if(dot(rel,trail)<-full_width || dot(rel,trail)>projected_length*shadow_length_range.y+full_width || abs(dot(rel,across))>full_width) {continue;}
         // Contact deepens existing brush coverage; it never paints a separate
         // rectangular patch. Near the caster, suppress tip lobes on its lit side.
-        float contact=0.0,root_guard=1.0;
+        float contact=0.0,root_guard=root_clip;
         if(lo.y<=world_p.y+0.02) {
             vec2 safe_trail=vec2(abs(trail.x)>0.0001 ? trail.x : 0.0001,abs(trail.y)>0.0001 ? trail.y : 0.0001);
             vec2 root_hit0=(lo.xz-world_p.xz)/safe_trail;
@@ -67,8 +73,8 @@ vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surfa
             float guard_width=max(shadow_brush_width_m,0.08);
             // Release the restriction away from the wall so free brush edges
             // remain rounded. No clipping to the full physical shadow polygon.
-            if(!behind)root_guard=smoothstep(guard_width*0.5,guard_width,root_distance);
-            if(behind && -root_leave<=shadow_reach) {
+            if(!behind)root_guard*=smoothstep(guard_width*0.5,guard_width,root_distance);
+            if(!surface_layout && behind && -root_leave<=shadow_reach) {
                 float solid=min(shadow_root_fill_m,shadow_reach*0.25);
                 float fade_end=min(solid*2.0,shadow_reach);
                 contact=1.0-smoothstep(solid,max(fade_end,solid+0.0001),max(-root_leave,0.0));
@@ -190,10 +196,10 @@ vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surfa
 
 // Ground callers and regression previews retain their original coordinate frame.
 vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
-    return cast_brush_in_frame(world_p,to_sun,mat3(1.0),false);
+    return cast_brush_in_frame(world_p,to_sun,mat3(1.0),false,1.0);
 }
 
-vec3 cast_brush_surface_shadow(vec3 world_p,vec3 to_sun,vec3 receiver_normal) {
+vec3 cast_brush_surface_shadow(vec3 world_p,vec3 to_sun,vec3 receiver_normal,float receiver_occlusion) {
     vec3 normal_=normalize(receiver_normal);
     if(dot(normal_,to_sun)<=0.001)return vec3(0.0);
     if(normal_.y>0.9999)return cast_brush_shadow(world_p,to_sun);
@@ -202,5 +208,5 @@ vec3 cast_brush_surface_shadow(vec3 world_p,vec3 to_sun,vec3 receiver_normal) {
     vec3 tangent=normalize(cross(reference,normal_));
     vec3 bitangent=cross(tangent,normal_);
     mat3 frame=transpose(mat3(tangent,normal_,bitangent));
-    return cast_brush_in_frame(frame*world_p,frame*to_sun,frame,true);
+    return cast_brush_in_frame(frame*world_p,frame*to_sun,frame,true,receiver_occlusion);
 }

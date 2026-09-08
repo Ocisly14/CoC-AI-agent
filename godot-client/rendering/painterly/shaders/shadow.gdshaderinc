@@ -120,7 +120,7 @@ vec3 brush_shadow(vec3 world_p, vec2 local_p, vec2 flow, mat3 object_basis,
     field=mix(field,bristles,0.12);
     if(use_brush_texture) {field=texture(brush_texture,brush_uv).r;}
     if(use_oil_brush_atlas && paint && brush_strength>0.0) {
-        vec3 brush=cast_brush_surface_shadow(world_p,to_sun,receiver_normal);
+        vec3 brush=cast_brush_surface_shadow(world_p,to_sun,receiver_normal,m0);
         pigment=brush.xy;
         return vec3(m0,brush.z*clamp(brush_strength,0.0,1.0),brush.z);
     }

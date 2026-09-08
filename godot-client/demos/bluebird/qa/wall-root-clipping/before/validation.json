@@ -654,11 +654,11 @@
     },
     {
       "message": "root-boundary-pressure: crossing proxy cannot paint a root on an unoccluded wall",
-      "passed": true
+      "passed": false
     },
     {
       "message": "root-boundary-pressure: no root pixels cross the captured building boundary",
-      "passed": true
+      "passed": false
     },
     {
       "message": "root-boundary-pressure: valid brush coverage survives inside the boundary",
@@ -670,11 +670,11 @@
     },
     {
       "message": "root-boundary-rectangle: crossing proxy cannot paint a root on an unoccluded wall",
-      "passed": true
+      "passed": false
     },
     {
       "message": "root-boundary-rectangle: no root pixels cross the captured building boundary",
-      "passed": true
+      "passed": false
     },
     {
       "message": "root-boundary-rectangle: valid brush coverage survives inside the boundary",
@@ -686,6 +686,11 @@
     }
   ],
   "engine": "4.7.2-stable (official)",
-  "failures": [],
+  "failures": [
+    "root-boundary-pressure: crossing proxy cannot paint a root on an unoccluded wall",
+    "root-boundary-pressure: no root pixels cross the captured building boundary",
+    "root-boundary-rectangle: crossing proxy cannot paint a root on an unoccluded wall",
+    "root-boundary-rectangle: no root pixels cross the captured building boundary"
+  ],
   "renderer": "forward_plus"
 }
