@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "checks": {
+    "base_83_objects_geometry_transforms_preserved": true,
+    "original_uv_channels_unchanged": true,
+    "seven_new_material_families": true,
+    "base_has_no_expressive_groups": true,
+    "new_base_images_active": true,
+    "weathered_v3_sources_active": true,
+    "packed_base_images_match_generated_sources": true,
+    "physical_material_uvs": true,
+    "siding_20cm_courses": true,
+    "wainscot_20cm_boards": true,
+    "layered_geometry_preserved": true,
+    "glass_and_lettering_preserved": true,
+    "wall_sill_continuous_marks": true,
+    "roof_flashing_continuous_marks": true,
+    "both_facade_roof_layers_editable": true,
+    "authored_facade_and_roof_placements_preserved": true,
+    "baked_geometry_preserved": true,
+    "baked_original_uvs_preserved": true,
+    "six_packed_color_atlases": true,
+    "uv_coordinates_finite": true,
+    "repeated_vertices_have_consistent_bake_uvs": true,
+    "all_visible_material_faces_have_atlas_area": true,
+    "56034_export_triangles": true,
+    "self_contained_glb": true,
+    "glb_color_uv_bindings_valid": true
+  },
+  "glbBytes": 126355204,
+  "triangles": 56034,
+  "scope": "Model, active material layers, geometry/UV preservation and self-contained GLB. Visual QA uses actual renders; runtime performance not measured."
+}

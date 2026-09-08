@@ -1,0 +1,38 @@
+[
+  {
+    "category": "ground",
+    "size": 4096,
+    "materials": 10,
+    "objects": 10
+  },
+  {
+    "category": "upper",
+    "size": 4096,
+    "materials": 4,
+    "objects": 4
+  },
+  {
+    "category": "frames",
+    "size": 4096,
+    "materials": 36,
+    "objects": 23
+  },
+  {
+    "category": "roof",
+    "size": 4096,
+    "materials": 3,
+    "objects": 3
+  },
+  {
+    "category": "details",
+    "size": 4096,
+    "materials": 10,
+    "objects": 21
+  },
+  {
+    "category": "interior",
+    "size": 4096,
+    "materials": 2,
+    "objects": 24
+  }
+]

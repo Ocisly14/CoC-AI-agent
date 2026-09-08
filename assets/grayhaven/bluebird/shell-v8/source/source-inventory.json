@@ -1,0 +1,3034 @@
+{
+  "objects": [
+    {
+      "name": "L0_FRONT_low",
+      "dims": [
+        10.699999809265137,
+        0.1940000057220459,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "front",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_FRONT_high",
+      "dims": [
+        10.699999809265137,
+        0.1940000057220459,
+        2.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster",
+        "PAINT_ground_BB_OIL_01-ivory-clapboard"
+      ]
+    },
+    {
+      "name": "L0_FRONT_frames",
+      "dims": [
+        9.039999961853027,
+        0.2199999988079071,
+        1.7949999570846558
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L0_FRONT_glass",
+      "dims": [
+        8.800000190734863,
+        0.0,
+        1.600000023841858
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "glass",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L0_CORNER_low",
+      "dims": [
+        1.3844594955444336,
+        1.4099708795547485,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "corner",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_CORNER_high",
+      "dims": [
+        1.3844594955444336,
+        1.4099708795547485,
+        2.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "corner",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster",
+        "PAINT_ground_BB_OIL_01-ivory-clapboard"
+      ]
+    },
+    {
+      "name": "L0_CORNER_frames",
+      "dims": [
+        1.147634506225586,
+        1.1476342678070068,
+        2.549999952316284
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "corner",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_RIGHT_low",
+      "dims": [
+        0.194000244140625,
+        8.699999809265137,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "right",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_RIGHT_high",
+      "dims": [
+        0.194000244140625,
+        8.699999809265137,
+        2.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster",
+        "PAINT_ground_BB_OIL_01-ivory-clapboard"
+      ]
+    },
+    {
+      "name": "L0_RIGHT_frames",
+      "dims": [
+        0.2199993133544922,
+        5.440000057220459,
+        1.7949999570846558
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L0_RIGHT_glass",
+      "dims": [
+        0.0,
+        5.199999809265137,
+        1.600000023841858
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "glass",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L0_REAR_low",
+      "dims": [
+        12.0,
+        0.194000244140625,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "rear",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_REAR_high",
+      "dims": [
+        12.0,
+        0.194000244140625,
+        2.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster",
+        "PAINT_ground_BB_OIL_01-ivory-clapboard"
+      ]
+    },
+    {
+      "name": "L0_REAR_frames",
+      "dims": [
+        9.4399995803833,
+        0.2199993133544922,
+        1.1950000524520874
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L0_REAR_glass",
+      "dims": [
+        9.199999809265137,
+        0.0,
+        0.9999998807907104
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "glass",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L0_LEFT_low",
+      "dims": [
+        0.1940000057220459,
+        10.0,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "left",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_LEFT_high",
+      "dims": [
+        0.1940000057220459,
+        10.0,
+        2.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "left",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_ground_BB_OIL_02-teal-wainscot",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster",
+        "PAINT_ground_BB_OIL_01-ivory-clapboard"
+      ]
+    },
+    {
+      "name": "L0_KITCHEN_PARTITION_low",
+      "dims": [
+        12.0,
+        0.11999988555908203,
+        1.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "partition",
+        "band": "low",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_KITCHEN_PARTITION_high",
+      "dims": [
+        12.0,
+        0.11999988555908203,
+        2.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "wall",
+        "side": "partition",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L0_KITCHEN_PARTITION_frames",
+      "dims": [
+        2.609999656677246,
+        0.2200002670288086,
+        2.450000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "partition",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L1_FRONT_high",
+      "dims": [
+        6.0,
+        0.15199995040893555,
+        2.620000123977661
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_upper_BB_OIL_01-ivory-clapboard",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_FRONT_frames",
+      "dims": [
+        4.689999580383301,
+        0.2200000286102295,
+        1.5950000286102295
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L1_FRONT_glass",
+      "dims": [
+        4.449999809265137,
+        0.0,
+        1.4000000953674316
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "glass",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L1_RIGHT_high",
+      "dims": [
+        0.1119999885559082,
+        6.0,
+        2.620000123977661
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_upper_BB_OIL_01-ivory-clapboard",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_RIGHT_frames",
+      "dims": [
+        0.2200002670288086,
+        1.239999771118164,
+        1.2950000762939453
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L1_RIGHT_glass",
+      "dims": [
+        0.0,
+        1.0,
+        1.0999999046325684
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "glass",
+        "side": "right",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L1_REAR_high",
+      "dims": [
+        6.0,
+        0.15200042724609375,
+        2.620000123977661
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_upper_BB_OIL_01-ivory-clapboard",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_REAR_frames",
+      "dims": [
+        1.5400002002716064,
+        0.2199993133544922,
+        1.494999885559082
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L1_REAR_glass",
+      "dims": [
+        1.299999713897705,
+        0.0,
+        1.3000001907348633
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "glass",
+        "side": "rear",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L1_LEFT_high",
+      "dims": [
+        0.15199999511241913,
+        6.0,
+        2.620000123977661
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "left",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_upper_BB_OIL_01-ivory-clapboard",
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_LEFT_frames",
+      "dims": [
+        0.2199999988079071,
+        1.5399994850158691,
+        1.494999885559082
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "left",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "frame_teal"
+      ]
+    },
+    {
+      "name": "L1_LEFT_glass",
+      "dims": [
+        0.0,
+        1.299999713897705,
+        1.3000001907348633
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "glass",
+        "side": "left",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "L1_BEDROOM_FRONT_high",
+      "dims": [
+        3.1500000953674316,
+        0.09999990463256836,
+        2.580000162124634
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "partition",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_BEDROOM_RIGHT_high",
+      "dims": [
+        0.10000014305114746,
+        3.5,
+        2.580000162124634
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "wall",
+        "side": "partition",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_08-warm-plaster",
+        "cut_plaster"
+      ]
+    },
+    {
+      "name": "L1_BEDROOM_RIGHT_frames",
+      "dims": [
+        0.2200000286102295,
+        1.0900001525878906,
+        2.2950000762939453
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "partition",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_FLOOR",
+      "dims": [
+        12.0,
+        10.0,
+        0.20000000298023224
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "floor",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_07-dining-floor",
+        "BB_OIL_08-warm-plaster",
+        "foundation",
+        "kitchen_floor"
+      ]
+    },
+    {
+      "name": "L1_FLOOR",
+      "dims": [
+        6.0,
+        6.0,
+        0.20000004768371582
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "floor",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_07-dining-floor",
+        "BB_OIL_08-warm-plaster",
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_LOW_ROOF",
+      "dims": [
+        12.0,
+        10.0,
+        0.20000004768371582
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "roof",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_roof_BB_OIL_05-charcoal-roof",
+        "BB_OIL_08-warm-plaster",
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L1_ROOF",
+      "dims": [
+        6.0,
+        6.0,
+        0.17999982833862305
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "roof",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_roof_BB_OIL_05-charcoal-roof",
+        "BB_OIL_08-warm-plaster",
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_FASCIA",
+      "dims": [
+        12.180000305175781,
+        10.180000305175781,
+        0.1400001049041748
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "roof_edge",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L1_FASCIA",
+      "dims": [
+        6.180000305175781,
+        6.180000305175781,
+        0.1399998664855957
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "roof_edge",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_CORNER_BOARDS",
+      "dims": [
+        12.129999160766602,
+        10.129999160766602,
+        3.180000066757202
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "frame",
+        "side": "corner",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L1_CORNER_BOARDS",
+      "dims": [
+        6.119999885559082,
+        6.12000036239624,
+        2.6000001430511475
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "frame",
+        "side": "corner",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_FIXED_CANOPY",
+      "dims": [
+        5.399999618530273,
+        0.7175000309944153,
+        0.315000057220459
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "canopy",
+        "side": "front",
+        "band": "high",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "PAINT_roof_BB_OIL_04-rusted-awning"
+      ]
+    },
+    {
+      "name": "L0_STAIR",
+      "dims": [
+        1.0999999046325684,
+        3.1999998092651367,
+        3.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "stair",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_07-dining-floor",
+        "BB_OIL_03-ivory-trim",
+        "BB_OIL_08-warm-plaster"
+      ]
+    },
+    {
+      "name": "L0_STAIR_GUARD",
+      "dims": [
+        0.05500030517578125,
+        3.1385741233825684,
+        3.919602632522583
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "stair",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L1_OPENING_GUARD",
+      "dims": [
+        1.2024998664855957,
+        3.3625001907348633,
+        0.9525001049041748
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 1,
+        "role": "guard",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "L0_TRANSFER_STRUCTURE",
+      "dims": [
+        5.880000114440918,
+        0.2200000286102295,
+        3.200000047683716
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "floor": 0,
+        "role": "structure",
+        "side": "",
+        "band": "full",
+        "architecture": true,
+        "assetScope": "architecture_only"
+      },
+      "uv": [
+        "UVMap",
+        "PaintUV",
+        "BakeUV"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "D0_SIGN_BLUEBIRD",
+      "dims": [
+        3.4799997806549072,
+        0.320000022649765,
+        0.0
+      ],
+      "location": [
+        8.4399995803833,
+        -0.257999986410141,
+        4.119999885559082
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "BLUEBIRD"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_blue_letters"
+      ]
+    },
+    {
+      "name": "D0_SIGN_DINER",
+      "dims": [
+        3.3399999141693115,
+        0.5400000214576721,
+        0.0
+      ],
+      "location": [
+        8.4399995803833,
+        -0.257999986410141,
+        3.5999999046325684
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "DINER"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_FRONT_E",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.3650000095367432,
+        4.059999942779541
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "E"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_BACK_E",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.4950000047683716,
+        4.059999942779541
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "E"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_FRONT_A",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.3650000095367432,
+        3.630000114440918
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "A"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_BACK_A",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.4950000047683716,
+        3.630000114440918
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "A"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_FRONT_T",
+      "dims": [
+        0.320000022649765,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.3650000095367432,
+        3.200000047683716
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "T"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_BACK_T",
+      "dims": [
+        0.320000022649765,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.4950000047683716,
+        3.200000047683716
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "T"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_FRONT_S",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.3650000095367432,
+        2.7699999809265137
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "S"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_BLADE_BACK_S",
+      "dims": [
+        0.3199999928474426,
+        0.3400000035762787,
+        0.0
+      ],
+      "location": [
+        12.460000038146973,
+        1.4950000047683716,
+        2.7699999809265137
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true,
+        "lettering": "S"
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Painted_oxide_letters"
+      ]
+    },
+    {
+      "name": "D0_RAIN_FRONT",
+      "dims": [
+        0.15399998426437378,
+        0.45708680152893066,
+        3.091855049133301
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_RAIN_RIGHT",
+      "dims": [
+        0.45708656311035156,
+        0.15400028228759766,
+        3.0918548107147217
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "right",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_RAIN_REAR",
+      "dims": [
+        0.15399932861328125,
+        0.45708656311035156,
+        3.0918548107147217
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "rear",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D1_RAIN_UPPER_FRONT",
+      "dims": [
+        0.15400028228759766,
+        0.45708703994750977,
+        2.4018547534942627
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "front",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D1_RAIN_UPPER_REAR",
+      "dims": [
+        0.4570867717266083,
+        0.15399932861328125,
+        2.4118547439575195
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "rear",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_RAIN_GUTTERS",
+      "dims": [
+        12.310659408569336,
+        10.661319732666016,
+        0.14815640449523926
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "roof_edge",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D1_RAIN_GUTTERS",
+      "dims": [
+        6.430660247802734,
+        6.661320209503174,
+        0.14815711975097656
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "front",
+        "role": "roof_edge",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_REAR_LEADER_EXTENSION",
+      "dims": [
+        0.42936035990715027,
+        0.14599990844726562,
+        3.3991477489471436
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "rear",
+        "role": "drain",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_MAIN_SIGN_CASE",
+      "dims": [
+        4.520000457763672,
+        1.4500000476837158,
+        1.7325000762939453
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Ivory_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_07-dining-floor",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_BLADE_SIGN",
+      "dims": [
+        0.8400001525878906,
+        0.20000004768371582,
+        2.130000114440918
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "sign",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Ivory_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Teal_wood",
+        "DETAIL_Blackened_iron",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D0_ENTRY_SURROUND",
+      "dims": [
+        1.6334171295166016,
+        1.633416771888733,
+        2.872499942779541
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Teal_wood",
+        "DETAIL_OIL_Weathered_sheet",
+        "BB_OIL_07-dining-floor"
+      ]
+    },
+    {
+      "name": "D0_ENTRY_DOOR",
+      "dims": [
+        0.9630794525146484,
+        0.9630794525146484,
+        2.375
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "door",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim"
+      ]
+    },
+    {
+      "name": "D0_ENTRY_GLASS",
+      "dims": [
+        0.7283191680908203,
+        0.7283198833465576,
+        1.2599999904632568
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "glass",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "glass"
+      ]
+    },
+    {
+      "name": "D0_ENTRY_HARDWARE",
+      "dims": [
+        0.9657211303710938,
+        0.8799944519996643,
+        1.7649998664855957
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "door",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Blackened_iron",
+        "DETAIL_Door_hardware_brass"
+      ]
+    },
+    {
+      "name": "D0_CANOPY_JOINERY",
+      "dims": [
+        5.5,
+        0.7797603011131287,
+        0.7974998950958252
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "canopy",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_SIDE_CANOPY",
+      "dims": [
+        0.5784759521484375,
+        1.8299999237060547,
+        0.5476970672607422
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "right",
+        "role": "canopy",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_FRONT_WINDOW_JOINERY",
+      "dims": [
+        9.09999942779541,
+        0.2750000059604645,
+        1.934000015258789
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "front",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D0_RIGHT_WINDOW_JOINERY",
+      "dims": [
+        0.27500057220458984,
+        5.5,
+        1.934000015258789
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "right",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D0_REAR_WINDOW_JOINERY",
+      "dims": [
+        9.499999046325684,
+        0.27500057220458984,
+        1.3339999914169312
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "rear",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D1_FRONT_WINDOW_JOINERY",
+      "dims": [
+        4.75,
+        0.27499985694885254,
+        1.7339999675750732
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "front",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D1_RIGHT_WINDOW_JOINERY",
+      "dims": [
+        0.27500009536743164,
+        1.299999713897705,
+        1.434000015258789
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "right",
+        "role": "frame",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Teal_wood",
+        "BB_OIL_03-ivory-trim",
+        "DETAIL_OIL_Weathered_sheet"
+      ]
+    },
+    {
+      "name": "D0_KITCHEN_EXHAUST",
+      "dims": [
+        1.0359992980957031,
+        1.0359997749328613,
+        0.8100001811981201
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "rear",
+        "role": "roof",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_ROOF_AIR_VENT",
+      "dims": [
+        0.5550003051757812,
+        0.5550003051757812,
+        0.5500001907348633
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "rear",
+        "role": "roof",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D1_STOVE_FLUE",
+      "dims": [
+        0.3884999752044678,
+        0.3885002136230469,
+        1.1100001335144043
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 1,
+        "side": "rear",
+        "role": "roof",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Blackened_iron"
+      ]
+    },
+    {
+      "name": "D0_ENTRY_PORCH_LIGHT",
+      "dims": [
+        0.5205717086791992,
+        0.5205724239349365,
+        0.27499985694885254
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "props": {
+        "architecture": true,
+        "floor": 0,
+        "side": "corner",
+        "role": "fixture",
+        "band": "high",
+        "assetScope": "architecture_only",
+        "exteriorDetail": true
+      },
+      "uv": [
+        "UVMap"
+      ],
+      "materials": [
+        "DETAIL_Blackened_iron",
+        "DETAIL_OIL_Weathered_sheet",
+        "DETAIL_Porch_bulb"
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "glass",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_Door_hardware_brass",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "BB_OIL_08-warm-plaster",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "08-warm-plaster.png",
+          "filepath": "//../textures-oil-v1/basecolor/08-warm-plaster.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "foundation",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "PAINT_roof_BB_OIL_04-rusted-awning",
+      "props": {
+        "paint_category": "roof",
+        "source_material": "BB_OIL_04-rusted-awning",
+        "paint_policy": "Selective bounded patches; outside support all three layers are zero."
+      },
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "UV Map",
+          "type": "UVMAP",
+          "image": null,
+          "filepath": null,
+          "uv": "BakeUV"
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "BAKED_roof",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v3/atlases/roof-basecolor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_Painted_blue_letters",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "kitchen_floor",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_OIL_Ivory_wood",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "01-ivory-clapboard.png",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-oil-v1/basecolor/01-ivory-clapboard.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "cut_plaster",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "BB_OIL_03-ivory-trim",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "03-ivory-trim.png",
+          "filepath": "//../textures-oil-v1/basecolor/03-ivory-trim.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "frame_teal",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "PAINT_roof_BB_OIL_05-charcoal-roof",
+      "props": {
+        "paint_category": "roof",
+        "source_material": "BB_OIL_05-charcoal-roof",
+        "paint_policy": "Selective bounded patches; outside support all three layers are zero."
+      },
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "UV Map",
+          "type": "UVMAP",
+          "image": null,
+          "filepath": null,
+          "uv": "BakeUV"
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "BAKED_roof",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v3/atlases/roof-basecolor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_Painted_oxide_letters",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "PAINT_ground_BB_OIL_01-ivory-clapboard",
+      "props": {
+        "paint_category": "ground",
+        "source_material": "BB_OIL_01-ivory-clapboard",
+        "paint_policy": "Selective bounded patches; outside support all three layers are zero."
+      },
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "UV Map",
+          "type": "UVMAP",
+          "image": null,
+          "filepath": null,
+          "uv": "BakeUV"
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "BAKED_ground",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v3/atlases/ground-basecolor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_OIL_Teal_wood",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "02-teal-wainscot.png",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-oil-v1/basecolor/02-teal-wainscot.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_Blackened_iron",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "BB_OIL_07-dining-floor",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "07-dining-floor.png",
+          "filepath": "//../textures-oil-v1/basecolor/07-dining-floor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "PAINT_upper_BB_OIL_01-ivory-clapboard",
+      "props": {
+        "paint_category": "upper",
+        "source_material": "BB_OIL_01-ivory-clapboard",
+        "paint_policy": "Selective bounded patches; outside support all three layers are zero."
+      },
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "UV Map",
+          "type": "UVMAP",
+          "image": null,
+          "filepath": null,
+          "uv": "BakeUV"
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "BAKED_upper",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v3/atlases/upper-basecolor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_Porch_bulb",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "PAINT_ground_BB_OIL_02-teal-wainscot",
+      "props": {
+        "paint_category": "ground",
+        "source_material": "BB_OIL_02-teal-wainscot",
+        "paint_policy": "Selective bounded patches; outside support all three layers are zero."
+      },
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "UV Map",
+          "type": "UVMAP",
+          "image": null,
+          "filepath": null,
+          "uv": "BakeUV"
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "BAKED_ground",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/shell-v3/atlases/ground-basecolor.png",
+          "uv": null
+        }
+      ]
+    },
+    {
+      "name": "DETAIL_OIL_Weathered_sheet",
+      "props": {},
+      "nodes": [
+        {
+          "name": "Principled BSDF",
+          "type": "BSDF_PRINCIPLED",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Material Output",
+          "type": "OUTPUT_MATERIAL",
+          "image": null,
+          "filepath": null,
+          "uv": null
+        },
+        {
+          "name": "Image Texture",
+          "type": "TEX_IMAGE",
+          "image": "04-rusted-awning.png",
+          "filepath": "/Users/sunyining/project_SentiEdge/CoC-AI-agent/assets/grayhaven/bluebird/textures-oil-v1/basecolor/04-rusted-awning.png",
+          "uv": null
+        }
+      ]
+    }
+  ]
+}

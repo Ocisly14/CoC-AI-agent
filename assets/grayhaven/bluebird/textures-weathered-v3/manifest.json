@@ -1,0 +1,113 @@
+{
+  "style": "weathered realist oil-painted materials with inherent physical damage; no decorative small brush blocks",
+  "generator": "built-in image_gen",
+  "mapping": "Observed seam-to-seam source windows sampled by shader, original PNG bytes unchanged. See build_materials.py windows. Coverage is effective mapped area, not the initial prompt request.",
+  "materials": [
+    {
+      "family": "ivory-clapboard",
+      "file": "basecolor/01-ivory-clapboard.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.4,
+        1.8
+      ],
+      "roughness": 0.84,
+      "colorSpace": "sRGB",
+      "sha256": "c6fb8aa03b46158cf9e27a783afb10636f03f65a3462224b145f3869ae3890d1"
+    },
+    {
+      "family": "teal-wainscot",
+      "file": "basecolor/02-teal-wainscot.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.2,
+        2.4
+      ],
+      "roughness": 0.82,
+      "colorSpace": "sRGB",
+      "sha256": "46ea5075768f8b0deea94df0d741fc4611af80eef23cfcd68035ae91243bb614"
+    },
+    {
+      "family": "ivory-trim",
+      "file": "basecolor/03-ivory-trim.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.0,
+        1.0
+      ],
+      "roughness": 0.68,
+      "colorSpace": "sRGB",
+      "sha256": "43da34a6ff65b4a0c03f9b7ec1790704cbda79ed08a6ed7c41c842115b828c90"
+    },
+    {
+      "family": "weathered-metal",
+      "file": "basecolor/04-weathered-metal.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.0,
+        2.0
+      ],
+      "roughness": 0.78,
+      "colorSpace": "sRGB",
+      "sha256": "9933f6d9e82ef805bab7224ffc2e34085b649cbcf0cfa52c7a1f7e9347e98c17"
+    },
+    {
+      "family": "charcoal-roof",
+      "file": "basecolor/05-charcoal-roof.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.0,
+        2.0
+      ],
+      "roughness": 0.92,
+      "colorSpace": "sRGB",
+      "sha256": "8b6a3d154422b992927e704fb65c4359711b586b0170f3d38464e2d271a9e0f1"
+    },
+    {
+      "family": "dining-floor",
+      "file": "basecolor/07-dining-floor.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.6,
+        2.4
+      ],
+      "roughness": 0.76,
+      "colorSpace": "sRGB",
+      "sha256": "c43d6921955da119e8d114d481887e4f78928e2d8c8261efdf7c001857f13ef4"
+    },
+    {
+      "family": "warm-plaster",
+      "file": "basecolor/08-warm-plaster.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.0,
+        2.0
+      ],
+      "roughness": 0.91,
+      "colorSpace": "sRGB",
+      "sha256": "8ae1f457eba3ac96c3b6224499005de070848ce04a147e6ff0be46006c6fb127"
+    }
+  ],
+  "revisionNote": "Edits preserve v2 seam layout and physical calibration while restoring visible paint loss, wear, corrosion and age damage directly in the generated base colors. Percentages in prompts are artistic targets, not measured damage masks."
+}

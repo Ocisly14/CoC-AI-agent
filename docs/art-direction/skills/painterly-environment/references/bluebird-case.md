@@ -6,6 +6,7 @@
 
 - 当前总美术入口：`docs/art-direction/README.md`。
 - 制作规范：`docs/art-direction/production.md`。
+- 当前材质修订：`docs/art-direction/disco-elysium-material-aesthetics.md`。建筑底层采用符合真实覆盖面积、带克制油画质感的写实绘画材料；表现性大笔刷与色块后续独立叠加。该规则优先于下述历史版本的油画底图做法，尚未表示资产已完成替换。
 - 历史文档：`docs/superpowers/specs/2026-09-06-grayhaven-art-direction.md`，开头已声明旧《奇异人生》审美被替代；只沿用有效构造和技术记录。
 - 用户后续确定的建筑方向：一楼较大、二楼较小且退台、街角小镇餐厅。该修正优先于更早的泛用概念板。保持1985年北加州地域背景。
 - 大笔触参考之一：`assets/grayhaven/bluebird/shell-v5/source/user-brush-reference.jpg`；仅为美术研究参考，不是可直接铺到建筑上的贴图。v6修正不规则形状与跨窗框连续性，v7继续补上屋顶的主色基底与相近色涂块。
@@ -14,7 +15,7 @@
 
 - `assets/grayhaven/bluebird/design-v3/`：查找结构设计成果，并与实际模型校对。
 - `assets/grayhaven/bluebird/shell-v1/`：白模与初始基础贴图成果。
-- `assets/grayhaven/bluebird/textures-oil-v1/`：基础油画材质素材。
+- `assets/grayhaven/bluebird/textures-oil-v1/`：历史油画底图，须按新的写实绘画底材要求复核，不作为后续基础贴图验收标准。
 - `assets/grayhaven/bluebird/shell-v2/layers/ground-brush.png`、`ground-weather.png`：后续复用的旧白色笔刷／墙脚遮罩。
 - `assets/grayhaven/bluebird/shell-v3/source/uv-layout.json`：既有立面UV区域定义。
 - `assets/grayhaven/bluebird/shell-v4/`：门头、牌子、水管、雨棚、屋顶构件等完成后的外部模型。

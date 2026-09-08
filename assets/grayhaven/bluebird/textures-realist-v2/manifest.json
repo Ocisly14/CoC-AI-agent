@@ -1,0 +1,112 @@
+{
+  "style": "restrained realist oil-painted materials",
+  "generator": "built-in image_gen",
+  "mapping": "Observed seam-to-seam source windows sampled by shader, original PNG bytes unchanged. See build_materials.py windows. Coverage is effective mapped area, not the initial prompt request.",
+  "materials": [
+    {
+      "family": "ivory-clapboard",
+      "file": "basecolor/01-ivory-clapboard.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.4,
+        1.8
+      ],
+      "roughness": 0.84,
+      "colorSpace": "sRGB",
+      "sha256": "c6a1f442f9c7ed76caa89044ec122366acab2ad3491fccc8a8433a61c6615e55"
+    },
+    {
+      "family": "teal-wainscot",
+      "file": "basecolor/02-teal-wainscot.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.2,
+        2.4
+      ],
+      "roughness": 0.82,
+      "colorSpace": "sRGB",
+      "sha256": "8747a3acb13840b1170866c040dcc0920cc50b71310e7b77e2afdf1326f4ad92"
+    },
+    {
+      "family": "ivory-trim",
+      "file": "basecolor/03-ivory-trim.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.0,
+        1.0
+      ],
+      "roughness": 0.68,
+      "colorSpace": "sRGB",
+      "sha256": "512869bff3e6a16bf41e412bacedc5aa98ba7bce20d52dd4d610038f3a6a6fde"
+    },
+    {
+      "family": "weathered-metal",
+      "file": "basecolor/04-weathered-metal.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.0,
+        2.0
+      ],
+      "roughness": 0.78,
+      "colorSpace": "sRGB",
+      "sha256": "a945a2dcca1ed8aaa6c9b6c3ea37982cf499c8e5dfdec15e1120beba62f7e669"
+    },
+    {
+      "family": "charcoal-roof",
+      "file": "basecolor/05-charcoal-roof.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.0,
+        2.0
+      ],
+      "roughness": 0.92,
+      "colorSpace": "sRGB",
+      "sha256": "b0dcbb18e947d4acdbdde7efc80abbbe2a1c260943ef06b2c13bb668342c136a"
+    },
+    {
+      "family": "dining-floor",
+      "file": "basecolor/07-dining-floor.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        1.6,
+        2.4
+      ],
+      "roughness": 0.76,
+      "colorSpace": "sRGB",
+      "sha256": "9ffa608dd0bd75481f9bb12942141e43be1ee322ff8a44c7721b515c75fa2f99"
+    },
+    {
+      "family": "warm-plaster",
+      "file": "basecolor/08-warm-plaster.png",
+      "sourcePixels": [
+        1254,
+        1254
+      ],
+      "coverageMeters": [
+        2.0,
+        2.0
+      ],
+      "roughness": 0.91,
+      "colorSpace": "sRGB",
+      "sha256": "92e3cdbf6950e0c2ed24dc7bd80876e9e985d6f375bfc5c3dfffbd2c0cb7a581"
+    }
+  ]
+}

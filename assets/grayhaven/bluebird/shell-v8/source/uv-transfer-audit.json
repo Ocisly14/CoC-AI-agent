@@ -1,0 +1,32 @@
+[
+  {
+    "category": "ground",
+    "objects": 10,
+    "completeLoopTransfer": true
+  },
+  {
+    "category": "upper",
+    "objects": 4,
+    "completeLoopTransfer": true
+  },
+  {
+    "category": "frames",
+    "objects": 23,
+    "completeLoopTransfer": true
+  },
+  {
+    "category": "roof",
+    "objects": 3,
+    "completeLoopTransfer": true
+  },
+  {
+    "category": "details",
+    "objects": 21,
+    "completeLoopTransfer": true
+  },
+  {
+    "category": "interior",
+    "objects": 24,
+    "completeLoopTransfer": true
+  }
+]

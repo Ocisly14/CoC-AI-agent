@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "status": "authoring recommendations; no runtime shader change",
   "units": {
     "roughness": "0..1 perceptual starting range",
@@ -14,8 +14,9 @@
         0.88
       ],
       "normalStrength": 0.18,
-      "brush": "横向搭接板顺纹擦色，补漆块方向不变",
-      "metalness": "漆层0，露出五金1"
+      "brush": "少量顺表面方向的相近色擦色、局部破边，独立于板缝重复。",
+      "metalness": "漆层0，露出五金1",
+      "baseDetail": "实际板宽、搭接与顺纹细节，局部褪漆和修补；窗套随构件方向。"
     },
     {
       "id": "raw_wood",
@@ -25,8 +26,9 @@
         0.96
       ],
       "normalStrength": 0.3,
-      "brush": "宽大木纹与端面，潮湿区降低粗糙度",
-      "metalness": "0"
+      "brush": "在保留木纹的区域之间添加克制的宽色面。",
+      "metalness": "0",
+      "baseDetail": "实际尺度木纹、端面与接缝；潮湿区降低粗糙度。"
     },
     {
       "id": "plaster",
@@ -36,8 +38,9 @@
         0.98
       ],
       "normalStrength": 0.12,
-      "brush": "大色面、墙角薄擦色，少量裂纹",
-      "metalness": "0"
+      "brush": "局部大色面与墙角薄擦色，保留安静区。",
+      "metalness": "0",
+      "baseDetail": "细灰泥颗粒、少量有依据的裂纹与修补。"
     },
     {
       "id": "stone",
@@ -47,8 +50,9 @@
         0.95
       ],
       "normalStrength": 0.35,
-      "brush": "沿岩层分块，避免密集噪声",
-      "metalness": "0"
+      "brush": "沿体量与岩层安排少量色块，不均匀铺满碎斑。",
+      "metalness": "0",
+      "baseDetail": "可信石块或岩层尺度、接缝和局部粗糙表面。"
     },
     {
       "id": "cloth",
@@ -58,8 +62,9 @@
         1
       ],
       "normalStrength": 0.15,
-      "brush": "褶面与缝边清楚，织纹近景可见",
-      "metalness": "0"
+      "brush": "顺褶面少量概括冷暖，不将颜料笔刷作为织纹。",
+      "metalness": "0",
+      "baseDetail": "褶面与缝边清楚，实际尺度织纹仅近景可见。"
     },
     {
       "id": "metal",
@@ -69,8 +74,9 @@
         0.72
       ],
       "normalStrength": 0.2,
-      "brush": "宽阔断续反射，漆/锈/裸露分区",
-      "metalness": "裸金属1，锈与漆0"
+      "brush": "需要时加局部相近色擦色，不烘入固定方向高光。",
+      "metalness": "裸金属1，锈与漆0",
+      "baseDetail": "漆、锈、裸金属分区，真实粗糙度控制反射。"
     },
     {
       "id": "glass",
@@ -80,8 +86,9 @@
         0.3
       ],
       "normalStrength": 0.05,
-      "brush": "少量大块反射；磨砂版本粗糙度0.55–0.75",
-      "metalness": "0"
+      "brush": "按构图选择性简化色面；不把固定窗光或高光画进底图。",
+      "metalness": "0",
+      "baseDetail": "由光照和环境形成反射；磨砂版本粗糙度0.55–0.75。"
     },
     {
       "id": "water",
@@ -91,8 +98,9 @@
         0.5
       ],
       "normalStrength": 0.15,
-      "brush": "横向宽色带、低频法线；泡沫粗糙度0.9",
-      "metalness": "0"
+      "brush": "独立组织横向宽色带，不固定烘入太阳反射。",
+      "metalness": "0",
+      "baseDetail": "低频法线与宽阔反射，泡沫粗糙度0.9。"
     }
   ],
   "textures": {
@@ -106,6 +114,23 @@
   "rules": [
     "Do not paint sun shadows or colored directional highlights into basecolor.",
     "Named palette tokens are sRGB references, not measured reflectance.",
-    "Opaque overview glazing may use the current simplified reflection; do not enable transparency globally."
-  ]
+    "Opaque overview glazing may use the current simplified reflection; do not enable transparency globally.",
+    "Base textures may use restrained realist oil-painting brushwork to depict materials at plausible physical scale; reserve large expressive marks for separate overlays.",
+    "Disabling expressive overlays must reveal a complete realist painterly material base; restrained material-describing brushwork may remain.",
+    "Do not enlarge boards, bricks or grain to enlarge paint strokes; use separate paint placement parameters."
+  ],
+  "layering": {
+    "baseMaterial": "写实油画式材料描绘，真实覆盖面积与构造尺度；允许服务于材质的克制笔触和色彩概括，不预置大块表现性色簇。",
+    "weathering": "有材料、使用或环境依据的独立磨损层。",
+    "brushFieldMeaning": "families[].brush 为后续独立表现层建议；底层也可以有描绘材料的克制笔触，两者按职责区分。",
+    "delivery": "源文件保留基础材料、磨损与绘画层；导出可合成烘焙，但保留基础版本及遮罩。"
+  },
+  "textureScale": {
+    "status": "authoring metadata convention; not an implemented importer schema",
+    "coverageMeters": "每种底图记录覆盖宽高 [W, H]，不是像素分辨率。",
+    "materialUnitMeters": "记录板宽、砖块或屋面单元尺寸，并与模型核对。",
+    "orientation": "记录纹理与构件方向；屋面按实际坡面尺寸标定。",
+    "texelDensity": "分别核查像素宽/覆盖宽米与像素高/覆盖高米。",
+    "paintScale": "笔刷世界尺寸与底材重复频率独立控制。"
+  }
 }
