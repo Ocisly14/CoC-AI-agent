@@ -15,6 +15,7 @@ uniform float shadow_brush_seed=17.0;
 uniform vec4 oil_brush_region_px=vec4(48,452,1172,476);
 
 #include "res://rendering/painterly/shaders/procreate_brush.gdshaderinc"
+#include "res://rendering/painterly/shaders/rectangle_brush.gdshaderinc"
 
 // R=pigment load, G=oil/dry texture, B=complete painted shadow coverage.
 // No M0 input: the texture builds the entire shadow, not only its boundary.
@@ -62,6 +63,15 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
                 float contact=1.0-smoothstep(solid,max(fade_end,solid+0.0001),max(-root_leave,0.0));
                 root_cover=max(root_cover,contact);
             }
+        }
+        if(rectangle_shadows_enabled && procreate_shadows_enabled) {
+            vec3 paint=rectangle_caster(caster,world_p,lo,hi,identity,trail,across,slope,pixel_dx,pixel_dy);
+            total+=paint.x;
+            strongest=max(strongest,paint.x);
+            load_sum=paint.y*paint.x+load_sum*(1.0-paint.x);
+            dry_sum=paint.z*paint.x+dry_sum*(1.0-paint.x);
+            uncovered*=1.0-paint.x;
+            continue;
         }
         // Width determines count. Only nearby lanes can reach this fragment,
         // so wide shadows do not require an arbitrary count cap or a long loop.
@@ -152,6 +162,9 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
         }
     }
     float cover=max(1.0-uncovered,root_cover);
+    if(rectangle_shadows_enabled) {
+        return vec3(clamp(load_sum,0.0,1.0),dry_sum*(1.0-root_cover),cover);
+    }
     float extra=max(total-strongest,0.0);
     float pigment=1.0-exp(-extra*0.7-load_sum*0.4);
     float dry=dry_sum/max(total,0.0001)*cover/(1.0+extra*0.25);

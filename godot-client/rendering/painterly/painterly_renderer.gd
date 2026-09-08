@@ -57,6 +57,10 @@ signal capture_committed(revision: int)
 @export var procreate_shadows_enabled := false
 @export var pressure_stamps_enabled := true
 @export var pressure_settings: PainterlyPressureSettings = preload("res://rendering/painterly/default_pressure.tres").duplicate(true)
+@export var rectangle_shadows_enabled := false
+@export var rectangle_settings: Resource = preload("res://rendering/painterly/rectangle_brushes/settings.gd").new()
+var rectangle_layout=preload("res://rendering/painterly/rectangle_brushes/layout.gd").new()
+var rectangle_debug := false
 var _procreate_grains: Texture2DArray
 var _procreate_parameters := PackedVector4Array()
 var _procreate_dynamics := PackedVector4Array()
@@ -308,8 +312,18 @@ func set_environment_light(color: Color, energy: float) -> void:
 func refresh_settings() -> void:
     if pressure_settings == null: pressure_settings=preload("res://rendering/painterly/pressure_settings.gd").new()
     var pressure_uniforms: Dictionary = pressure_settings.uniforms()
+    var rectangle_values: Dictionary=rectangle_settings.shader_values()
+    if rectangle_shadows_enabled and _active>=0:
+        rectangle_layout.rebuild(_published_caster_min,_published_caster_max,_published_caster_count,_published_direction,shadow_brush_width_m,rectangle_settings)
     for record in _surfaces:
         var mat: ShaderMaterial = record.material
+        mat.set_shader_parameter("rectangle_shadows_enabled",rectangle_shadows_enabled and rectangle_layout.texture!=null)
+        mat.set_shader_parameter("rectangle_debug",rectangle_debug)
+        mat.set_shader_parameter("rectangle_seed",float(rectangle_settings.seed+rectangle_settings.painting_revision*7919))
+        if rectangle_layout.texture!=null:
+            mat.set_shader_parameter("rectangle_bands",rectangle_layout.texture)
+            mat.set_shader_parameter("rectangle_band_counts",rectangle_layout.counts)
+        for key in rectangle_values:mat.set_shader_parameter(key,rectangle_values[key])
         mat.set_shader_parameter("pressure_stamps_enabled",pressure_stamps_enabled)
         for key in pressure_uniforms: mat.set_shader_parameter(key,pressure_uniforms[key])
         mat.set_shader_parameter("seam_enabled",seam_enabled)

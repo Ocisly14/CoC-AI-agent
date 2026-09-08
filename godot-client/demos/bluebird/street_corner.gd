@@ -66,6 +66,10 @@ func _ready() -> void:
 		var color_qa = load("res://demos/bluebird/tools/color_qa.gd").new()
 		add_child(color_qa)
 		color_qa.call_deferred("run", self)
+	if OS.get_cmdline_user_args().has("--bluebird-rectangle-qa"):
+		var qa=load("res://demos/bluebird/tools/rectangle_qa.gd").new()
+		add_child(qa)
+		qa.call_deferred("run",self)
 	if OS.get_cmdline_user_args().has("--bluebird-pressure-qa"):
 		var qa = load("res://demos/bluebird/tools/pressure_qa.gd").new()
 		add_child(qa)

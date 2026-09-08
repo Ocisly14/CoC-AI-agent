@@ -1,0 +1,34 @@
+{
+  "failures": [],
+  "metrics": {
+    "overlap_max": 0.599450469017028,
+    "overlap_min": 0.300262957811356,
+    "pressure": {
+      "frame_median_ms": 16.646,
+      "frame_p95_ms": 17.409,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.425000011920929,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "rectangle": {
+      "frame_median_ms": 16.657,
+      "frame_p95_ms": 17.353,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.435000002384186,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    }
+  },
+  "scope": "First visual draft. No automatic aesthetic iteration; screenshots await user discussion."
+}

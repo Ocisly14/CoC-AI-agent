@@ -19,9 +19,11 @@ func setup(renderer_: Node) -> void:
     source_select=OptionButton.new()
     source_select.add_item("上一版：颗粒铺色")
     source_select.add_item("新版：压力盖印")
-    source_select.select(1 if renderer.pressure_stamps_enabled else 0)
+    source_select.add_item("矩形排笔：原压力笔刷")
+    source_select.select(2 if renderer.rectangle_shadows_enabled else (1 if renderer.pressure_stamps_enabled else 0))
     source_select.item_selected.connect(func(index):
-        renderer.pressure_stamps_enabled=index==1
+        renderer.rectangle_shadows_enabled=index==2
+        renderer.pressure_stamps_enabled=index!=0
         renderer.refresh_settings())
     column.add_child(source_select)
     for setting in [["力度","pressure_scale",0.0,1.5],["压扁","squash_strength",0.0,1.0],["含漆量","paint_charge",0.0,2.0]]:
@@ -57,6 +59,9 @@ func setup(renderer_: Node) -> void:
     preview_material.shader=load("res://rendering/painterly/shaders/pressure_preview.gdshader")
     preview.material=preview_material
     column.add_child(preview)
+    var rectangle_controls=load("res://demos/painterly_lab/rectangle_controls.gd").new()
+    column.add_child(rectangle_controls)
+    rectangle_controls.setup(renderer)
     refresh_preview()
 
 func refresh_preview() -> void:

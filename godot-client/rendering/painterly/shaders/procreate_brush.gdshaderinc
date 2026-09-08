@@ -92,10 +92,8 @@ float aui_tip_shape(vec2 relative,vec2 size_,float pixel_width) {
     return 1.0-smoothstep(1.0-aa,1.0,boundary);
 }
 
-vec3 aui_pressure_deposit(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m) {
-    if(uv.x<0.0 || uv.x>1.0) {return vec3(0);}
-    float choice=hash21(id+vec2(97,13));
-    int layer=choice<0.65 ? 0 : (choice<0.85 ? 1 : 2);
+vec3 aui_pressure_deposit_impl(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m,int layer,bool full_tip) {
+    if(!full_tip && (uv.x<0.0 || uv.x>1.0)) {return vec3(0);}
     vec2 offset=vec2(hash21(id+vec2(29,5)),hash21(id+vec2(7,61)))*3.0;
     float travel=uv.x*length_m/width_m;
     float total_length=length_m/width_m;
@@ -119,7 +117,7 @@ vec3 aui_pressure_deposit(vec2 uv,float length_m,float width_m,vec2 id,float foo
         if(pressure<0.001) {continue;}
         vec2 tip=aui_tip_size(pressure,gesture.y);
         // Keep each stamp entirely inside the gesture's longitudinal support.
-        tip.x=min(tip.x,2.0*min(center,total_length-center));
+        if(!full_tip) {tip.x=min(tip.x,2.0*min(center,total_length-center));}
         float sway=sin(center*1.8+offset.x)*0.025*min(pressure,0.8);
         vec2 relative=vec2(travel-center,uv.y-0.5-sway);
         float shape=aui_tip_shape(relative,tip,pixel_width);
@@ -138,4 +136,18 @@ vec3 aui_pressure_deposit(vec2 uv,float length_m,float width_m,vec2 id,float foo
     }
     float alpha=1.0-exp(-mass);
     return vec3(alpha,clamp(mass/5.5,0.0,1.0),dry_mass/max(mass,0.0001));
+}
+
+// Original pressure mode retains its exact extent and recipe selection.
+vec3 aui_pressure_deposit(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m) {
+    float choice=hash21(id+vec2(97,13));
+    int layer=choice<0.65 ? 0 : (choice<0.85 ? 1 : 2);
+    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer,false);
+}
+// A rectangle plans the path, not a clipping mask. Complete pressure-deformed
+// tips can extend past its sides and ends. Bounds below are outside tip support.
+vec3 aui_pressure_full_tip(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m,int layer) {
+    float travel=uv.x*length_m/width_m;
+    if(travel< -0.55 || travel>length_m/width_m+0.55 || abs(uv.y-0.5)>0.71) {return vec3(0);}
+    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer,true);
 }
