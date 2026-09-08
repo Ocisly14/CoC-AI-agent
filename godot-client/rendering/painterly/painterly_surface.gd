@@ -26,11 +26,3 @@ extends Resource
 @export_range(0, 1) var alpha_cutoff := 0.0
 @export var contact_protection_map: Texture2D
 @export_range(0, 1) var contact_protection := 0.0
-
-## Scene-wide seam paint. Higher layers cover lower layers; equal layers do not bleed.
-@export var paint_id := ""
-@export var paint_order := 0
-@export var seam_participation := true
-@export_range(0, 1) var seam_protection := 0.0
-## R=1 blocks incoming seam paint, in the same data-map coordinates as importance.
-@export var seam_protection_map: Texture2D

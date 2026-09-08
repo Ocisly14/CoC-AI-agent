@@ -1,0 +1,89 @@
+{
+  "generator": "built-in imagegen",
+  "entries": [
+    {
+      "group": "glass",
+      "variant": 1,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a glass pane: broad palette-knife scraped light patch. Variant 1/4: loaded blunt start, irregular broken tapered end. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 3:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-75a80816-4fed-4531-a52c-ef2e3d0d63cb.png",
+      "file": "glass-01.png"
+    },
+    {
+      "group": "glass",
+      "variant": 2,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a glass pane: broad palette-knife scraped light patch. Variant 2/4: asymmetric faceted knife edges and a split dry tail. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 3:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-78ca74f2-ba47-4be7-8c33-b68e13f06919.png",
+      "file": "glass-02.png"
+    },
+    {
+      "group": "glass",
+      "variant": 3,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a glass pane: broad palette-knife scraped light patch. Variant 3/4: several bristle grooves with a ragged broken side. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 3:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-c3233480-46dd-4c5a-b82b-bf9f16b9f183.png",
+      "file": "glass-03.png"
+    },
+    {
+      "group": "glass",
+      "variant": 4,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a glass pane: broad palette-knife scraped light patch. Variant 4/4: thin scraped gaps through a dense central pigment ridge. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 3:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-f9113551-7e83-4a6b-af96-e875adde47e4.png",
+      "file": "glass-04.png"
+    },
+    {
+      "group": "metal",
+      "variant": 1,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for metal: an elongated impasto light accent. Variant 1/4: loaded blunt start, irregular broken tapered end. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 5:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-538af54a-cc6e-491f-b3f3-6c69a40ad16f.png",
+      "file": "metal-01.png"
+    },
+    {
+      "group": "metal",
+      "variant": 2,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for metal: an elongated impasto light accent. Variant 2/4: asymmetric faceted knife edges and a split dry tail. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 5:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-1c4fe7c4-b534-4763-9c6c-141495770d0f.png",
+      "file": "metal-02.png"
+    },
+    {
+      "group": "metal",
+      "variant": 3,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for metal: an elongated impasto light accent. Variant 3/4: several bristle grooves with a ragged broken side. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 5:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-0251f819-1cd0-4029-ad8a-15b72345e0d2.png",
+      "file": "metal-03.png"
+    },
+    {
+      "group": "metal",
+      "variant": 4,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for metal: an elongated impasto light accent. Variant 4/4: thin scraped gaps through a dense central pigment ridge. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 5:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-a9f66e5a-90d6-4193-988e-3945311acbdc.png",
+      "file": "metal-04.png"
+    },
+    {
+      "group": "frame",
+      "variant": 1,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a painted wooden window frame: very narrow elongated dry-brush light accent. Variant 1/4: loaded blunt start, irregular broken tapered end. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 9:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-0cec558d-4e2a-4743-b7c1-272b45587f31.png",
+      "file": "frame-01.png"
+    },
+    {
+      "group": "frame",
+      "variant": 2,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a painted wooden window frame: very narrow elongated dry-brush light accent. Variant 2/4: asymmetric faceted knife edges and a split dry tail. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 9:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-cf62fbaa-2603-4f1a-9102-66be971ad4e4.png",
+      "file": "frame-02.png"
+    },
+    {
+      "group": "frame",
+      "variant": 3,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a painted wooden window frame: very narrow elongated dry-brush light accent. Variant 3/4: several bristle grooves with a ragged broken side. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 9:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-03c0c2a0-8a71-44bb-be09-f55b1973eb57.png",
+      "file": "frame-03.png"
+    },
+    {
+      "group": "frame",
+      "variant": 4,
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA game texture, a single oil-painted highlight brush gesture for a painted wooden window frame: very narrow elongated dry-brush light accent. Variant 4/4: thin scraped gaps through a dense central pigment ridge. ONE connected horizontal left-to-right brush gesture, neutral light grey to off-white pigment, tangible oil paint texture with internal grey density variation, matte diffuse scan lighting. Transparent background including bare gaps. Generous fully transparent margins all around, no cropping. Gesture length:width about 9:1. No glass or metal object, no frame object, no canvas, no cast shadow, no bloom or glow, no checkerboard, no text, no grid, no multiple separate strokes. Output one PNG with real alpha.",
+      "source": "/Users/sunyining/.codex/generated_images/01a08307-c0df-79d3-8af6-cd4cf8ce054d/exec-4cb1e6ba-ef50-4662-a4ed-58ae384e584e.png",
+      "file": "frame-04.png"
+    }
+  ]
+}

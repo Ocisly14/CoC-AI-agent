@@ -86,38 +86,38 @@ vec2 aui_tip_size(float p,float tilt) {
 
 float aui_tip_shape(vec2 relative,vec2 size_,float pixel_width) {
     vec2 q=abs(relative)/max(size_*0.5,vec2(0.0001));
-    // Rounded flat tip: a fourth-power superellipse, rather than a hard box.
-    float boundary=pow(pow(q.x,4.0)+pow(q.y,4.0),0.25);
+    // Elliptical loaded tip: curved landing edge even under heavy pressure.
+    float boundary=length(q);
     float aa=clamp(pixel_width/max(min(size_.x,size_.y),0.01)*2.0,0.035,0.3);
     return 1.0-smoothstep(1.0-aa,1.0,boundary);
 }
 
-vec3 aui_pressure_deposit_impl(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m,int layer,bool full_tip) {
-    if(!full_tip && (uv.x<0.0 || uv.x>1.0)) {return vec3(0);}
+vec3 aui_pressure_deposit_impl(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m,int layer) {
     vec2 offset=vec2(hash21(id+vec2(29,5)),hash21(id+vec2(7,61)))*3.0;
     float travel=uv.x*length_m/width_m;
     float total_length=length_m/width_m;
     // Contact casters hide the front part of the path. Start the pressure/charge
     // gesture at the visible rear silhouette, not at the buried front footprint.
+    // There are no deposits along the buried path: wide tips there used to leak
+    // out of the sun-facing corners of diagonal or stepped buildings.
     float root_offset=clamp(root_offset_m/width_m,0.0,max(total_length-0.08,0.0));
     float pixel_width=footprint_m/width_m;
     float lod=clamp(log2(max(pixel_width*1024.0/max(procreate_parameters[layer].x,0.1),1.0)),0.0,10.0);
     float spacing_=pressure_stamp_spacing;
-    int nearest=int(floor(travel/spacing_));
+    int nearest=int(floor((travel-root_offset)/spacing_));
     float mass=0.0, dry_mass=0.0;
     // Grain stays in the undeformed stroke plane. No grain scaling with pressure.
     float grain=aui_grain(vec2(travel,uv.y*1.35)+offset,layer,lod);
     for(int tap=-7;tap<=8;tap++) {
         int index=nearest+tap;
-        float center=(float(index)+0.5)*spacing_;
+        float center=root_offset+(float(index)+0.5)*spacing_;
         if(index<0 || center>total_length) {continue;}
         float progress=clamp((center-root_offset)/max(total_length-root_offset,0.08),0.0,1.0);
         vec2 gesture=aui_gesture(progress,id);
         float pressure=gesture.x;
         if(pressure<0.001) {continue;}
         vec2 tip=aui_tip_size(pressure,gesture.y);
-        // Keep each stamp entirely inside the gesture's longitudinal support.
-        if(!full_tip) {tip.x=min(tip.x,2.0*min(center,total_length-center));}
+        // Keep the whole landing/lift-off tip; the path is not a UV mask.
         float sway=sin(center*1.8+offset.x)*0.025*min(pressure,0.8);
         vec2 relative=vec2(travel-center,uv.y-0.5-sway);
         float shape=aui_tip_shape(relative,tip,pixel_width);
@@ -138,16 +138,16 @@ vec3 aui_pressure_deposit_impl(vec2 uv,float length_m,float width_m,vec2 id,floa
     return vec3(alpha,clamp(mass/5.5,0.0,1.0),dry_mass/max(mass,0.0001));
 }
 
-// Original pressure mode retains its exact extent and recipe selection.
+// Both layouts retain complete tips; only recipe selection differs.
 vec3 aui_pressure_deposit(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m) {
     float choice=hash21(id+vec2(97,13));
     int layer=choice<0.65 ? 0 : (choice<0.85 ? 1 : 2);
-    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer,false);
+    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer);
 }
 // A rectangle plans the path, not a clipping mask. Complete pressure-deformed
 // tips can extend past its sides and ends. Bounds below are outside tip support.
 vec3 aui_pressure_full_tip(vec2 uv,float length_m,float width_m,vec2 id,float footprint_m,float root_offset_m,int layer) {
     float travel=uv.x*length_m/width_m;
     if(travel< -0.55 || travel>length_m/width_m+0.55 || abs(uv.y-0.5)>0.71) {return vec3(0);}
-    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer,true);
+    return aui_pressure_deposit_impl(uv,length_m,width_m,id,footprint_m,root_offset_m,layer);
 }

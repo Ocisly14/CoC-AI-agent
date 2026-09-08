@@ -1,0 +1,8 @@
+{
+	"checks": 23,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"near_light_art_ratio": 2.0162209641157,
+	"passed": true,
+	"renderer": "forward_plus"
+}

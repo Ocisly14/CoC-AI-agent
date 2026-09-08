@@ -1,0 +1,198 @@
+{
+  "passed": true,
+  "textures": [
+    {
+      "file": "frame-01.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        33,
+        103,
+        2132,
+        698
+      ],
+      "transparent_fraction": 0.8986739822756733,
+      "margin_ok": true
+    },
+    {
+      "file": "frame-02.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        64,
+        72,
+        2116,
+        434
+      ],
+      "transparent_fraction": 0.8873520853046813,
+      "margin_ok": true
+    },
+    {
+      "file": "frame-03.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        130,
+        124,
+        2037,
+        682
+      ],
+      "transparent_fraction": 0.8787779931422525,
+      "margin_ok": true
+    },
+    {
+      "file": "frame-04.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        43,
+        81,
+        2128,
+        682
+      ],
+      "transparent_fraction": 0.8511562274248853,
+      "margin_ok": true
+    },
+    {
+      "file": "glass-01.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        108,
+        39,
+        1999,
+        714
+      ],
+      "transparent_fraction": 0.748946282673504,
+      "margin_ok": true
+    },
+    {
+      "file": "glass-02.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        25,
+        19,
+        2152,
+        724
+      ],
+      "transparent_fraction": 0.6654921247825158,
+      "margin_ok": false
+    },
+    {
+      "file": "glass-03.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        25,
+        9,
+        2110,
+        724
+      ],
+      "transparent_fraction": 0.6572086474771832,
+      "margin_ok": false
+    },
+    {
+      "file": "glass-04.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        55,
+        0,
+        2108,
+        708
+      ],
+      "transparent_fraction": 0.7677186034207341,
+      "margin_ok": false
+    },
+    {
+      "file": "metal-01.png",
+      "size": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        114,
+        21,
+        1754,
+        847
+      ],
+      "transparent_fraction": 0.8645415617544667,
+      "margin_ok": true
+    },
+    {
+      "file": "metal-02.png",
+      "size": [
+        2179,
+        722
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        49,
+        55,
+        2119,
+        682
+      ],
+      "transparent_fraction": 0.8205465415912914,
+      "margin_ok": true
+    },
+    {
+      "file": "metal-03.png",
+      "size": [
+        1983,
+        793
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        41,
+        55,
+        1915,
+        770
+      ],
+      "transparent_fraction": 0.7738679151094517,
+      "margin_ok": true
+    },
+    {
+      "file": "metal-04.png",
+      "size": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_bounds": [
+        81,
+        39,
+        2124,
+        607
+      ],
+      "transparent_fraction": 0.8200642532279234,
+      "margin_ok": true
+    }
+  ],
+  "note": "Source images preserve original alpha, including occasional very low-alpha edge pixels. Runtime arrays letterbox the full source into 1024x384 pages with >=24px transparent padding; the GPU lab verifies packed alpha borders."
+}

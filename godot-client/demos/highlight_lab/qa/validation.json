@@ -1,0 +1,109 @@
+{
+  "checks": 23,
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "metrics": {
+    "backlit": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    },
+    "day": {
+      "mean": 0.00107066987134102,
+      "peak": 0.227450966835022,
+      "pixels": 754
+    },
+    "frame": {
+      "mean": 0.0000543981449057658,
+      "peak": 0.145098030567169,
+      "pixels": 51
+    },
+    "frame20": {
+      "mean": 0.0000495642671982447,
+      "peak": 0.133333325386047,
+      "pixels": 51
+    },
+    "frame40": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    },
+    "glass": {
+      "mean": 0.000611247240772678,
+      "peak": 0.164705872535706,
+      "pixels": 430
+    },
+    "lamp": {
+      "mean": 0.00148502181788596,
+      "peak": 0.247058838605881,
+      "pixels": 743
+    },
+    "lamp_shadow": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    },
+    "metal": {
+      "mean": 0.00040502448566258,
+      "peak": 0.227450966835022,
+      "pixels": 273
+    },
+    "shadow": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    },
+    "timing": [
+      {
+        "off": {
+          "draw_calls": 22.0,
+          "median_ms": 1.868,
+          "p95_ms": 12.345
+        },
+        "on": {
+          "draw_calls": 27.0,
+          "median_ms": 1.854,
+          "p95_ms": 2.196
+        }
+      },
+      {
+        "off": {
+          "draw_calls": 22.0,
+          "median_ms": 1.86,
+          "p95_ms": 2.294
+        },
+        "on": {
+          "draw_calls": 27.0,
+          "median_ms": 1.862,
+          "p95_ms": 2.205
+        }
+      }
+    ],
+    "unlit": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    },
+    "zero_density": {
+      "mean": 0.0,
+      "peak": 0.0,
+      "pixels": 0
+    }
+  },
+  "passed": true,
+  "renderer": "forward_plus",
+  "stats": {
+    "active_passes": 5,
+    "direction_maps": 1,
+    "generated_meshes": 0,
+    "gpu_readbacks": 0,
+    "groups": {
+      "frame": 1,
+      "glass": 2,
+      "metal": 2
+    },
+    "registered": 5,
+    "registration_count": 5,
+    "seed": 71
+  }
+}

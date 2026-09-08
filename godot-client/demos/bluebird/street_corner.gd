@@ -23,11 +23,12 @@ var evening := false
 var painterly: Node3D
 var grade_button: Button
 var debug_menu: OptionButton
-var seam_button: Button
+var highlight_button: Button
 var art_debugger: PanelContainer
 var moon: DirectionalLight3D
 var cycle_enabled := false
 var time_of_day := 12.0
+var location_scenes: Control
 const DAY_NIGHT = preload("res://demos/bluebird/day_night_cycle.gd")
 
 func _ready() -> void:
@@ -55,18 +56,21 @@ func _ready() -> void:
 		grade_button.toggled.connect(set_grading)
 		$HUD/Controls/Margin/Row.add_child(grade_button)
 		debug_menu = OptionButton.new()
-		for label in ["成片", "固有色", "日照增强权重", "美术重要度", "叠色遮罩", "叠色来源", "叠色方向"]:
+		for label in ["成片", "固有色", "日照增强权重", "美术重要度"]:
 			debug_menu.add_item(label)
 		debug_menu.item_selected.connect(func(index):
-			painterly.renderer.debug_view = [0, 1, 9, 6, 14, 15, 16][index]
+			painterly.renderer.debug_view = [0, 1, 9, 6][index]
 			painterly.renderer.refresh_settings())
 		$HUD/Controls/Margin/Row.add_child(debug_menu)
-		seam_button=Button.new()
-		seam_button.text="接缝叠色 [B]"
-		seam_button.toggle_mode=true
-		seam_button.button_pressed=true
-		seam_button.toggled.connect(set_seam_paint)
-		$HUD/Controls/Margin/Row.add_child(seam_button)
+		highlight_button=Button.new()
+		highlight_button.text="油画高光 [B]"
+		highlight_button.toggle_mode=true
+		highlight_button.button_pressed=true
+		highlight_button.toggled.connect(set_highlights)
+		$HUD/Controls/Margin/Row.add_child(highlight_button)
+		painterly.highlights.settings_changed.connect(func():
+			highlight_button.set_pressed_no_signal(painterly.highlights.settings.enabled)
+			if art_debugger != null and art_debugger.highlight_controls != null: art_debugger.highlight_controls.sync())
 		if OS.get_cmdline_user_args().has("--bluebird-art-debug"):
 			painterly.renderer.rectangle_shadows_enabled = true
 			painterly.renderer.rectangle_settings.texture_overlay_enabled = true
@@ -85,16 +89,27 @@ func _ready() -> void:
 		if OS.get_cmdline_user_args().has("--bluebird-art-debug"):
 			art_debugger.show()
 			get_window().title = "蓝鸟模型 · 光照与美术调试 · 最新笔刷阴影"
-	if OS.get_cmdline_user_args().has("--bluebird-seam-qa"):
-		var seam_qa=load("res://demos/bluebird/tools/seam_qa.gd").new()
-		add_child(seam_qa)
-		seam_qa.call_deferred("run",self)
+	location_scenes = load("res://demos/bluebird/location_scenes.gd").new()
+	$HUD.add_child(location_scenes)
+	location_scenes.setup(self)
+	if OS.get_cmdline_user_args().has("--bluebird-interior-qa"):
+		var interior_qa = load("res://demos/bluebird/tools/interior_qa.gd").new()
+		add_child(interior_qa)
+		interior_qa.call_deferred("run", self)
+	if OS.get_cmdline_user_args().has("--bluebird-highlight-qa"):
+		var highlight_qa=load("res://demos/bluebird/tools/highlight_qa.gd").new()
+		add_child(highlight_qa)
+		highlight_qa.call_deferred("run",self)
 	if OS.get_cmdline_user_args().has("--bluebird-color-qa"):
 		var color_qa = load("res://demos/bluebird/tools/color_qa.gd").new()
 		add_child(color_qa)
 		color_qa.call_deferred("run", self)
 	if OS.get_cmdline_user_args().has("--bluebird-overlay-qa"):
 		var qa=load("res://demos/bluebird/tools/texture_overlay_qa.gd").new()
+		add_child(qa)
+		qa.call_deferred("run",self)
+	if OS.get_cmdline_user_args().has("--bluebird-root-qa"):
+		var qa=load("res://demos/bluebird/tools/shadow_root_qa.gd").new()
 		add_child(qa)
 		qa.call_deferred("run",self)
 	if OS.get_cmdline_user_args().has("--bluebird-rectangle-qa"):
@@ -117,6 +132,16 @@ func _ready() -> void:
 		var views = load("res://demos/bluebird/tools/material_views.gd").new()
 		add_child(views)
 		views.call_deferred("run", self)
+	if OS.get_cmdline_user_args().has("--bluebird-street-night") or OS.get_cmdline_user_args().has("--bluebird-lamp-controls"):
+		set_time_of_day(22.0)
+		target = Vector3(1, 1.7, 6)
+		view_size = 36.0
+		_update_camera()
+	if OS.get_cmdline_user_args().has("--bluebird-lamp-controls") and art_debugger != null:
+		set_info_visible(false)
+		art_debugger.tabs.current_tab = art_debugger.lamp_tab_index
+		art_debugger.show()
+		art_debugger.sync_widgets()
 
 func reset_view() -> void:
 	target = HOME_TARGET
@@ -141,16 +166,17 @@ func set_evening(enabled: bool) -> void:
 	day_button.button_pressed = not enabled
 	evening_button.button_pressed = enabled
 	# Sunny direct light with cool ambient fill preserves colored shadows.
-	sun.rotation_degrees = Vector3(-23, -38, 0) if enabled else Vector3(-48, -32, 0)
-	sun.light_color = Color("e5c5a8") if enabled else Color("fff0d6")
-	sun.light_energy = 0.38 if enabled else 1.10
+	var daylight = DAY_NIGHT.daylight_settings
+	sun.rotation_degrees = Vector3(-23, -38, 0) if enabled else Vector3(-daylight.elevation, daylight.azimuth, 0)
+	sun.light_color = Color("edb181") if enabled else DAY_NIGHT.color_from_array(daylight.sun_color)
+	sun.light_energy = daylight.sun_energy * (0.38 / 1.10 if enabled else 1.0)
 	sun.shadow_opacity = 0.70 if enabled else 0.85
 	# PCSS is available in Forward+; Compatibility uses the gentler light ratio.
 	sun.light_angular_distance = (3.0 if enabled else 0.65) if RenderingServer.get_current_rendering_method() == "forward_plus" else 0.0
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
-	environment.ambient_light_color = Color("a5aec3") if enabled else Color("afc3dd")
-	environment.ambient_light_energy = 0.58 if enabled else 0.55
+	environment.ambient_light_color = Color("a5aec3") if enabled else DAY_NIGHT.color_from_array(daylight.ambient_color)
+	environment.ambient_light_energy = daylight.ambient_energy * (0.58 / 0.55 if enabled else 1.0)
 	environment.background_color = Color("737d87") if enabled else Color("a4b7c2")
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.tonemap_exposure = 1.0
@@ -159,6 +185,7 @@ func set_evening(enabled: bool) -> void:
 	environment.adjustment_contrast = 1.0
 	environment.adjustment_brightness = 1.0
 	time_label.text = "暮色 · 柔光预览" if enabled else "晴天 · 日照预览"
+	$StreetLights.set_night(enabled)
 	if painterly != null:
 		painterly.sync_lighting(self)
 	if art_debugger != null:
@@ -198,17 +225,18 @@ func set_time_of_day(hour: float) -> void:
 	day_button.set_pressed_no_signal(false); evening_button.set_pressed_no_signal(false)
 	var minutes = int(round(time_of_day * 60.0)) % 1440
 	time_label.text = "%02d:%02d · %s" % [minutes / 60, minutes % 60, light.source]
+	$StreetLights.set_night(not light.is_day)
 	if painterly != null:
 		# Keep the user's exposure and art response while celestial lighting changes.
 		painterly.renderer.set_environment_light(light.ambient_color, light.ambient_energy)
 		painterly.renderer.set_lighting(active.global_basis.z, light.color, light.energy)
 		painterly.renderer.refresh_settings()
 
-func set_seam_paint(enabled_: bool) -> void:
+func set_highlights(enabled_: bool) -> void:
 	if painterly==null: return
-	painterly.renderer.seam_enabled=enabled_
-	painterly.renderer.refresh_settings()
-	seam_button.set_pressed_no_signal(enabled_)
+	painterly.highlights.settings.enabled=enabled_
+	painterly.highlights.refresh()
+	highlight_button.set_pressed_no_signal(enabled_)
 
 func set_grading(enabled: bool) -> void:
 	if painterly == null: return
@@ -218,6 +246,8 @@ func set_grading(enabled: bool) -> void:
 	grade_button.text = "美术调色 [P]" if enabled else "基础照明 [P]"
 
 func set_info_visible(enabled: bool) -> void:
+	if enabled and location_scenes != null:
+		location_scenes.set_menu_open(false)
 	info.visible = enabled
 	info_button.button_pressed = enabled
 
@@ -229,6 +259,8 @@ func building_at(screen_position: Vector2) -> bool:
 	return not result.is_empty()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if location_scenes != null and location_scenes.interior_open:
+		return
 	if event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_WHEEL_UP:
@@ -236,7 +268,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_WHEEL_DOWN:
 				view_size = clampf(view_size / 0.9, 12.0, 38.0)
 			MOUSE_BUTTON_LEFT:
-				set_info_visible(building_at(event.position))
+				var picked := building_at(event.position)
+				location_scenes.set_menu_open(picked and not location_scenes.menu_open)
+				set_info_visible(false)
 		_update_camera()
 	elif event is InputEventMouseMotion:
 		if event.button_mask & MOUSE_BUTTON_MASK_MIDDLE:
@@ -253,7 +287,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_1: set_evening(false)
 			KEY_2: set_evening(true)
 			KEY_B:
-				if painterly != null: set_seam_paint(not painterly.renderer.seam_enabled)
+				if painterly != null: set_highlights(not painterly.highlights.settings.enabled)
 			KEY_P:
 				if painterly != null: set_grading(not painterly.renderer.enabled)
 			KEY_I: set_info_visible(not info.visible)

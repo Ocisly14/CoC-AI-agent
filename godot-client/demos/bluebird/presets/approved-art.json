@@ -1,0 +1,106 @@
+{
+  "camera_reference": {
+    "pitch": 31.0,
+    "size": 33.9794945777814,
+    "target": [
+      7.45645999908447,
+      1.70000004768372,
+      4.75673484802246
+    ],
+    "yaw": 42.0
+  },
+  "shadow_reference": {
+    "overlay": true,
+    "rectangle": false,
+    "revision": 0,
+    "seed": 1701
+  },
+  "state": {
+    "cycle": {
+      "enabled": false,
+      "hour": 12.0
+    },
+    "lamps": {
+      "lamp_art_enabled": true,
+      "lamp_art_strength": 4.1,
+      "lamp_attenuation": 1.9,
+      "lamp_chroma_gain": 1.05,
+      "lamp_energy": 9.7,
+      "lamp_hue_boost": 1.45,
+      "lamp_hue_width": 56.0,
+      "lamp_importance_boost": 1.85,
+      "lamp_lightness_gain": 0.6,
+      "lamp_range": 11.5,
+      "lamp_temperature": 3150.0
+    },
+    "lighting": {
+      "ambient_color": [
+        0.686274528503418,
+        0.764705896377563,
+        0.866666674613953
+      ],
+      "ambient_energy": 0.349999994039536,
+      "azimuth": -34.9999961853027,
+      "elevation": 49.9999923706055,
+      "sun_color": [
+        0.995519518852234,
+        0.946295559406281,
+        0.8609738945961
+      ],
+      "sun_energy": 1.3400000333786,
+      "background_color": [
+        0.6431372549019608,
+        0.7176470588235294,
+        0.7607843137254902
+      ]
+    },
+    "renderer": {
+      "chroma_gain": 1.0,
+      "color_response": 4.0,
+      "contrast_pivot": 0.76,
+      "contrast_response": 1.0,
+      "detail_response": 0.23,
+      "exposure": 1.33,
+      "hue_center": 0.0,
+      "hue_feather": 11.2,
+      "hue_half_width": 51.0,
+      "hue_selection_mode": 0,
+      "importance_gamma": 1.21,
+      "importance_override": -1.0,
+      "importance_scale": 1.34,
+      "lightness_gain": 0.15,
+      "saturation": 1.0,
+      "selective_color": true
+    },
+    "highlights": {
+      "enabled": true,
+      "seed": 71,
+      "debug_view": 0,
+      "glass_enabled": true,
+      "metal_enabled": true,
+      "frame_enabled": true,
+      "strength": 0.8,
+      "density": 0.65,
+      "size_scale": 1.0,
+      "direction_degrees": 0.0,
+      "glass_angles": [
+        65,
+        25
+      ],
+      "metal_angles": [
+        55,
+        20
+      ],
+      "frame_angles": [
+        30,
+        15
+      ]
+    }
+  },
+  "version": 4,
+  "sources": {
+    "solar_and_art": "art-2026-09-08_13-00-25.json",
+    "lamps": "art-2026-09-08_14-27-46.json",
+    "low_sun": "Warm dawn/dusk curve in day_night_cycle.gd"
+  }
+}

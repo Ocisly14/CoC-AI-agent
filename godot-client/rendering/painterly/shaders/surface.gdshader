@@ -1,8 +1,6 @@
 shader_type spatial;
 render_mode unshaded, fog_disabled;
-#include "res://rendering/painterly/shaders/color.gdshaderinc"
-#include "res://rendering/painterly/shaders/color_selection.gdshaderinc"
-#include "res://rendering/painterly/shaders/seam_paint.gdshaderinc"
+#include "res://rendering/painterly/shaders/lighting.gdshaderinc"
 #include "res://rendering/painterly/shaders/ground_albedo.gdshaderinc"
 uniform bool procedural_ground=false;
 uniform vec4 secondary_color : source_color=vec4(0.3,0.3,0.3,1);
@@ -109,12 +107,6 @@ void fragment() {
         vec3 coarse=base_color.rgb*textureLod(albedo_texture,UV,3.0).rgb;
         albedo=mix(coarse,albedo,1.0-detail_response*(1.0-importance));
     }
-    float seam_coverage;
-    vec3 seam_donor, seam_direction;
-    vec3 seam_position=(seam_from_local*vec4(local_position,1.0)).xyz;
-    vec3 seam_normal=normalize(transpose(inverse(mat3(seam_from_local)))*local_normal);
-    float seam_protection=use_seam_protection_map ? texture(seam_protection_map,data_uv).r : 0.0;
-    albedo=apply_seam_paint(albedo,seam_position,seam_normal,seam_protection,seam_coverage,seam_donor,seam_direction);
     // A planar flow field cannot describe perpendicular faces of the same box/slab.
     vec3 mapped_normal=normalize(cross(surface_basis[0],surface_basis[2]));
     bool paint_receiver=painterly_shadows && abs(dot(normalize(world_normal),mapped_normal))>0.75;
@@ -131,28 +123,13 @@ void fragment() {
     vec3 irradiance=ambient_color.rgb*ambient_energy*ambient_access;
     irradiance+=indirect_tint.rgb*indirect_energy;
     if(use_indirect_map) {irradiance+=indirect_sample.rgb*indirect_energy;}
-    vec3 indirect=albedo*irradiance;
-    vec3 styled=s0;
-    float color_weight=0.0;
-    if(enabled && selective_color && sun_energy>0.000001) {
-        vec3 material_lab=to_oklab(albedo);
-        vec3 solar_lab=to_oklab(sun_color.rgb/max(luminance(sun_color.rgb),0.000001));
-        float cm=length(material_lab.yz), cs=length(solar_lab.yz);
-        float qm=confidence(cm,material_chroma_knee), qs=confidence(cs,sun_chroma_knee);
-        float match_hue=selected_hue_weight(material_lab,solar_lab);
-        float d=(1.0-exp(-sun_energy))*ndotl;
-        float fc=mix(0.12,1.0,pow(importance,1.3))*color_response;
-        float fl=mix(0.15,1.0,importance);
-        float guard=smoothstep(0.08,0.28,material_lab.x)*(1.0-smoothstep(0.86,1.0,material_lab.x));
-        // Manual selection is independent of sun chroma, including white light.
-        color_weight=d*fc*qm*(hue_selection_mode==1 ? 1.0 : qs)*match_hue;
-        vec3 slab=to_oklab(s0);
-        float gain=soft_limit(chroma_gain*color_weight,chroma_gain);
-        slab.yz*=1.0+gain;
-        slab.x+=soft_limit(lightness_gain*d*fl*guard,lightness_gain);
-        slab.yz+=solar_lab.yz*(1.0-qm)*d*fl*guard*0.04;
-        styled=from_oklab(slab);
-    }
+    // Separate direct and indirect lighting before applying shadow visibility.
+    vec3 indirect, styled;
+    float color_weight;
+    painterly_light_split(albedo,normalize(world_normal),sun_direction,sun_color.rgb,sun_energy,
+        irradiance,enabled && selective_color,importance,
+        chroma_gain,lightness_gain,material_chroma_knee,sun_chroma_knee,color_response,
+        indirect,styled,color_weight);
     // Visibility is applied once, to the whole direct term (including its enhancement).
     vec3 composed=indirect+visibility*styled;
     // A small pigment-density adjustment, independent of the geometric shadow visibility.
@@ -186,10 +163,7 @@ void fragment() {
     else if(debug_view==11) {result=vec3(abs(masks.g-masks.r));}
     else if(debug_view==12) {result=vec3(pigment.x*pigment_gate);}
     else if(debug_view==13) {result=vec3(pigment.y*pigment_gate);}
-    if(debug_view==14) {result=vec3(seam_coverage);}
-    else if(debug_view==15) {result=seam_donor;}
-    else if(debug_view==16) {result=seam_direction;}
-    else if(debug_view==17) {
+    if(debug_view==17) {
         vec3 material_lab=to_oklab(albedo);
         vec3 solar_lab=to_oklab(sun_color.rgb/max(luminance(sun_color.rgb),0.000001));
         result=vec3(selected_hue_weight(material_lab,solar_lab)*confidence(length(material_lab.yz),material_chroma_knee));

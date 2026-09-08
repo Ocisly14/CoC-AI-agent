@@ -21,7 +21,9 @@
 | 晴天、暮色 | 1、2 / 对应按钮 |
 | 美术调色与基础照明对照 | P / 美术调色按钮（Forward+） |
 | 成片、固有色、增强权重、重要度 | 底部通道菜单（Forward+） |
-| 查看地点 | 点击餐厅 / I / 地点手记按钮 |
+| 展开内部地点 | 点击餐厅，依次刷出堂座、后厨、楼上住处；点击笔刷进入 |
+| 返回街景 | 室内点击返回 / Esc；再次 Esc 收起笔刷 |
+| 查看地点手记 | I / 地点手记按钮 |
 | 收起手记 | Esc / 收起按钮 / 点击空地 |
 
 ## 编辑与资产
@@ -40,7 +42,23 @@
 
 ## 范围与验证
 
-这是街角外观与交互样板，尚未接入 NPC、实时模拟、步行导航或室内剖视。手记只摘录已有堂座的日常描述，不代表模型内已完成家具陈设。系统字体优先使用 macOS 的苹方/宋体；跨平台发布需另准备合法的 CJK 字体。
+这是街角外观与交互样板，包含固定镜头室内场景图，尚未接入 NPC、实时模拟、步行导航或三维室内剖视。系统字体优先使用 macOS 的苹方/宋体；跨平台发布需另准备合法的 CJK 字体。
+
+## 油画地点选择与室内场景
+
+点击建筑，三笔混色颜料自下而上依次显露，各代表模组中的堂座、后厨、楼上住处。笔刷使用概念图的旧蓝绿、灰紫、暖木褐与赭黄，骨白文字；悬停和键盘焦点轻微提亮。菜单锚定建筑屋顶的屏幕投影，并在窗口边缘约束位置。
+
+堂座使用 `interior-rooms-v3/bluebird-dining.png`，后厨使用 `interior-rooms-v4/bluebird-kitchen.png` 独立合成图。后厨延续堂座向前平移的视线：连接门和传菜窗位于画面下方，前后墙线保持水平，取消斜转角度。两张图的共用隔墙均完整，弹簧门和传菜窗关闭，互不透视展示另一场景。绘画、污渍、边缘和光色已在原图中，不再施加三维美术调色。黑色背景内保持完整比例显示，进入时淡入，退出保留原街景镜头。楼上暂无图像，呈现其自己的模组文字手记，不复用一层图冒充楼上。
+
+实现为 `location_scenes.gd` 和 `location_brush.gdshader`；`assets/bluebird-dining.png`、`assets/bluebird-kitchen.png` 相对符号链接指向仓库根资产，沿用外部模型的资源交付方式。独立导出 Godot 工程前需保留链接目标或将其物化为 PNG。可用 `--bluebird-location=SCN_bluebird_kitchen` 直接打开后厨预览。
+
+后厨当前显示用户确认的 `painted-background-v1/kitchen-background-110.png`：长油画泼洒背景按放大 10% 的预览合成比例保留，直接显示成图，不在运行时重新叠加。上文 v4 后厨仍是场景源图。独立背景通过 `assets/bluebird-oil-background.png` 一并导入以供复用。
+
+堂座当前使用 `painted-background-v1/dining-background-110.png`，沿用同一长笔触背景，以后厨最终合成图为比例参照。两个地点分别加载各自的合成图，共用显示布局和缩放参数。
+
+室内图像在原等比适配的显示尺寸上，以中心为基准整体缩放到 150%；场景和油画背景同比例变化，文字和导航保持原尺寸，超出窗口部分由视口裁切。
+
+使用 `--bluebird-interior-qa` 执行场景切换、输入隔离、快速返回及渲染检查，输出至 `/private/tmp/bluebird-interior-qa`。
 
 已在本机 Godot **4.7.2 / Forward+ 与 Compatibility / Apple M5** 中导入和实际渲染。`qa/` 保存当前默认 Forward+ 的晴天、手记、暮色和材质近景的实际运行截图，以及 `validation.json`。自动检查涵盖网格/材质存在、相机缩放边界/锁定角度/平移/复位、射线选择与按钮状态；不是帧率或显存预算验收。
 
@@ -91,11 +109,13 @@ Godot --path godot-client --scene res://demos/bluebird/street_corner.tscn -- --b
 
 检查包括真实图像像素范围、分区坐标、原几何/UV/图像资源、招牌 alpha、间接图对实际画面的贡献、昼夜/调色和截图。该命令要求 GPU 窗口，headless 会明确失败。没有做帧率/显存预算验收；运行中移动原建筑还需同步静态显示副本和笔刷代理变换。
 
-## 全场景接缝叠色
+## 油画高光
 
-已接入 [通用单向接缝模块](../../rendering/painterly/SEAM_PAINT.md)。蓝鸟只设置表面绘画层级和保护范围，不提供接缝坐标：屋面层级 30、框件 12、其他参与的建筑面 10；街景、文字、内侧灰泥等保留保护。实际几何接触、源色采样和稀疏笔触／颜料滴均由渲染器自动计算。
+[光照驱动的油画高光](../../rendering/painterly/highlights/README.md)替代原接触与轮廓颜料带。玻璃、金属及接近正对光源的边框叠加预制油画亮笔，位置固定在材质表面，太阳/月光及路灯控制亮度和颜色，原生阴影控制遮挡。木质与漆面框条也参与；横竖合并网格使用一次烘制的 UV 方向分区。
 
-按 **B / 接缝叠色按钮**独立对照；调试菜单新增叠色遮罩、来源和方向。新功能不更改原始图集和模型，不改变 P 键原有用途。最终 [GPU 报告与截图](qa/seams/validation.json)含全景、近景、局部颜料滴及相同条件下的关闭对照。
+按 **B / 油画高光**独立对照；F3「油画高光」可分组开关、调强度/密度/尺寸/方向、预览笔触覆盖与受光权重，并重新排笔。参数纳入保存/恢复；旧颜料带字段忽略，不改写原始图集和 GLB。P 键仍控制漫反射美术调色。
+
+验收：`Godot --path godot-client --scene res://demos/bluebird/street_corner.tscn -- --bluebird-highlight-qa`。当前 [报告与昼夜截图](qa/highlights/validation.json)使用实际 Forward+ GPU；原 `qa/seams` 是历史报告。
 
 ## 当前 v11 完整部位底图
 
@@ -145,3 +165,49 @@ Godot --path godot-client --script res://demos/bluebird/tools/street_ground_qa.g
 ```
 
 该命令需要 GPU 窗口，在独立 `qa/street-ground` 目录保存截图与报告，不覆盖历史 QA 图片。`tools/build_scene.py` 已同步新地表引用；它仍仅用于主动重建初始场景，不应随意覆盖编辑器中的后续改动。
+
+
+## 四盏街灯与局部光照（2026-09-08）
+
+默认街景加入 `StreetLights` 子场景：两盏位于餐厅侧人行道（X −13、9；Z 6.15），两盏位于对面（X −6、16；Z 19.05）。底座均为 Y 0.18 米，与铺装齐平，避开入口。节点位置是当前街景的美术布置，不新增模组物品 ID。
+
+每盏使用既有油画路灯、暖黄色 OmniLight3D 与独立灯泡发光材质。光源中心离底座 3.34 米，当前作用距离 11.5 米、衰减指数 1.9、亮灯能量 9.7；开启原生局部阴影，光源尺寸 0.55、阴影模糊 2.5、不透明度 0.72。参数由 `street_lights.gd` 设置；独立路灯资产仍保留默认能量 2.4。灯泡与玻璃不投不透明阴影，避免灯泡把内部光源完全遮住；铸铁框架、灯帽与周围建筑仍可遮挡局部光。四盏灯共享同一 mipmap 颜色图，各自保留材质与开关状态。
+
+白天预设关闭，暮色预设开启；时间预览在 18:00–06:00 开灯，06:00–18:00 关灯。使用已有 F3 时间调试可检查昼夜；这些仅跟随本地预览时间，不修改后端模拟。
+
+`local_light_bridge.gd` 为蓝鸟材质派生局部灯照版本：以 EMISSION 保留原油画太阳／环境结果，在 Godot `light()` 中只接收非方向光的漫反射与原生距离衰减／遮挡，关闭重复环境和镜面贡献。`lamp_color.gdshaderinc` 与太阳共用 Oklab、色相选区和软上限函数，为高重要度或相近色材质增加色度与相对明度；两项权重可叠加，局部光的距离衰减和遮挡仍生效。通用色相函数抽出带参数的版本，太阳原有调用与默认行为保留。实现参考 [Godot Spatial Shader / Light built-ins](https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/spatial_shader.html#light-built-ins)。
+
+[夜景](qa/street-lights/03-night.png)、[熄灯对照](qa/street-lights/04-night-lamps-off.png)、[白天](qa/street-lights/01-day.png)与[GPU 报告](qa/street-lights/validation.json)记录实际结果。Godot 4.7.2 / Forward+ / Apple M5 的 38 项检查通过，包括四盏灯各自照亮油画地面、真实遮挡物阻断灯光、白天与原着色器画面一致、时间／预设切换及餐厅拾取。未做帧率预算或多平台性能验收。
+
+```sh
+Godot --path godot-client --script res://demos/bluebird/tools/street_lights_qa.gd
+Godot --path godot-client --scene res://demos/bluebird/street_corner.tscn -- --bluebird-street-night
+```
+
+第二条直接打开 22:00 的街灯全景，普通启动仍保留白天默认镜头。
+
+### 路灯投影与柔光调整
+
+四盏灯的铸铁网格现已参与建筑使用的真实深度采集，灯座、细柱、灯罩分别提供油画投影体积，与建筑共用压力盖印和 Procreate 颗粒渲染。共 26 个投影体积（建筑 14、路灯 12），保留路灯原有分层材质；太阳与月光下都能投影。局部灯光继续使用原生遮挡，通过扩大光源、增加模糊和降低阴影反差形成更柔和的半影。
+
+此前柔光调整的同机位单灯 GPU 对照中，近处地面由灯光增加的亮度提升约 36%，远处降至原来的约 15%。该轮使用能量 14.4、范围 8.5、衰减 3.0；当前参数已由下述用户定稿替代。[路灯投影近景](qa/lamp-shadow-refinement/01-day-lamp-shadow.png)、[该轮夜景](qa/lamp-shadow-refinement/06-night-refined.png)与[22 项检查报告](qa/lamp-shadow-refinement/validation.json)保留历史结果。
+
+```sh
+Godot --path godot-client --script res://demos/bluebird/tools/lamp_shadow_refinement_qa.gd
+```
+
+### 用户定稿与暖色朝夕阳（2026-09-08）
+
+[定稿参数](presets/approved-art.json)合并了用户保存的 `art-2026-09-08_13-00-25.json`（太阳光与美术）和 `art-2026-09-08_14-27-46.json`（路灯）。启动应用整组参数，默认使用 13 点文件中的手动日光，镜头仍可自由调整。F3 面板的「恢复初始」回到合并定稿，晴天／暮色切换保留曝光，调节和另存新参数仍可用。两个原用户文件未改动。
+
+太阳与美术定稿：太阳强度 1.34、环境光强度 0.35、方位角 −35°、高度角 50°；曝光 1.33、日照增色响应 4.0、增艳上限 1.0、提亮上限 0.15、对比度响应 1.0、中点 0.76、细节弱化 0.23、重要度倍率 1.34／曲线 1.21、色相范围 ±51°／羽化 11.2°。颜色三通道及其他参数直接保留源 JSON 数值。
+
+路灯定稿：3150 K（美术近似色温）、亮度 9.7、衰减 1.9、范围 11.5 米；整体加成 4.1、重要度加成 1.85、相近色加成 1.45、色相范围 ±56°、增艳上限 1.05、提亮上限 0.6。F3 →「路灯」可实时调节这些数值，向下滚动显示加成控件。参数格式升级至 v4，兼容读取 v1–v3；旧文件不覆盖当前路灯值。[控件与 GPU 验证](qa/lamp-controls/validation.json)包含实际增亮、重要度与色相独立作用、参数保存读取和 A/B 对比。
+
+朝夕低太阳颜色从 `#ff9857` 调至 `#ff7838`，暖色向正午色的过渡终点从高度权重 0.55 延长至 0.70。昼夜曲线的正午颜色、强度 1.34、环境光强度 0.35 和最高高度角 50°均取自合并定稿；时间变化仍驱动太阳方向与明暗，月光保持原值。暮色快捷预设的太阳为 `#edb181`，主光／环境光强度按定稿日光基准缩放。
+
+```sh
+Godot --path godot-client --scene res://demos/bluebird/street_corner.tscn -- --bluebird-lamp-controls
+Godot --path godot-client --script res://demos/bluebird/tools/lamp_controls_qa.gd
+Godot --path godot-client --script res://demos/bluebird/tools/day_night_qa.gd
+```

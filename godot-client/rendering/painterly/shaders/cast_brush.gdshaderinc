@@ -29,7 +29,6 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
     vec2 texture_pixels=max(vec2(textureSize(oil_brush_atlas,0)),vec2(1));
     vec4 region=oil_brush_region_px/vec4(texture_pixels,texture_pixels);
     float uncovered=1.0,total=0.0,strongest=0.0,load_sum=0.0,dry_sum=0.0;
-    float root_cover=0.0;
     for(int caster=0;caster<32;caster++) {
         if(caster>=brush_caster_count) {break;}
         vec3 lo=brush_caster_min[caster].xyz, hi=brush_caster_max[caster].xyz;
@@ -47,9 +46,9 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
         vec2 root=center-trail*half_along+trail*bottom*slope;
         vec2 rel=world_p.xz-root;
         if(dot(rel,trail)<-full_width || dot(rel,trail)>projected_length*shadow_length_range.y+full_width || abs(dot(rel,across))>full_width) {continue;}
-        // Only a caster touching THIS receiver gets an opaque contact bridge.
-        // Intersect the exact footprint at this pixel, including diagonal corners;
-        // a rectangular lateral strip would leave gaps or spill past the sides.
+        // Contact deepens existing brush coverage; it never paints a separate
+        // rectangular patch. Near the caster, suppress tip lobes on its lit side.
+        float contact=0.0,root_guard=1.0;
         if(lo.y<=world_p.y+0.02) {
             vec2 safe_trail=vec2(abs(trail.x)>0.0001 ? trail.x : 0.0001,abs(trail.y)>0.0001 ? trail.y : 0.0001);
             vec2 root_hit0=(lo.xz-world_p.xz)/safe_trail;
@@ -57,15 +56,22 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
             float root_enter=max(min(root_hit0.x,root_hit1.x),min(root_hit0.y,root_hit1.y));
             float root_leave=min(max(root_hit0.x,root_hit1.x),max(root_hit0.y,root_hit1.y));
             float shadow_reach=top*slope;
-            if(root_leave>=root_enter && root_enter<=0.0 && -root_leave<=shadow_reach) {
+            bool behind=root_leave>=root_enter && root_enter<=0.0;
+            float root_distance=length(world_p.xz-clamp(world_p.xz,lo.xz,hi.xz));
+            float guard_width=max(shadow_brush_width_m,0.08);
+            // Release the restriction away from the wall so free brush edges
+            // remain rounded. No clipping to the full physical shadow polygon.
+            if(!behind)root_guard=smoothstep(guard_width*0.5,guard_width,root_distance);
+            if(behind && -root_leave<=shadow_reach) {
                 float solid=min(shadow_root_fill_m,shadow_reach*0.25);
                 float fade_end=min(solid*2.0,shadow_reach);
-                float contact=1.0-smoothstep(solid,max(fade_end,solid+0.0001),max(-root_leave,0.0));
-                root_cover=max(root_cover,contact);
+                contact=1.0-smoothstep(solid,max(fade_end,solid+0.0001),max(-root_leave,0.0));
             }
         }
         if(rectangle_shadows_enabled && procreate_shadows_enabled) {
             vec3 paint=rectangle_caster(caster,world_p,lo,hi,identity,trail,across,slope,pixel_dx,pixel_dy);
+            paint.x=(1.0-pow(max(1.0-paint.x,0.0),1.0+3.0*contact))*root_guard;
+            paint.z*=1.0-contact;
             total+=paint.x;
             strongest=max(strongest,paint.x);
             load_sum=paint.y*paint.x+load_sum*(1.0-paint.x);
@@ -109,7 +115,8 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
             vec2 uv=vec2(dot(delta,axis)/stroke_length,dot(delta,side)/stroke_width+0.5);
             if(hash21(id+vec2(11,41))<0.5) {uv.y=1.0-uv.y;}
             float lateral_limit=(procreate_shadows_enabled && pressure_stamps_enabled) ? 0.71 : 0.5;
-            if(uv.x<0.0 || uv.x>1.0 || abs(uv.y-0.5)>lateral_limit) {continue;}
+            float end_margin=(procreate_shadows_enabled && pressure_stamps_enabled) ? stroke_width*0.55/stroke_length : 0.0;
+            if(uv.x< -end_margin || uv.x>1.0+end_margin || abs(uv.y-0.5)>lateral_limit) {continue;}
             if(procreate_shadows_enabled) {
                 vec3 paint;
                 if(pressure_stamps_enabled) {
@@ -118,6 +125,8 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
                 } else {
                     paint=aui_deposit(uv,stroke_length,stroke_width,id,max(length(pixel_dx),length(pixel_dy)));
                 }
+                paint.x=(1.0-pow(max(1.0-paint.x,0.0),1.0+3.0*contact))*root_guard;
+                paint.z*=1.0-contact;
                 total+=paint.x;
                 strongest=max(strongest,paint.x);
                 load_sum+=paint.x*paint.y;
@@ -154,6 +163,8 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
             alpha=pow(alpha,mix(0.8,1.08,random));
             float load=1.0-smoothstep(0.12,0.72,tone);
             float dry=smoothstep(0.07,0.38,tone);
+            alpha=(1.0-pow(max(1.0-alpha,0.0),1.0+3.0*contact))*root_guard;
+            dry*=1.0-contact;
             total+=alpha;
             strongest=max(strongest,alpha);
             load_sum+=alpha*load;
@@ -161,12 +172,12 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
             uncovered*=1.0-alpha;
         }
     }
-    float cover=max(1.0-uncovered,root_cover);
+    float cover=1.0-uncovered;
     if(rectangle_shadows_enabled) {
-        return vec3(clamp(load_sum,0.0,1.0),dry_sum*(1.0-root_cover),cover);
+        return vec3(clamp(load_sum,0.0,1.0),dry_sum,cover);
     }
     float extra=max(total-strongest,0.0);
     float pigment=1.0-exp(-extra*0.7-load_sum*0.4);
     float dry=dry_sum/max(total,0.0001)*cover/(1.0+extra*0.25);
-    return vec3(pigment,dry*(1.0-root_cover),cover);
+    return vec3(pigment,dry,cover);
 }

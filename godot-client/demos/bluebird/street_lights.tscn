@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://demos/streetlamp/streetlamp.tscn" id="1"]
+[ext_resource type="Script" path="res://demos/bluebird/street_lights.gd" id="2"]
+
+[node name="StreetLights" type="Node3D"]
+script = ExtResource("2")
+
+[node name="DinerNorth" parent="." instance=ExtResource("1")]
+position = Vector3(-13, 0.18, 6.15)
+
+[node name="DinerSouth" parent="." instance=ExtResource("1")]
+position = Vector3(9, 0.18, 6.15)
+rotation_degrees = Vector3(0, -12, 0)
+
+[node name="OppositeNorth" parent="." instance=ExtResource("1")]
+position = Vector3(-6, 0.18, 19.05)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="OppositeSouth" parent="." instance=ExtResource("1")]
+position = Vector3(16, 0.18, 19.05)
+rotation_degrees = Vector3(0, 168, 0)

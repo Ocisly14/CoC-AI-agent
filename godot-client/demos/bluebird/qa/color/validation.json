@@ -7,7 +7,7 @@
 	"metrics": {
 		"capture_color_storage_upper_bound_mib": 64.0,
 		"capture_count": 3,
-		"committed_revision": 222,
+		"committed_revision": 169,
 		"component_domains": [
 			"corner",
 			"front",
@@ -19,40 +19,27 @@
 			"floor-upper",
 			"roof-upper"
 		],
-		"controlled_surfaces": 202,
+		"controlled_surfaces": 143,
 		"evening_difference": {
-			"changed_pixels": 46997,
-			"max": 0.113725483417511,
-			"mean": 0.00936369931419904
+			"changed_pixels": 171933,
+			"max": 0.439215660095215,
+			"mean": 0.0533136808773701
 		},
 		"indirect_difference": {
-			"changed_pixels": 108413,
-			"max": 0.141176462173462,
-			"mean": 0.0115401910281583
+			"changed_pixels": 100628,
+			"max": 0.113725498318672,
+			"mean": 0.0105812907637732
 		},
 		"last_capture_gpu_ms": null,
-		"last_capture_latency_ms": 17.349,
+		"last_capture_latency_ms": 3.778,
 		"noon_difference": {
-			"changed_pixels": 31001,
-			"max": 0.39215686917305,
-			"mean": 0.0123452023862046
+			"changed_pixels": 163818,
+			"max": 0.572549015283585,
+			"mean": 0.0246625134711212
 		},
 		"painted_sign_surfaces": 4,
-		"registered_surfaces": 218,
-		"resolution": 2048,
-		"seam_paint": {
-			"build_count": 3,
-			"build_ms": 2114.755,
-			"coverage_upper_bound": 0.0691280896380011,
-			"covered_length_m": 42.8831850643121,
-			"drips": 2,
-			"eligible_surfaces": 96,
-			"errors": [],
-			"receivers": 17,
-			"seam_length_m": 620.343847036362,
-			"seams": 278,
-			"stamps": 217
-		}
+		"registered_surfaces": 163,
+		"resolution": 2048
 	},
 	"native_surfaces": [
 		"D0_ENTRY_GLASS_Surface0 | glass",

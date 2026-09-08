@@ -1,0 +1,17 @@
+{
+	"checks": 38,
+	"day_mean_absolute_error": 0.0000000751747413434916,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"lamps": 4,
+	"night_ground_luminance_gains": [
+		0.0390415062941909,
+		0.0471657437208891,
+		0.0300618975088895,
+		0.0274990437143743
+	],
+	"occluder_luminance_drop": 0.0190199224538207,
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "Actual day/night rendering, no double solar/ambient, physical surface illumination from each lamp, mip sharing, actual shadow-occluder probe, time/preset switching and restaurant picking. No performance benchmark."
+}

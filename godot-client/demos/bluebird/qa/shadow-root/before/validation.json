@@ -1,0 +1,95 @@
+{
+  "checks": [
+    {
+      "message": "axis-pressure: no exposed paint ahead of the building root",
+      "passed": true
+    },
+    {
+      "message": "axis-pressure: brush still meets the shaded wall",
+      "passed": true
+    },
+    {
+      "message": "axis-pressure: static coverage is stable",
+      "passed": true
+    },
+    {
+      "message": "axis-pressure: pressure_charge zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "axis-pressure: pressure_scale zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "axis-rectangle: no exposed paint ahead of the building root",
+      "passed": false
+    },
+    {
+      "message": "axis-rectangle: brush still meets the shaded wall",
+      "passed": true
+    },
+    {
+      "message": "axis-rectangle: static coverage is stable",
+      "passed": true
+    },
+    {
+      "message": "axis-rectangle: pressure_charge zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "axis-rectangle: pressure_scale zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "diagonal-pressure: no exposed paint ahead of the building root",
+      "passed": false
+    },
+    {
+      "message": "diagonal-pressure: brush still meets the shaded wall",
+      "passed": true
+    },
+    {
+      "message": "diagonal-pressure: static coverage is stable",
+      "passed": true
+    },
+    {
+      "message": "diagonal-pressure: pressure_charge zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "diagonal-pressure: pressure_scale zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "diagonal-rectangle: no exposed paint ahead of the building root",
+      "passed": false
+    },
+    {
+      "message": "diagonal-rectangle: brush still meets the shaded wall",
+      "passed": true
+    },
+    {
+      "message": "diagonal-rectangle: static coverage is stable",
+      "passed": true
+    },
+    {
+      "message": "diagonal-rectangle: pressure_charge zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "diagonal-rectangle: pressure_scale zero leaves no independent root fill",
+      "passed": false
+    },
+    {
+      "message": "Complete rounded tip extends before path start without a UV cut",
+      "passed": false
+    },
+    {
+      "message": "Brush start curves back toward its sides",
+      "passed": false
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "renderer": "forward_plus"
+}

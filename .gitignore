@@ -90,3 +90,5 @@ _bmad-output
 # Godot QA 渲染截图 —— 一次性验证产物，仅保留各目录的 validation.json
 godot-client/demos/**/qa/**/*.png
 godot-client/demos/**/qa/**/*.png.import
+
+assets

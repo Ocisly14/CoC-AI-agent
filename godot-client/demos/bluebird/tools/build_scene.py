@@ -123,6 +123,7 @@ node('GroundFloor', 'CollisionShape3D', 'Bluebird/PickBody',
 node('UpperFloor', 'CollisionShape3D', 'Bluebird/PickBody',
      f'position = Vector3(3, 4.8, -7)\nshape = {shape1}')
 
+node('StreetLights', None, '.', instance='ExtResource("6_lights")')
 node('Streets', 'Node3D', '.')
 box('Surroundings', 'Streets', (0,-0.36,0), (300,0.4,300), lot)
 # One authored ground asset carries pavement, raised curbs and street paint.
@@ -186,11 +187,12 @@ node('Help','Label','HUD',
      f'mouse_filter = 2\ntheme = {theme}\ntheme_override_colors/font_color = {color("2B382F")}\n'
      'theme_override_font_sizes/font_size = 14\ntext = "固定正交视角     滚轮 / 双指捏合 缩放     中键拖动 / 双指滑动 平移     点击建筑 查看"')
 
-header = f'[gd_scene load_steps={len(resources)+6} format=3]\n\n'
+header = f'[gd_scene load_steps={len(resources)+7} format=3]\n\n'
 external = ('[ext_resource type="Script" path="res://demos/bluebird/street_corner.gd" id="1"]\n'
             '[ext_resource type="PackedScene" path="res://demos/bluebird/assets/bluebird.glb" id="2"]\n'
             '[ext_resource type="Shader" path="res://demos/bluebird/ground.gdshader" id="3"]\n'
             '[ext_resource type="ArrayMesh" path="res://demos/bluebird/assets/bluebird-street-ground.obj" id="4_street"]\n'
-            '[ext_resource type="Texture2D" path="res://demos/bluebird/assets/bluebird-street-basecolor.png" id="5_street_color"]\n\n')
+            '[ext_resource type="Texture2D" path="res://demos/bluebird/assets/bluebird-street-basecolor.png" id="5_street_color"]\n'
+            '[ext_resource type="PackedScene" path="res://demos/bluebird/street_lights.tscn" id="6_lights"]\n\n')
 (ROOT/'street_corner.tscn').write_text(header + external + '\n'.join(resources) + '\n' + '\n'.join(nodes))
 print(f'Wrote {len(nodes)} editable nodes to {ROOT / "street_corner.tscn"}')

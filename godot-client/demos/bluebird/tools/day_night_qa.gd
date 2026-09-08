@@ -9,6 +9,26 @@ func run() -> void:
 	var exposure = renderer.exposure
 	var initial = panel.snapshot().duplicate(true)
 	var curve = scene.DAY_NIGHT
+	var approved = JSON.parse_string(FileAccess.get_file_as_string(panel.APPROVED_PRESET)).state
+	# JSON numbers decode as floats; renderer enum properties are integers.
+	for group in ["lamps", "renderer"]:
+		for key in approved[group]:
+			var value = approved[group][key]
+			check(initial[group][key] == value if value is bool else is_equal_approx(initial[group][key], value), "Approved default: " + key)
+	for key in panel.LIGHT_RANGES:
+		check(is_equal_approx(initial.lighting[key], approved.lighting[key]), "Approved daylight default: " + key)
+	for key in ["sun_color", "ambient_color"]:
+		for i in 3: check(is_equal_approx(initial.lighting[key][i], approved.lighting[key][i]), "Approved daylight colour: " + key)
+	for hour in [6.5, 8.0, 16.0, 17.5]:
+		var height = sin((hour - 6.0) / 12.0 * PI)
+		var old_color = Color("ff9857").lerp(curve.color_from_array(approved.lighting.sun_color), smoothstep(.02, .55, height))
+		check(curve.sample(hour).color.b < old_color.b and curve.sample(hour).color.g < old_color.g, "Low sun is warmer at %s" % hour)
+	check(curve.sample(12).color.is_equal_approx(curve.color_from_array(approved.lighting.sun_color)), "Noon uses approved solar colour")
+	check(is_equal_approx(curve.sample(12).energy, approved.lighting.sun_energy) and is_equal_approx(curve.sample(12).ambient_energy, approved.lighting.ambient_energy), "Clock noon uses approved daylight energy")
+	check(curve.sample(0).color.is_equal_approx(Color("b8cced")), "Moon colour is preserved")
+	scene.set_evening(true)
+	check(is_equal_approx(renderer.exposure, exposure) and scene.get_node("StreetLights").settings == approved.lamps, "Evening preset preserves approved art and lamp settings")
+	panel.apply_state(initial)
 	for step_ in 97:
 		var sample = curve.sample(step_ * 0.25)
 		check(sample.energy >= 0.0 and sample.elevation >= 5.0, "Finite bounded light at quarter hour %d" % step_)

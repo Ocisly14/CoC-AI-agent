@@ -1,0 +1,19 @@
+{
+	"attenuation": 3.0,
+	"checks": 22,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"far_gain_new": 0.00145292540359497,
+	"far_gain_old": 0.00957283097171788,
+	"lamp_shadow_changed_pixels": 6419,
+	"light_energy": 14.3999996185303,
+	"light_size": 0.550000011920929,
+	"near_gain_new": 0.0303115915367604,
+	"near_gain_old": 0.022301615290165,
+	"passed": true,
+	"range": 8.5,
+	"renderer": "forward_plus",
+	"shadow_blur": 2.5,
+	"shadow_opacity": 0.720000028610229,
+	"shared_brush_casters": 26
+}

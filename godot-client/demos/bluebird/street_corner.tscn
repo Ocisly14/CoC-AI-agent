@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://demos/bluebird/street_corner.gd" id="1"]
 [ext_resource type="PackedScene" path="res://demos/bluebird/assets/bluebird.glb" id="2"]
@@ -6,6 +6,8 @@
 
 [ext_resource type="ArrayMesh" path="res://demos/bluebird/assets/bluebird-street-ground.obj" id="4_street"]
 [ext_resource type="Texture2D" path="res://demos/bluebird/assets/bluebird-street-basecolor.png" id="5_street_color"]
+
+[ext_resource type="PackedScene" path="res://demos/bluebird/street_lights.tscn" id="6_lights"]
 
 [sub_resource type="StandardMaterial3D" id="street_base"]
 resource_name = "Bluebird street painted base"
@@ -167,6 +169,8 @@ shape = SubResource("building_pick_lower")
 [node name="UpperFloor" type="CollisionShape3D" parent="Bluebird/PickBody"]
 position = Vector3(3, 4.8, -7)
 shape = SubResource("building_pick_upper")
+
+[node name="StreetLights" parent="." instance=ExtResource("6_lights")]
 
 [node name="Streets" type="Node3D" parent="."]
 

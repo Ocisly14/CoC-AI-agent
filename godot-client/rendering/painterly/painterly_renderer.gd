@@ -7,18 +7,7 @@ const SURFACE_SHADER = preload("res://rendering/painterly/shaders/surface.gdshad
 const DEPTH_SHADER = preload("res://rendering/painterly/shaders/depth.gdshader")
 const INPUTS = preload("res://rendering/painterly/painterly_surface.gd")
 
-enum DebugView {BEAUTY, BASE, SUN, INDIRECT, PHYSICAL_MASK, PAINTED_MASK, IMPORTANCE, FLOW, STROKES, COLOR_WEIGHT, RAW_LINEAR, MASK_DIFFERENCE, PIGMENT_OVERLAP, BRISTLES, SEAM_MASK, SEAM_SOURCE, SEAM_DIRECTION, COLOR_SELECTION}
-
-const SEAM_COMPILER = preload("res://rendering/painterly/seam_paint.gd")
-@export var seam_enabled := true
-@export var seam_seed := 71
-@export_range(0,1) var seam_strength := 1.0
-@export_range(0.001,0.10) var seam_contact_tolerance_m := 0.035
-@export_range(0,0.15) var seam_coverage := 0.08
-@export_range(0,8) var seam_max_drips := 2
-@export var seam_overrides: Array[PainterlySeam] = []
-var seam_paint = SEAM_COMPILER.new()
-var _seam_dirty := false
+enum DebugView {BEAUTY, BASE, SUN, INDIRECT, PHYSICAL_MASK, PAINTED_MASK, IMPORTANCE, FLOW, STROKES, COLOR_WEIGHT, RAW_LINEAR, MASK_DIFFERENCE, PIGMENT_OVERLAP, BRISTLES, COLOR_SELECTION = 17}
 
 signal capture_committed(revision: int)
 
@@ -259,13 +248,11 @@ func register_surface(mesh: MeshInstance3D, inputs: Resource) -> ShaderMaterial:
     material.set_shader_parameter("receiver_stroke_id",float(_next_stroke_id))
     _next_stroke_id+=1
     _apply_inputs(_surfaces.back())
-    _seam_dirty = true
     refresh_settings()
     request_capture()
     return material
 
 func unregister_surface(mesh: MeshInstance3D) -> void:
-    _seam_dirty = true
     for i in range(_surfaces.size()-1,-1,-1):
         var record := _surfaces[i]
         if record.mesh == mesh:
@@ -283,7 +270,7 @@ func _apply_inputs(record: Dictionary) -> void:
         inputs.alpha_cutoff, inputs.albedo.a]
     mat.set_shader_parameter("base_color", inputs.albedo)
     for pair in [["albedo_texture","albedo_texture"],["importance_map","importance_map"],
-                 ["flow_map","flow_map"],["indirect_map","indirect_map"],["contact_map","contact_protection_map"],["seam_protection_map","seam_protection_map"]]:
+                 ["flow_map","flow_map"],["indirect_map","indirect_map"],["contact_map","contact_protection_map"]]:
         var texture: Texture2D = inputs.get(pair[1])
         mat.set_shader_parameter(pair[0],texture)
         mat.set_shader_parameter("use_"+pair[0],texture != null)
@@ -298,7 +285,6 @@ func _apply_inputs(record: Dictionary) -> void:
         proxy.material_override.set_shader_parameter("base_alpha",inputs.albedo.a)
 
 func refresh_surface_inputs(mesh: MeshInstance3D) -> void:
-    _seam_dirty = true
     for record in _surfaces:
         if record.mesh == mesh:
             var previous_signature: Array=record.caster_signature.duplicate()
@@ -341,8 +327,6 @@ func refresh_settings() -> void:
         for key in rectangle_values:mat.set_shader_parameter(key,rectangle_values[key])
         mat.set_shader_parameter("pressure_stamps_enabled",pressure_stamps_enabled)
         for key in pressure_uniforms: mat.set_shader_parameter(key,pressure_uniforms[key])
-        mat.set_shader_parameter("seam_enabled",seam_enabled)
-        mat.set_shader_parameter("seam_strength",seam_strength)
         for key in ["enabled","selective_color","exposure","color_response","contrast_response",
                     "edge_response","detail_response","chroma_gain","lightness_gain","debug_view",
                     "saturation","contrast_pivot","importance_scale","importance_gamma","importance_override",
@@ -461,14 +445,7 @@ func _capture_loop() -> void:
             await get_tree().process_frame
     _busy = false
 
-func rebuild_seam_paint() -> Dictionary:
-    _seam_dirty = false
-    return seam_paint.rebuild(self,_surfaces)
-
 func _process(_delta: float) -> void:
-    if _seam_dirty or seam_paint.needs_rebuild(self,_surfaces):
-        var seam_report := rebuild_seam_paint()
-        for error in seam_report.get("errors",[]): push_error(error)
     for i in range(_surfaces.size()-1,-1,-1):
         var record := _surfaces[i]
         if not is_instance_valid(record.mesh):
@@ -494,7 +471,7 @@ func get_stats() -> Dictionary:
     var gpu_ms := 0.0
     if _active>=0:
         gpu_ms = RenderingServer.viewport_get_measured_render_time_gpu(_captures[_active].get_viewport_rid())
-    return {"seam_paint":seam_paint.stats,"registered_surfaces":_surfaces.size(),"capture_count":capture_count,
+    return {"registered_surfaces":_surfaces.size(),"capture_count":capture_count,
         "resolution":capture_resolution,"last_capture_latency_ms":last_capture_latency_ms,
         "last_capture_gpu_ms":gpu_ms if gpu_ms>0.0 else null,"committed_revision":committed_revision,
         "capture_color_storage_upper_bound_mib":2.0*capture_resolution*capture_resolution*8/1048576.0}

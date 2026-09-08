@@ -52,7 +52,9 @@ func run(demo: Node3D) -> void:
 	click.pressed = true
 	click.position = point
 	demo._unhandled_input(click)
-	check(demo.info.visible, "Click opens location note")
+	check(demo.location_scenes.menu_open, "Click opens painted location strokes")
+	demo.location_scenes.set_menu_open(false)
+	demo.set_info_visible(true)
 	await capture("02-location-note.png")
 	demo.get_node("HUD/Info/Margin/Column/Close").pressed.emit()
 	check(not demo.info.visible, "Close button hides location note")

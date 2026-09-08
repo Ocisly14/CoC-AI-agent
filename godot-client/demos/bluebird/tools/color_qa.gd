@@ -56,7 +56,7 @@ func run(demo: Node3D) -> void:
 		var original = record.original
 		if original is BaseMaterial3D:
 			material_match = material_match and record.inputs.albedo == original.albedo_color and record.inputs.albedo_texture == original.albedo_texture
-			if original.albedo_texture:
+			if original.albedo_texture and record.architecture:
 				atlases[original.albedo_texture.get_instance_id()] = original.albedo_texture
 		var before: Array = record.source.mesh.surface_get_arrays(record.index)
 		var after: Array = record.part.mesh.surface_get_arrays(0)
@@ -71,7 +71,7 @@ func run(demo: Node3D) -> void:
 	check(atlases.size() == 10, "Six baked component atlases, complete kitchen floor and three painted signs present")
 	for texture in atlases.values(): check(texture.get_image().has_mipmaps(), "Original atlas has mipmaps")
 	check(renderer._brush_layers.get_layers()==5 and renderer.brush_strength==1.0,"Five approved shadow brushes enabled")
-	check(renderer._published_caster_count==14,"Fourteen authored mass proxies replace arbitrary surface bounds")
+	check(preview.architecture_brush_volumes.size()==14 and renderer._published_caster_count==14+preview.lamp_brush_volumes.size(),"Fourteen architectural proxies plus current lamp proxies are published")
 	check(preview.control_profiles.size()==11,"Eleven facade, roof and ground control domains loaded")
 	for name in preview.control_textures:
 		var data: Image=preview.control_textures[name].get_image()

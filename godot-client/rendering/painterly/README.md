@@ -39,9 +39,9 @@ Godot --path godot-client --scene res://demos/painterly_lab/lab.tscn
 
 这些图都由内置 imagegen 生成，带真实 RGBA 透明通道。加载时按可见颜料（alpha > 0.1）计算 UV 范围，保留原 alpha；五张图分别存入带 mipmap 的纹理数组，避免不同笔刷之间串色。GPU 层尺寸 1024×384，源图保持原样。
 
-根部沿当前水平接收面与遮挡物 AABB 的真实接触轮廓补实。默认 `shadow_root_fill_m = 0.22 m`，随后在相同距离内退出保护；短阴影按可用长度缩小保护区。只有接触当前接收面的物体获得该保护，悬空物体不会在下方凭空补出接触阴影。根部保护不读取物理遮罩 `M0`，不会给整片笔刷铺实影底色。保护区同时关闭干刷提亮，保持接触处实感。
+根部仅在已有笔触内增加颜料覆盖，已取消独立的满覆盖接地色块。默认 `shadow_root_fill_m = 0.22 m`，随后在相同距离内平滑退出加深；短阴影按可用长度缩小保护区。贴地压力笔触从可见背光侧开始，保留完整椭圆笔尖；靠墙范围抑制迎光侧和侧边越界，离墙后保留自由笔刷轮廓。这里使用显式 AABB 投影代理，不宣称是复杂建筑的精确轮廓。悬空物体没有接地加深；零压力、零颜料量不留下独立根部暗块。见[起笔与根部修复验证](SHADOW_ROOT_FIX.md)。
 
-最新 [GPU 验证报告](../../demos/painterly_lab/qa/validation.json)共 **93 项通过**：936 个根部采样全部覆盖为 1.0，覆盖地面、高台、斜光、不同种子及整笔 20% 重叠；另外检查物体迎光侧不被根部填充污染、悬空物体不产生假接触阴影、外侧贴图缺口保留。无 HUD 预览：[晴天](../../demos/painterly_lab/qa/18-approved-rooted-noon.png)、[遮罩](../../demos/painterly_lab/qa/19-approved-rooted-mask.png)、[夕阳](../../demos/painterly_lab/qa/20-approved-rooted-sunset.png)。
+历史 v0.4 [GPU 验证报告](../../demos/painterly_lab/qa/validation.json)共 **93 项通过**，其中“所有根部采样覆盖为 1.0”属于已移除的补实方式，不再作为当前验收条件。当前要求接地笔触连续、保留圆润边缘与颗粒，并且不产生独立填充。
 
 - 数量 `N = max(1, ceil((投影宽度 / 目标笔宽 − 1) / 0.8) + 1)`，默认目标笔宽 **0.85 m**。实际笔宽拟合阴影总宽度，相邻中心间距为实际笔宽的 80%。每片阴影独立计算，宽阴影不再固定为三笔。每像素只检查相邻三笔，笔触总数不受旧版五组上限限制。
 - 每笔从对应遮挡物投影截面的根部出发，长度 = 该截面的阴影长度 × 随机比例。`shadow_length_min = 0.8`、`shadow_length_max = 1.2`；上下限颠倒时自动排序，值限制在 0.2–2.0。不叠加旧版拖刷距离，确保整笔长度受范围约束。
@@ -155,6 +155,8 @@ Godot --path godot-client --scene res://demos/painterly_lab/lab.tscn -- --painte
 
 接口依据：[Godot ViewportTexture 的线性 HDR 约定](https://docs.godotengine.org/en/4.7/classes/class_viewporttexture.html)、[Oklab](https://bottosson.github.io/posts/oklab/)、[色域映射](https://bottosson.github.io/posts/gamutclipping/)。项目艺术规则见[专项技术设计](../../../docs/art-direction/selective-color-brush-shadows.md)。
 
-## 全场景接缝叠色
+## 光照驱动的油画高光
 
-新增独立于阴影的 [单向接缝叠色模块](SEAM_PAINT.md)：对所有参与注册的表面自动识别真实接触，根据绘画层级将后画的基色少量覆盖到先画的表面，带稀疏固定颜料滴。算法不依赖蓝鸟资产；蓝鸟只提供层级和保护配置。接口、同层／局部覆盖规则、重建成本、真实 GPU 验证与当前限制见专项说明。
+[油画高光模块](highlights/README.md)取代接触与轮廓颜料带。12 张实际生成的透明油画笔触分为玻璃、金属、边框三组，按固定种子排列在物体表面，通过同网格的附加材质 pass 接收 Godot 原生太阳、月光和局部灯的方向、颜色、能量、距离及阴影衰减。亮笔不读取视角，不做轮廓捕获、GPU 回读或逐帧几何构建。
+
+蓝鸟按 **B** 切换高光，F3 的「油画高光」页提供分组、密度、尺寸、强度、方向、覆盖/受光预览和重新排笔。原油画阴影和漫反射调色保持独立。旧 `qa/seams` 报告为历史数据，当前验证见 `demos/highlight_lab/qa/validation.json` 和 `demos/bluebird/qa/highlights/validation.json`。

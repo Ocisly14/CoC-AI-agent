@@ -3,8 +3,20 @@ extends PanelContainer
 
 const PRESET_PATH = "user://bluebird-art-presets/current.json"
 const PRESET_DIR = "user://bluebird-art-presets"
+const APPROVED_PRESET = "res://demos/bluebird/presets/approved-art.json"
+const LAMP_SETTINGS = preload("res://demos/bluebird/street_lights.gd")
 const HUE_DEFAULTS = {"hue_selection_mode": 0, "hue_center": 30.0, "hue_half_width": 65.0, "hue_feather": 50.0}
 const HELP = {
+	"lamp_temperature": "近似色温：低值橙暖，高值冷蓝。3000 K 保留当前路灯色调；同时调整光照和灯泡颜色。",
+	"lamp_energy": "光源输出亮度，0 为熄灯。数值是预览强度倍率；不改变太阳、月光或环境光。",
+	"lamp_attenuation": "越大，亮度随距离下降越快，亮区更集中。",
+	"lamp_range": "光源最远照射范围，单位米。配合衰减强度控制光斑大小。",
+	"lamp_art_strength": "放大重要度与相近色相带来的增艳和提亮。0 为原始局部光照。",
+	"lamp_importance_boost": "重要度贴图越亮，加成越强；0 关闭重要度带来的加成。",
+	"lamp_hue_boost": "贴图色相越接近灯光色相，加成越强；0 关闭相近色加成。",
+	"lamp_chroma_gain": "限制色度增加的幅度。1 表示色度最多接近原来的两倍；0 关闭增艳。",
+	"lamp_lightness_gain": "限制受灯光照亮部分的相对明度增益；阴影和距离衰减仍然生效。",
+	"lamp_hue_width": "以灯光色相为中心的选择范围；数值越大，越多材质颜色获得加成。",
 	"color_response": "放大选中色域内的日照增色权重。范围未选中、没有直射光或增益上限为 0 时，提高它不会增色。",
 	"chroma_gain": "限制日照额外增加的色度。0 表示不增艳；0.2 表示色度倍率最多接近 1.2。不是整张贴图饱和度。",
 	"lightness_gain": "限制受光面的额外提亮。受重要度与原有明度保护影响，不跟随增色色相范围。",
@@ -50,6 +62,9 @@ var cycle_toggle: CheckBox
 var play_button: Button
 var playing := false
 var cycle_elapsed := 0.0
+var lamp_tab_index := 0
+var lamp_readout: Label
+var highlight_controls: VBoxContainer
 
 func setup(scene: Node3D) -> void:
 	demo = scene
@@ -115,7 +130,7 @@ func setup(scene: Node3D) -> void:
 	slider(importance, "importance_gamma", "重要度曲线", 0.2, 3, 0.01)
 	checkbox(importance, "override_enabled", "临时使用统一重要度")
 	slider(importance, "override_value", "统一重要度", 0, 1, 0.01)
-	note(importance, "统一值用于隔离变量，不会改写贴图。立面、屋顶与地面共用这些调试参数；玻璃等原生材质不参与美术调色。")
+	note(importance, "统一值用于隔离变量，不会改写贴图。立面、屋顶与地面共用这些调试参数；玻璃等原生材质的亮笔在「油画高光」中单独控制。")
 	var selection = page("增色范围")
 	note(selection, "跟随光色保留原效果；手选模式按贴图颜色选区，白色阳光下也可增色。选区只控制日照增艳，不改变基础光照染色。")
 	checkbox(selection, "manual_hue", "手选贴图色相（取消则跟随光色）")
@@ -126,6 +141,32 @@ func setup(scene: Node3D) -> void:
 	button(selection, "查看增色选区", func():
 		renderer.debug_view = 17; renderer.refresh_settings(); sync_widgets())
 	note(selection, "先开选区视图，选颜色并调范围，再回成片调增色响应和增益上限。灰白材质本身色度低，选区会更暗；阴影仍不获得直射光增色。悬停参数可查看说明。")
+	lamp_tab_index = tabs.get_tab_count()
+	var lamps = page("路灯")
+	lamp_readout = Label.new(); lamps.add_child(lamp_readout)
+	button(lamps, "切到夜景查看灯光", func(): stop_playback(); change("time_of_day", 22.0))
+	note(lamps, "统一调整街上四盏灯；拖动或输入数值即时生效。")
+	slider(lamps, "lamp_temperature", "色温 · K", 1800, 10000, 50)
+	slider(lamps, "lamp_energy", "光源亮度", 0, 40, 0.1)
+	slider(lamps, "lamp_attenuation", "衰减强度 · 越大越集中", 0.5, 6, 0.05)
+	slider(lamps, "lamp_range", "照射范围 · 米", 2, 16, 0.1)
+	checkbox(lamps, "lamp_art_enabled", "启用路灯增色与提亮")
+	note(lamps, "重要部位或与灯光颜色相近的材质都会获得加成，两者可叠加。默认采用较明显的效果。")
+	slider(lamps, "lamp_art_strength", "整体加成强度", 0, 8, 0.05)
+	slider(lamps, "lamp_importance_boost", "重要度加成", 0, 3, 0.05)
+	slider(lamps, "lamp_hue_boost", "相近色加成", 0, 3, 0.05)
+	slider(lamps, "lamp_hue_width", "相近色范围 · ± 度", 1, 180, 1)
+	slider(lamps, "lamp_chroma_gain", "增艳上限", 0, 2, 0.05)
+	slider(lamps, "lamp_lightness_gain", "提亮上限", 0, 0.8, 0.01)
+	button(lamps, "恢复路灯默认值", func():
+		if comparing:
+			comparing = false; apply_state(candidate); compare_button.text = "对比 A"
+		demo.get_node("StreetLights").apply_settings(LAMP_SETTINGS.DEFAULT_SETTINGS)
+		sync_widgets(); message("已恢复路灯默认值。"))
+	var highlights_page = page("油画高光")
+	highlight_controls = preload("res://rendering/painterly/highlights/controls.gd").new()
+	highlights_page.add_child(highlight_controls)
+	highlight_controls.setup(demo.painterly.highlights)
 	var compare_row = HBoxContainer.new(); column.add_child(compare_row)
 	button(compare_row, "当前设为 A", set_baseline)
 	compare_button = button(compare_row, "对比 A", toggle_compare)
@@ -143,6 +184,10 @@ func setup(scene: Node3D) -> void:
 	add_child(preset_picker)
 	status = Label.new(); status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.add_theme_font_size_override("font_size", 12); column.add_child(status)
+	# The approved merge includes the user's manual daylight, art and lamp values.
+	var approved = JSON.parse_string(FileAccess.get_file_as_string(APPROVED_PRESET))
+	if approved is Dictionary and valid_state(approved.get("state")):
+		apply_state(approved.state.duplicate(true))
 	initial = snapshot(); baseline = initial.duplicate(true)
 	sync_widgets()
 	message("拖动即时生效。F3 收起面板；A/B 保持当前镜头。")
@@ -194,16 +239,24 @@ func snapshot() -> Dictionary:
 		"azimuth": clampf(active.rotation_degrees.y, -180, 180), "elevation": clampf(-active.rotation_degrees.x, 5, 85),
 		"sun_color": color_array(active.light_color), "ambient_color": color_array(demo.environment.ambient_light_color),
 		"background_color": color_array(demo.environment.background_color)
-	}, "cycle": {"enabled": demo.cycle_enabled, "hour": demo.time_of_day}}
+	}, "cycle": {"enabled": demo.cycle_enabled, "hour": demo.time_of_day},
+	"lamps": demo.get_node("StreetLights").settings.duplicate()}
 	for key in RENDER_RANGES: state.renderer[key] = renderer.get(key)
 	state.renderer.selective_color = renderer.selective_color
+	state.highlights = demo.painterly.highlights.settings.snapshot()
 	return state
 
 func color_array(value: Color) -> Array:
 	return [value.r, value.g, value.b]
 
 func apply_state(state: Dictionary) -> void:
-	for key in state.renderer: renderer.set(key, state.renderer[key])
+	demo.get_node("StreetLights").apply_settings(state.get("lamps", demo.get_node("StreetLights").settings))
+	# Legacy seam/ribbon fields are intentionally ignored, never remapped.
+	for key in state.renderer:
+		if key in RENDER_RANGES or key == "selective_color": renderer.set(key, state.renderer[key])
+	demo.painterly.highlights.settings.apply_state(state.get("highlights", PainterlyHighlightSettings.new().snapshot()))
+	demo.painterly.highlights.refresh()
+	demo.highlight_button.set_pressed_no_signal(demo.painterly.highlights.settings.enabled)
 	if state.cycle.enabled:
 		demo.set_time_of_day(state.cycle.hour)
 		sync_widgets()
@@ -229,6 +282,11 @@ func change(key: String, value: Variant) -> void:
 	if comparing:
 		comparing = false; apply_state(candidate); compare_button.text = "对比 A"
 	var state = snapshot()
+	if LAMP_SETTINGS.DEFAULT_SETTINGS.has(key):
+		state.lamps[key] = value
+		demo.get_node("StreetLights").apply_settings(state.lamps)
+		sync_widgets(); message("路灯参数已更新；可保存参数或用 A/B 对比。")
+		return
 	if RENDER_RANGES.has(key) or key == "selective_color": state.renderer[key] = value
 	elif LIGHT_RANGES.has(key):
 		state.lighting[key] = value; state.cycle.enabled = false; stop_playback()
@@ -249,11 +307,16 @@ func change(key: String, value: Variant) -> void:
 	message("当前：B · 参数已更新" if renderer.enabled else "美术调色已关闭，按 P 开启后查看美术响应。")
 
 func sync_widgets() -> void:
+	if highlight_controls != null: highlight_controls.sync()
 	if widgets.is_empty(): return
 	syncing = true
 	var state = snapshot()
 	for key in widgets:
 		var control = widgets[key]
+		if key == "lamp_art_enabled": control.set_pressed_no_signal(state.lamps[key]); continue
+		if LAMP_SETTINGS.SETTING_RANGES.has(key):
+			for item in control: item.set_value_no_signal(state.lamps[key])
+			continue
 		if key == "manual_hue": control.set_pressed_no_signal(renderer.hue_selection_mode == 1); continue
 		if key == "selected_hue": control.color = Color.from_hsv(renderer.hue_center / 360.0, 1, 1); continue
 		if key == "override_enabled": control.set_pressed_no_signal(renderer.importance_override >= 0); continue
@@ -269,6 +332,7 @@ func sync_widgets() -> void:
 		var value = state.renderer[key] if state.renderer.has(key) else state.lighting[key]
 		for item in control: item.set_value_no_signal(value)
 	view_menu.select(VIEWS.find(renderer.debug_view))
+	lamp_readout.text = "四盏路灯 · 已点亮" if demo.get_node("StreetLights").night else "四盏路灯 · 白天关闭，可切到夜景调节"
 	cycle_toggle.set_pressed_no_signal(demo.cycle_enabled)
 	time_slider.set_value_no_signal(demo.time_of_day)
 	var minutes = int(round(demo.time_of_day * 60.0)) % 1440
@@ -318,15 +382,22 @@ func external_lighting_changed() -> void:
 
 func valid_state(state: Variant) -> bool:
 	if not state is Dictionary: return false
+	if state.has("highlights") and not PainterlyHighlightSettings.valid_state(state.highlights): return false
 	if not state.get("renderer") is Dictionary or not state.get("lighting") is Dictionary: return false
-	for pair in [[RENDER_RANGES, state.renderer], [LIGHT_RANGES, state.lighting]]:
+	if not state.get("lamps") is Dictionary: return false
+	if not state.lamps.get("lamp_art_enabled") is bool: return false
+	if state.lamps.size() != LAMP_SETTINGS.DEFAULT_SETTINGS.size(): return false
+	for pair in [[RENDER_RANGES, state.renderer], [LIGHT_RANGES, state.lighting], [LAMP_SETTINGS.SETTING_RANGES, state.lamps]]:
 		for key in pair[0]:
 			var value = pair[1].get(key)
 			if not (value is float or value is int): return false
 			if not is_finite(value) or value < pair[0][key][0] or value > pair[0][key][1]: return false
 	if not state.renderer.get("selective_color") is bool: return false
 	if state.renderer.hue_selection_mode != 0 and state.renderer.hue_selection_mode != 1: return false
-	if state.renderer.size() != RENDER_RANGES.size() + 1 or state.lighting.size() != LIGHT_RANGES.size() + 3: return false
+	var render_keys: Dictionary = state.renderer.duplicate()
+	for key in render_keys.keys():
+		if str(key).begins_with("seam_") or str(key).begins_with("silhouette_") or key in ["paint_camera", "paint_vertex_budget", "paint_depth_offset_m", "edge_width_min_m", "edge_width_max_m", "edge_stroke_length_m", "edge_pull_lo", "edge_pull_hi", "sky_reference_color"]: render_keys.erase(key)
+	if render_keys.size() != RENDER_RANGES.size() + 1 or state.lighting.size() != LIGHT_RANGES.size() + 3: return false
 	if not state.get("cycle") is Dictionary or not state.cycle.get("enabled") is bool: return false
 	var hour = state.cycle.get("hour")
 	if not (hour is float or hour is int): return false
@@ -363,7 +434,7 @@ func save_preset(path: String) -> Error:
 	var dir = ProjectSettings.globalize_path(path).get_base_dir()
 	var error = DirAccess.make_dir_recursive_absolute(dir)
 	if error != OK: message("无法创建参数目录：" + error_string(error)); return error
-	var payload = {"version": 3, "state": state, "camera_reference": {
+	var payload = {"version": 4, "state": state, "camera_reference": {
 		"target": [demo.target.x, demo.target.y, demo.target.z], "yaw": demo.yaw, "pitch": demo.pitch, "size": demo.view_size},
 		"shadow_reference": {"rectangle": renderer.rectangle_shadows_enabled, "overlay": renderer.rectangle_settings.texture_overlay_enabled,
 		"seed": renderer.rectangle_settings.seed, "revision": renderer.rectangle_settings.painting_revision}}
@@ -377,7 +448,7 @@ func save_preset(path: String) -> Error:
 func load_preset(path: String) -> Error:
 	if not FileAccess.file_exists(path): message("还没有保存的参数文件。"); return ERR_FILE_NOT_FOUND
 	var payload = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not payload is Dictionary or (payload.get("version") != 1 and payload.get("version") != 2 and payload.get("version") != 3):
+	if not payload is Dictionary or (payload.get("version") != 1 and payload.get("version") != 2 and payload.get("version") != 3 and payload.get("version") != 4):
 		message("参数文件版本无效，当前效果未改变。"); return ERR_INVALID_DATA
 	# Migrate in memory only. The user's saved v1 file remains untouched.
 	if payload.version == 1 and payload.get("state") is Dictionary and payload.state.get("renderer") is Dictionary:
@@ -387,6 +458,8 @@ func load_preset(path: String) -> Error:
 		payload.state.cycle = {"enabled": false, "hour": 12.0}
 		if not payload.state.lighting.has("background_color"):
 			payload.state.lighting.background_color = color_array(Color("a4b7c2"))
+	if payload.version < 4 and payload.get("state") is Dictionary:
+		payload.state.lamps = demo.get_node("StreetLights").settings.duplicate()
 	if not valid_state(payload.get("state")):
 		message("参数文件无效，当前效果未改变。"); return ERR_INVALID_DATA
 	payload.state.renderer.hue_selection_mode = int(payload.state.renderer.hue_selection_mode)
@@ -409,7 +482,7 @@ func save_screenshot() -> void:
 	demo.get_node("HUD").show(); visible = was_visible
 	var file = FileAccess.open(path + ".json", FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"version": 3, "state": state, "debug_view": renderer.debug_view,
+		file.store_string(JSON.stringify({"version": 4, "state": state, "debug_view": renderer.debug_view,
 			"camera_reference": {"target": color_array(Color(demo.target.x, demo.target.y, demo.target.z)), "yaw": demo.yaw, "pitch": demo.pitch, "size": demo.view_size}}, "  "))
 	message("截图已保存：" + ProjectSettings.globalize_path(path + ".png") if error == OK else "截图保存失败。")
 

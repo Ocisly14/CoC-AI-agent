@@ -4,15 +4,15 @@
   "metrics": {
     "bias_error": 0.0,
     "bias_samples": 846,
-    "length_texture_error": 0.00329817708333333,
-    "minimum_root_coverage": 1.0,
+    "length_texture_error": 0.003394140625,
+    "minimum_root_coverage": 0.495849609375,
     "pressure_timing": {
-      "frame_median_ms": 16.653,
-      "frame_p95_ms": 16.876,
+      "frame_median_ms": 1.893,
+      "frame_p95_ms": 2.141,
       "gpu_median_ms": null,
       "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
       "gpu_p95_ms": null,
-      "render_cpu_median_ms": 0.28099998831749,
+      "render_cpu_median_ms": 0.189999997615814,
       "samples": 90,
       "viewport_pixels": [
         1280.0,
@@ -20,12 +20,12 @@
       ]
     },
     "previous_timing": {
-      "frame_median_ms": 16.659,
-      "frame_p95_ms": 17.192,
+      "frame_median_ms": 1.856,
+      "frame_p95_ms": 15.683,
       "gpu_median_ms": null,
       "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
       "gpu_p95_ms": null,
-      "render_cpu_median_ms": 0.28099998831749,
+      "render_cpu_median_ms": 0.0509999990463257,
       "samples": 90,
       "viewport_pixels": [
         1280.0,
@@ -33,13 +33,13 @@
       ]
     },
     "root_samples": 1116,
-    "spacing_mean_error": 0.00538755718030428,
+    "spacing_mean_error": 0.0079728176719264,
     "stroke_section_widths_px": [
-      249,
-      292,
-      263,
-      266,
-      112
+      241,
+      289,
+      256,
+      262,
+      79
     ],
     "tip_extents_px": [
       [
@@ -56,10 +56,10 @@
       ]
     ],
     "visible_root_widths_px": [
-      196,
-      263
+      190,
+      255
     ],
-    "zoom_mean_error": 0.0175306643500473
+    "zoom_mean_error": 0.00704478438083942
   },
   "scope": "Pressure-driven procedural Shape plus original Aui Grain; geometry, integration, contact and main viewport timing. No proprietary bristle physics or wet mix."
 }

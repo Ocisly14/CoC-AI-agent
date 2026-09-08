@@ -1,0 +1,64 @@
+{
+  "checks": 28,
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "metrics": {
+    "day": {
+      "mean": 0.000103417757717479,
+      "peak": 0.235294103622437,
+      "pixels": 76
+    },
+    "detail": {
+      "mean": 0.000395492922074886,
+      "peak": 0.266666695475578,
+      "pixels": 249
+    },
+    "night": {
+      "mean": 0.0000486791957438173,
+      "peak": 0.266666665673256,
+      "pixels": 28
+    },
+    "timing": [
+      {
+        "off": {
+          "draw_calls": 637.0,
+          "median_ms": 4.346,
+          "p95_ms": 4.393
+        },
+        "on": {
+          "draw_calls": 721.0,
+          "median_ms": 4.546,
+          "p95_ms": 4.598
+        }
+      },
+      {
+        "off": {
+          "draw_calls": 637.0,
+          "median_ms": 4.345,
+          "p95_ms": 4.387
+        },
+        "on": {
+          "draw_calls": 721.0,
+          "median_ms": 4.566,
+          "p95_ms": 4.636
+        }
+      }
+    ]
+  },
+  "passed": true,
+  "renderer": "forward_plus",
+  "stats": {
+    "active_passes": 84,
+    "direction_maps": 32,
+    "generated_meshes": 0,
+    "gpu_readbacks": 0,
+    "groups": {
+      "frame": 32,
+      "glass": 8,
+      "metal": 44
+    },
+    "registered": 84,
+    "registration_count": 84,
+    "seed": 71
+  }
+}

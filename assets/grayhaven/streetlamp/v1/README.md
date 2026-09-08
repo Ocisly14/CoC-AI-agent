@@ -23,13 +23,13 @@ Blender 使用米制、Z 向上；GLB 导出为 Y 向上，原点在底座中心
 
 来源为 `testmods/grayhaven/Grayhaven_Scenarios/ROAD_main_street.json` 的 `item.main_street.street_lamp`：主街北口最老的铸铁路灯，灯柱保留繁荣年代的铸花。具体外形、尺寸属于本次美术设计。没有把模组中的偶发闪烁编造成固定动画。
 
-Godot 的蓝鸟街景截图只用于检查尺度与颜色，在餐厅附近临时摆放样品；没有改写模组北口位置，也未永久修改蓝鸟默认场景。
+初次模型验收的蓝鸟截图仅为临时尺度预览。后续按用户要求，蓝鸟默认街景已在两侧人行道放置四盏同款路灯，并接入昼夜开关与局部光照；这是街景美术布置，未改写模组物品 ID 或北口位置。详见 [街景接入说明](../../../../godot-client/demos/bluebird/README.md)。
 
 ## 实际验证
 
 [白模正面](previews/01-white-front.png)、[侧面](previews/02-white-side.png)、[顶视](previews/03-white-top.png)校核形体；[完整基础版](previews/04-base-full.png)与[油画版](previews/06-painted-full.png)采用相同机位、灯光、曝光。[灯罩](previews/07-painted-lantern.png)、[底座叠色](previews/08-painted-base.png)与[基础底座](previews/09-base-detail.png)可近看露底和跨铸花／检修盖的连续性。
 
-Blender 5.2.1 的 Cycles 已实际渲染。Godot 4.7.2 / Forward+ / Apple M5 已检查导入、纹理 mipmap、基础／叠色切换、灯泡与真实局部光源昼夜开关，并保存街景尺度预览。详见 [GPU 报告](../../../../godot-client/demos/streetlamp/qa/validation.json)和[导出审计](source/export-validation.json)。未测试行走碰撞、LOD 性能或蓝鸟自定义油画管线的局部灯照明；夜间灯照在独立标准材质预览场景验证。
+Blender 5.2.1 的 Cycles 已实际渲染。Godot 4.7.2 / Forward+ / Apple M5 已检查导入、纹理 mipmap、基础／叠色切换、灯泡与真实局部光源昼夜开关，并保存街景尺度预览。详见 [GPU 报告](../../../../godot-client/demos/streetlamp/qa/validation.json)和[导出审计](source/export-validation.json)。本资产验收未测试行走碰撞或 LOD 性能。蓝鸟自定义油画材质的局部灯照后续已通过独立的 [四盏街灯验证](../../../../godot-client/demos/bluebird/qa/street-lights/validation.json)，初版独立预览的验证记录仍保留。
 
 ## 重建与使用
 
