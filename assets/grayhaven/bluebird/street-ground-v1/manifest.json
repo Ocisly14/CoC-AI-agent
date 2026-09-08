@@ -1,0 +1,99 @@
+{
+  "status": "Integrated into default Godot Bluebird scene; Forward+ GPU verification passed",
+  "generation": "built-in image_gen; original generation followed by one material-painting edit",
+  "texture": {
+    "file": "bluebird-street-basecolor.png",
+    "pixels": [
+      1536,
+      1024
+    ],
+    "colorSpace": "sRGB",
+    "usage": "nonrepeating basecolor; mipmaps recommended",
+    "coverageMeters": [
+      48,
+      32
+    ],
+    "texelsPerMeter": [
+      32.0,
+      32.0
+    ],
+    "sha256": "0697cfbaceb989fc8bf2f8638392f46d2a3bfc84be8b72fc5c82266468b31df7"
+  },
+  "mesh": {
+    "file": "bluebird-street-ground.obj",
+    "units": "metres",
+    "up": "+Y",
+    "xBounds": [
+      -24,
+      24
+    ],
+    "zBounds": [
+      -8.125,
+      23.875
+    ],
+    "roadElevation": 0,
+    "sidewalkElevation": 0.18,
+    "triangles": 10,
+    "uv": "image top = -Z; OBJ V = 1 - imageY/height"
+  },
+  "observedImageLayoutPixels": {
+    "mainRoadY": [
+      510,
+      817
+    ],
+    "upperSidewalkY": [
+      420,
+      490
+    ],
+    "lowerSidewalkY": [
+      838,
+      907
+    ],
+    "dinerPadApproximateBounds": [
+      570,
+      100,
+      955,
+      420
+    ]
+  },
+  "authoringNotes": [
+    "All dimensions are art authoring assumptions, not module survey data.",
+    "Generated layout deviated from requested Y positions; mesh follows observed output.",
+    "Road is approximately 9.6m wide, diner pad approximately 12m by 10m.",
+    "Only northern Main Street ground is represented. Harbor slope and backstreet belong to the south and are omitted.",
+    "Adjacent pads reserve space for existing buildings; their visible empty state does not assert demolished buildings in canon.",
+    "Original native output is 1536x1024 despite requested 3072x2048. No upscaling used.",
+    "No normal/height map inferred from painting; curb slopes are mesh geometry.",
+    "No geometry for buildings, props or navigable interiors is included.",
+    "No large expressive overlay layer was created; image is the restrained material base."
+  ],
+  "sources": [
+    "testmods/grayhaven/DESIGN.md",
+    "testmods/grayhaven/Grayhaven_Scenarios/ROAD_main_street.json",
+    "testmods/grayhaven/Grayhaven_Scenarios/SCN_main_north.json",
+    "testmods/grayhaven/Grayhaven_Scenarios/SCN_main_south.json",
+    "testmods/grayhaven/Grayhaven_Scenarios/ROAD_backstreet.json",
+    "assets/grayhaven/bluebird/design-v3/layout.json",
+    "docs/art-direction/README.md",
+    "docs/art-direction/disco-elysium-material-aesthetics.md",
+    "docs/art-direction/selective-color-brush-shadows.md"
+  ],
+  "prompts": [
+    "source/generation-prompt.txt",
+    "source/refinement-prompt.txt"
+  ],
+  "godot": {
+    "scene": "res://demos/bluebird/street_corner.tscn",
+    "node": "Streets/PaintedStreetGround",
+    "textureImport": "lossless; mipmaps enabled; no automatic VRAM recompression",
+    "sampling": "sRGB; mipmap anisotropic; clamp-to-edge in StandardMaterial3D and painterly shader",
+    "qa": "godot-client/demos/bluebird/qa/street-ground/validation.json",
+    "engine": "4.7.2 Forward+ / Apple M5",
+    "tested": "actual rendering, imported UV orientation and upward normals, physical size, sidewalk/building height, painterly texture/shadow transfer, camera, picking, UI and day/evening",
+    "notTested": [
+      "Compatibility renderer",
+      "performance benchmark",
+      "walking navigation"
+    ]
+  }
+}

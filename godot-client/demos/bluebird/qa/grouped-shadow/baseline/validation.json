@@ -1,0 +1,59 @@
+{
+  "backend": "Metal",
+  "failures": [],
+  "scope": "Same-camera Bluebird integration; main viewport GPU/render CPU/wall frame timings measured separately. GPU null means unavailable.",
+  "timing": {
+    "pressure": {
+      "frame_median_ms": 16.672,
+      "frame_p95_ms": 17.418,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.89300000667572,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "pressure_repeat": {
+      "frame_median_ms": 16.674,
+      "frame_p95_ms": 17.542,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.903999984264374,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "previous": {
+      "frame_median_ms": 16.647,
+      "frame_p95_ms": 17.358,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.785000026226044,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "previous_repeat": {
+      "frame_median_ms": 16.7,
+      "frame_p95_ms": 17.344,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.444000005722046,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    }
+  }
+}

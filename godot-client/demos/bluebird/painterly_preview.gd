@@ -8,6 +8,7 @@ var records: Array[Dictionary] = []
 var skipped: Array[String] = []
 var _sources: Array[MeshInstance3D] = []
 var _double_sided: Shader
+var _clamped_shaders: Dictionary = {}
 var _architecture: Node3D
 var control_manifest: Dictionary
 var control_profiles: Dictionary = {}
@@ -92,6 +93,14 @@ func convert_mesh(source: MeshInstance3D, architecture: bool) -> void:
 		var material := renderer.register_surface(part, inputs)
 		if original is BaseMaterial3D and original.cull_mode == BaseMaterial3D.CULL_DISABLED:
 			material.shader = _double_sided
+		# Whole-ground atlases must not wrap the opposite edge into their mip samples.
+		if original is BaseMaterial3D and not original.texture_repeat:
+			var key := material.shader.get_instance_id()
+			if not _clamped_shaders.has(key):
+				var clamped := Shader.new()
+				clamped.code = material.shader.code.replace("source_color, filter_linear_mipmap_anisotropic, repeat_enable", "source_color, filter_linear_mipmap_anisotropic, repeat_disable")
+				_clamped_shaders[key] = clamped
+			material.shader = _clamped_shaders[key]
 		if procedural:
 			material.set_shader_parameter("procedural_ground", true)
 			material.set_shader_parameter("secondary_color", original.get_shader_parameter("secondary_color"))

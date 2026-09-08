@@ -1,0 +1,10 @@
+{
+	"changed_pixels": 1008,
+	"checks": 13,
+	"engine": "4.7.2-stable (official)",
+	"failures": [],
+	"meshes": 13,
+	"passed": true,
+	"renderer": "forward_plus",
+	"scope": "Lamp GLB import, texture sampling, actual base/painted comparison, studio night bulb and light, contextual Bluebird scale study. Context placement is a preview, not a canonical world-map edit."
+}

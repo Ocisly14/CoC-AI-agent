@@ -13,8 +13,8 @@ viewer-vendor/
 atlases/
 layers/
 basecolor/
-source/*.png
-source/*.jpg
+**/source/*.png
+**/source/*.jpg
 
 # 各版本迭代渲染图（只保留顶层 previews/ 作为成品存档）
 shell-*/previews/

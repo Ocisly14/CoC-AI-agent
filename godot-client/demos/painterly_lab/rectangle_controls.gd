@@ -13,6 +13,12 @@ func setup(r: Node) -> void:
     order.toggled.connect(func(value):renderer.rectangle_settings.clockwise=value;renderer.refresh_settings())
     var rects=CheckButton.new();rects.text="笔带";row.add_child(rects)
     rects.toggled.connect(func(value):renderer.rectangle_debug=value;renderer.refresh_settings())
+    var overlay=CheckButton.new();overlay.text="油画贴图叠画 · 单笔 50%–120%";add_child(overlay)
+    overlay.button_pressed=renderer.rectangle_settings.texture_overlay_enabled
+    overlay.toggled.connect(func(value):renderer.rectangle_settings.texture_overlay_enabled=value;renderer.refresh_settings())
+    var strength=HSlider.new();strength.max_value=1.0;strength.step=0.01;strength.value=renderer.rectangle_settings.texture_overlay_strength;add_child(strength)
+    strength.tooltip_text="贴图叠画强度"
+    strength.value_changed.connect(func(value):renderer.rectangle_settings.texture_overlay_strength=value;renderer.refresh_settings())
     select=OptionButton.new();add_child(select)
     renderer.rectangle_settings.ensure_defaults()
     for group in renderer.rectangle_settings.groups:select.add_item(group.label)

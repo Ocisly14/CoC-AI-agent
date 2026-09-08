@@ -1,0 +1,71 @@
+{
+  "backend": "metal",
+  "failures": [],
+  "metrics": {
+    "cache": {
+      "cache_mib": 43.0,
+      "errors": [],
+      "fallback_frames": 364,
+      "gpu_ms": null,
+      "gpu_slices": [],
+      "planning_ms": 4111.343,
+      "publish_latency_ms": 6263.249,
+      "rebuilds": 1,
+      "stroke_count": 1714,
+      "submit_cpu_ms": 71.724,
+      "submit_cpu_slice_max_ms": 0.941
+    },
+    "grouped": {
+      "frame_median_ms": 16.636,
+      "frame_p95_ms": 17.639,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.897000014781952,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "grouped_repeat": {
+      "frame_median_ms": 16.701,
+      "frame_p95_ms": 17.856,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.620000004768372,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "pressure": {
+      "frame_median_ms": 16.66,
+      "frame_p95_ms": 17.073,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.428000003099442,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    },
+    "pressure_repeat": {
+      "frame_median_ms": 16.667,
+      "frame_p95_ms": 17.213,
+      "gpu_median_ms": null,
+      "gpu_note": "Viewport GPU timer; null means unavailable, never zero cost.",
+      "gpu_p95_ms": null,
+      "render_cpu_median_ms": 0.446000009775162,
+      "samples": 120,
+      "viewport_pixels": [
+        1280.0,
+        720.0
+      ]
+    }
+  }
+}

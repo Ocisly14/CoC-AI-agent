@@ -78,13 +78,10 @@ def button(name, parent, text, toggle=False):
          f'toggle_mode = {str(toggle).lower()}')
 
 
-asphalt = ground_material('asphalt', '505955', '62635A')
-paving = ground_material('paving', 'A29B87', 'B2A88F', True)
 lot = ground_material('lot', '858C79', '94977F')
-curb = material('curb', 'B6AF9C')
-edge = material('edge', '746F63')
-paint = material('road_paint', 'B5A16A')
-drain = material('drain', '444944', 0.76)
+street_base = resource('StandardMaterial3D', 'street_base',
+    'resource_name = "Bluebird street painted base"\nalbedo_texture = ExtResource("5_street_color")\n'
+    'roughness = 0.9\ntexture_filter = 5\ntexture_repeat = false')
 
 env = resource('Environment', 'environment',
     f'background_mode = 1\nbackground_color = {color("A4B7C2")}\n'
@@ -128,31 +125,12 @@ node('UpperFloor', 'CollisionShape3D', 'Bluebird/PickBody',
 
 node('Streets', 'Node3D', '.')
 box('Surroundings', 'Streets', (0,-0.36,0), (300,0.4,300), lot)
-box('MainStreet', 'Streets', (0,-0.09,11), (52,0.18,8), asphalt)
-box('SideStreet', 'Streets', (12,-0.09,-12), (8,0.18,38), asphalt)
+# One authored ground asset carries pavement, raised curbs and street paint.
+node('PaintedStreetGround', 'MeshInstance3D', 'Streets',
+     f'mesh = ExtResource("4_street")\nmaterial_override = {street_base}\nmetadata/coverage_meters = Vector2(48, 32)')
+# Keep adapter group paths stable; obsolete geometry is removed.
 node('Sidewalk', 'Node3D', '.')
-box('DinerPavement', 'Sidewalk', (0,0.06,-0.5), (16,0.24,15), paving)
-box('FrontCurb', 'Sidewalk', (0,0.035,7), (16.2,0.29,0.2), curb)
-box('SideCurb', 'Sidewalk', (8,0.035,-0.5), (0.2,0.29,15), curb)
-box('OppositeFront', 'Sidewalk', (0,0.045,16.15), (52,0.27,2.3), paving)
-box('OppositeFrontCurb', 'Sidewalk', (0,0.035,15.08), (52,0.29,0.16), curb)
-box('OppositeSide', 'Sidewalk', (17.15,0.045,-12), (2.3,0.27,38), paving)
-box('OppositeSideCurb', 'Sidewalk', (16.08,0.035,-12), (0.16,0.29,38), curb)
 node('RoadDetails', 'Node3D', '.')
-for i in range(-8,9):
-    # Aged, restrained lane markings, interrupted at the side-street junction.
-    if 8 < i * 3 < 17:
-        continue
-    for j,z in enumerate([10.9,11.1]):
-        box(f'MainLine_{i+8}_{j}', 'RoadDetails', (i*3,0.004,z), (2.85,0.006,0.065), paint)
-for i in range(9):
-    box(f'SideLine_{i}', 'RoadDetails', (12,0.004,2-i*3.5), (0.07,0.006,1.6), paint)
-for x,z,rot in [(7.68,4.6,False),(4.8,6.68,True)]:
-    prefix = 'FrontDrain' if rot else 'SideDrain'
-    box(prefix, 'RoadDetails', (x,0.185,z), (0.75,0.014,0.28) if rot else (0.28,0.014,0.75), edge)
-    for i in range(6):
-        pos = (x-0.3+i*0.12,0.194,z) if rot else (x,0.194,z-0.3+i*0.12)
-        box(prefix+str(i), 'RoadDetails', pos, (0.045,0.005,0.23) if rot else (0.23,0.005,0.045), drain)
 
 az,el = math.radians(42),math.radians(31)
 camera_pos = (math.sin(az)*math.cos(el)*45,1.7+math.sin(el)*45,math.cos(az)*math.cos(el)*45)
@@ -208,9 +186,11 @@ node('Help','Label','HUD',
      f'mouse_filter = 2\ntheme = {theme}\ntheme_override_colors/font_color = {color("2B382F")}\n'
      'theme_override_font_sizes/font_size = 14\ntext = "固定正交视角     滚轮 / 双指捏合 缩放     中键拖动 / 双指滑动 平移     点击建筑 查看"')
 
-header = f'[gd_scene load_steps={len(resources)+4} format=3]\n\n'
+header = f'[gd_scene load_steps={len(resources)+6} format=3]\n\n'
 external = ('[ext_resource type="Script" path="res://demos/bluebird/street_corner.gd" id="1"]\n'
             '[ext_resource type="PackedScene" path="res://demos/bluebird/assets/bluebird.glb" id="2"]\n'
-            '[ext_resource type="Shader" path="res://demos/bluebird/ground.gdshader" id="3"]\n\n')
+            '[ext_resource type="Shader" path="res://demos/bluebird/ground.gdshader" id="3"]\n'
+            '[ext_resource type="ArrayMesh" path="res://demos/bluebird/assets/bluebird-street-ground.obj" id="4_street"]\n'
+            '[ext_resource type="Texture2D" path="res://demos/bluebird/assets/bluebird-street-basecolor.png" id="5_street_color"]\n\n')
 (ROOT/'street_corner.tscn').write_text(header + external + '\n'.join(resources) + '\n' + '\n'.join(nodes))
 print(f'Wrote {len(nodes)} editable nodes to {ROOT / "street_corner.tscn"}')

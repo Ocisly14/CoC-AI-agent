@@ -24,8 +24,17 @@ var painterly: Node3D
 var grade_button: Button
 var debug_menu: OptionButton
 var seam_button: Button
+var art_debugger: PanelContainer
+var moon: DirectionalLight3D
+var cycle_enabled := false
+var time_of_day := 12.0
+const DAY_NIGHT = preload("res://demos/bluebird/day_night_cycle.gd")
 
 func _ready() -> void:
+	moon = sun.duplicate()
+	moon.name = "Moon"
+	$Lighting.add_child(moon)
+	moon.hide()
 	$HUD/Controls/Margin/Row/Reset.pressed.connect(reset_view)
 	day_button.pressed.connect(func(): set_evening(false))
 	evening_button.pressed.connect(func(): set_evening(true))
@@ -58,6 +67,24 @@ func _ready() -> void:
 		seam_button.button_pressed=true
 		seam_button.toggled.connect(set_seam_paint)
 		$HUD/Controls/Margin/Row.add_child(seam_button)
+		if OS.get_cmdline_user_args().has("--bluebird-art-debug"):
+			painterly.renderer.rectangle_shadows_enabled = true
+			painterly.renderer.rectangle_settings.texture_overlay_enabled = true
+			painterly.renderer.refresh_settings()
+		art_debugger = load("res://demos/bluebird/art_debugger.gd").new()
+		$HUD.add_child(art_debugger)
+		art_debugger.setup(self)
+		var art_button = Button.new()
+		art_button.text = "光照与美术调试 [F3]"
+		art_button.theme = $HUD/Controls.theme
+		$HUD.add_child(art_button)
+		art_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		art_button.offset_left = -258; art_button.offset_right = -16
+		art_button.offset_top = 24; art_button.offset_bottom = 64
+		art_button.pressed.connect(toggle_art_debugger)
+		if OS.get_cmdline_user_args().has("--bluebird-art-debug"):
+			art_debugger.show()
+			get_window().title = "蓝鸟模型 · 光照与美术调试 · 最新笔刷阴影"
 	if OS.get_cmdline_user_args().has("--bluebird-seam-qa"):
 		var seam_qa=load("res://demos/bluebird/tools/seam_qa.gd").new()
 		add_child(seam_qa)
@@ -66,6 +93,10 @@ func _ready() -> void:
 		var color_qa = load("res://demos/bluebird/tools/color_qa.gd").new()
 		add_child(color_qa)
 		color_qa.call_deferred("run", self)
+	if OS.get_cmdline_user_args().has("--bluebird-overlay-qa"):
+		var qa=load("res://demos/bluebird/tools/texture_overlay_qa.gd").new()
+		add_child(qa)
+		qa.call_deferred("run",self)
 	if OS.get_cmdline_user_args().has("--bluebird-rectangle-qa"):
 		var qa=load("res://demos/bluebird/tools/rectangle_qa.gd").new()
 		add_child(qa)
@@ -103,6 +134,9 @@ func _update_camera() -> void:
 	camera.size = view_size
 
 func set_evening(enabled: bool) -> void:
+	cycle_enabled = false
+	if moon != null: moon.hide()
+	sun.show()
 	evening = enabled
 	day_button.button_pressed = not enabled
 	evening_button.button_pressed = enabled
@@ -127,6 +161,48 @@ func set_evening(enabled: bool) -> void:
 	time_label.text = "暮色 · 柔光预览" if enabled else "晴天 · 日照预览"
 	if painterly != null:
 		painterly.sync_lighting(self)
+	if art_debugger != null:
+		art_debugger.external_lighting_changed()
+
+func toggle_art_debugger() -> void:
+	if art_debugger != null:
+		art_debugger.visible = not art_debugger.visible
+		art_debugger.sync_widgets()
+
+func active_celestial_light() -> DirectionalLight3D:
+	return moon if cycle_enabled and (time_of_day < 6.0 or time_of_day >= 18.0) else sun
+
+func leave_time_cycle() -> void:
+	var active = active_celestial_light()
+	if active == moon:
+		sun.rotation = moon.rotation
+		sun.light_color = moon.light_color
+		sun.light_energy = moon.light_energy
+	cycle_enabled = false
+	moon.hide(); sun.show()
+	time_label.text = "手动主光预览"
+
+func set_time_of_day(hour: float) -> void:
+	var light = DAY_NIGHT.sample(hour)
+	cycle_enabled = true
+	time_of_day = light.hour
+	sun.visible = light.is_day
+	moon.visible = not light.is_day
+	var active = active_celestial_light()
+	active.rotation_degrees = Vector3(-light.elevation, light.azimuth, 0)
+	active.light_color = light.color
+	active.light_energy = light.energy
+	environment.ambient_light_color = light.ambient_color
+	environment.ambient_light_energy = light.ambient_energy
+	environment.background_color = light.background_color
+	day_button.set_pressed_no_signal(false); evening_button.set_pressed_no_signal(false)
+	var minutes = int(round(time_of_day * 60.0)) % 1440
+	time_label.text = "%02d:%02d · %s" % [minutes / 60, minutes % 60, light.source]
+	if painterly != null:
+		# Keep the user's exposure and art response while celestial lighting changes.
+		painterly.renderer.set_environment_light(light.ambient_color, light.ambient_energy)
+		painterly.renderer.set_lighting(active.global_basis.z, light.color, light.energy)
+		painterly.renderer.refresh_settings()
 
 func set_seam_paint(enabled_: bool) -> void:
 	if painterly==null: return
@@ -172,6 +248,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pan(event.delta * 10.0)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_F3: toggle_art_debugger()
 			KEY_R: reset_view()
 			KEY_1: set_evening(false)
 			KEY_2: set_evening(true)

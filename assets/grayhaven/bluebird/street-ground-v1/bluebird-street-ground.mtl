@@ -1,0 +1,7 @@
+newmtl StreetBase
+Kd 1 1 1
+Ks 0 0 0
+Ns 2
+d 1
+illum 2
+map_Kd bluebird-street-basecolor.png

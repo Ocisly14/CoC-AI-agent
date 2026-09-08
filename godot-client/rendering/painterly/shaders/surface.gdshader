@@ -1,6 +1,7 @@
 shader_type spatial;
 render_mode unshaded, fog_disabled;
 #include "res://rendering/painterly/shaders/color.gdshaderinc"
+#include "res://rendering/painterly/shaders/color_selection.gdshaderinc"
 #include "res://rendering/painterly/shaders/seam_paint.gdshaderinc"
 #include "res://rendering/painterly/shaders/ground_albedo.gdshaderinc"
 uniform bool procedural_ground=false;
@@ -14,6 +15,9 @@ uniform bool use_albedo_texture=false;
 uniform sampler2D importance_map : filter_linear_mipmap, repeat_disable;
 uniform bool use_importance_map=false;
 uniform float default_importance=0.2;
+uniform float importance_scale=1.0;
+uniform float importance_gamma=1.0;
+uniform float importance_override=-1.0;
 uniform sampler2D flow_map : filter_linear_mipmap, repeat_disable;
 uniform bool use_flow_map=false;
 uniform vec2 default_flow=vec2(1,0);
@@ -48,6 +52,7 @@ uniform float color_response=1.0;
 uniform float contrast_response=0.15;
 uniform float detail_response=0.4;
 uniform float contrast_pivot=0.55;
+uniform float saturation=1.0;
 // 0 beauty, 1 base, 2 S0, 3 B, 4 M0, 5 Mp, 6 importance,
 // 7 flow, 8 fixed stroke, 9 effective chroma weight, 10 raw final linear, 11 Cp-raw
 // 12 pigment density/overlap, 13 dry bristle/oil ridge detail (gated to painted shadow).
@@ -82,6 +87,10 @@ void fragment() {
     vec2 data_uv=(map_p-map_origin)/max(map_extent,vec2(0.001));
     float importance=use_importance_map ? texture(importance_map,data_uv).r : default_importance;
     importance=clamp(importance,0.0,1.0);
+    if(importance_override>=0.0) {importance=clamp(importance_override,0.0,1.0);}
+    else if(importance_scale!=1.0 || importance_gamma!=1.0) {
+        importance=clamp(pow(importance,importance_gamma)*importance_scale,0.0,1.0);
+    }
     vec2 flow=length(default_flow)>0.0001 ? normalize(default_flow) : vec2(1,0);
     if(use_flow_map) {
         vec2 axis=texture(flow_map,data_uv).rg*2.0-1.0;
@@ -130,14 +139,13 @@ void fragment() {
         vec3 solar_lab=to_oklab(sun_color.rgb/max(luminance(sun_color.rgb),0.000001));
         float cm=length(material_lab.yz), cs=length(solar_lab.yz);
         float qm=confidence(cm,material_chroma_knee), qs=confidence(cs,sun_chroma_knee);
-        float cosine=dot(material_lab.yz,solar_lab.yz)/max(cm*cs,0.000001);
-        float angle=acos(clamp(cosine,-1.0,1.0));
-        float match_hue=1.0-smoothstep(radians(15.0),radians(65.0),angle);
+        float match_hue=selected_hue_weight(material_lab,solar_lab);
         float d=(1.0-exp(-sun_energy))*ndotl;
         float fc=mix(0.12,1.0,pow(importance,1.3))*color_response;
         float fl=mix(0.15,1.0,importance);
         float guard=smoothstep(0.08,0.28,material_lab.x)*(1.0-smoothstep(0.86,1.0,material_lab.x));
-        color_weight=d*fc*qm*qs*match_hue;
+        // Manual selection is independent of sun chroma, including white light.
+        color_weight=d*fc*qm*(hue_selection_mode==1 ? 1.0 : qs)*match_hue;
         vec3 slab=to_oklab(s0);
         float gain=soft_limit(chroma_gain*color_weight,chroma_gain);
         slab.yz*=1.0+gain;
@@ -159,6 +167,11 @@ void fragment() {
         lab.x+=soft_limit((lab.x-contrast_pivot)*strength,0.04);
         composed=from_oklab(lab);
     }
+    if(enabled && saturation!=1.0) {
+        vec3 lab=to_oklab(composed);
+        lab.yz*=saturation;
+        composed=from_oklab(lab);
+    }
     vec3 result=output_map(composed,exposure);
     if(debug_view==1) {result=albedo;}
     else if(debug_view==2) {result=s0;}
@@ -176,5 +189,10 @@ void fragment() {
     if(debug_view==14) {result=vec3(seam_coverage);}
     else if(debug_view==15) {result=seam_donor;}
     else if(debug_view==16) {result=seam_direction;}
+    else if(debug_view==17) {
+        vec3 material_lab=to_oklab(albedo);
+        vec3 solar_lab=to_oklab(sun_color.rgb/max(luminance(sun_color.rgb),0.000001));
+        result=vec3(selected_hue_weight(material_lab,solar_lab)*confidence(length(material_lab.yz),material_chroma_knee));
+    }
     ALBEDO=result;
 }

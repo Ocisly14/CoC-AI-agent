@@ -1,6 +1,6 @@
 # 蓝鸟餐厅 · Godot 街角样板
 
-独立运行的 3D 外观 Demo，使用蓝鸟 v13 屋檐压薄版，沿用 v11 完整部位油画底色。包含餐厅、两段道路、人行道、路缘、排水格栅、正交镜头、晴天/暮色光照预览和地点手记。
+独立运行的 3D 外观 Demo，使用蓝鸟 v13 屋檐压薄版，沿用 v11 完整部位油画底色。包含餐厅、整张油画街道地表、带高度的人行道／路缘、正交镜头、晴天/暮色光照预览和地点手记。
 
 ## 打开
 
@@ -28,7 +28,7 @@
 
 - `Bluebird/Architecture`：独立的模型实例；当前模型 75 个建筑网格、167 个材质表面，GLB 含六张新 4K 合成图集、一张整层地面及三张油画字面图。
 - `Bluebird/PickBody`：只用于点击的简化选取代理，并非可行走建筑碰撞或导航网格。
-- `Streets`、`Sidewalk`、`RoadDetails`：可直接移动的道路和人行道节点；地面材质用稳定世界坐标控制宽色面和铺装接缝。
+- `Streets/PaintedStreetGround`：48×32 米连续地表网格，整张 UV 贴图描绘道路、人行道和磨损；`Sidewalk`、`RoadDetails` 保留为空适配组，旧几何已移除。
 - `Lighting/Sun`、`WorldEnvironment`：实际运行的主光与环境光。预览按钮的两套参数在 `street_corner.gd` 中，不修改模拟时间或天气。
 - `Camera3D`：正交俯视相机。运行时初始位置由脚本的 `HOME_*` 参数控制。
 
@@ -128,3 +128,20 @@ Godot --path godot-client --scene res://demos/bluebird/street_corner.tscn -- --b
 当前 v13 已收拢全部贴图和重建输入，旧 v1–v12 模型目录已清理。当前模型的再导出、从可编辑分层源重新烘焙、阴影体积更新均使用 v13 内的文件；前述版本编号仅记录迭代历史。使用当前资产 README 的命令进行重建。
 
 默认阴影现已升级为[压力盖印 v0.6](../../rendering/painterly/PRESSURE_STAMPS.md)，包含可见根部起笔、压宽／压扁和提笔收尾；`--bluebird-pressure-qa` 生成当前与上一版的同机位对比及计时。
+
+
+## 整张街道地表接入（2026-09-08）
+
+当前默认场景已使用 [street-ground-v1](../../../assets/grayhaven/bluebird/street-ground-v1/README.md) 的 1536×1024 油画基础色与 48×32 米网格。主街与两侧人行道共用连续 UV，路缘有 0.18 米实际高度；餐厅保留原变换与门槛高度。贴图按模组北半主街制作，旧侧向车道、独立道路标线与重复排水格栅几何已移除。
+
+三份源资产通过 `assets/bluebird-street-*` 相对符号链接进入 Godot，与现有餐厅资产沿用同一方式；单独拷贝 Godot 工程时应替换为实际文件副本。PNG 无损导入，启用 mipmap 与各向异性过滤，不自动切换为 VRAM 压缩。油画适配保留原底图，沿用当前地面控制图与动态阴影，并为不循环材质使用 clamp 采样，避免地块相对两端混色。
+
+已在本机 Godot 4.7.2 / Forward+ / Apple M5 渲染通过。[晴天](qa/street-ground/01-afternoon.png)、[暮色](qa/street-ground/03-evening.png)、[近景](qa/street-ground/04-material-closeup.png)、[俯视落位](qa/street-ground/06-topdown-alignment.png)与[验证报告](qa/street-ground/validation.json)记录实际结果。检查包括导入方向、纹理 mipmap、物理范围与高度、油画材质／阴影传递、原有建筑点击、镜头与光照交互。Compatibility 与性能预算未在本轮验收。地表边界是当前局部资产范围，未扩建相邻商铺。
+
+复查命令：
+
+```sh
+Godot --path godot-client --script res://demos/bluebird/tools/street_ground_qa.gd
+```
+
+该命令需要 GPU 窗口，在独立 `qa/street-ground` 目录保存截图与报告，不覆盖历史 QA 图片。`tools/build_scene.py` 已同步新地表引用；它仍仅用于主动重建初始场景，不应随意覆盖编辑器中的后续改动。

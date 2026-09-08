@@ -1,0 +1,87 @@
+{
+  "heightMeters": 3.92,
+  "baseMeters": [
+    0.48,
+    0.48
+  ],
+  "hoodWidthMeters": 0.67,
+  "baseTextureCoverageMeters": [
+    0.6,
+    0.6
+  ],
+  "painted": true,
+  "stamps": [
+    {
+      "name": "Lower pedestal cool scumble",
+      "center": [
+        0,
+        -0.12,
+        0.42
+      ],
+      "size": [
+        0.25,
+        0.3
+      ],
+      "angle": -23,
+      "tint": "697871",
+      "strength": 0.72,
+      "plane": "XZ",
+      "depth": 0.2
+    },
+    {
+      "name": "Upper shaft broken drag",
+      "center": [
+        0,
+        -0.04,
+        2.41
+      ],
+      "size": [
+        0.11,
+        0.31
+      ],
+      "angle": 13,
+      "tint": "657068",
+      "strength": 0.64,
+      "plane": "XZ",
+      "depth": 0.11
+    },
+    {
+      "name": "Lantern collar violet grey",
+      "center": [
+        0.1,
+        -0.22,
+        2.92
+      ],
+      "size": [
+        0.21,
+        0.095
+      ],
+      "angle": -14,
+      "tint": "6a6d70",
+      "strength": 0.66,
+      "plane": "XZ",
+      "depth": 0.16
+    },
+    {
+      "name": "Roof muted green scumble",
+      "center": [
+        -0.09,
+        -0.1,
+        3.64
+      ],
+      "size": [
+        0.29,
+        0.23
+      ],
+      "angle": 27,
+      "tint": "747b6d",
+      "strength": 0.72,
+      "plane": "XY",
+      "depth": 0.3
+    }
+  ],
+  "objects": 13,
+  "triangles": 8752,
+  "source": "ROAD_main_street / item.main_street.street_lamp; dimensions and form are authoring assumptions",
+  "projection": "shared lamp-local coordinates, baked to DeliveryUV for runtime"
+}

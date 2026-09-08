@@ -1,0 +1,19 @@
+{
+  "failures": [],
+  "gpu_length_scales": [
+    0.4998046875,
+    0.4998046875,
+    0.7998046875,
+    1.2,
+    1.2
+  ],
+  "native_brush_aspects": [
+    3.86112284660339,
+    3.2278037071228,
+    3.32642483711243,
+    3.51081085205078,
+    4.34905672073364
+  ],
+  "overlay_count_per_rectangle": 1,
+  "scope": "First overlay comparison, no automatic aesthetic adjustment. Coverage invariant and shared GPU geometry clamp checked."
+}

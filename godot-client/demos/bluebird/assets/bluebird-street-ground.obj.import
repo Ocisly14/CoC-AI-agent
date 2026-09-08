@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dg4qg7d4divo"
+path="res://.godot/imported/bluebird-street-ground.obj-c5a3ecce6a8bbc199edd98ec83346c5c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/bluebird-street-ground.obj-c5a3ecce6a8bbc199edd98ec83346c5c.mesh"]
+
+source_file="res://demos/bluebird/assets/bluebird-street-ground.obj"
+dest_files=["res://.godot/imported/bluebird-street-ground.obj-c5a3ecce6a8bbc199edd98ec83346c5c.mesh", "res://.godot/imported/bluebird-street-ground.obj-c5a3ecce6a8bbc199edd98ec83346c5c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

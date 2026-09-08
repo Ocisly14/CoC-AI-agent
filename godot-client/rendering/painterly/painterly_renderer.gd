@@ -7,7 +7,7 @@ const SURFACE_SHADER = preload("res://rendering/painterly/shaders/surface.gdshad
 const DEPTH_SHADER = preload("res://rendering/painterly/shaders/depth.gdshader")
 const INPUTS = preload("res://rendering/painterly/painterly_surface.gd")
 
-enum DebugView {BEAUTY, BASE, SUN, INDIRECT, PHYSICAL_MASK, PAINTED_MASK, IMPORTANCE, FLOW, STROKES, COLOR_WEIGHT, RAW_LINEAR, MASK_DIFFERENCE, PIGMENT_OVERLAP, BRISTLES, SEAM_MASK, SEAM_SOURCE, SEAM_DIRECTION}
+enum DebugView {BEAUTY, BASE, SUN, INDIRECT, PHYSICAL_MASK, PAINTED_MASK, IMPORTANCE, FLOW, STROKES, COLOR_WEIGHT, RAW_LINEAR, MASK_DIFFERENCE, PIGMENT_OVERLAP, BRISTLES, SEAM_MASK, SEAM_SOURCE, SEAM_DIRECTION, COLOR_SELECTION}
 
 const SEAM_COMPILER = preload("res://rendering/painterly/seam_paint.gd")
 @export var seam_enabled := true
@@ -93,6 +93,7 @@ func use_aui_vangogh() -> void:
 
 var _brush_layers: Texture2DArray
 var _brush_regions := PackedVector4Array()
+var _brush_native_aspects := PackedFloat32Array()
 
 @export var enabled := true
 @export var selective_color := true
@@ -103,6 +104,16 @@ var _brush_regions := PackedVector4Array()
 @export var detail_response := 0.4
 @export var chroma_gain := 0.20
 @export var lightness_gain := 0.025
+@export_enum("Follow light", "Manual material hue") var hue_selection_mode := 0
+@export_range(0, 360) var hue_center := 30.0
+@export_range(0, 180) var hue_half_width := 65.0
+@export_range(0.1, 90) var hue_feather := 50.0
+@export_range(0, 2) var saturation := 1.0
+@export_range(0, 1) var contrast_pivot := 0.55
+@export_range(0, 3) var importance_scale := 1.0
+@export_range(0.2, 3) var importance_gamma := 1.0
+## Negative uses authored maps; 0–1 temporarily replaces them for diagnosis.
+@export_range(-1, 1) var importance_override := -1.0
 @export var debug_view: DebugView = DebugView.BEAUTY
 
 var sun_direction := Vector3(-0.55, 0.8, 0.35).normalized()
@@ -145,11 +156,13 @@ func set_brush_caster_volumes(volumes: Array[AABB], transform_: Transform3D) -> 
 func rebuild_brush_textures() -> void:
     var images: Array[Image] = []
     _brush_regions.clear()
+    _brush_native_aspects.clear()
     for source in shadow_brush_textures.slice(0,16):
         if source == null: continue
         var img: Image = source.get_image()
         if img==null: continue
         if img.is_compressed() and img.decompress()!=OK: continue
+        var native_aspect=float(img.get_width())/maxi(img.get_height(),1)
         img.convert(Image.FORMAT_RGBA8)
         # Standardize layer storage only; retain authored alpha and full gesture.
         img.resize(1024,384,Image.INTERPOLATE_LANCZOS)
@@ -166,6 +179,7 @@ func rebuild_brush_textures() -> void:
         var rect := Rect2i(first,last-first+Vector2i.ONE)
         if not rect.has_area(): continue
         _brush_regions.append(Vector4(rect.position.x/1024.0,rect.position.y/384.0,rect.size.x/1024.0,rect.size.y/384.0))
+        _brush_native_aspects.append(native_aspect*(rect.size.x/1024.0)/maxf(rect.size.y/384.0,0.0001))
         img.generate_mipmaps()
         images.append(img)
     _brush_layers = null
@@ -176,6 +190,7 @@ func rebuild_brush_textures() -> void:
             push_error("Cannot build shadow brush layers: %s" % error)
             _brush_layers = null
     while _brush_regions.size()<16: _brush_regions.append(Vector4.ZERO)
+    _brush_native_aspects.resize(16)
     refresh_settings()
 
 func _ready() -> void:
@@ -330,6 +345,8 @@ func refresh_settings() -> void:
         mat.set_shader_parameter("seam_strength",seam_strength)
         for key in ["enabled","selective_color","exposure","color_response","contrast_response",
                     "edge_response","detail_response","chroma_gain","lightness_gain","debug_view",
+                    "saturation","contrast_pivot","importance_scale","importance_gamma","importance_override",
+                    "hue_selection_mode","hue_center","hue_half_width","hue_feather",
                     "shadow_bias_m","edge_width_m","stroke_length_m","stroke_width_m","brush_strength","drag_length_m","gap_depth_m","overlap_darkening","bristle_strength","bristle_spacing_m",
                     "stroke_group_density","stroke_angle_jitter_degrees","stroke_arc_bend_m"]:
             mat.set_shader_parameter(key,get(key))
@@ -343,6 +360,7 @@ func refresh_settings() -> void:
         mat.set_shader_parameter("oil_brush_region_px",oil_brush_region_px)
         mat.set_shader_parameter("shadow_brush_layers",_brush_layers)
         mat.set_shader_parameter("shadow_brush_regions",_brush_regions)
+        mat.set_shader_parameter("rectangle_native_aspects",_brush_native_aspects)
         mat.set_shader_parameter("shadow_brush_variant_count",_brush_layers.get_layers() if _brush_layers else 0)
         mat.set_shader_parameter("shadow_brush_width_m",maxf(shadow_brush_width_m,0.08))
         mat.set_shader_parameter("shadow_length_range",Vector2(clampf(minf(shadow_length_min,shadow_length_max),0.2,2.0),clampf(maxf(shadow_length_min,shadow_length_max),0.2,2.0)))

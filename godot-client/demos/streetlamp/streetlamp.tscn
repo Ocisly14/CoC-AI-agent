@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://demos/streetlamp/assets/streetlamp-painted.glb" id="1"]
+[ext_resource type="Script" path="res://demos/streetlamp/streetlamp.gd" id="2"]
+
+[node name="Streetlamp" type="Node3D"]
+script = ExtResource("2")
+
+[node name="Model" parent="." instance=ExtResource("1")]
+
+[node name="LampLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 3.34, 0)
+light_color = Color(1, 0.77, 0.47, 1)
+light_energy = 0.0
+omni_range = 7.0
+omni_attenuation = 1.5
+shadow_enabled = false

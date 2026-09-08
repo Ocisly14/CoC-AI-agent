@@ -53,6 +53,29 @@ func run() -> void:
 	if DisplayServer.get_name()=="headless": get_tree().quit(1);return
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(output_dir))
 	await frame()
+	# --- ribbon geometry (Task 1) ---
+	var ribbon = preload("res://rendering/painterly/paint_ribbon.gd").new()
+	var ribbon_report: Dictionary = ribbon.rebuild(renderer, renderer._surfaces)
+	check(ribbon_report.errors.is_empty(), "Ribbon compiler runs without errors")
+	check(ribbon_report.stamps > 0, "Ribbon compiler finds the red/blue contact")
+	check(ribbon_report.vertices == ribbon_report.stamps * 4, "Every stamp becomes one quad")
+	for stamp in ribbon.stamps:
+		check(stamp.mode == ribbon.MODE_CONTACT, "Contact stamps carry CONTACT mode")
+		check(stamp.source_id == "red" and stamp.receiver_id == "blue", "Ribbon keeps one-way deposition")
+	ribbon.attach(renderer)
+	check(ribbon.ribbons.has("blue"), "A ribbon mesh is attached for the receiving surface")
+	check(not ribbon.ribbons.has("red"), "The donor surface gets no ribbon")
+	var blue_ribbon: MeshInstance3D = ribbon.ribbons["blue"]
+	check(blue_ribbon.mesh != null and blue_ribbon.mesh.get_surface_count() == 1, "Ribbon mesh has one surface")
+	check(blue_ribbon.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == ribbon.stamps.size() * 4, "Vertex count matches stamp count")
+	var ribbon_before := await frame()
+	ribbon.attach(renderer)
+	var ribbon_after := await frame()
+	check(ribbon_before.get_data() == ribbon_after.get_data(), "Re-attaching the same compile is idempotent on screen")
+	for node in ribbon.ribbons.values(): node.queue_free()
+	ribbon.ribbons.clear()
+	await frame()
+
 	var report:=renderer.rebuild_seam_paint()
 	check(report.errors.is_empty(),"Generic geometry compiles without errors")
 	check(report.stamps>0,"Automatic detection finds touching red/blue surfaces")

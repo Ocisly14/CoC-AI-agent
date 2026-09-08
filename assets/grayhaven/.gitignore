@@ -1,0 +1,15 @@
+# 二进制素材不进 git，走外部存储。
+# 本文件覆盖 assets/grayhaven/ 下所有素材目录，包括将来新增的；
+# 各目录自己的 .gitignore 只负责该目录特有的产出（图集、分层、迭代预览等）。
+
+*.blend
+*.blend1
+*.glb
+*.gltf
+*.fbx
+*.zip
+*.exr
+__pycache__/
+
+# 绘画源贴图（.blend 引用的原图）—— 与 .blend 一起走外部存储
+streetlamp/*/textures/

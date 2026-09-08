@@ -1,0 +1,18 @@
+{
+  "heightMeters": 3.92,
+  "baseMeters": [
+    0.48,
+    0.48
+  ],
+  "hoodWidthMeters": 0.67,
+  "baseTextureCoverageMeters": [
+    0.6,
+    0.6
+  ],
+  "painted": false,
+  "stamps": [],
+  "objects": 13,
+  "triangles": 8752,
+  "source": "ROAD_main_street / item.main_street.street_lamp; dimensions and form are authoring assumptions",
+  "projection": "shared lamp-local coordinates, baked to DeliveryUV for runtime"
+}

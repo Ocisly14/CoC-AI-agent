@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "attributeAndTriangleComparisons": 48,
+  "unchangedVerticesNormalsUVAndOrientedTriangles": true,
+  "embeddedImagesPerGlb": 1,
+  "textures": {
+    "cast-iron-base.png": {
+      "pixels": [
+        1254,
+        1254
+      ],
+      "sha256": "5ff7266d9b74a8d8f0c7bec8599fdce51ecd0973f881d543e4864f28bc0fbbff"
+    },
+    "quiet-pigment.png": {
+      "pixels": [
+        1254,
+        1254
+      ],
+      "sha256": "0a8d784f1fec53988b07d69399bfb62b121b309cf2541415f6a1141ee1f79f52"
+    },
+    "iron-base-atlas.png": {
+      "pixels": [
+        2048,
+        2048
+      ],
+      "sha256": "155bc56a681cb01afd8986e922152a495e89701e209b10de9791c26c04655b0b"
+    },
+    "iron-painted-atlas.png": {
+      "pixels": [
+        2048,
+        2048
+      ],
+      "sha256": "6570a23daa159ba62aec0b106e442f230fe4cb6859fe56bc993822401d80b5c7"
+    },
+    "oil-overlay-mask.png": {
+      "pixels": [
+        2048,
+        2048
+      ],
+      "sha256": "221639a12940b9e3278f111d266a6810c83fa4125d3c9cfd44282c54d832ce71"
+    }
+  }
+}
