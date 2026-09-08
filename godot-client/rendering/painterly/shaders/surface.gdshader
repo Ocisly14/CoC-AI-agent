@@ -110,10 +110,12 @@ void fragment() {
     // A planar flow field cannot describe perpendicular faces of the same box/slab.
     vec3 mapped_normal=normalize(cross(surface_basis[0],surface_basis[2]));
     bool paint_receiver=painterly_shadows && abs(dot(normalize(world_normal),mapped_normal))>0.75;
-    if(use_oil_brush_atlas) {paint_receiver=paint_receiver && abs(normalize(world_normal).y)>0.99;}
+    // Atlas/pressure projection has its own face frame; map_plane only governs
+    // authored data maps and the legacy planar noise path.
+    if(use_oil_brush_atlas) {paint_receiver=painterly_shadows;}
     vec2 pigment;
     vec3 masks=brush_shadow(world_position,surface_p,flow,surface_basis,
-        sun_direction,importance,clamp(protect,0.0,1.0),enabled && paint_receiver,pigment);
+        sun_direction,normalize(world_normal),importance,clamp(protect,0.0,1.0),enabled && paint_receiver,pigment);
     float visibility=1.0-(enabled ? masks.g : masks.r);
     float ndotl=max(dot(normalize(world_normal),sun_direction),0.0);
     float direct=ndotl*sun_energy;

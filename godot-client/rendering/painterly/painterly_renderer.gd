@@ -320,6 +320,8 @@ func refresh_settings() -> void:
         var mat: ShaderMaterial = record.material
         mat.set_shader_parameter("rectangle_shadows_enabled",rectangle_shadows_enabled and rectangle_layout.texture!=null)
         mat.set_shader_parameter("rectangle_debug",rectangle_debug)
+        mat.set_shader_parameter("rectangle_clockwise",rectangle_settings.clockwise)
+        mat.set_shader_parameter("rectangle_overlap_range",Vector2(clampf(minf(rectangle_settings.overlap_min,rectangle_settings.overlap_max),0.3,0.6),clampf(maxf(rectangle_settings.overlap_min,rectangle_settings.overlap_max),0.3,0.6)))
         mat.set_shader_parameter("rectangle_seed",float(rectangle_settings.seed+rectangle_settings.painting_revision*7919))
         if rectangle_layout.texture!=null:
             mat.set_shader_parameter("rectangle_bands",rectangle_layout.texture)

@@ -1,4 +1,4 @@
-// Whole brush shadows on horizontal receivers. Caster bounds and sun are one
+// Whole brush shadows in the receiving surface frame. Caster bounds and sun are one
 // published snapshot. The lab uses box casters; bounds are an explicit proxy.
 uniform vec4 brush_caster_min[32]; // xyz world minimum, w stable stroke seed
 uniform vec4 brush_caster_max[32]; // xyz world maximum
@@ -19,7 +19,7 @@ uniform vec4 oil_brush_region_px=vec4(48,452,1172,476);
 
 // R=pigment load, G=oil/dry texture, B=complete painted shadow coverage.
 // No M0 input: the texture builds the entire shadow, not only its boundary.
-vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
+vec3 cast_brush_in_frame(vec3 world_p,vec3 to_sun,mat3 receiver_frame,bool surface_layout) {
     float horizontal=length(to_sun.xz);
     if(to_sun.y<=0.001 || brush_caster_count==0) {return vec3(0);}
     vec2 trail=horizontal>0.0001 ? -to_sun.xz/horizontal : vec2(1,0);
@@ -32,6 +32,12 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
     for(int caster=0;caster<32;caster++) {
         if(caster>=brush_caster_count) {break;}
         vec3 lo=brush_caster_min[caster].xyz, hi=brush_caster_max[caster].xyz;
+        if(surface_layout) {
+            vec3 center_=receiver_frame*((lo+hi)*0.5);
+            mat3 extent_frame=mat3(abs(receiver_frame[0]),abs(receiver_frame[1]),abs(receiver_frame[2]));
+            vec3 half_=extent_frame*((hi-lo)*0.5);
+            lo=center_-half_;hi=center_+half_;
+        }
         float identity=brush_caster_min[caster].w;
         if(identity==receiver_stroke_id || hi.y<=world_p.y+0.02) {continue;}
         vec2 center=(lo.xz+hi.xz)*0.5;
@@ -69,7 +75,7 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
             }
         }
         if(rectangle_shadows_enabled && procreate_shadows_enabled) {
-            vec3 paint=rectangle_caster(caster,world_p,lo,hi,identity,trail,across,slope,pixel_dx,pixel_dy);
+            vec3 paint=rectangle_caster(caster,world_p,lo,hi,identity,trail,across,slope,pixel_dx,pixel_dy,surface_layout);
             paint.x=(1.0-pow(max(1.0-paint.x,0.0),1.0+3.0*contact))*root_guard;
             paint.z*=1.0-contact;
             total+=paint.x;
@@ -180,4 +186,21 @@ vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
     float pigment=1.0-exp(-extra*0.7-load_sum*0.4);
     float dry=dry_sum/max(total,0.0001)*cover/(1.0+extra*0.25);
     return vec3(pigment,dry,cover);
+}
+
+// Ground callers and regression previews retain their original coordinate frame.
+vec3 cast_brush_shadow(vec3 world_p,vec3 to_sun) {
+    return cast_brush_in_frame(world_p,to_sun,mat3(1.0),false);
+}
+
+vec3 cast_brush_surface_shadow(vec3 world_p,vec3 to_sun,vec3 receiver_normal) {
+    vec3 normal_=normalize(receiver_normal);
+    if(dot(normal_,to_sun)<=0.001)return vec3(0.0);
+    if(normal_.y>0.9999)return cast_brush_shadow(world_p,to_sun);
+    // Fixed world axes anchor the brush plane; neither view nor time enters it.
+    vec3 reference=abs(normal_.y)<0.95 ? vec3(0,1,0) : vec3(0,0,1);
+    vec3 tangent=normalize(cross(reference,normal_));
+    vec3 bitangent=cross(tangent,normal_);
+    mat3 frame=transpose(mat3(tangent,normal_,bitangent));
+    return cast_brush_in_frame(frame*world_p,frame*to_sun,frame,true);
 }

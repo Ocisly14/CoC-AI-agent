@@ -21,21 +21,21 @@
 		],
 		"controlled_surfaces": 143,
 		"evening_difference": {
-			"changed_pixels": 171933,
-			"max": 0.439215660095215,
-			"mean": 0.0533136808773701
+			"changed_pixels": 171929,
+			"max": 0.439215689897537,
+			"mean": 0.0537582387983329
 		},
 		"indirect_difference": {
-			"changed_pixels": 100628,
-			"max": 0.113725498318672,
-			"mean": 0.0105812907637732
+			"changed_pixels": 100543,
+			"max": 0.117647066712379,
+			"mean": 0.0105184503578979
 		},
 		"last_capture_gpu_ms": null,
-		"last_capture_latency_ms": 3.778,
+		"last_capture_latency_ms": 1994.768,
 		"noon_difference": {
-			"changed_pixels": 163818,
-			"max": 0.572549015283585,
-			"mean": 0.0246625134711212
+			"changed_pixels": 164035,
+			"max": 0.631372556090355,
+			"mean": 0.0296091820377775
 		},
 		"painted_sign_surfaces": 4,
 		"registered_surfaces": 163,

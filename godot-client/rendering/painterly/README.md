@@ -51,7 +51,7 @@ Godot --path godot-client --scene res://demos/painterly_lab/lab.tscn
 
 注册前设置 `shadow_brush_textures: Array[Texture2D]` 即可使用多笔刷；运行中替换列表后调用 `rebuild_brush_textures()`。最多 16 种纹理，空资源和空白笔刷跳过；长度、笔宽、缺口与种子修改后只需 `refresh_settings()`。`texture_shadows_enabled = false` 可切回程序原型。旧 `oil_brush_atlas` 仅作单图兼容，不是多图模式的必需输入。
 
-目前整片贴图阴影仍是 **AABB 遮挡物代理 + 水平接收面** 的艺术近似；不能视作复杂网格的精确投影轮廓。最多 32 个已发布遮挡物。蓝鸟 v10 已使用 14 个专用建筑体积接入该效果，地面和屋顶接收笔刷投影；立墙使用物理遮罩。
+整片笔刷阴影使用 **AABB 遮挡物代理 + 接收面坐标投影**，支持地面、屋顶、墙面及斜面；不能视作复杂网格的精确轮廓。最多 32 个已发布遮挡物。原先立墙回退物理遮罩的限制已经取消，灯具的太阳／月光投影会进入同一压力笔刷路径。地面沿用原坐标与缓存排笔，非水平面在 Shader 中变换代理并按米制笔宽排笔，镜头不参与。见[墙面阴影验证](WALL_SHADOWS.md)。
 
 最新 GPU 验收见 [validation.json](../../demos/painterly_lab/qa/validation.json)：包括不同笔宽下的实际笔触数量、80%–120% 支持范围、固定帧随机稳定、透明缺口保留、旧拖刷无法突破长度上限、以及已有照明与捕获回归。隔离测试使用实心测试笔刷测量长度，再替换正式笔刷验证其 alpha 缺口。
 

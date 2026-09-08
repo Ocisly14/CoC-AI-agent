@@ -113,7 +113,7 @@ func convert_mesh(source: MeshInstance3D, architecture: bool) -> void:
 		part.visible = source.is_visible_in_tree()
 		var highlight_group := highlight_group_for(source, original)
 		var inputs := PainterlySurface.new()
-		inputs.painterly_shadows = false
+		inputs.painterly_shadows = true
 		inputs.default_importance = importance_for(source.name, original.resource_name if original else "", architecture)
 		var procedural: bool = original is ShaderMaterial and original.shader.resource_path == "res://demos/bluebird/ground.gdshader"
 		if original is BaseMaterial3D:
@@ -181,7 +181,7 @@ func apply_control_maps(source: MeshInstance3D, part: MeshInstance3D, inputs: Pa
 	if extras.get("paintedLettering",false):
 		inputs.importance_map=null
 		inputs.default_importance=1.0
-	inputs.painterly_shadows=not architecture or profile_name.begins_with("roof_")
+	inputs.painterly_shadows=true
 
 func importance_for(mesh_name: String, material_name: String, architecture: bool) -> float:
 	if not architecture: return 0.10

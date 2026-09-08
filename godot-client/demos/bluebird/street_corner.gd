@@ -108,6 +108,10 @@ func _ready() -> void:
 		var qa=load("res://demos/bluebird/tools/texture_overlay_qa.gd").new()
 		add_child(qa)
 		qa.call_deferred("run",self)
+	if OS.get_cmdline_user_args().has("--bluebird-wall-shadow-qa"):
+		var qa=load("res://demos/bluebird/tools/wall_shadow_qa.gd").new()
+		add_child(qa)
+		qa.call_deferred("run",self)
 	if OS.get_cmdline_user_args().has("--bluebird-root-qa"):
 		var qa=load("res://demos/bluebird/tools/shadow_root_qa.gd").new()
 		add_child(qa)

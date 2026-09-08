@@ -1,0 +1,659 @@
+{
+  "checks": [
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_BACK_EATS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_FRONT_EATS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_SIGN_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_SIGN_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_SIGN_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_SIGN_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_BLADE_SIGN_Surface4",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_CANOPY_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_CANOPY_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_DOOR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_DOOR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_HARDWARE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_PORCH_LIGHT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_PORCH_LIGHT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_SURROUND_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_SURROUND_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_SURROUND_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_ENTRY_SURROUND_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_FRONT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_FRONT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_FRONT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface4",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_MAIN_SIGN_CASE_Surface5",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_FRONT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_FRONT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_GUTTERS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_GUTTERS_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_REAR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_REAR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_RIGHT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RAIN_RIGHT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_REAR_LEADER_EXTENSION_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_REAR_LEADER_EXTENSION_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_REAR_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_REAR_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_REAR_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RIGHT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RIGHT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_RIGHT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_SIDE_CANOPY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_SIDE_CANOPY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_SIGN_BLUEBIRD_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D0_SIGN_DINER_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_FRONT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_FRONT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_FRONT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_GUTTERS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_GUTTERS_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_UPPER_FRONT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_UPPER_FRONT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_UPPER_REAR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RAIN_UPPER_REAR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RIGHT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RIGHT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: D1_RIGHT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_BOARDS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_CORNER_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FIXED_CANOPY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_FRONT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_LEFT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_REAR_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L0_RIGHT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_CORNER_BOARDS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_FRONT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_FRONT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_FRONT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_FRONT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_FRONT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_LEFT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_LEFT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_LEFT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_LEFT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_LEFT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_REAR_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_REAR_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_REAR_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_REAR_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_REAR_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_RIGHT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_RIGHT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_RIGHT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_RIGHT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Wall receives oil shadow: L1_RIGHT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Building wall surfaces are registered for brush shadows",
+      "passed": true
+    },
+    {
+      "message": "Actual scene lamp mask differs from physical mesh silhouette",
+      "passed": true
+    },
+    {
+      "message": "Lamp toggle removes projected brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-0-pressure: backlit face has no independent brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-0-rectangle: backlit face has no independent brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-1-pressure: backlit face has no independent brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-1-rectangle: backlit face has no independent brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-2-pressure: backlit face has no independent brush contribution",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: non-horizontal face receives pressure brush",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: fixed view gives stable surface coverage",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: camera orbit preserves paint at reprojected wall points",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: sun direction moves the wall projection",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: zero pressure removes wall shadow; no physical fallback",
+      "passed": true
+    },
+    {
+      "message": "plane-2-rectangle: backlit face has no independent brush contribution",
+      "passed": true
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "failures": [],
+  "renderer": "forward_plus"
+}

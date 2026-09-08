@@ -6,6 +6,8 @@ uniform vec4 rectangle_group_shape[5]; // length, width, start, pigment gain
 uniform vec4 rectangle_group_amount[5]; // opacity
 uniform float rectangle_seed=1701.0;
 uniform bool rectangle_debug=false;
+uniform bool rectangle_clockwise=true;
+uniform vec2 rectangle_overlap_range=vec2(0.3,0.6);
 
 uniform bool rectangle_overlay_enabled=false;
 uniform float rectangle_overlay_strength=0.35;
@@ -55,14 +57,24 @@ vec3 rectangle_texture_accent(vec2 id,float travel,float lateral,float width,flo
 
 // Result: coverage, resolved pigment, dry-brush relief. Layers use alpha-over
 // in the published clockwise band order; no polygon-filling or repair pass.
-vec3 rectangle_caster(int caster,vec3 p,vec3 lo,vec3 hi,float identity,vec2 trail,vec2 across,float slope,vec2 dx,vec2 dy) {
+vec3 rectangle_caster(int caster,vec3 p,vec3 lo,vec3 hi,float identity,vec2 trail,vec2 across,float slope,vec2 dx,vec2 dy,bool surface_layout) {
     vec2 center=(lo.xz+hi.xz)*0.5,half_extent=(hi.xz-lo.xz)*0.5;
     float full_width=max(2.0*dot(abs(across),half_extent),0.08);
     float bottom=max(lo.y-p.y,0.0),top=max(hi.y-p.y,0.0);
     float alpha_sum=0.0,pigment_sum=0.0,dry_sum=0.0;
+    // The cached ground lanes cannot be reused on a wall: a narrow lamp column
+    // can span several metres across that plane. Fit a stable wall-local layout
+    // with the same 30–60% overlap range, in metres, without CPU rebuilding.
+    float stride=mix(1.0-rectangle_overlap_range.y,1.0-rectangle_overlap_range.x,hash21(vec2(identity,rectangle_seed)));
+    int count_=rectangle_band_counts[caster];
+    if(surface_layout)count_=clamp(int(ceil(max(full_width/max(shadow_brush_width_m,0.08)-1.0,0.0)/stride))+1,1,64);
+    float span=1.0+float(count_-1)*stride;
     for(int order=0;order<64;order++) {
-        if(order>=rectangle_band_counts[caster])break;
-        vec4 band=texelFetch(rectangle_bands,ivec2(order,caster),0);
+        if(order>=count_)break;
+        vec4 band;
+        int spatial_index=rectangle_clockwise ? order : count_-1-order;
+        if(surface_layout)band=vec4((float(spatial_index)-float(count_-1)*0.5)*stride/span,1.0/span,float(spatial_index),1.0-stride);
+        else band=texelFetch(rectangle_bands,ivec2(order,caster),0);
         float width=full_width*band.y;
         vec2 origin=center+across*(band.x*full_width);
         float lateral=dot(p.xz-origin,across);
@@ -81,7 +93,7 @@ vec3 rectangle_caster(int caster,vec3 p,vec3 lo,vec3 hi,float identity,vec2 trai
         if(rectangle_debug) {
             if(travel<0.0 || travel>total_length || abs(lateral)>width*0.5)continue;
             float boundary=min(min(travel,total_length-travel)/max(width,0.01),0.5-abs(lateral)/max(width,0.01));
-            float stripe=boundary<0.035?1.0:0.28+0.5*float(order)/max(float(rectangle_band_counts[caster]-1),1.0);
+            float stripe=boundary<0.035?1.0:0.28+0.5*float(order)/max(float(count_-1),1.0);
             return vec3(stripe,0.0,0.0);
         }
         float band_cover=0.0;
@@ -91,7 +103,7 @@ vec3 rectangle_caster(int caster,vec3 p,vec3 lo,vec3 hi,float identity,vec2 trai
             if(hash21(rid+vec2(11,29))>=choice.w)continue;
             if(role==2 && lo.y>p.y+0.02)continue;
             // Edge group only decorates the outer lanes; interior joins use group 1.
-            if(role==3 && band.z>0.5 && band.z<float(rectangle_band_counts[caster]-1)-0.5)continue;
+            if(role==3 && band.z>0.5 && band.z<float(count_-1)-0.5)continue;
             int variant=int(hash21(rid+vec2(71,13))<choice.z?choice.x:choice.y);
             if(variant<0 || variant>=3)continue;
             float local_start=role==0?0.0:visible_start+(total_length-visible_start)*shape.z;
@@ -112,7 +124,7 @@ vec3 rectangle_caster(int caster,vec3 p,vec3 lo,vec3 hi,float identity,vec2 trai
             alpha_sum=alpha+alpha_sum*(1.0-alpha);
             band_cover=alpha+band_cover*(1.0-alpha);
         }
-        bool outer=band.z<0.5 || band.z>float(rectangle_band_counts[caster]-1)-0.5;
+        bool outer=band.z<0.5 || band.z>float(count_-1)-0.5;
         vec3 accent=rectangle_texture_accent(id,travel,lateral,width,total_length,visible_start,lo.y<=p.y+0.02,outer,trail,across,dx,dy);
         float accent_alpha=accent.x*band_cover;
         // Accent changes pigment/relief within the rounded pressure footprint;

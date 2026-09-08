@@ -109,7 +109,7 @@ vec2 pigment_stamps(vec2 surface_m) {
 }
 // R=M0, G=Mp, B=fixed brush field. Separate capture, reprocessed on receivers.
 vec3 brush_shadow(vec3 world_p, vec2 local_p, vec2 flow, mat3 object_basis,
-                  vec3 to_sun, float importance, float protect, bool paint, out vec2 pigment) {
+                  vec3 to_sun, vec3 receiver_normal, float importance, float protect, bool paint, out vec2 pigment) {
     pigment=vec2(0.0);
     float m0=shadow_at(world_p);
     vec2 cross_flow=vec2(-flow.y,flow.x);
@@ -120,7 +120,7 @@ vec3 brush_shadow(vec3 world_p, vec2 local_p, vec2 flow, mat3 object_basis,
     field=mix(field,bristles,0.12);
     if(use_brush_texture) {field=texture(brush_texture,brush_uv).r;}
     if(use_oil_brush_atlas && paint && brush_strength>0.0) {
-        vec3 brush=cast_brush_shadow(world_p,to_sun);
+        vec3 brush=cast_brush_surface_shadow(world_p,to_sun,receiver_normal);
         pigment=brush.xy;
         return vec3(m0,brush.z*clamp(brush_strength,0.0,1.0),brush.z);
     }
