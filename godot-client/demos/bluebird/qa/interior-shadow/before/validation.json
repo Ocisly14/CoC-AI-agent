@@ -1,0 +1,1063 @@
+{
+  "checks": [
+    {
+      "message": "Exterior retains brush: D0_BLADE_BACK_EATS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_FRONT_EATS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_SIGN_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_SIGN_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_SIGN_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_SIGN_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_BLADE_SIGN_Surface4",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_CANOPY_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_CANOPY_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_DOOR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_DOOR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_HARDWARE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_PORCH_LIGHT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_PORCH_LIGHT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_SURROUND_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_SURROUND_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_SURROUND_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ENTRY_SURROUND_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_FRONT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_FRONT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_FRONT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_KITCHEN_EXHAUST_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_KITCHEN_EXHAUST_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface4",
+      "passed": true
+    },
+    {
+      "message": "Reused dining-floor material on sign stays exterior",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_MAIN_SIGN_CASE_Surface5",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_FRONT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_FRONT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_GUTTERS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_GUTTERS_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_REAR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_REAR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_RIGHT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RAIN_RIGHT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_REAR_LEADER_EXTENSION_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_REAR_LEADER_EXTENSION_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_REAR_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_REAR_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_REAR_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RIGHT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RIGHT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_RIGHT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ROOF_AIR_VENT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_ROOF_AIR_VENT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_SIDE_CANOPY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_SIDE_CANOPY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_SIGN_BLUEBIRD_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D0_SIGN_DINER_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_FRONT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_FRONT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_FRONT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_GUTTERS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_GUTTERS_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_UPPER_FRONT_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_UPPER_FRONT_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_UPPER_REAR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RAIN_UPPER_REAR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RIGHT_WINDOW_JOINERY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RIGHT_WINDOW_JOINERY_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_RIGHT_WINDOW_JOINERY_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_STOVE_FLUE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: D1_STOVE_FLUE_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_CORNER_BOARDS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_CORNER_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_CORNER_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_CORNER_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_CORNER_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_CORNER_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_CORNER_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_CORNER_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_CORNER_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_CORNER_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_CORNER_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_CORNER_low_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_CORNER_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FIXED_CANOPY_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FLOOR_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FLOOR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FLOOR_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FLOOR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FLOOR_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FLOOR_Surface3",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FLOOR_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FRONT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FRONT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FRONT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FRONT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FRONT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FRONT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FRONT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FRONT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_FRONT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FRONT_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FRONT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_FRONT_low_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_FRONT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_KITCHEN_PARTITION_frames_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_KITCHEN_PARTITION_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_KITCHEN_PARTITION_high_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_KITCHEN_PARTITION_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_KITCHEN_PARTITION_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_KITCHEN_PARTITION_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_KITCHEN_PARTITION_low_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_KITCHEN_PARTITION_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_KITCHEN_PARTITION_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_KITCHEN_PARTITION_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_LEFT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_LEFT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_LEFT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_LEFT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_LEFT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_LEFT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_LEFT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_LEFT_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_LEFT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_LEFT_low_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_LEFT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_LOW_ROOF_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_LOW_ROOF_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_LOW_ROOF_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_REAR_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_REAR_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_REAR_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_REAR_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_REAR_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_REAR_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_REAR_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_REAR_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_REAR_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_REAR_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_REAR_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_REAR_low_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_REAR_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_RIGHT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_RIGHT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_RIGHT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_RIGHT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_RIGHT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_RIGHT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_RIGHT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_RIGHT_high_Surface3",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L0_RIGHT_low_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_RIGHT_low_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_RIGHT_low_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_RIGHT_low_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_RIGHT_low_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_STAIR_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_STAIR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_STAIR_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_STAIR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_STAIR_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_STAIR_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_STAIR_GUARD_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_STAIR_GUARD_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L0_TRANSFER_STRUCTURE_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L0_TRANSFER_STRUCTURE_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_BEDROOM_FRONT_high_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_BEDROOM_FRONT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_BEDROOM_FRONT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_BEDROOM_FRONT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_BEDROOM_RIGHT_frames_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_BEDROOM_RIGHT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_BEDROOM_RIGHT_high_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_BEDROOM_RIGHT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_BEDROOM_RIGHT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_BEDROOM_RIGHT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_CORNER_BOARDS_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_FLOOR_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_FLOOR_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_FLOOR_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_FLOOR_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_FLOOR_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_FLOOR_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_FRONT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_FRONT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_FRONT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_FRONT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_FRONT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_FRONT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_FRONT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_LEFT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_LEFT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_LEFT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_LEFT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_LEFT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_LEFT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_LEFT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_OPENING_GUARD_Surface0",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_OPENING_GUARD_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_REAR_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_REAR_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_REAR_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_REAR_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_REAR_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_REAR_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_REAR_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_RIGHT_frames_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_RIGHT_frames_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_RIGHT_high_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_RIGHT_high_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_RIGHT_high_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_RIGHT_high_Surface2",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_RIGHT_high_Surface2",
+      "passed": true
+    },
+    {
+      "message": "Exterior retains brush: L1_ROOF_Surface0",
+      "passed": true
+    },
+    {
+      "message": "Interior excludes exterior brush: L1_ROOF_Surface1",
+      "passed": false
+    },
+    {
+      "message": "Interior geometry remains in physical depth: L1_ROOF_Surface1",
+      "passed": true
+    },
+    {
+      "message": "Imported architecture has separate indoor and outdoor receivers",
+      "passed": true
+    },
+    {
+      "message": "Ground/upper floors, inner wall and partition fixtures found",
+      "passed": true
+    },
+    {
+      "message": "L0_FLOOR_Surface0-pressure: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_FLOOR_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_FLOOR_Surface0-pressure: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_FLOOR_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L0_FLOOR_Surface0-rectangle: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_FLOOR_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_FLOOR_Surface0-rectangle: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_FLOOR_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-pressure: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-pressure: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-rectangle: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-rectangle: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_KITCHEN_PARTITION_high_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-pressure: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_REAR_high_Surface1-pressure: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-pressure: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-pressure: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-rectangle: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L0_REAR_high_Surface1-rectangle: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-rectangle: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L0_REAR_high_Surface1-rectangle: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-pressure: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L1_FLOOR_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-pressure: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-rectangle: captured geometry really blocks sunlight",
+      "passed": true
+    },
+    {
+      "message": "L1_FLOOR_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-rectangle: no exterior pigment darkens indoor surface",
+      "passed": false
+    },
+    {
+      "message": "L1_FLOOR_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded",
+      "passed": false
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "exterior_surfaces": 105,
+  "failures": [
+    "Interior excludes exterior brush: L0_CORNER_high_Surface1",
+    "Interior excludes exterior brush: L0_CORNER_high_Surface2",
+    "Interior excludes exterior brush: L0_CORNER_low_Surface1",
+    "Interior excludes exterior brush: L0_CORNER_low_Surface2",
+    "Interior excludes exterior brush: L0_FLOOR_Surface0",
+    "Interior excludes exterior brush: L0_FLOOR_Surface1",
+    "Interior excludes exterior brush: L0_FLOOR_Surface3",
+    "Interior excludes exterior brush: L0_FRONT_high_Surface1",
+    "Interior excludes exterior brush: L0_FRONT_high_Surface2",
+    "Interior excludes exterior brush: L0_FRONT_low_Surface1",
+    "Interior excludes exterior brush: L0_FRONT_low_Surface2",
+    "Interior excludes exterior brush: L0_KITCHEN_PARTITION_frames_Surface0",
+    "Interior excludes exterior brush: L0_KITCHEN_PARTITION_high_Surface0",
+    "Interior excludes exterior brush: L0_KITCHEN_PARTITION_high_Surface1",
+    "Interior excludes exterior brush: L0_KITCHEN_PARTITION_low_Surface0",
+    "Interior excludes exterior brush: L0_KITCHEN_PARTITION_low_Surface1",
+    "Interior excludes exterior brush: L0_LEFT_high_Surface1",
+    "Interior excludes exterior brush: L0_LEFT_high_Surface2",
+    "Interior excludes exterior brush: L0_LEFT_low_Surface1",
+    "Interior excludes exterior brush: L0_LEFT_low_Surface2",
+    "Interior excludes exterior brush: L0_LOW_ROOF_Surface1",
+    "Interior excludes exterior brush: L0_REAR_high_Surface1",
+    "Interior excludes exterior brush: L0_REAR_high_Surface2",
+    "Interior excludes exterior brush: L0_REAR_low_Surface1",
+    "Interior excludes exterior brush: L0_REAR_low_Surface2",
+    "Interior excludes exterior brush: L0_RIGHT_high_Surface1",
+    "Interior excludes exterior brush: L0_RIGHT_high_Surface2",
+    "Interior excludes exterior brush: L0_RIGHT_low_Surface1",
+    "Interior excludes exterior brush: L0_RIGHT_low_Surface2",
+    "Interior excludes exterior brush: L0_STAIR_Surface0",
+    "Interior excludes exterior brush: L0_STAIR_Surface1",
+    "Interior excludes exterior brush: L0_STAIR_Surface2",
+    "Interior excludes exterior brush: L0_STAIR_GUARD_Surface0",
+    "Interior excludes exterior brush: L0_TRANSFER_STRUCTURE_Surface0",
+    "Interior excludes exterior brush: L1_BEDROOM_FRONT_high_Surface0",
+    "Interior excludes exterior brush: L1_BEDROOM_FRONT_high_Surface1",
+    "Interior excludes exterior brush: L1_BEDROOM_RIGHT_frames_Surface0",
+    "Interior excludes exterior brush: L1_BEDROOM_RIGHT_high_Surface0",
+    "Interior excludes exterior brush: L1_BEDROOM_RIGHT_high_Surface1",
+    "Interior excludes exterior brush: L1_FLOOR_Surface0",
+    "Interior excludes exterior brush: L1_FLOOR_Surface1",
+    "Interior excludes exterior brush: L1_FLOOR_Surface2",
+    "Interior excludes exterior brush: L1_FRONT_high_Surface1",
+    "Interior excludes exterior brush: L1_FRONT_high_Surface2",
+    "Interior excludes exterior brush: L1_LEFT_high_Surface1",
+    "Interior excludes exterior brush: L1_LEFT_high_Surface2",
+    "Interior excludes exterior brush: L1_OPENING_GUARD_Surface0",
+    "Interior excludes exterior brush: L1_REAR_high_Surface1",
+    "Interior excludes exterior brush: L1_REAR_high_Surface2",
+    "Interior excludes exterior brush: L1_RIGHT_high_Surface1",
+    "Interior excludes exterior brush: L1_RIGHT_high_Surface2",
+    "Interior excludes exterior brush: L1_ROOF_Surface1",
+    "L0_FLOOR_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+    "L0_FLOOR_Surface0-pressure: no exterior pigment darkens indoor surface",
+    "L0_FLOOR_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+    "L0_FLOOR_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+    "L0_FLOOR_Surface0-rectangle: no exterior pigment darkens indoor surface",
+    "L0_FLOOR_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded",
+    "L0_KITCHEN_PARTITION_high_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+    "L0_KITCHEN_PARTITION_high_Surface0-pressure: no exterior pigment darkens indoor surface",
+    "L0_KITCHEN_PARTITION_high_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+    "L0_KITCHEN_PARTITION_high_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+    "L0_KITCHEN_PARTITION_high_Surface0-rectangle: no exterior pigment darkens indoor surface",
+    "L0_KITCHEN_PARTITION_high_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded",
+    "L0_REAR_high_Surface1-pressure: indoor visibility follows actual depth, not solid building proxy",
+    "L0_REAR_high_Surface1-pressure: no exterior pigment darkens indoor surface",
+    "L0_REAR_high_Surface1-pressure: no proxy shadow where captured geometry is unoccluded",
+    "L0_REAR_high_Surface1-rectangle: indoor visibility follows actual depth, not solid building proxy",
+    "L0_REAR_high_Surface1-rectangle: no exterior pigment darkens indoor surface",
+    "L0_REAR_high_Surface1-rectangle: no proxy shadow where captured geometry is unoccluded",
+    "L1_FLOOR_Surface0-pressure: indoor visibility follows actual depth, not solid building proxy",
+    "L1_FLOOR_Surface0-pressure: no exterior pigment darkens indoor surface",
+    "L1_FLOOR_Surface0-pressure: no proxy shadow where captured geometry is unoccluded",
+    "L1_FLOOR_Surface0-rectangle: indoor visibility follows actual depth, not solid building proxy",
+    "L1_FLOOR_Surface0-rectangle: no exterior pigment darkens indoor surface",
+    "L1_FLOOR_Surface0-rectangle: no proxy shadow where captured geometry is unoccluded"
+  ],
+  "interior_surfaces": 52,
+  "passed": false,
+  "renderer": "forward_plus"
+}

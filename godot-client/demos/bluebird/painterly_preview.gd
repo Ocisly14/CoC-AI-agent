@@ -113,7 +113,6 @@ func convert_mesh(source: MeshInstance3D, architecture: bool) -> void:
 		part.visible = source.is_visible_in_tree()
 		var highlight_group := highlight_group_for(source, original)
 		var inputs := PainterlySurface.new()
-		inputs.painterly_shadows = true
 		inputs.default_importance = importance_for(source.name, original.resource_name if original else "", architecture)
 		var procedural: bool = original is ShaderMaterial and original.shader.resource_path == "res://demos/bluebird/ground.gdshader"
 		if original is BaseMaterial3D:
@@ -130,6 +129,11 @@ func convert_mesh(source: MeshInstance3D, architecture: bool) -> void:
 			skipped.append("%s | %s" % [part.name, original.resource_name if original else "missing"])
 			continue
 		apply_control_maps(source,part,inputs,architecture)
+		# Whole-building brush masses are exterior silhouettes: they fill rooms
+		# and contain no window/door openings. Interior receivers use actual depth
+		# occlusion, without the exterior brush coverage or pigment pass.
+		var interior := architecture and is_interior_surface(source, original)
+		inputs.painterly_shadows = not interior
 		var material := renderer.register_surface(part, inputs)
 		if original is BaseMaterial3D and original.cull_mode == BaseMaterial3D.CULL_DISABLED:
 			material.shader = _double_sided
@@ -150,7 +154,7 @@ func convert_mesh(source: MeshInstance3D, architecture: bool) -> void:
 			material.set_shader_parameter("secondary_color", original.get_shader_parameter("secondary_color"))
 			material.set_shader_parameter("paving", original.get_shader_parameter("paving"))
 		if highlight_group != "": highlights.register_surface(part, highlight_group, str(source.name)+"/"+str(index), original)
-		records.append({"source":source, "index":index, "part":part, "original":original, "inputs":inputs, "material":material, "architecture":architecture})
+		records.append({"source":source, "index":index, "part":part, "original":original, "inputs":inputs, "material":material, "architecture":architecture, "interior":interior})
 	_sources.append(source)
 	source.hide()
 
@@ -181,7 +185,20 @@ func apply_control_maps(source: MeshInstance3D, part: MeshInstance3D, inputs: Pa
 	if extras.get("paintedLettering",false):
 		inputs.importance_map=null
 		inputs.default_importance=1.0
-	inputs.painterly_shadows=true
+
+func is_interior_surface(source: MeshInstance3D, material: Material) -> bool:
+	var extras: Dictionary = source.get_meta("extras", {})
+	var role := str(extras.get("role", ""))
+	if extras.get("side", "") == "partition" or role in ["stair", "structure", "guard"]:
+		return true
+	var material_name := material.resource_name.to_lower() if material else ""
+	# Imported wall meshes already separate inner plaster and opening reveals
+	# from exterior siding. Classify per draw surface, not per whole wall mesh.
+	if "warm-plaster" in material_name or material_name == "cut_plaster":
+		return true
+	# The dining-floor material is also reused on the outdoor sign and porch;
+	# only a floor-role mesh makes it an indoor receiver. Keep the foundation.
+	return role == "floor" and material_name != "foundation"
 
 func importance_for(mesh_name: String, material_name: String, architecture: bool) -> float:
 	if not architecture: return 0.10

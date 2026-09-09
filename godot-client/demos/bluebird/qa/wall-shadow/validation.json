@@ -249,27 +249,11 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L0_CORNER_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_CORNER_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L0_CORNER_high_Surface3",
       "passed": true
     },
     {
       "message": "Wall receives oil shadow: L0_CORNER_low_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_CORNER_low_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_CORNER_low_Surface2",
       "passed": true
     },
     {
@@ -289,14 +273,6 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L0_FRONT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_FRONT_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L0_FRONT_high_Surface3",
       "passed": true
     },
@@ -305,23 +281,7 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L0_FRONT_low_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_FRONT_low_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L0_LEFT_high_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_LEFT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_LEFT_high_Surface2",
       "passed": true
     },
     {
@@ -330,14 +290,6 @@
     },
     {
       "message": "Wall receives oil shadow: L0_LEFT_low_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_LEFT_low_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_LEFT_low_Surface2",
       "passed": true
     },
     {
@@ -353,27 +305,11 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L0_REAR_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_REAR_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L0_REAR_high_Surface3",
       "passed": true
     },
     {
       "message": "Wall receives oil shadow: L0_REAR_low_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_REAR_low_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_REAR_low_Surface2",
       "passed": true
     },
     {
@@ -389,27 +325,11 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_RIGHT_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L0_RIGHT_high_Surface3",
       "passed": true
     },
     {
       "message": "Wall receives oil shadow: L0_RIGHT_low_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_RIGHT_low_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L0_RIGHT_low_Surface2",
       "passed": true
     },
     {
@@ -429,14 +349,6 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L1_FRONT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_FRONT_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L1_LEFT_frames_Surface0",
       "passed": true
     },
@@ -446,14 +358,6 @@
     },
     {
       "message": "Wall receives oil shadow: L1_LEFT_high_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_LEFT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_LEFT_high_Surface2",
       "passed": true
     },
     {
@@ -469,14 +373,6 @@
       "passed": true
     },
     {
-      "message": "Wall receives oil shadow: L1_REAR_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_REAR_high_Surface2",
-      "passed": true
-    },
-    {
       "message": "Wall receives oil shadow: L1_RIGHT_frames_Surface0",
       "passed": true
     },
@@ -486,14 +382,6 @@
     },
     {
       "message": "Wall receives oil shadow: L1_RIGHT_high_Surface0",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_RIGHT_high_Surface1",
-      "passed": true
-    },
-    {
-      "message": "Wall receives oil shadow: L1_RIGHT_high_Surface2",
       "passed": true
     },
     {

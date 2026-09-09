@@ -1,0 +1,37 @@
+{
+  "checks": [
+    {
+      "message": "Actual rendered street surface found",
+      "passed": true
+    },
+    {
+      "message": "Street cutout matches actual chamfered floor area (119.155 square metres)",
+      "passed": false
+    },
+    {
+      "message": "Street outer dimensions and sidewalk height are preserved",
+      "passed": true
+    },
+    {
+      "message": "Cut edges retain the authored street UV mapping",
+      "passed": true
+    },
+    {
+      "message": "Triangle orientation and upward normals survive clipping",
+      "passed": true
+    },
+    {
+      "message": "No street geometry or its sign/building shadows draws over the indoor floor",
+      "passed": false
+    }
+  ],
+  "engine": "4.7.2-stable (official)",
+  "failures": [
+    "Street cutout matches actual chamfered floor area (119.155 square metres)",
+    "No street geometry or its sign/building shadows draws over the indoor floor"
+  ],
+  "passed": false,
+  "removed_street_area_m2": 0.0,
+  "renderer": "forward_plus",
+  "visible_indoor_street_pixels": 219038
+}

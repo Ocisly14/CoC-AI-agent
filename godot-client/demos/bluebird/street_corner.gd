@@ -32,6 +32,8 @@ var location_scenes: Control
 const DAY_NIGHT = preload("res://demos/bluebird/day_night_cycle.gd")
 
 func _ready() -> void:
+	preload("res://demos/bluebird/street_footprint.gd").cut(
+		$Streets/PaintedStreetGround, $Bluebird/Architecture.find_child("L0_FLOOR", true, false))
 	moon = sun.duplicate()
 	moon.name = "Moon"
 	$Lighting.add_child(moon)

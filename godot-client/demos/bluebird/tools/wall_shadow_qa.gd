@@ -34,7 +34,7 @@ func run(demo: Node3D) -> void:
     demo.painterly.highlights.settings.enabled=false;demo.painterly.highlights.refresh()
     var walls=0
     for record in demo.painterly.records:
-        if record.architecture and record.inputs.map_plane!=0:
+        if record.architecture and not record.interior and record.inputs.map_plane!=0:
             walls+=1;verify(record.inputs.painterly_shadows,"Wall receives oil shadow: "+str(record.part.name))
     verify(walls>20,"Building wall surfaces are registered for brush shadows")
     demo.target=Vector3(5,1.8,3);demo.view_size=11;demo._update_camera()
@@ -48,7 +48,7 @@ func run(demo: Node3D) -> void:
         if record.architecture and record.inputs.map_plane!=0:record.material.set_shader_parameter("painterly_shadows",false)
     await capture("02-previous-physical-wall.png")
     for record in demo.painterly.records:
-        if record.architecture:record.material.set_shader_parameter("painterly_shadows",true)
+        if record.architecture:record.material.set_shader_parameter("painterly_shadows",record.inputs.painterly_shadows)
     # Remove architecture proxies/depth casters only in the fixture so measured
     # wall changes can be attributed to lamps, rather than the building itself.
     demo.painterly.architecture_brush_volumes.clear()
